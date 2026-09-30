@@ -389,6 +389,7 @@ All dependencies are immutable constructor arguments; the executor accepts no us
 | PoolFactory | `0x4947243CC818b627A5D06d14C4eCe7398A23Ce1A` | `0x83FE469C636C4081b87bA5b3Ae9991c6Ed104248` |
 | MUSD/BTC pool (volatile) | `0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9` | `0x52e604c44417233b6CcEDDDc0d640A405Caacefb` |
 | BorrowerOperationsSignatures | `0xD757e3646AF370b15f32EB557F0F8380Df7D639e` | `0xB57ab578BF20b3e318f3EFAA587C51DBccE5df7a` |
+| **MezoRouteExecutor (deployed, verified)** | `0x5AA6A335eFC1211f0D9554504C5C7B14c220c39e` | Wave 2 |
 
 Frontend-only reads and direct calls:
 
@@ -489,7 +490,7 @@ interface IMezoRouteExecutor {
 
 Requiring `msg.sender == borrower` also prevents a third party from using a leaked signature with weaker minimums.
 
-Whether the recipient receives exactly `amount` (with fees added to debt) is verified in the live testnet smoke run; if not, step 1 compares against the measured MUSD delta instead.
+Verified on testnet (30 Sep 2026, tx `0xb0eb…a762`): the recipient receives exactly `amount`; the 0.1% borrowing fee is minted to the PCV and added to debt. `borrowAndEnter` used ≈ 2.12M gas (Trove interest accrual), versus ≈ 0.39M for `enter`.
 
 ### 11.5 Exit algorithm
 

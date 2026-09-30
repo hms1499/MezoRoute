@@ -32,11 +32,23 @@ ME=$(cast wallet address "$PRIVATE_KEY")
 
 calc() { python3 -c "print(int($1))"; }
 first() { awk '{print $1}'; }
+# The public testnet RPC intermittently returns null for receipts, so submit asynchronously
+# and poll for the receipt; fail if the transaction reverted.
 send() {
-  local hash
-  hash=$(cast send "$@" --private-key "$PRIVATE_KEY" --rpc-url "$RPC" --json | python3 -c "import json,sys; print(json.load(sys.stdin)['transactionHash'])")
+  local hash status i
+  hash=$(cast send "$@" --private-key "$PRIVATE_KEY" --rpc-url "$RPC" --async)
   echo "  $EXPLORER/$hash" >&2
-  echo "$hash"
+  for i in $(seq 1 30); do
+    status=$(cast receipt "$hash" status --rpc-url "$RPC" 2>/dev/null | first || true)
+    if [[ -n "$status" ]]; then
+      [[ "$status" == "1" ]] || { echo "  reverted: $hash" >&2; exit 1; }
+      echo "$hash"
+      return
+    fi
+    sleep 2
+  done
+  echo "  no receipt after 60s: $hash" >&2
+  exit 1
 }
 quote_swap() { # from to amountIn -> amountOut
   cast call "$ROUTER" "getAmountsOut(uint256,(address,address,bool,address)[])(uint256[])" "$3" "[($1,$2,false,$FACTORY)]" --rpc-url "$RPC" \
