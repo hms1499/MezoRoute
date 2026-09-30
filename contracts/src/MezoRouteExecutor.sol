@@ -70,6 +70,56 @@ contract MezoRouteExecutor is IMezoRouteExecutor, ReentrancyGuard {
         return _enter(p, musdPermit, 0);
     }
 
+    /// @inheritdoc IMezoRouteExecutor
+    function exit(ExitParams calldata p, Permit calldata lpPermit) external nonReentrant returns (uint256 musdOut) {
+        if (p.liquidityIn == 0) revert ZeroAmount();
+        if (p.recipient == address(0)) revert ZeroAddress();
+        if (block.timestamp > p.deadline) revert Expired();
+
+        Balances memory start = _snapshot();
+
+        pool.safeTransferFrom(msg.sender, address(this), p.liquidityIn);
+
+        pool.forceApprove(address(router), p.liquidityIn);
+        router.removeLiquidity(
+            address(musd),
+            address(btc),
+            false,
+            p.liquidityIn,
+            p.minMusdRemoved,
+            p.minBtcRemoved,
+            address(this),
+            p.deadline
+        );
+        pool.forceApprove(address(router), 0);
+
+        uint256 musdRemoved = _delta(musd, start.musd);
+        uint256 btcRemoved = _delta(btc, start.btc);
+        if (musdRemoved < p.minMusdRemoved || btcRemoved < p.minBtcRemoved) revert InsufficientLiquidityOutput();
+
+        uint256 musdFromSwap;
+        if (btcRemoved > 0) {
+            btc.forceApprove(address(router), btcRemoved);
+            router.swapExactTokensForTokens(
+                btcRemoved, p.minMusdFromSwap, _route(address(btc), address(musd)), address(this), p.deadline
+            );
+            btc.forceApprove(address(router), 0);
+            musdFromSwap = _delta(musd, start.musd) - musdRemoved;
+        }
+        if (musdFromSwap < p.minMusdFromSwap) revert InsufficientSwapOutput();
+
+        musdOut = _delta(musd, start.musd);
+        if (musdOut < p.minMusdOut) revert InsufficientFinalOutput();
+        musd.safeTransfer(p.recipient, musdOut);
+
+        uint256 btcRefund = _delta(btc, start.btc);
+        if (btcRefund > 0) btc.safeTransfer(p.recipient, btcRefund);
+
+        _assertNoDecrease(start);
+
+        emit Exited(msg.sender, p.recipient, p.liquidityIn, musdRemoved, btcRemoved, musdFromSwap, musdOut, btcRefund);
+    }
+
     function _enter(EnterParams calldata p, Permit calldata musdPermit, uint256 musdBorrowed)
         private
         returns (uint256 liquidityOut)

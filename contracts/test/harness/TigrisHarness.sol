@@ -88,6 +88,22 @@ abstract contract TigrisHarness is Test {
         });
     }
 
+    function _exitParams(uint256 liquidityIn, address recipient)
+        internal
+        view
+        returns (IMezoRouteExecutor.ExitParams memory p)
+    {
+        p = IMezoRouteExecutor.ExitParams({
+            liquidityIn: liquidityIn,
+            minMusdRemoved: 0,
+            minBtcRemoved: 0,
+            minMusdFromSwap: 0,
+            minMusdOut: 0,
+            deadline: block.timestamp + 600,
+            recipient: recipient
+        });
+    }
+
     function _quoteSwap(address from, address to, uint256 amountIn) internal view returns (uint256) {
         ITigrisRouter.Route[] memory routes = new ITigrisRouter.Route[](1);
         routes[0] = ITigrisRouter.Route({from: from, to: to, stable: false, factory: address(factory)});

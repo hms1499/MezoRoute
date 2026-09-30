@@ -21,6 +21,16 @@ interface IMezoRouteExecutor {
         address recipient;
     }
 
+    struct ExitParams {
+        uint256 liquidityIn;
+        uint256 minMusdRemoved;
+        uint256 minBtcRemoved;
+        uint256 minMusdFromSwap;
+        uint256 minMusdOut;
+        uint256 deadline;
+        address recipient;
+    }
+
     event Entered(
         address indexed caller,
         address indexed recipient,
@@ -36,6 +46,17 @@ interface IMezoRouteExecutor {
         uint256 btcRefund
     );
 
+    event Exited(
+        address indexed caller,
+        address indexed recipient,
+        uint256 liquidityIn,
+        uint256 musdRemoved,
+        uint256 btcRemoved,
+        uint256 musdFromSwap,
+        uint256 musdOut,
+        uint256 btcRefund
+    );
+
     error ZeroAmount();
     error ZeroAddress();
     error Expired();
@@ -44,7 +65,10 @@ interface IMezoRouteExecutor {
     error InvalidSwapAmount();
     error InsufficientSwapOutput();
     error InsufficientLiquidityOutput();
+    error InsufficientFinalOutput();
     error UnexpectedBalanceDecrease();
 
     function enter(EnterParams calldata p, Permit calldata musdPermit) external returns (uint256 liquidityOut);
+
+    function exit(ExitParams calldata p, Permit calldata lpPermit) external returns (uint256 musdOut);
 }
