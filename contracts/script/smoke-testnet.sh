@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Live Mezo testnet smoke test for a deployed MezoRouteExecutor.
+# Mezo's BTC token is backed by a chain precompile, so this cannot run on a local fork;
+# every call goes to the real testnet through `cast`.
+#
+# Required env:
+#   PRIVATE_KEY  key holding test BTC for gas and at least AMOUNT MUSD
+#   EXECUTOR     deployed MezoRouteExecutor address
+# Optional env:
+#   AMOUNT       MUSD in wei (default 20 MUSD)
+#   BORROW=1     also run borrowAndEnter (the key must own an open Trove with headroom)
+set -euo pipefail
+
+RPC=${RPC:-https://rpc.test.mezo.org}
+EXPLORER=https://explorer.test.mezo.org/tx
+MUSD=0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503
+BTC=0x7b7C000000000000000000000000000000000000
+ROUTER=0x9a1ff7FE3a0F69959A3fBa1F1e5ee18e1A9CD7E9
+FACTORY=0x4947243CC818b627A5D06d14C4eCe7398A23Ce1A
+POOL=0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9
+BOS=0xD757e3646AF370b15f32EB557F0F8380Df7D639e
+ZERO32=0x0000000000000000000000000000000000000000000000000000000000000000
+NO_PERMIT="(0,0,0,$ZERO32,$ZERO32)"
+ENTER_SIG="enter((uint256,uint256,uint256,uint256,uint256,uint256,uint256,address),(uint256,uint256,uint8,bytes32,bytes32))"
+EXIT_SIG="exit((uint256,uint256,uint256,uint256,uint256,uint256,address),(uint256,uint256,uint8,bytes32,bytes32))"
+BORROW_SIG="borrowAndEnter((uint256,address,address,bytes,uint256),(uint256,uint256,uint8,bytes32,bytes32),(uint256,uint256,uint256,uint256,uint256,uint256,uint256,address))"
+
+: "${PRIVATE_KEY:?set PRIVATE_KEY}"
+: "${EXECUTOR:?set EXECUTOR}"
+AMOUNT=${AMOUNT:-20000000000000000000}
+ME=$(cast wallet address "$PRIVATE_KEY")
+
+calc() { python3 -c "print(int($1))"; }
+first() { awk '{print $1}'; }
+send() {
+  local hash
+  hash=$(cast send "$@" --private-key "$PRIVATE_KEY" --rpc-url "$RPC" --json | python3 -c "import json,sys; print(json.load(sys.stdin)['transactionHash'])")
+  echo "  $EXPLORER/$hash" >&2
+  echo "$hash"
+}
+quote_swap() { # from to amountIn -> amountOut
+  cast call "$ROUTER" "getAmountsOut(uint256,(address,address,bool,address)[])(uint256[])" "$3" "[($1,$2,false,$FACTORY)]" --rpc-url "$RPC" \
+    | python3 -c "import sys,re; print(re.findall(r'\d+', sys.stdin.read().split(',')[1])[0])"
+}
+enter_params() { # amount recipient -> tuple
+  local fee net swap btc_out
+  fee=$(cast call "$EXECUTOR" "feeBps()(uint256)" --rpc-url "$RPC" | first)
+  net=$(calc "$1 - $1 * $fee // 10000")
+  swap=$(calc "$net // 2")
+  btc_out=$(quote_swap "$MUSD" "$BTC" "$swap")
+  echo "($1,$swap,$(calc "$btc_out * 99 // 100"),0,0,0,$(( $(date +%s) + 600 )),$2)"
+}
+
+echo "== enter $AMOUNT MUSD as $ME"
+send "$MUSD" "approve(address,uint256)" "$EXECUTOR" "$AMOUNT" >/dev/null
+ENTER_TX=$(send "$EXECUTOR" "$ENTER_SIG" "$(enter_params "$AMOUNT" "$ME")" "$NO_PERMIT")
+cast receipt "$ENTER_TX" --rpc-url "$RPC" | grep -E "^status" 
+
+echo "== exit all LP"
+LP=$(cast call "$POOL" "balanceOf(address)(uint256)" "$ME" --rpc-url "$RPC" | first)
+read -r MUSD_R BTC_R < <(cast call "$ROUTER" "quoteRemoveLiquidity(address,address,bool,address,uint256)(uint256,uint256)" \
+  "$MUSD" "$BTC" false "$FACTORY" "$LP" --rpc-url "$RPC" | first | paste -sd' ' -)
+SWAP_OUT=$(quote_swap "$BTC" "$MUSD" "$BTC_R")
+MIN_OUT=$(calc "($MUSD_R + $SWAP_OUT) * 99 // 100")
+send "$POOL" "approve(address,uint256)" "$EXECUTOR" "$LP" >/dev/null
+EXIT_TX=$(send "$EXECUTOR" "$EXIT_SIG" "($LP,0,0,0,$MIN_OUT,$(( $(date +%s) + 600 )),$ME)" "$NO_PERMIT")
+cast receipt "$EXIT_TX" --rpc-url "$RPC" | grep -E "^status"
+
+if [[ "${BORROW:-0}" == "1" ]]; then
+  echo "== borrowAndEnter $AMOUNT MUSD"
+  NONCE=$(cast call "$BOS" "getNonce(address)(uint256)" "$ME" --rpc-url "$RPC" | first)
+  DEADLINE=$(( $(date +%s) + 600 ))
+  TYPED=$(mktemp)
+  cat > "$TYPED" <<JSON
+{"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],
+"WithdrawMUSD":[{"name":"amount","type":"uint256"},{"name":"borrower","type":"address"},{"name":"recipient","type":"address"},{"name":"nonce","type":"uint256"},{"name":"deadline","type":"uint256"}]},
+"primaryType":"WithdrawMUSD","domain":{"name":"BorrowerOperationsSignatures","version":"1","chainId":31611,"verifyingContract":"$BOS"},
+"message":{"amount":"$AMOUNT","borrower":"$ME","recipient":"$ME","nonce":"$NONCE","deadline":"$DEADLINE"}}
+JSON
+  SIG=$(cast wallet sign --private-key "$PRIVATE_KEY" --data --from-file "$TYPED")
+  rm -f "$TYPED"
+  send "$MUSD" "approve(address,uint256)" "$EXECUTOR" "$AMOUNT" >/dev/null
+  BORROW_TX=$(send "$EXECUTOR" "$BORROW_SIG" "($AMOUNT,0x0000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000,$SIG,$DEADLINE)" "$NO_PERMIT" "$(enter_params "$AMOUNT" "$ME")")
+  cast receipt "$BORROW_TX" --rpc-url "$RPC" | grep -E "^status"
+fi
+
+echo "== executor balances (must be unchanged by this run)"
+echo "  MUSD $(cast call "$MUSD" "balanceOf(address)(uint256)" "$EXECUTOR" --rpc-url "$RPC" | first)"
+echo "  BTC  $(cast call "$BTC" "balanceOf(address)(uint256)" "$EXECUTOR" --rpc-url "$RPC" | first)"
+echo "  LP   $(cast call "$POOL" "balanceOf(address)(uint256)" "$EXECUTOR" --rpc-url "$RPC" | first)"
