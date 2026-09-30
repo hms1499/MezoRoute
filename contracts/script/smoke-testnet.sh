@@ -63,10 +63,16 @@ enter_params() { # amount recipient -> tuple
   echo "($1,$swap,$(calc "$btc_out * 99 // 100"),0,0,0,$(( $(date +%s) + 600 )),$2)"
 }
 
+executor_balances() {
+  echo "$(cast call "$MUSD" "balanceOf(address)(uint256)" "$EXECUTOR" --rpc-url "$RPC" | first)" \
+    "$(cast call "$BTC" "balanceOf(address)(uint256)" "$EXECUTOR" --rpc-url "$RPC" | first)" \
+    "$(cast call "$POOL" "balanceOf(address)(uint256)" "$EXECUTOR" --rpc-url "$RPC" | first)"
+}
+BEFORE=$(executor_balances)
+
 echo "== enter $AMOUNT MUSD as $ME"
 send "$MUSD" "approve(address,uint256)" "$EXECUTOR" "$AMOUNT" >/dev/null
-ENTER_TX=$(send "$EXECUTOR" "$ENTER_SIG" "$(enter_params "$AMOUNT" "$ME")" "$NO_PERMIT")
-cast receipt "$ENTER_TX" --rpc-url "$RPC" | grep -E "^status" 
+send "$EXECUTOR" "$ENTER_SIG" "$(enter_params "$AMOUNT" "$ME")" "$NO_PERMIT" >/dev/null
 
 echo "== exit all LP"
 LP=$(cast call "$POOL" "balanceOf(address)(uint256)" "$ME" --rpc-url "$RPC" | first)
@@ -75,8 +81,7 @@ read -r MUSD_R BTC_R < <(cast call "$ROUTER" "quoteRemoveLiquidity(address,addre
 SWAP_OUT=$(quote_swap "$BTC" "$MUSD" "$BTC_R")
 MIN_OUT=$(calc "($MUSD_R + $SWAP_OUT) * 99 // 100")
 send "$POOL" "approve(address,uint256)" "$EXECUTOR" "$LP" >/dev/null
-EXIT_TX=$(send "$EXECUTOR" "$EXIT_SIG" "($LP,0,0,0,$MIN_OUT,$(( $(date +%s) + 600 )),$ME)" "$NO_PERMIT")
-cast receipt "$EXIT_TX" --rpc-url "$RPC" | grep -E "^status"
+send "$EXECUTOR" "$EXIT_SIG" "($LP,0,0,0,$MIN_OUT,$(( $(date +%s) + 600 )),$ME)" "$NO_PERMIT" >/dev/null
 
 if [[ "${BORROW:-0}" == "1" ]]; then
   echo "== borrowAndEnter $AMOUNT MUSD"
@@ -92,11 +97,13 @@ JSON
   SIG=$(cast wallet sign --private-key "$PRIVATE_KEY" --data --from-file "$TYPED")
   rm -f "$TYPED"
   send "$MUSD" "approve(address,uint256)" "$EXECUTOR" "$AMOUNT" >/dev/null
-  BORROW_TX=$(send "$EXECUTOR" "$BORROW_SIG" "($AMOUNT,0x0000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000,$SIG,$DEADLINE)" "$NO_PERMIT" "$(enter_params "$AMOUNT" "$ME")")
-  cast receipt "$BORROW_TX" --rpc-url "$RPC" | grep -E "^status"
+  send "$EXECUTOR" "$BORROW_SIG" "($AMOUNT,0x0000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000,$SIG,$DEADLINE)" "$NO_PERMIT" "$(enter_params "$AMOUNT" "$ME")" >/dev/null
 fi
 
-echo "== executor balances (must be unchanged by this run)"
-echo "  MUSD $(cast call "$MUSD" "balanceOf(address)(uint256)" "$EXECUTOR" --rpc-url "$RPC" | first)"
-echo "  BTC  $(cast call "$BTC" "balanceOf(address)(uint256)" "$EXECUTOR" --rpc-url "$RPC" | first)"
-echo "  LP   $(cast call "$POOL" "balanceOf(address)(uint256)" "$EXECUTOR" --rpc-url "$RPC" | first)"
+AFTER=$(executor_balances)
+echo "== executor balances MUSD BTC LP: before [$BEFORE] after [$AFTER]"
+if [[ "$BEFORE" != "$AFTER" ]]; then
+  echo "FAIL: executor balances changed during the run" >&2
+  exit 1
+fi
+echo "PASS: executor balances unchanged"
