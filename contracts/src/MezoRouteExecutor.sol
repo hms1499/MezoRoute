@@ -2,6 +2,7 @@
 pragma solidity 0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IMezoRouteExecutor} from "./interfaces/IMezoRouteExecutor.sol";
@@ -78,6 +79,7 @@ contract MezoRouteExecutor is IMezoRouteExecutor, ReentrancyGuard {
 
         Balances memory start = _snapshot();
 
+        _tryPermit(address(pool), lpPermit);
         pool.safeTransferFrom(msg.sender, address(this), p.liquidityIn);
 
         pool.forceApprove(address(router), p.liquidityIn);
@@ -126,6 +128,7 @@ contract MezoRouteExecutor is IMezoRouteExecutor, ReentrancyGuard {
     {
         Balances memory start = _snapshot();
 
+        _tryPermit(address(musd), musdPermit);
         musd.safeTransferFrom(msg.sender, address(this), p.musdIn);
 
         uint256 fee = (p.musdIn * feeBps) / BPS;
@@ -191,6 +194,15 @@ contract MezoRouteExecutor is IMezoRouteExecutor, ReentrancyGuard {
         if (p.musdIn == 0) revert ZeroAmount();
         if (p.recipient == address(0)) revert ZeroAddress();
         if (block.timestamp > p.deadline) revert Expired();
+    }
+
+    /// @dev A front-run permit consumes the nonce and makes this call revert; the allowance it
+    ///      set is still in place, so the failure is ignored and transferFrom decides.
+    function _tryPermit(address token, Permit calldata permit_) private {
+        if (permit_.value == 0) return;
+        try IERC20Permit(token)
+            .permit(msg.sender, address(this), permit_.value, permit_.deadline, permit_.v, permit_.r, permit_.s) {}
+            catch {}
     }
 
     function _route(address from, address to) private view returns (ITigrisRouter.Route[] memory routes) {
