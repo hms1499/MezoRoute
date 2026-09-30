@@ -67,6 +67,7 @@ interface IMezoRouteExecutor {
 
     error ZeroAmount();
     error ZeroAddress();
+    error InvalidRecipient();
     error Expired();
     error NotBorrower();
     error BorrowAmountMismatch();

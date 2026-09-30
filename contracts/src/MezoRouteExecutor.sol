@@ -93,6 +93,7 @@ contract MezoRouteExecutor is IMezoRouteExecutor, ReentrancyGuard {
     function exit(ExitParams calldata p, Permit calldata lpPermit) external nonReentrant returns (uint256 musdOut) {
         if (p.liquidityIn == 0) revert ZeroAmount();
         if (p.recipient == address(0)) revert ZeroAddress();
+        _requireValidRecipient(p.recipient);
         if (block.timestamp > p.deadline) revert Expired();
 
         Balances memory start = _snapshot();
@@ -211,7 +212,14 @@ contract MezoRouteExecutor is IMezoRouteExecutor, ReentrancyGuard {
     function _validateEnter(EnterParams calldata p) private view {
         if (p.musdIn == 0) revert ZeroAmount();
         if (p.recipient == address(0)) revert ZeroAddress();
+        _requireValidRecipient(p.recipient);
         if (block.timestamp > p.deadline) revert Expired();
+    }
+
+    /// @dev Tokens sent to this contract or to the pool cannot be recovered by the user:
+    ///      the executor has no withdrawal path and the pool pays balances to the next caller.
+    function _requireValidRecipient(address recipient) private view {
+        if (recipient == address(this) || recipient == address(pool)) revert InvalidRecipient();
     }
 
     /// @dev A front-run permit consumes the nonce and makes this call revert; the allowance it

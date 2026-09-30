@@ -100,6 +100,20 @@ contract ExitTest is TigrisHarness {
         assertEq(IERC20(pool).balanceOf(user), lp);
     }
 
+    function test_exit_revertsWhenRecipientIsExecutor() public {
+        IMezoRouteExecutor.ExitParams memory p = _exitParams(lp, address(executor));
+        vm.expectRevert(IMezoRouteExecutor.InvalidRecipient.selector);
+        vm.prank(user);
+        executor.exit(p, _noPermit());
+    }
+
+    function test_exit_revertsWhenRecipientIsPool() public {
+        IMezoRouteExecutor.ExitParams memory p = _exitParams(lp, pool);
+        vm.expectRevert(IMezoRouteExecutor.InvalidRecipient.selector);
+        vm.prank(user);
+        executor.exit(p, _noPermit());
+    }
+
     function testFuzz_roundTrip_neverProfitsAndKeepsResidues(uint256 amount, uint256 donation) public {
         amount = bound(amount, 1e18, 50_000e18);
         donation = bound(donation, 0, 1_000e18);

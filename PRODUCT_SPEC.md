@@ -536,7 +536,7 @@ event Exited(
 
 ### 11.7 Custom errors
 
-`ZeroAmount()`, `ZeroAddress()`, `Expired()`, `NotBorrower()`, `BorrowAmountMismatch()`, `FeeTooHigh()`, `PoolMismatch()` (constructor: pool is not `router.poolFor(MUSD, BTC, volatile, factory)`), `InvalidSwapAmount()` (`musdToSwap` is zero or not below the post-fee amount), `InsufficientSwapOutput()`, `InsufficientLiquidityOutput()`, `InsufficientFinalOutput()`, `UnexpectedBalanceDecrease()`
+`ZeroAmount()`, `ZeroAddress()`, `InvalidRecipient()` (recipient is the executor or the pool, where funds would be unrecoverable), `Expired()`, `NotBorrower()`, `BorrowAmountMismatch()`, `FeeTooHigh()`, `PoolMismatch()` (constructor: pool is not `router.poolFor(MUSD, BTC, volatile, factory)`), `InvalidSwapAmount()` (`musdToSwap` is zero or not below the post-fee amount), `InsufficientSwapOutput()`, `InsufficientLiquidityOutput()`, `InsufficientFinalOutput()`, `UnexpectedBalanceDecrease()`
 
 ### 11.8 Security invariants
 

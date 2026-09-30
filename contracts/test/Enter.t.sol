@@ -189,4 +189,20 @@ contract EnterTest is TigrisHarness {
         vm.prank(user);
         assertGt(executor.enter(p, _noPermit()), 0);
     }
+
+    function test_enter_revertsWhenRecipientIsExecutor() public {
+        _fund(user, 1_000e18);
+        IMezoRouteExecutor.EnterParams memory p = _enterParams(1_000e18, address(executor));
+        vm.expectRevert(IMezoRouteExecutor.InvalidRecipient.selector);
+        vm.prank(user);
+        executor.enter(p, _noPermit());
+    }
+
+    function test_enter_revertsWhenRecipientIsPool() public {
+        _fund(user, 1_000e18);
+        IMezoRouteExecutor.EnterParams memory p = _enterParams(1_000e18, pool);
+        vm.expectRevert(IMezoRouteExecutor.InvalidRecipient.selector);
+        vm.prank(user);
+        executor.enter(p, _noPermit());
+    }
 }
