@@ -10,6 +10,14 @@ interface IMezoRouteExecutor {
         bytes32 s;
     }
 
+    struct Borrow {
+        uint256 amount;
+        address upperHint;
+        address lowerHint;
+        bytes signature;
+        uint256 deadline;
+    }
+
     struct EnterParams {
         uint256 musdIn;
         uint256 musdToSwap;
@@ -60,6 +68,8 @@ interface IMezoRouteExecutor {
     error ZeroAmount();
     error ZeroAddress();
     error Expired();
+    error NotBorrower();
+    error BorrowAmountMismatch();
     error FeeTooHigh();
     error PoolMismatch();
     error InvalidSwapAmount();
@@ -69,6 +79,10 @@ interface IMezoRouteExecutor {
     error UnexpectedBalanceDecrease();
 
     function enter(EnterParams calldata p, Permit calldata musdPermit) external returns (uint256 liquidityOut);
+
+    function borrowAndEnter(Borrow calldata b, Permit calldata musdPermit, EnterParams calldata p)
+        external
+        returns (uint256 liquidityOut);
 
     function exit(ExitParams calldata p, Permit calldata lpPermit) external returns (uint256 musdOut);
 }

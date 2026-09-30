@@ -72,6 +72,24 @@ contract MezoRouteExecutor is IMezoRouteExecutor, ReentrancyGuard {
     }
 
     /// @inheritdoc IMezoRouteExecutor
+    function borrowAndEnter(Borrow calldata b, Permit calldata musdPermit, EnterParams calldata p)
+        external
+        nonReentrant
+        returns (uint256 liquidityOut)
+    {
+        _validateEnter(p);
+        if (p.recipient != msg.sender) revert NotBorrower();
+        if (p.musdIn != b.amount) revert BorrowAmountMismatch();
+
+        // Borrower and recipient are both the caller: a front-run of this signature can only
+        // deliver the borrowed MUSD to the caller's own wallet.
+        borrowerOperationsSignatures.withdrawMUSDWithSignature(
+            b.amount, b.upperHint, b.lowerHint, msg.sender, msg.sender, b.signature, b.deadline
+        );
+        return _enter(p, musdPermit, b.amount);
+    }
+
+    /// @inheritdoc IMezoRouteExecutor
     function exit(ExitParams calldata p, Permit calldata lpPermit) external nonReentrant returns (uint256 musdOut) {
         if (p.liquidityIn == 0) revert ZeroAmount();
         if (p.recipient == address(0)) revert ZeroAddress();
