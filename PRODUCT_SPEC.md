@@ -1,9 +1,9 @@
 # MezoRoute — Product & Technical Specification
 
 **Hackathon:** Build with MUSD and MEZO — Bitcoin's Economic Layer (AKINDO WaveHack)  
-**Version:** 2.1  
+**Version:** 2.2  
 **Status:** Scope agreed for Wave 1 and Wave 2  
-**Track:** Track 1 — DeFi (Borrowing, Lending, Looping, and Yield)  
+**Tracks:** Track 2 — Access and Distribution (primary) and Track 1 — DeFi (Borrowing, Lending, Looping, and Yield)  
 **Network:** Mezo Testnet (chain ID `31611`) in Wave 1; Mezo mainnet (chain ID `31612`) added in Wave 2  
 **Team:** Solo builder  
 **Primary persona:** A Mezo borrower who holds, or can borrow, MUSD against BTC
@@ -19,7 +19,7 @@ The product is built across both Waves as one project:
 | Wave | Build period | Theme |
 |---|---|---|
 | Wave 1 | 16 Oct – 26 Oct 2026 (deadline 26 Oct 22:00) | Testnet MVP: two MUSD routes, one-transaction borrow → LP, combined exposure view |
-| Wave 2 | 2 Nov – 15 Nov 2026 | Hardening, mainnet deployment, CR/exposure alerts, judge feedback |
+| Wave 2 | 2 Nov – 15 Nov 2026 | BTC leverage loop and unwind in one transaction, mainnet deployment with caps, judge feedback |
 
 Work is organised as a task backlog (Section 16), not a day-by-day schedule. When the Wave 1 gate is met early, Wave 2 tasks that do not depend on judge feedback start immediately on a separate branch.
 
@@ -78,6 +78,12 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 | Mainnet basic MUSD/BTC pool is small (≈ 116.9k MUSD + 1.39 BTC) | `getReserves` | The price-impact gate limits deposit size; mainnet caps are conservative |
 | MUSD/mUSDC is imbalanced and MUSD/mUSDT has no liquidity on testnet | Reserve inspection | Not offered |
 | Generic Router zap returns pre-existing Router balances to the caller | Receipts and Router source | Executor uses exact swap/liquidity primitives with before/after delta isolation |
+| `adjustTroveWithSignature` adds collateral (`msg.value`) and changes debt in one call; the signature binds `collWithdrawal`, `debtChange`, `isDebtIncrease`, `assetAmount`, `borrower`, `recipient`, `nonce`, `deadline`; repayment is burned from the **caller**, withdrawn collateral goes to `recipient` | `BorrowerOperationsSignatures.sol`, `BorrowerOperations._moveTokensAndCollateralfromAdjustment` | Wave 2 leverage/unwind executor (Section 11.9) |
+| Native BTC and the BTC ERC-20 are the same balance | Pool native balance equals `BTC.balanceOf(pool)` on testnet and mainnet | A contract holding BTC from a swap can send it as `msg.value` |
+| Tigris pools support flash swaps (`Pool.swap(…, data)` calls `IPoolCallee.hook`) | Tigris `Pool.sol` | Leverage and unwind are one transaction without an external flash-loan provider |
+| BTC token supports EIP-2612 permit with domain `("BTC", "1", chainId, 0x7b7C…)` | `DOMAIN_SEPARATOR` matches; a signed permit succeeded and a tampered one failed via `eth_call` | Unwind pulls BTC with a permit; no approval transaction |
+| Borrowing fee 0.1%, MCR 110%, CCR 150%, minimum net debt 1,800 MUSD; neither network in recovery mode (TCR ≈ 299% testnet, ≈ 398% mainnet); BTC ≈ 83,250 MUSD | Contract reads, 30 Sep 2026 | Leverage preview includes the borrowing fee; CR safety floor for leverage is 200% |
+| Mainnet basic MUSD/BTC pool holds ≈ 1.39 BTC: ~1% price impact at ≈ $1.1k and ~3% at ≈ $3.4k per transaction | Reserve maths | Mainnet leverage is capped per transaction; testnet (≈ 1,300 BTC) is used for the full demo |
 | Mezo's BTC ERC-20 (`0x7b7C…`) is backed by a chain precompile: on an anvil fork even `balanceOf` reverts | Local fork spike | No fork tests. Contract tests run against the real Tigris Pool/PoolFactory/Router source deployed locally with mock tokens; real-chain behaviour is covered by a live testnet smoke script |
 | Mezo supports EVM **London** only; Tigris uses Solidity 0.8.24 and OpenZeppelin 4.9.0 | Tigris `hardhat.config.ts`, `package.json` | Compile with `evm_version = london`, Solidity 0.8.24, OpenZeppelin 4.9.0 |
 | Tigris LP tokens are clones whose EIP-712 domain name is empty: `("", "1", chainId, pool)` | `eip712Domain()` on the testnet pool matches `DOMAIN_SEPARATOR` | LP permit typed data uses an empty name; MUSD uses `("Mezo USD", "1")` |
@@ -139,12 +145,17 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 
 - Remaining error states from Section 13.
 
-### Wave 2
+### Wave 2 — Must
 
-- Full invariant suite and self-audit checklist.
-- Mainnet deployment with an immutable per-transaction amount cap.
-- Telegram alerts when collateral ratio or combined exposure crosses a user threshold.
+- `MezoRouteLeverage` executor: **Leverage** (flash-borrow BTC → add to Trove and borrow MUSD → repay the pool) and **Unwind** (flash-borrow MUSD → repay debt and withdraw BTC → repay the pool), each in one transaction.
+- Leverage and Unwind screens with target-CR input, preview (added collateral and debt, fees, price impact, resulting CR, liquidation price), and exposure panel integration.
+- Full invariant suite and self-audit checklist for both executors.
+- Mainnet deployment of both executors with immutable per-transaction caps.
 - Changes driven by Wave 1 judge feedback.
+
+### Wave 2 — Could
+
+- Telegram alerts when collateral ratio or combined exposure crosses a user threshold.
 
 ### Out of scope
 
@@ -153,7 +164,7 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 - Borrow → Stability Pool in one transaction (Stability Pool deposits are keyed to `msg.sender`).
 - Smart-account / ERC-1271 signers for `borrowAndEnter`.
 - Cross-chain MUSD, arbitrary tokens/pools/routes, concentrated liquidity.
-- Automated compounding or rebalancing.
+- Automated compounding, rebalancing, or automatic deleveraging (Leverage and Unwind are always user-initiated).
 - Custodial deposits, fiat on-ramp, governance, backend accounts.
 - Any APY figure not computed from verifiable on-chain data.
 
@@ -237,6 +248,22 @@ Precondition: user has a Trove and uses an EOA wallet.
 3. User calls `withdrawFromSP(amount)` directly.
 4. Receipt decodes `UserDepositChanged` and `CollateralGainWithdrawn`.
 
+### Flow I — Leverage (Wave 2)
+
+Precondition: user has a Trove and uses an EOA wallet.
+
+1. User picks a target collateral ratio (floor 200%) or an amount of BTC to add.
+2. App computes the BTC to flash-borrow, the MUSD debt increase (swap input + 0.3% pool fee + price impact + 0.1% borrowing fee), and shows resulting collateral, debt, CR, liquidation price, total BTC exposure, and drawdown scenarios.
+3. User signs two typed-data messages: `AdjustTrove` (add `B` BTC, borrow `X` MUSD, `recipient` = user) and a MUSD permit for `X` to the executor.
+4. User sends one `leverage` transaction. Receipt shows BTC added, MUSD debt added, fees, and the new Trove state.
+
+### Flow J — Unwind (Wave 2)
+
+1. User picks a target collateral ratio or a debt amount to repay (up to closing the leverage added by MezoRoute; closing the Trove itself stays in the Mezo app).
+2. App computes the MUSD to flash-borrow, the BTC collateral to withdraw to repay the pool, and shows the resulting Trove and exposure.
+3. User signs `AdjustTrove` (withdraw `W` BTC, repay `R` MUSD, `recipient` = user) and a BTC permit for the BTC needed to repay the pool.
+4. User sends one `unwind` transaction. Leftover BTC stays with the user.
+
 ## 8. Functional requirements
 
 | ID | Requirement | Acceptance criteria |
@@ -260,6 +287,8 @@ Precondition: user has a Trove and uses an EOA wallet.
 | FR-17 | Stability Pool route | Deposit, withdraw, compounded deposit, and pending BTC gain work against the live Stability Pool |
 | FR-18 | Execution fee | Entry fee is shown in bps and MUSD before signing, charged on-chain exactly as shown, emitted in `Entered`, and never charged on exit or on Stability Pool actions |
 | FR-19 | Route comparison | Both routes are compared for the entered amount with return source, risks, fee, and exposure effect |
+| FR-20 | Leverage (Wave 2) | One transaction adds flash-borrowed BTC to the user's Trove and borrows exactly enough MUSD to repay the pool; reverts if the resulting CR is below the user's minimum |
+| FR-21 | Unwind (Wave 2) | One transaction repays debt with flash-borrowed MUSD and withdraws only enough BTC to repay the pool plus the user's requested amount |
 
 ## 9. UX and screen specification
 
@@ -523,6 +552,37 @@ event Exited(
 11. The fee is charged only on entry, equals `musdIn × feeBps / 10_000`, never exceeds `MAX_FEE_BPS`, and is only ever sent to the immutable `feeRecipient`.
 12. (Wave 2, mainnet) An immutable per-transaction `musdIn` cap.
 
+### 11.9 Wave 2 — `MezoRouteLeverage`
+
+A second immutable executor; `MezoRouteExecutor` is not modified.
+
+**Dependencies:** MUSD, BTC, the MUSD/BTC pool (flash swaps), PoolFactory (fee), BorrowerOperationsSignatures, TroveManager + PriceFeed (post-condition CR check), fee configuration as in 11.1, and an immutable per-transaction cap.
+
+**Leverage (`leverage`)**
+
+1. Validate caller is the borrower, deadline, and `btcToAdd ≤ cap`.
+2. `pool.swap(btcOut = btcToAdd, to = executor, data)` → in `hook`:
+   1. Require `msg.sender == pool` and the call originated from this executor.
+   2. `adjustTroveWithSignature{value: btcToAdd}(0, debtIncrease, true, hints, borrower, recipient = borrower, signature, deadline)` — MUSD is minted to the **user**.
+   3. Permit + `transferFrom(user → executor, musdRequired)`, where `musdRequired` is the exact pool input for `btcToAdd` plus the MezoRoute fee.
+   4. Transfer `musdRequired − fee` to the pool; transfer the fee to `feeRecipient`.
+3. After the swap: require the user's Trove CR ≥ `minCollateralRatio` (user parameter, UI floor 200%); require executor balance deltas are zero; emit `Leveraged`.
+4. Any MUSD borrowed above `musdRequired` stays in the user's wallet and is reported in the event.
+
+**Unwind (`unwind`)**
+
+1. Validate caller, deadline, cap.
+2. `pool.swap(musdOut = debtToRepay, to = executor, data)` → in `hook`:
+   1. `adjustTroveWithSignature(collWithdrawal, debtToRepay, false, hints, borrower, recipient = borrower, signature, deadline)` — the executor is the caller, so the repayment is burned from the executor's flash-borrowed MUSD; withdrawn BTC goes to the **user**.
+   2. BTC permit + `transferFrom(user → executor, btcRequired)`; transfer `btcRequired` to the pool.
+3. Require executor balance deltas are zero; emit `Unwound`.
+
+**Why the recipient is always the user.** Anyone can submit an `AdjustTrove` signature. For a leverage signature, a front-runner must supply the bound `assetAmount` of BTC themselves — they gift collateral to the user. For an unwind signature with the executor as recipient, a front-runner could repay the debt and strand the user's withdrawn collateral in the executor; with the user as recipient, the collateral always reaches the user. The executor then reverts on the consumed nonce and nothing is lost.
+
+**Testing constraint.** Sending BTC as `msg.value` from a contract relies on Mezo's unified native/ERC-20 BTC balance and cannot be reproduced with a mock ERC-20. Local tests cover the flash-swap and accounting logic with a mock `BorrowerOperationsSignatures` funded via `vm.deal`; the `msg.value` path is proven by the live testnet smoke script before mainnet deployment.
+
+**Events:** `Leveraged(borrower, btcAdded, debtIncrease, musdToPool, fee, musdSurplus)`, `Unwound(borrower, debtRepaid, btcWithdrawn, btcToPool, btcToUser)`.
+
 ## 12. Frontend data and accounting rules
 
 ### Source of truth hierarchy
@@ -631,8 +691,8 @@ A `cast`-based script runs against the deployed executor: approve → `enter` �
 
 ### Wave 2 gate
 
-- Mainnet deployment with per-transaction cap, verified, with at least one real round trip.
-- Telegram alerts working end-to-end.
+- Leverage and Unwind work from the UI on testnet and pass the live smoke run.
+- Both executors deployed and verified on mainnet with per-transaction caps, with at least one real LP round trip and one leverage/unwind round trip.
 - Submission explicitly lists changes since `wave1`; Project readiness = "mainnet deployment".
 
 ## 16. Task backlog
@@ -645,6 +705,7 @@ Done on 30 Sep 2026: all contract addresses (Section 11.1), LP permit support, g
 
 Remaining:
 
+- (Done 30 Sep) BTC permit verified; `adjustTroveWithSignature` semantics, flash-swap hook, and fee/MCR parameters read.
 - Confirm whether `provideToSP` requires a prior MUSD allowance on testnet (read `_sendMUSDtoStabilityPool`, or simulate with `cast`).
 - Short user check: ask 3–5 Mezo Discord users where they put borrowed MUSD and how many steps it takes; keep 1–2 quotes for the deck.
 - Count the actions needed today in the Mezo app for borrow → LP (for the deck comparison).
@@ -687,10 +748,13 @@ T9–T10 carry the highest schedule risk (EIP-712 typed data, Trove hints) and f
 
 | ID | Task | Depends on |
 |---|---|---|
-| W2-1 | Full invariant suite and self-audit checklist | Wave 1 gate |
-| W2-2 | Mainnet deployment with immutable per-transaction cap | W2-1 |
-| W2-3 | Telegram CR/exposure alerts reusing the exposure module | T11 |
-| W2-4 | Judge feedback changes | Wave 1 results (~1 Nov) |
+| W2-1 | `MezoRouteLeverage`: leverage + unwind with mock-BOS tests | Wave 1 gate |
+| W2-2 | Leverage and Unwind screens | W2-1, T11 |
+| W2-3 | Live testnet smoke run of leverage and unwind | W2-1 |
+| W2-4 | Full invariant suite and self-audit checklist (both executors) | W2-1 |
+| W2-5 | Mainnet deployment of both executors with immutable caps | W2-3, W2-4 |
+| W2-6 | Judge feedback changes | Wave 1 results (~1 Nov) |
+| W2-7 (Could) | Telegram CR/exposure alerts reusing the exposure module | T11 |
 
 Wave 2 work must not be included in the Wave 1 submission.
 
@@ -720,6 +784,9 @@ Wave 2 work must not be included in the Wave 1 submission.
 | Incorrect profit display | Event-based accounting |
 | Pre-existing contract residues | Before/after delta isolation |
 | Unaudited contract on mainnet (Wave 2) | Invariant suite, self-audit, immutable per-transaction cap |
+| Leverage amplifies liquidation risk | CR floor 200% in UI; on-chain `minCollateralRatio` check; liquidation price and drawdown scenarios in preview; Unwind always available |
+| Thin mainnet BTC liquidity for leverage | Small per-transaction cap; price-impact gate; full-size demo on testnet |
+| `msg.value` path not testable locally | Mock-based tests for logic; mandatory live testnet smoke run before mainnet |
 | Solo schedule overrun | Task tiers with explicit cut order |
 | RPC instability | Retryable reads, clear transaction state |
 
@@ -736,13 +803,13 @@ Wave 2 work must not be included in the Wave 1 submission.
 ### 19.2 Submission form
 
 - **Category:** Borrowing and yield execution
-- **TL;DR:** MezoRoute shows Mezo borrowers where to put their MUSD — LP or Stability Pool — by what it does to their BTC risk, and executes borrow → LP in one safe transaction.
-- **Track:** Track 1 — DeFi
+- **TL;DR:** MezoRoute shows Mezo borrowers where to put their MUSD — LP or Stability Pool — by what it does to their BTC risk, and executes borrow → LP (and, in Wave 2, BTC leverage loops) in one safe transaction.
+- **Tracks:** Track 2 (primary story: discover, compare, and access MUSD destinations) and Track 1 (borrow → deploy strategy; Wave 2 looping)
 - **Chain:** Mezo testnet (Wave 1), Mezo mainnet (Wave 2)
 - **Business model:** disclosed execution fee in bps on LP entry; no exit fee (Section 19.1).
 - **MUSD/MEZO usage:** borrows MUSD through `BorrowerOperationsSignatures`, deploys it into the MUSD/BTC pool, and supports Stability Pool deposits; MEZO is not integrated because no MEZO-paying surface exists for this use case (Section 1).
 - **Future milestones:**
-  1. Wave 2 (by 15 Nov): mainnet deployment and Telegram CR/exposure alerts.
+  1. Wave 2 (by 15 Nov): one-transaction BTC leverage and unwind on MUSD Troves, and mainnet deployment with caps.
   2. After the hackathon: additional routes as separate executors, and Trove opening in the same flow.
   3. After the hackathon: smart-account support and an external audit before raising caps.
 
@@ -780,7 +847,8 @@ Wave 2 work must not be included in the Wave 1 submission.
 
 - Final execution fee value (proposed 10 bps) and fee recipient address.
 - Final price-impact hard limit and CR safety floor after integration tests.
-- Mainnet per-transaction cap value.
+- Mainnet per-transaction cap values for both executors.
+- Leverage execution fee (proposed: same 10 bps on the MUSD borrowed).
 - Whether Mezo announces MEZO utility for integrators during the event.
 
 ---
