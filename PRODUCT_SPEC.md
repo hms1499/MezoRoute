@@ -1,10 +1,10 @@
 # MezoRoute — Product & Technical Specification
 
 **Hackathon:** Build with MUSD and MEZO — Bitcoin's Economic Layer (AKINDO WaveHack)  
-**Version:** 2.2  
+**Version:** 2.3  
 **Status:** Scope agreed for Wave 1 and Wave 2  
 **Tracks:** Track 2 — Access and Distribution (primary) and Track 1 — DeFi (Borrowing, Lending, Looping, and Yield)  
-**Network:** Mezo Testnet (chain ID `31611`) in Wave 1; Mezo mainnet (chain ID `31612`) added in Wave 2  
+**Networks:** Mezo testnet (chain ID `31611`) and Mezo mainnet (chain ID `31612`, capped) in Wave 1  
 **Team:** Solo builder  
 **Primary persona:** A Mezo borrower who holds, or can borrow, MUSD against BTC
 
@@ -18,8 +18,8 @@ The product is built across both Waves as one project:
 
 | Wave | Build period | Theme |
 |---|---|---|
-| Wave 1 | 16 Oct – 26 Oct 2026 (deadline 26 Oct 22:00) | Testnet MVP: two MUSD routes, one-transaction borrow → LP, combined exposure view |
-| Wave 2 | 2 Nov – 15 Nov 2026 | BTC leverage loop and unwind in one transaction, mainnet deployment with caps, judge feedback |
+| Wave 1 | now – 26 Oct 2026 (deadline 26 Oct 22:00) | **Market MVP**: two MUSD routes, one-transaction borrow → LP, combined exposure view, LP fee claims; live on testnet and on mainnet with a per-transaction cap; EVM and BTC wallets via Mezo Passport |
+| Wave 2 | 2 Nov – 15 Nov 2026 | BTC leverage loop and unwind in one transaction (testnet and capped mainnet), judge feedback |
 
 Work is organised as a task backlog (Section 16), not a day-by-day schedule. When the Wave 1 gate is met early, Wave 2 tasks that do not depend on judge feedback start immediately on a separate branch.
 
@@ -53,7 +53,7 @@ A retail DeFi user who:
 - understands deposit, withdraw, collateral ratio, and slippage at a basic level;
 - does not want to calculate pool ratios, Trove hints, or read transaction logs;
 - wants transparent, non-custodial control rather than a managed vault;
-- uses an EVM wallet (e.g. MetaMask) on desktop.
+- uses an EVM wallet (e.g. MetaMask) or a Bitcoin wallet connected through Mezo Passport, on desktop or mobile.
 
 ### Job to be done
 
@@ -87,6 +87,9 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 | Mezo's BTC ERC-20 (`0x7b7C…`) is backed by a chain precompile: on an anvil fork even `balanceOf` reverts | Local fork spike | No fork tests. Contract tests run against the real Tigris Pool/PoolFactory/Router source deployed locally with mock tokens; real-chain behaviour is covered by a live testnet smoke script |
 | Mezo supports EVM **London** only; Tigris uses Solidity 0.8.24 and OpenZeppelin 4.9.0 | Tigris `hardhat.config.ts`, `package.json` | Compile with `evm_version = london`, Solidity 0.8.24, OpenZeppelin 4.9.0 |
 | Tigris LP tokens are clones whose EIP-712 domain name is empty: `("", "1", chainId, pool)` | `eip712Domain()` on the testnet pool matches `DOMAIN_SEPARATOR` | LP permit typed data uses an empty name; MUSD uses `("Mezo USD", "1")` |
+| Mezo Passport (`@mezo-org/passport` 0.17.2) wraps RainbowKit/wagmi/viem and connects Bitcoin wallets through OrangeKit smart accounts; peer dependency React 18 | npm metadata | Wallet layer is Passport; BTC-wallet users are smart accounts (no `ecrecover`), so they use approvals instead of permits and cannot use Borrow & Deploy; Next.js 14 (React 18) |
+| Testnet MUSD/BTC pool fee is 4 bps; mainnet default volatile fee is 30 bps | `PoolFactory.getFee(pool, false)` | Quote engine reads the fee from chain; never hardcoded |
+| Tigris LP trading fees accrue in `PoolFees` and are paid only when the LP holder calls `Pool.claimFees()` | Tigris `Pool.sol` | Positions screen shows claimable fees (via `eth_call` of `claimFees` from the user) and a Claim action — the LP route's real yield on mainnet |
 | Borrow authorisation is standard EIP-712 `WithdrawMUSD(uint256 amount,address borrower,address recipient,uint256 nonce,uint256 deadline)` in domain `("BorrowerOperationsSignatures", "1")` | A `cast wallet sign --data` signature passed verification on the live contract via `eth_call` (failed later only on "Trove does not exist"); a tampered amount failed with "Invalid signature" | Frontend uses `signTypedData` with this type; nonce from `getNonce(borrower)` |
 
 ## 5. Goals and success criteria
@@ -119,38 +122,34 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 
 ## 6. Scope
 
-### Wave 1 — Must (required to be eligible)
+### Wave 1 — Must (MVP)
 
-- Wallet connection and Mezo testnet network handling.
-- MUSD, native BTC gas, and LP balances.
-- Trove summary (collateral, debt, collateral ratio) when a Trove exists.
-- MUSD/BTC LP route: live entry and exit quotes; atomic entry and exit through `MezoRouteExecutor`.
-- Position view.
-- Event-based receipts with explorer links.
-- Wrong-network, rejected-signature, and slippage-revert states.
-- README, deck, 2-minute video, submission form.
+- Contract hardening for mainnet: immutable per-transaction cap `maxMusdIn` on entry (none on exit), constructor check `factory == router.defaultFactory()`, the review's missing tests, and a written self-audit checklist; redeploy on testnet.
+- Mainnet deployment of `MezoRouteExecutor` (cap 1,000 MUSD, fee 10 bps), source-verified.
+- Frontend on Next.js 14 with Mezo Passport (EVM and Bitcoin wallets), testnet/mainnet switch, deployed publicly on Vercel.
+- Dashboard: readiness state, Trove card, exposure panel with drawdown scenarios, route comparison, positions summary.
+- LP route: optimal-swap quote engine, Deposit MUSD (permit, or approval for smart accounts), exit, receipts.
+- Borrow & Deploy (EOA wallets): Trove hints, EIP-712 borrow authorisation, CR safety floor.
+- Stability Pool route: deposit, position, withdraw, receipts.
+- Positions: LP underlying, event-based cost basis, **claimable LP fees and Claim**, Stability Pool deposit and gains.
+- Error decoding with recovery actions for every state in Section 13.
+- README, deck, 2-minute video, submission form (Project readiness = mainnet deployment).
 
-### Wave 1 — Should (scoring features, in priority order)
+### Wave 1 — Should
 
-- Permit-based entry and exit (no approval transactions).
-- `borrowAndEnter`: borrow → LP in one transaction.
-- Borrow & Deploy screen.
-- Exposure module and drawdown panel.
-- Stability Pool route: deposit, position (compounded deposit, pending BTC gain), withdraw.
-- Route comparison view.
-- Basic fuzz and invariant tests.
-- Read-only mainnet reference card: MUSD/BTC pool reserves, Stability Pool deposits and share of MUSD supply.
+- Mainnet reference card on testnet (pool reserves, Stability Pool deposits and share of supply).
+- Quote-accuracy script comparing frontend quotes with live `Entered` events.
 
 ### Wave 1 — Could (cut first if late)
 
-- Remaining error states from Section 13.
+- Playwright end-to-end run on live testnet with an injected test-key provider (enter → exit).
 
 ### Wave 2 — Must
 
 - `MezoRouteLeverage` executor: **Leverage** (flash-borrow BTC → add to Trove and borrow MUSD → repay the pool) and **Unwind** (flash-borrow MUSD → repay debt and withdraw BTC → repay the pool), each in one transaction.
 - Leverage and Unwind screens with target-CR input, preview (added collateral and debt, fees, price impact, resulting CR, liquidation price), and exposure panel integration.
-- Full invariant suite and self-audit checklist for both executors.
-- Mainnet deployment of both executors with immutable per-transaction caps.
+- Invariant suite and self-audit checklist for `MezoRouteLeverage`.
+- Mainnet deployment of `MezoRouteLeverage` with an immutable per-transaction cap.
 - Changes driven by Wave 1 judge feedback.
 
 ### Wave 2 — Could
@@ -162,7 +161,7 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 - Gauge staking and MEZO rewards (no MEZO-paying gauge exists; Section 4).
 - Opening a new Trove through the executor.
 - Borrow → Stability Pool in one transaction (Stability Pool deposits are keyed to `msg.sender`).
-- Smart-account / ERC-1271 signers for `borrowAndEnter`.
+- Smart-account / ERC-1271 signers for `borrowAndEnter` and permits (smart accounts use approvals; Borrow & Deploy is unavailable to them).
 - Cross-chain MUSD, arbitrary tokens/pools/routes, concentrated liquidity.
 - Automated compounding, rebalancing, or automatic deleveraging (Leverage and Unwind are always user-initiated).
 - Custodial deposits, fiat on-ramp, governance, backend accounts.
@@ -172,7 +171,7 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 
 ### Flow A — Connect and assess readiness
 
-1. User connects an EVM wallet; the app requests Mezo testnet.
+1. User connects an EVM or Bitcoin wallet through Mezo Passport and picks Testnet or Mainnet; the app detects whether the account is an EOA or a smart account (`getCode`).
 2. App reads wallet MUSD, BTC gas, LP balance, Stability Pool deposit and pending gain, and Trove state.
 3. App shows one of:
    - **Ready:** sufficient MUSD and gas;
@@ -202,19 +201,19 @@ The app never blocks use of wallet-held MUSD because of Trove health, but the wa
 
 1. App fetches fresh reserves and quotes, and shows input MUSD, portion swapped, expected BTC, expected MUSD and BTC deposited, expected and minimum LP, execution fee (bps and MUSD), estimated execution loss/price impact, gas, quote timestamp and expiry, exposure before/after, and risks.
 2. App blocks confirmation on zero input, insufficient balance or gas, expired quote, price impact above the hard limit, or chain/address mismatch.
-3. User signs a MUSD permit (fallback: exact approval transaction if the wallet cannot sign typed data).
+3. EOA: user signs a MUSD permit. Smart account (Bitcoin wallet): user sends an exact approval transaction.
 4. User sends `enter`.
 5. Progress: awaiting signature → submitted → confirming → confirmed → receipt.
 6. Receipt shows only `Entered` event values, gas used, and an explorer link.
 
 ### Flow D — Borrow & Deploy into LP
 
-Precondition: user has a Trove and uses an EOA wallet.
+Precondition: user has a Trove and uses an EOA wallet (the option is shown disabled with an explanation for smart accounts).
 
 1. User enters an MUSD amount to borrow and deploy.
 2. App shows everything in Flow C plus new debt, resulting collateral ratio, and the protocol minimum collateral ratio.
 3. App blocks confirmation if the resulting collateral ratio falls below the UI safety floor (default: MCR + 40 percentage points, configurable in constants).
-4. App computes Trove hints and reads the user's signature nonce.
+4. App computes Trove hints (`HintHelpers.getApproxHint` + `SortedTroves.findInsertPosition`) and reads the user's signature nonce.
 5. User signs two typed-data messages: the borrow authorisation (`recipient` = the user's own address) and the MUSD permit to the executor.
 6. User sends one `borrowAndEnter` transaction.
 7. Receipt shows borrowed amount, fee, LP minted, residues, and the new Trove state read after confirmation.
@@ -222,7 +221,7 @@ Precondition: user has a Trove and uses an EOA wallet.
 ### Flow E — Deposit into the Stability Pool
 
 1. User enters an MUSD amount; app shows current deposit, pending BTC gain (which will be paid out on this deposit), exposure before/after, and risks.
-2. User approves nothing: `provideToSP` pulls MUSD from `msg.sender` inside the protocol. (If testing shows an allowance is required, an exact approval is added.)
+2. User sends an exact MUSD approval to the Stability Pool: `provideToSP` pulls MUSD with `transferFrom` (verified in `StabilityPool._sendMUSDtoStabilityPool`), and the pool has no permit entry point.
 3. User calls `StabilityPool.provideToSP(amount)` directly.
 4. Receipt decodes `UserDepositChanged` and `CollateralGainWithdrawn` (BTC gain paid and MUSD loss realised).
 
@@ -237,9 +236,14 @@ Precondition: user has a Trove and uses an EOA wallet.
 
 1. User selects an LP amount or **Max**.
 2. App quotes removal amounts and the BTC→MUSD swap; shows expected and minimum MUSD, price impact, and gas.
-3. User signs an LP permit (fallback: exact approval).
+3. EOA: user signs an LP permit. Smart account: exact approval transaction.
 4. User sends `exit`.
 5. Receipt shows realised, event-attributable MUSD output. No fee is charged on exit.
+
+### Flow G2 — Claim LP trading fees
+
+1. Positions screen shows claimable MUSD and BTC fees, read by simulating `Pool.claimFees()` from the user's address.
+2. User calls `Pool.claimFees()` directly; the receipt decodes the pool's `Claim` event.
 
 ### Flow H — Withdraw from the Stability Pool
 
@@ -288,42 +292,28 @@ Precondition: user has a Trove and uses an EOA wallet.
 | FR-18 | Execution fee | Entry fee is shown in bps and MUSD before signing, charged on-chain exactly as shown, emitted in `Entered`, and never charged on exit or on Stability Pool actions |
 | FR-19 | Route comparison | Both routes are compared for the entered amount with return source, risks, fee, and exposure effect |
 | FR-20 | Leverage (Wave 2) | One transaction adds flash-borrowed BTC to the user's Trove and borrows exactly enough MUSD to repay the pool; reverts if the resulting CR is below the user's minimum |
+| FR-22 | Mainnet cap | Entry above `maxMusdIn` is blocked in the UI and reverts on-chain; exit is never capped |
+| FR-23 | Wallet capabilities | EOAs get permits and Borrow & Deploy; smart accounts get exact approvals and a disabled Borrow & Deploy with an explanation |
+| FR-24 | LP fee claims | Claimable fees are shown per position and claimable in one transaction |
 | FR-21 | Unwind (Wave 2) | One transaction repays debt with flash-borrowed MUSD and withdraws only enough BTC to repay the pool plus the user's requested amount |
 
 ## 9. UX and screen specification
 
-### Screen 1 — Dashboard
+**Visual direction: Calm Finance** — light background, rounded cards, generous whitespace, plain-language labels ("Earn swap fees", "Back the system"), one accent colour; responsive down to phone width.
 
-- Wallet/network control; MUSD, BTC gas balances.
-- Trove card with collateral ratio.
-- Exposure panel (Trove BTC, LP BTC, Stability Pool pending BTC; drawdown scenarios).
-- Amount input and **route comparison** (LP vs Stability Pool).
-- Current positions summary for both routes.
-- Mainnet reference card — labelled "Mainnet · reference only".
+**Navigation: one page per step.** Every page shares a header (logo, Testnet/Mainnet switch, Passport wallet button). On mainnet a persistent banner reads "Unaudited · max 1,000 MUSD per transaction". Every error toast carries a recovery action (Section 13).
 
-Primary CTA: **Choose route**
-
-### Screen 2 — Route detail
-
-- LP: amount input with Max; **Deposit MUSD** or **Borrow & Deploy** toggle; "What happens" allocation; expected outcome; cost, fee, and slippage; exposure before/after; risks; quote expiry.
-- Stability Pool: amount input; current deposit and pending gain; exposure before/after; risks.
-
-Primary CTA: **Review transaction**
-
-### Screen 3 — Confirmation (LP route)
-
-Must state the exact MUSD authorised (and borrowed, if any), the execution fee, expected and minimum LP, maximum deviation, deadline, resulting collateral ratio, number of signatures remaining, and a no-custody statement.
-
-Primary CTA by state: **Sign permit** / **Sign borrow authorisation** / **Refresh quote** / **Enter position**
-
-### Screen 4 — Transaction progress and receipt
-
-States: awaiting signature, submitted, confirming, confirmed, failed. The receipt includes event fields, gas, block, and explorer link.
-
-### Screen 5 — Positions and exit
-
-- LP: balance, estimated underlying MUSD/BTC, attributable cost basis, estimated exit value, exit selector, exit quote and risks. CTA: **Review exit**.
-- Stability Pool: compounded deposit, pending BTC gain, withdraw selector. CTA: **Withdraw**.
+| # | Page | Route | Content | Primary CTA |
+|---|---|---|---|---|
+| 1 | Dashboard | `/` | Readiness state; Trove card (collateral, debt, CR); exposure panel (Trove BTC, LP BTC, SP pending BTC; BTC −10/20/30%); amount input + LP vs Stability Pool comparison; positions summary; testnet-only mainnet reference card | Choose route |
+| 2a | LP route | `/route/lp` | Deposit MUSD / Borrow & Deploy toggle (disabled for smart accounts); "what happens"; expected outcome; fee, slippage, price impact; resulting CR when borrowing; exposure before/after; risks; 60 s quote expiry | Review |
+| 3a | LP confirm | `/route/lp/confirm` | Exact amounts, minimums, deadline; stepper: sign permit (smart account: approve) → sign borrow (if any) → send; no-custody statement | Sign / Send |
+| 2b | Stability Pool | `/route/stability-pool` | Current deposit and pending BTC gain; exposure before/after; risks | Review |
+| 3b | SP confirm | `/route/stability-pool/confirm` | Exact approval (skipped if allowance suffices) → `provideToSP` | Approve / Send |
+| 4 | Receipt | `/tx/[hash]` | Submitted → confirming → confirmed; event-derived values; gas, block, explorer link | View positions |
+| 5 | Positions | `/positions` | LP: balance, underlying, cost basis, estimated exit value, **claimable fees + Claim**; SP: compounded deposit, BTC gain | Exit / Withdraw / Claim |
+| 6a | Exit LP | `/positions/lp/exit` | Percentage or Max; quote; minimum MUSD; permit (smart account: approve) → send | Exit |
+| 6b | Withdraw SP | `/positions/stability-pool/withdraw` | Simulated first; blocked state when a Trove is under-collateralised | Withdraw |
 
 ### Copy rules
 
@@ -356,8 +346,8 @@ flowchart LR
 ### Stack
 
 - **Contracts:** Solidity 0.8.24, Foundry, OpenZeppelin Contracts 4.9.0 (same as Tigris), `evm_version = london`, `via_ir = true`; tests against locally deployed Tigris contracts (pinned commit `0a3b5e8`).
-- **Frontend:** Next.js (static export), TypeScript, wagmi + viem, TanStack Query, Tailwind CSS, Vitest.
-- **Hosting:** static hosting; no backend in Wave 1. The Wave 2 Telegram alert service is the only server component.
+- **Frontend:** Next.js 14 (App Router, static export), React 18 (required by Mezo Passport), TypeScript, `@mezo-org/passport` (RainbowKit), wagmi 2, viem 2, TanStack Query 5, Tailwind CSS, Vitest.
+- **Hosting:** Vercel (static); no backend. The Wave 2 Telegram alert service would be the only server component.
 
 ### Frontend module layout
 
@@ -368,7 +358,11 @@ src/lib/routes/stability-pool/ reads, calls, receipt decoding
 src/lib/exposure/              pure functions: total BTC exposure, drawdown scenarios
 src/lib/trove/                 Trove reads, hints, signature nonce, EIP-712 typed data
 src/lib/tx/                    transaction state machine
-src/app/                       screens
+src/lib/wallet/                Passport setup, EOA vs smart-account capabilities (permit vs approve, Borrow & Deploy)
+src/lib/quote/                 optimal-swap maths, price impact, minimums, expiry (bigint)
+src/lib/errors/                revert decoding → user message + recovery action
+src/lib/history/               chunked event queries for cost basis (localStorage cache)
+src/app/                       pages (Section 9)
 ```
 
 Each route lives in its own directory so later routes are added rather than modifying existing ones.
@@ -381,7 +375,7 @@ The executor serves only the LP route. The Stability Pool route calls Mezo contr
 
 All dependencies are immutable constructor arguments; the executor accepts no user-supplied addresses other than `recipient`.
 
-| Dependency | Mezo testnet | Mezo mainnet (Wave 2) |
+| Dependency | Mezo testnet | Mezo mainnet |
 |---|---|---|
 | MUSD | `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503` | `0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186` |
 | BTC (ERC-20 interface) | `0x7b7C000000000000000000000000000000000000` | `0x7b7C000000000000000000000000000000000000` |
@@ -389,7 +383,7 @@ All dependencies are immutable constructor arguments; the executor accepts no us
 | PoolFactory | `0x4947243CC818b627A5D06d14C4eCe7398A23Ce1A` | `0x83FE469C636C4081b87bA5b3Ae9991c6Ed104248` |
 | MUSD/BTC pool (volatile) | `0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9` | `0x52e604c44417233b6CcEDDDc0d640A405Caacefb` |
 | BorrowerOperationsSignatures | `0xD757e3646AF370b15f32EB557F0F8380Df7D639e` | `0xB57ab578BF20b3e318f3EFAA587C51DBccE5df7a` |
-| **MezoRouteExecutor (deployed, verified)** | `0x10E6334d2716FDE5f2bEb418C66fD7C9c1021fB9` | Wave 2 (deploy script refuses mainnet until the cap exists) |
+| **MezoRouteExecutor (deployed, verified)** | `0x10E6334d2716FDE5f2bEb418C66fD7C9c1021fB9` (pre-cap; replaced by the capped build) | Wave 1, after the cap is added |
 
 Frontend-only reads and direct calls:
 
@@ -409,6 +403,9 @@ Fee configuration is also immutable:
 | `feeBps` | Set at deployment; proposed 10 bps (0.10%) |
 | `MAX_FEE_BPS` | Constant 50 bps; constructor reverts above it |
 | `feeRecipient` | Set at deployment; non-zero |
+| `maxMusdIn` | Immutable per-transaction entry cap; mainnet 1,000 MUSD, testnet 1,000,000 MUSD; applies to `enter` and `borrowAndEnter`, never to `exit` |
+
+The constructor also requires `router.defaultFactory() == factory`, because `addLiquidity`/`removeLiquidity` always use the Router's default factory.
 
 Changing the fee requires deploying a new executor; the frontend allowlist pins the executor address and its fee.
 
@@ -536,7 +533,7 @@ event Exited(
 
 ### 11.7 Custom errors
 
-`ZeroAmount()`, `ZeroAddress()`, `InvalidRecipient()` (recipient is the executor or the pool, where funds would be unrecoverable), `Expired()`, `NotBorrower()`, `BorrowAmountMismatch()`, `FeeTooHigh()`, `PoolMismatch()` (constructor: pool is not `router.poolFor(MUSD, BTC, volatile, factory)`), `InvalidSwapAmount()` (`musdToSwap` is zero or not below the post-fee amount), `InsufficientSwapOutput()`, `InsufficientLiquidityOutput()`, `InsufficientFinalOutput()`, `UnexpectedBalanceDecrease()`
+`ZeroAmount()`, `ZeroAddress()`, `AmountAboveCap()`, `InvalidRecipient()` (recipient is the executor or the pool, where funds would be unrecoverable), `Expired()`, `NotBorrower()`, `BorrowAmountMismatch()`, `FeeTooHigh()`, `PoolMismatch()` (constructor: pool is not `router.poolFor(MUSD, BTC, volatile, factory)`), `InvalidSwapAmount()` (`musdToSwap` is zero or not below the post-fee amount), `InsufficientSwapOutput()`, `InsufficientLiquidityOutput()`, `InsufficientFinalOutput()`, `UnexpectedBalanceDecrease()`
 
 ### 11.8 Security invariants
 
@@ -551,7 +548,7 @@ event Exited(
 9. Borrowed MUSD is only ever sent to the borrower; `borrowAndEnter` is callable only by the borrower.
 10. No upgrade proxy, owner, pause, or admin withdrawal path.
 11. The fee is charged only on entry, equals `musdIn × feeBps / 10_000`, never exceeds `MAX_FEE_BPS`, and is only ever sent to the immutable `feeRecipient`.
-12. (Wave 2, mainnet) An immutable per-transaction `musdIn` cap.
+12. An immutable per-transaction `musdIn` cap on entry (Wave 1, required before mainnet).
 
 ### 11.9 Wave 2 — `MezoRouteLeverage`
 
@@ -615,6 +612,21 @@ Inputs: Trove collateral (BTC) and debt (MUSD); BTC price from the MUSD `PriceFe
 
 The exposure module is pure TypeScript with unit tests; it is reused by the Wave 2 alert service.
 
+### LP quote engine
+
+- Pool fee `f` is read from `PoolFactory.getFee(pool, false)` (testnet 4 bps, mainnet 30 bps).
+- Optimal MUSD to swap for a single-sided deposit of net amount `a` (after the MezoRoute fee) into reserve `r` of MUSD: `s = (√(r²(2−f)² + 4(1−f)·a·r) − r(2−f)) / (2(1−f))`, computed in `bigint` with Newton's integer square root.
+- Expected BTC, deposited amounts, and LP are computed from post-swap reserves; LP = `min(musdAdded·supply/rMUSD', btcAdded·supply/rBTC')`.
+- Minimums = expected × (1 − slippage); price impact is measured against the pre-trade mid price.
+- Exit: `quoteRemoveLiquidity`, then the BTC→MUSD swap on post-removal reserves.
+- Every quote records its block number and timestamp.
+
+### Positions data
+
+- Cost basis history: `Entered`/`Exited` logs filtered by the indexed `recipient`, and Stability Pool `UserDepositChanged`/`CollateralGainWithdrawn` logs by depositor, queried in block chunks from each contract's deployment block; cached in `localStorage` as a convenience only.
+- Claimable LP fees: `eth_call` of `Pool.claimFees()` with `from = user`.
+- Stability Pool: `getCompoundedMUSDDeposit`, `getDepositorCollateralGain`.
+
 ### Quote expiration, slippage, and limits
 
 - Quote lifetime 60 seconds; transaction and signature deadline now + 10 minutes.
@@ -634,6 +646,8 @@ The exposure module is pure TypeScript with unit tests; it is reused by the Wave
 | Smart-account wallet on Borrow & Deploy | "Borrow & Deploy needs a standard wallet signature." | Use Deposit MUSD |
 | Borrow signature already used | "Your borrow authorisation was already used; the MUSD is in your wallet." | Deposit MUSD |
 | Stability Pool withdrawal blocked | "Withdrawals are paused while some Troves are under-collateralised." | Retry later |
+| Amount above mainnet cap | "Mainnet deposits are limited to 1,000 MUSD per transaction while unaudited." | Reduce amount |
+| Smart-account wallet needs an approval | "Your Bitcoin wallet approves the exact amount in a separate transaction." | Approve |
 | Quote expired | "Pool state changed; refresh your quote." | Refresh quote |
 | Price impact too high | "This trade would lose too much value at current liquidity." | Reduce amount |
 | User rejected signature | "Transaction was not signed." | Try again |
@@ -673,27 +687,36 @@ A `cast`-based script runs against the deployed executor: approve → `enter` �
 
 ### Frontend tests (Vitest)
 
-- Exposure module (all formulas and edge cases: no Trove, no LP, no Stability Pool deposit, zero debt).
-- Route comparison output for a given amount.
+- Optimal-swap and quote maths, checked against numbers produced by the Tigris harness.
+- Exposure module (no Trove, no LP, no Stability Pool deposit, zero debt).
+- Fee calculation, route comparison output, wallet-capability logic.
+- Error decoder (Router and executor custom errors, OZ4 strings, OZ5 `ERC20InsufficientAllowance`, BOS and Stability Pool strings).
 - Transaction state machine.
-- Receipt decoding for `Entered`, `Exited`, `UserDepositChanged`, `CollateralGainWithdrawn`.
+- Receipt decoding for `Entered`, `Exited`, `UserDepositChanged`, `CollateralGainWithdrawn`, pool `Claim`, using real logs recorded from the testnet smoke transactions as fixtures.
+
+### Live checks
+
+- Quote-accuracy script: frontend quote vs the `Entered` event of a live testnet transaction.
+- Manual QA checklist on testnet with an EOA wallet and a Bitcoin wallet through Passport, and a capped mainnet round trip.
+- (Could) Playwright on live testnet with an injected provider signing with the `.env` test key.
 
 ## 15. Definition of done
 
 ### Wave 1 gate
 
-- `MezoRouteExecutor` deployed and source-verified on Mezo testnet.
-- All Must and Should tasks complete; contract tests pass.
-- A fresh wallet completes LP deposit → exit, borrow & deploy, and Stability Pool deposit → withdraw from the UI.
-- README includes setup, architecture, deployed addresses, limitations (including why MEZO is not integrated), and demo links.
-- 2-minute video recorded from the final deployment.
+- Capped `MezoRouteExecutor` deployed and source-verified on testnet and mainnet; contract tests pass; self-audit checklist committed.
+- Frontend deployed on Vercel; every page in Section 9 works on testnet with an EOA wallet and with a Bitcoin wallet through Passport.
+- Mainnet: at least one real LP round trip (enter → claim fees → exit) and one Stability Pool deposit/withdraw through the UI.
+- Frontend unit tests pass; quote-accuracy check within slippage tolerance.
+- README includes setup, architecture, deployed addresses, limitations (including why MEZO is not integrated and the unaudited cap), and demo links.
+- 2-minute video recorded from the production deployment.
 - Repository tagged `wave1`; submission sent before 26 Oct 22:00 with one day of buffer.
-- Submission form: Project readiness = "testnet deployment".
+- Submission form: Project readiness = "mainnet deployment".
 
 ### Wave 2 gate
 
 - Leverage and Unwind work from the UI on testnet and pass the live smoke run.
-- Both executors deployed and verified on mainnet with per-transaction caps, with at least one real LP round trip and one leverage/unwind round trip.
+- `MezoRouteLeverage` deployed and verified on mainnet with a per-transaction cap, with at least one real leverage/unwind round trip.
 - Submission explicitly lists changes since `wave1`; Project readiness = "mainnet deployment".
 
 ## 16. Task backlog
@@ -707,43 +730,33 @@ Done on 30 Sep 2026: all contract addresses (Section 11.1), LP permit support, g
 Remaining:
 
 - (Done 30 Sep) BTC permit verified; `adjustTroveWithSignature` semantics, flash-swap hook, and fee/MCR parameters read.
-- Confirm whether `provideToSP` requires a prior MUSD allowance on testnet (read `_sendMUSDtoStabilityPool`, or simulate with `cast`).
+- (Done 30 Sep) `provideToSP` requires a prior MUSD allowance (`transferFrom`).
 - Short user check: ask 3–5 Mezo Discord users where they put borrowed MUSD and how many steps it takes; keep 1–2 quotes for the deck.
 - Count the actions needed today in the Mezo app for borrow → LP (for the deck comparison).
 - Ask the Mezo team on Discord whether MEZO utility for integrators (e.g. veMEZO) is planned during the event; if yes, revisit scope for Wave 2.
 
-### Wave 1 — Must
+### Wave 1 — Done (30 Sep 2026)
+
+T1 scaffold, T2 enter/exit + fee, T3 testnet deploy + verify, T8 permit (contract), T9 `borrowAndEnter` + live smoke, T12 fuzz/invariants.
+
+### Wave 1 — MVP backlog (in order)
 
 | ID | Task | Depends on |
 |---|---|---|
-| T1 | Foundry scaffold and local Tigris test harness | T0 |
-| T2 | `enter`/`exit` core with fee and residual-isolation tests; reproduce 20 MUSD round trip | T1 |
-| T3 | Deploy and verify on testnet (redeploy final version after T12) | T2 |
-| T4 | Frontend skeleton: wallet/network, balances, Trove read | — |
-| T5 | LP quote engine, entry flow, receipt decoding | T2, T4 |
-| T6 | Positions screen and LP exit flow | T5 |
-| T7 | README, deck (route comparison, step comparison, mainnet market data, value to Mezo, fee model, user quotes), 2-minute video, submission form | all |
-
-### Wave 1 — Should (in order)
-
-| ID | Task | Depends on |
-|---|---|---|
-| T8 | MUSD and LP permit in executor and UI | T2, T6 |
-| T9 | `borrowAndEnter` with mock-BOS tests and a live-signature smoke run | T8 |
-| T10 | Borrow & Deploy screen | T9, T5 |
-| T11 | Exposure module and drawdown panel | T4 |
-| T15 | Stability Pool route: deposit, position, withdraw, receipts | T4, T11 |
-| T16 | Route comparison view | T11, T15 |
-| T12 | Basic fuzz and invariant tests | T9 |
-| T14 | Mainnet reference card (pool reserves, Stability Pool deposits and share of supply) | T4 |
-
-T9–T10 carry the highest schedule risk (EIP-712 typed data, Trove hints) and follow T8 immediately to leave recovery time.
-
-### Wave 1 — Could (cut when late)
-
-| ID | Task |
-|---|---|
-| T13 | Remaining error states from Section 13 |
+| C1 | Contract hardening: `maxMusdIn` cap, `defaultFactory` check, review's missing tests, self-audit checklist; redeploy testnet | — |
+| S1 | Spike: Passport + Next.js 14 static export on Vercel; Bitcoin-wallet connect, approve, `enter` on testnet | — |
+| F1 | App shell: Next.js 14, Passport, network switch, config per network, header/banner, error decoder | S1 |
+| F2 | Dashboard: readiness, Trove card, exposure module + panel | F1 |
+| F3 | LP quote engine (optimal swap) + LP route page + confirm stepper (permit/approve) + receipt page | F1, C1 |
+| F4 | Borrow & Deploy (hints, EIP-712, CR floor) | F3 |
+| F5 | Stability Pool route + confirm + receipt | F1 |
+| F6 | Route comparison on dashboard | F2, F3, F5 |
+| F7 | Positions: LP underlying, cost basis, claimable fees + Claim, exit; SP withdraw | F3, F5 |
+| F8 | Mainnet reference card; quote-accuracy script | F3 |
+| M1 | Mainnet deployment (cap 1,000 MUSD) + verification; mainnet config in frontend; real round trip | C1, F7 |
+| V1 | Vercel production deploy; QA checklist on both wallet types | all F |
+| D1 | README, deck, 2-minute video, submission form | V1, M1 |
+| E1 (Could) | Playwright live-testnet end-to-end | V1 |
 
 ### Wave 2 — starts as soon as the Wave 1 gate is met, on a separate branch
 
@@ -752,8 +765,8 @@ T9–T10 carry the highest schedule risk (EIP-712 typed data, Trove hints) and f
 | W2-1 | `MezoRouteLeverage`: leverage + unwind with mock-BOS tests | Wave 1 gate |
 | W2-2 | Leverage and Unwind screens | W2-1, T11 |
 | W2-3 | Live testnet smoke run of leverage and unwind | W2-1 |
-| W2-4 | Full invariant suite and self-audit checklist (both executors) | W2-1 |
-| W2-5 | Mainnet deployment of both executors with immutable caps | W2-3, W2-4 |
+| W2-4 | Invariant suite and self-audit checklist for `MezoRouteLeverage` | W2-1 |
+| W2-5 | Mainnet deployment of `MezoRouteLeverage` with an immutable cap | W2-3, W2-4 |
 | W2-6 | Judge feedback changes | Wave 1 results (~1 Nov) |
 | W2-7 (Could) | Telegram CR/exposure alerts reusing the exposure module | T11 |
 
@@ -789,6 +802,8 @@ Wave 2 work must not be included in the Wave 1 submission.
 | Thin mainnet BTC liquidity for leverage | Small per-transaction cap; price-impact gate; full-size demo on testnet |
 | `msg.value` path not testable locally | Mock-based tests for logic; mandatory live testnet smoke run before mainnet |
 | Solo schedule overrun | Task tiers with explicit cut order |
+| Mezo Passport / OrangeKit (beta) fails for Bitcoin wallets | Spike S1 first; fallback: Passport for EVM wallets only, Bitcoin-wallet support documented as next milestone |
+| Real funds on an unaudited contract | Immutable 1,000 MUSD cap, no custody between transactions, self-audit, visible "Unaudited" banner |
 | RPC instability | Retryable reads, clear transaction state |
 
 ## 19. Submission positioning and business model
@@ -798,7 +813,7 @@ Wave 2 work must not be included in the Wave 1 submission.
 - **Execution fee:** a fixed number of basis points on MUSD entering the LP route through the executor (`enter` and `borrowAndEnter`), proposed at 10 bps, hard-capped at 50 bps in the contract.
 - **No exit fee and no Stability Pool fee:** users can always leave at zero protocol cost; Stability Pool actions are direct protocol calls.
 - **Transparency:** the fee is shown in bps and MUSD before signing, emitted in `Entered`, and immutable per deployment.
-- **Active from Wave 1:** the testnet executor charges the same fee to demonstrate the model end to end; revenue starts with the Wave 2 mainnet deployment.
+- **Live from Wave 1:** the capped mainnet executor charges the fee on real deposits; the testnet executor charges the same fee for demos.
 - **Value to Mezo:** Borrow & Deploy mints new MUSD and deepens the MUSD/BTC pool; the route comparison directs idle MUSD into Mezo's own destinations. The deck states this with mainnet MUSD supply, Stability Pool share, and pool reserves.
 
 ### 19.2 Submission form
@@ -806,11 +821,11 @@ Wave 2 work must not be included in the Wave 1 submission.
 - **Category:** Borrowing and yield execution
 - **TL;DR:** MezoRoute shows Mezo borrowers where to put their MUSD — LP or Stability Pool — by what it does to their BTC risk, and executes borrow → LP (and, in Wave 2, BTC leverage loops) in one safe transaction.
 - **Tracks:** Track 2 (primary story: discover, compare, and access MUSD destinations) and Track 1 (borrow → deploy strategy; Wave 2 looping)
-- **Chain:** Mezo testnet (Wave 1), Mezo mainnet (Wave 2)
+- **Chain:** Mezo mainnet (capped) and Mezo testnet
 - **Business model:** disclosed execution fee in bps on LP entry; no exit fee (Section 19.1).
 - **MUSD/MEZO usage:** borrows MUSD through `BorrowerOperationsSignatures`, deploys it into the MUSD/BTC pool, and supports Stability Pool deposits; MEZO is not integrated because no MEZO-paying surface exists for this use case (Section 1).
 - **Future milestones:**
-  1. Wave 2 (by 15 Nov): one-transaction BTC leverage and unwind on MUSD Troves, and mainnet deployment with caps.
+  1. Wave 2 (by 15 Nov): one-transaction BTC leverage and unwind on MUSD Troves, on testnet and capped mainnet.
   2. After the hackathon: additional routes as separate executors, and Trove opening in the same flow.
   3. After the hackathon: smart-account support and an external audit before raising caps.
 
@@ -848,7 +863,7 @@ Wave 2 work must not be included in the Wave 1 submission.
 
 - Final execution fee value (proposed 10 bps) and fee recipient address.
 - Final price-impact hard limit and CR safety floor after integration tests.
-- Mainnet per-transaction cap values for both executors.
+- Mainnet fee recipient address; cap for `MezoRouteLeverage` (Wave 2).
 - Leverage execution fee (proposed: same 10 bps on the MUSD borrowed).
 - Whether Mezo announces MEZO utility for integrators during the event.
 
