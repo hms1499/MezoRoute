@@ -78,6 +78,10 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 | Mainnet basic MUSD/BTC pool is small (≈ 116.9k MUSD + 1.39 BTC) | `getReserves` | The price-impact gate limits deposit size; mainnet caps are conservative |
 | MUSD/mUSDC is imbalanced and MUSD/mUSDT has no liquidity on testnet | Reserve inspection | Not offered |
 | Generic Router zap returns pre-existing Router balances to the caller | Receipts and Router source | Executor uses exact swap/liquidity primitives with before/after delta isolation |
+| Mezo's BTC ERC-20 (`0x7b7C…`) is backed by a chain precompile: on an anvil fork even `balanceOf` reverts | Local fork spike | No fork tests. Contract tests run against the real Tigris Pool/PoolFactory/Router source deployed locally with mock tokens; real-chain behaviour is covered by a live testnet smoke script |
+| Mezo supports EVM **London** only; Tigris uses Solidity 0.8.24 and OpenZeppelin 4.9.0 | Tigris `hardhat.config.ts`, `package.json` | Compile with `evm_version = london`, Solidity 0.8.24, OpenZeppelin 4.9.0 |
+| Tigris LP tokens are clones whose EIP-712 domain name is empty: `("", "1", chainId, pool)` | `eip712Domain()` on the testnet pool matches `DOMAIN_SEPARATOR` | LP permit typed data uses an empty name; MUSD uses `("Mezo USD", "1")` |
+| Borrow authorisation is standard EIP-712 `WithdrawMUSD(uint256 amount,address borrower,address recipient,uint256 nonce,uint256 deadline)` in domain `("BorrowerOperationsSignatures", "1")` | A `cast wallet sign --data` signature passed verification on the live contract via `eth_call` (failed later only on "Trove does not exist"); a tampered amount failed with "Invalid signature" | Frontend uses `signTypedData` with this type; nonce from `getNonce(borrower)` |
 
 ## 5. Goals and success criteria
 
@@ -322,7 +326,7 @@ flowchart LR
 
 ### Stack
 
-- **Contracts:** Solidity, Foundry, OpenZeppelin Contracts 5.x; fork tests against Mezo testnet RPC.
+- **Contracts:** Solidity 0.8.24, Foundry, OpenZeppelin Contracts 4.9.0 (same as Tigris), `evm_version = london`, `via_ir = true`; tests against locally deployed Tigris contracts (pinned commit `0a3b5e8`).
 - **Frontend:** Next.js (static export), TypeScript, wagmi + viem, TanStack Query, Tailwind CSS, Vitest.
 - **Hosting:** static hosting; no backend in Wave 1. The Wave 2 Telegram alert service is the only server component.
 
@@ -456,7 +460,7 @@ interface IMezoRouteExecutor {
 
 Requiring `msg.sender == borrower` also prevents a third party from using a leaked signature with weaker minimums.
 
-Whether the recipient receives exactly `amount` (with fees added to debt) is verified in a fork test; if not, step 1 compares against the measured MUSD delta instead.
+Whether the recipient receives exactly `amount` (with fees added to debt) is verified in the live testnet smoke run; if not, step 1 compares against the measured MUSD delta instead.
 
 ### 11.5 Exit algorithm
 
@@ -502,7 +506,7 @@ event Exited(
 
 ### 11.7 Custom errors
 
-`ZeroAmount()`, `ZeroAddress()`, `Expired()`, `NotBorrower()`, `BorrowAmountMismatch()`, `FeeTooHigh()`, `InsufficientSwapOutput()`, `InsufficientLiquidityOutput()`, `InsufficientFinalOutput()`, `UnexpectedBalanceDecrease()`
+`ZeroAmount()`, `ZeroAddress()`, `Expired()`, `NotBorrower()`, `BorrowAmountMismatch()`, `FeeTooHigh()`, `PoolMismatch()` (constructor: pool is not `router.poolFor(MUSD, BTC, volatile, factory)`), `InvalidSwapAmount()` (`musdToSwap` is zero or not below the post-fee amount), `InsufficientSwapOutput()`, `InsufficientLiquidityOutput()`, `InsufficientFinalOutput()`, `UnexpectedBalanceDecrease()`
 
 ### 11.8 Security invariants
 
@@ -578,10 +582,12 @@ The exposure module is pure TypeScript with unit tests; it is reused by the Wave
 
 ## 14. Test plan
 
-### Contract unit and fork tests
+### Contract tests
+
+Environment: the real Tigris `Pool`, `PoolFactory`, and `Router` source at commit `0a3b5e8`, deployed locally with mock MUSD/BTC (ERC-20 Permit) and a mock `BorrowerOperationsSignatures` that, like the real one, accepts a signature from any sender exactly once and sends MUSD to the signed recipient.
 
 - `enter` and `exit` happy paths.
-- `borrowAndEnter` happy path against a real testnet Trove (fork).
+- `borrowAndEnter` happy path.
 - Zero input, zero recipient, expired deadline.
 - Insufficient swap output, liquidity, and final output.
 - Permit: valid, front-run (already used), and skipped (`value = 0`).
@@ -592,6 +598,10 @@ The exposure module is pure TypeScript with unit tests; it is reused by the Wave
 - Residue refund; reentrancy attempt.
 - Executor pre-seeded with MUSD, BTC, and LP: caller cannot receive or be credited for them.
 - Full `MUSD → LP → MUSD` round trip reproducing the 20 MUSD research result without `zapIn`/`zapOut`.
+
+### Live testnet smoke test
+
+A `cast`-based script runs against the deployed executor: approve → `enter` → `exit` all LP, optionally `borrowAndEnter` with a real Trove and a real EIP-712 signature, then checks that executor balances did not change.
 
 ### Fuzz and invariant tests
 
@@ -644,7 +654,7 @@ Remaining:
 
 | ID | Task | Depends on |
 |---|---|---|
-| T1 | Foundry scaffold and testnet fork harness | T0 |
+| T1 | Foundry scaffold and local Tigris test harness | T0 |
 | T2 | `enter`/`exit` core with fee and residual-isolation tests; reproduce 20 MUSD round trip | T1 |
 | T3 | Deploy and verify on testnet (redeploy final version after T12) | T2 |
 | T4 | Frontend skeleton: wallet/network, balances, Trove read | — |
@@ -657,7 +667,7 @@ Remaining:
 | ID | Task | Depends on |
 |---|---|---|
 | T8 | MUSD and LP permit in executor and UI | T2, T6 |
-| T9 | `borrowAndEnter` with EIP-712 fork tests | T8 |
+| T9 | `borrowAndEnter` with mock-BOS tests and a live-signature smoke run | T8 |
 | T10 | Borrow & Deploy screen | T9, T5 |
 | T11 | Exposure module and drawdown panel | T4 |
 | T15 | Stability Pool route: deposit, position, withdraw, receipts | T4, T11 |
