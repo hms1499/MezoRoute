@@ -41,6 +41,8 @@ contract Deploy is Script {
     }
 
     function run() external returns (MezoRouteExecutor executor) {
+        // Spec 11.8 invariant 12: mainnet requires an immutable per-transaction cap (Wave 2).
+        require(block.chainid != 31612, "Deploy: mainnet needs the Wave 2 per-transaction cap");
         MezoAddresses memory a = addressesFor(block.chainid);
         uint256 feeBps = vm.envUint("FEE_BPS");
         address feeRecipient = vm.envAddress("FEE_RECIPIENT");
