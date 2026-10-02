@@ -206,4 +206,36 @@ contract EnterTest is TigrisHarness {
         vm.prank(user);
         executor.enter(p, _noPermit());
     }
+
+    function test_enter_revertsWhenMusdAddedBelowMinimum() public {
+        _fund(user, 1_000e18);
+        IMezoRouteExecutor.EnterParams memory p = _enterParams(1_000e18, user);
+        p.minMusdAdded = p.musdIn;
+        vm.expectRevert();
+        vm.prank(user);
+        executor.enter(p, _noPermit());
+    }
+
+    function test_enter_revertsWhenBtcAddedBelowMinimum() public {
+        _fund(user, 1_000e18);
+        IMezoRouteExecutor.EnterParams memory p = _enterParams(1_000e18, user);
+        p.minBtcAdded = 1e18;
+        vm.expectRevert();
+        vm.prank(user);
+        executor.enter(p, _noPermit());
+    }
+
+    function test_enter_neverPaysOutPreExistingLp() public {
+        uint256 donated = IERC20(pool).balanceOf(seeder) / 1_000;
+        vm.prank(seeder);
+        IERC20(pool).transfer(address(executor), donated);
+        _fund(user, 1_000e18);
+        IMezoRouteExecutor.EnterParams memory p = _enterParams(1_000e18, user);
+
+        vm.prank(user);
+        uint256 liquidityOut = executor.enter(p, _noPermit());
+
+        assertEq(IERC20(pool).balanceOf(address(executor)), donated);
+        assertEq(IERC20(pool).balanceOf(user), liquidityOut);
+    }
 }

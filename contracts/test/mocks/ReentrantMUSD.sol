@@ -3,7 +3,7 @@ pragma solidity 0.8.24;
 
 import {MockERC20Permit} from "./MockERC20Permit.sol";
 
-/// @dev MUSD stand-in that calls back into a target once during transferFrom.
+/// @dev MUSD stand-in that calls back into a target once during the next transfer or transferFrom.
 contract ReentrantMUSD is MockERC20Permit {
     address public target;
     bytes public payload;
@@ -15,7 +15,17 @@ contract ReentrantMUSD is MockERC20Permit {
         payload = payload_;
     }
 
+    function transfer(address to, uint256 amount) public override returns (bool) {
+        _reenter();
+        return super.transfer(to, amount);
+    }
+
     function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
+        _reenter();
+        return super.transferFrom(from, to, amount);
+    }
+
+    function _reenter() private {
         address t = target;
         if (t != address(0)) {
             target = address(0);
@@ -26,6 +36,5 @@ contract ReentrantMUSD is MockERC20Permit {
                 }
             }
         }
-        return super.transferFrom(from, to, amount);
     }
 }

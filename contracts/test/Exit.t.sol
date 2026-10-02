@@ -135,4 +135,58 @@ contract ExitTest is TigrisHarness {
         assertEq(musd.balanceOf(address(executor)), residueMusd);
         assertEq(btc.balanceOf(address(executor)), residueBtc);
     }
+
+    function test_exit_revertsOnZeroRecipient() public {
+        IMezoRouteExecutor.ExitParams memory p = _exitParams(lp, address(0));
+        vm.expectRevert(IMezoRouteExecutor.ZeroAddress.selector);
+        vm.prank(user);
+        executor.exit(p, _noPermit());
+    }
+
+    function test_exit_revertsWhenRemovedMusdBelowMinimum() public {
+        IMezoRouteExecutor.ExitParams memory p = _exitParams(lp, user);
+        p.minMusdRemoved = 1_000e18;
+        vm.expectRevert(); // Router enforces amountAMin first (IRouter.InsufficientAmountA)
+        vm.prank(user);
+        executor.exit(p, _noPermit());
+    }
+
+    function test_exit_revertsWhenRemovedBtcBelowMinimum() public {
+        IMezoRouteExecutor.ExitParams memory p = _exitParams(lp, user);
+        p.minBtcRemoved = 1e18;
+        vm.expectRevert();
+        vm.prank(user);
+        executor.exit(p, _noPermit());
+    }
+
+    function test_exit_revertsWhenSwapOutputBelowMinimum() public {
+        IMezoRouteExecutor.ExitParams memory p = _exitParams(lp, user);
+        p.minMusdFromSwap = 1_000e18;
+        vm.expectRevert(); // Router enforces amountOutMin first (IRouter.InsufficientOutputAmount)
+        vm.prank(user);
+        executor.exit(p, _noPermit());
+    }
+
+    function test_exit_neverPaysOutPreExistingLp() public {
+        uint256 donated = IERC20(pool).balanceOf(seeder) / 1_000;
+        vm.prank(seeder);
+        IERC20(pool).transfer(address(executor), donated);
+        uint256 musdBefore = musd.balanceOf(user);
+
+        vm.prank(user);
+        uint256 musdOut = executor.exit(_exitParams(lp, user), _noPermit());
+
+        assertEq(IERC20(pool).balanceOf(address(executor)), donated);
+        assertEq(musd.balanceOf(user) - musdBefore, musdOut);
+        assertLt(musdOut, 1_000e18); // the donated LP is worth far more than this
+    }
+
+    function test_exit_paysRecipientNotCaller() public {
+        address recipient = makeAddr("recipient");
+        uint256 callerMusdBefore = musd.balanceOf(user);
+        vm.prank(user);
+        uint256 musdOut = executor.exit(_exitParams(lp, recipient), _noPermit());
+        assertEq(musd.balanceOf(recipient), musdOut);
+        assertEq(musd.balanceOf(user), callerMusdBefore);
+    }
 }

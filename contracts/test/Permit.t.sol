@@ -76,4 +76,33 @@ contract PermitTest is TigrisHarness {
         vm.prank(user);
         executor.enter(p, permit);
     }
+
+    function test_enter_invalidPermitFallsBackToExistingAllowance() public {
+        _fund(user, 1_000e18);
+        IMezoRouteExecutor.EnterParams memory p = _enterParams(1_000e18, user);
+        IMezoRouteExecutor.Permit memory permit = _signPermit(address(musd), 1_000e18);
+        permit.s = bytes32(uint256(permit.s) ^ 1); // corrupt the signature
+
+        vm.prank(user);
+        assertGt(executor.enter(p, permit), 0);
+    }
+
+    function test_borrowAndEnter_withMusdPermitNeedsNoApproval() public {
+        // Borrow & Deploy: one borrow signature plus one MUSD permit, no approval transaction.
+        IMezoRouteExecutor.EnterParams memory p = _enterParams(1_000e18, user);
+        IMezoRouteExecutor.Permit memory permit = _signPermit(address(musd), 1_000e18);
+        IMezoRouteExecutor.Borrow memory b = IMezoRouteExecutor.Borrow({
+            amount: 1_000e18,
+            upperHint: address(0),
+            lowerHint: address(0),
+            signature: hex"0badc0de",
+            deadline: block.timestamp + 600
+        });
+
+        vm.prank(user);
+        uint256 lp = executor.borrowAndEnter(b, permit, p);
+
+        assertEq(IERC20(pool).balanceOf(user), lp);
+        assertEq(musd.allowance(user, address(executor)), 0);
+    }
 }
