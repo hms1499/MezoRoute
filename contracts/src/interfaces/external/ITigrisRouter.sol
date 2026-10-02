@@ -10,6 +10,8 @@ interface ITigrisRouter {
         address factory;
     }
 
+    function defaultFactory() external view returns (address);
+
     function poolFor(address tokenA, address tokenB, bool stable, address factory) external view returns (address pool);
 
     function swapExactTokensForTokens(

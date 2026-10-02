@@ -67,12 +67,14 @@ interface IMezoRouteExecutor {
 
     error ZeroAmount();
     error ZeroAddress();
+    error AmountAboveCap();
     error InvalidRecipient();
     error Expired();
     error NotBorrower();
     error BorrowAmountMismatch();
     error FeeTooHigh();
     error PoolMismatch();
+    error FactoryMismatch();
     error InvalidSwapAmount();
     error InsufficientSwapOutput();
     error InsufficientLiquidityOutput();

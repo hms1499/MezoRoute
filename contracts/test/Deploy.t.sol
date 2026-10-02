@@ -5,12 +5,18 @@ import {Test} from "forge-std/Test.sol";
 import {Deploy} from "../script/Deploy.s.sol";
 
 contract DeployScriptTest is Test {
-    function test_run_refusesMainnetUntilCappedExecutorExists() public {
-        vm.setEnv("FEE_BPS", "10");
-        vm.setEnv("FEE_RECIPIENT", vm.toString(makeAddr("feeRecipient")));
-        vm.chainId(31612);
-        Deploy deploy = new Deploy();
-        vm.expectRevert(bytes("Deploy: mainnet needs the Wave 2 per-transaction cap"));
-        deploy.run();
+    Deploy internal deploy = new Deploy();
+
+    function test_maxMusdInFor_mainnetIs1000Musd() public view {
+        assertEq(deploy.maxMusdInFor(31612), 1_000e18);
+    }
+
+    function test_maxMusdInFor_testnetIs1MillionMusd() public view {
+        assertEq(deploy.maxMusdInFor(31611), 1_000_000e18);
+    }
+
+    function test_maxMusdInFor_revertsOnUnknownChain() public {
+        vm.expectRevert(bytes("Deploy: unsupported chain"));
+        deploy.maxMusdInFor(1);
     }
 }

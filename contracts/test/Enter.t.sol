@@ -163,7 +163,8 @@ contract EnterTest is TigrisHarness {
             address(musd),
             address(bos),
             10,
-            feeRecipient
+            feeRecipient,
+            MAX_MUSD_IN
         );
     }
 

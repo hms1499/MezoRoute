@@ -5,7 +5,7 @@ import {Script, console2} from "forge-std/Script.sol";
 import {MezoRouteExecutor} from "../src/MezoRouteExecutor.sol";
 
 /// @notice Deploys MezoRouteExecutor with the fixed Mezo addresses for the current chain.
-/// Env: FEE_BPS (e.g. 10), FEE_RECIPIENT (address).
+/// Env: FEE_BPS (e.g. 10), FEE_RECIPIENT (address). The per-transaction cap is fixed per chain.
 contract Deploy is Script {
     struct MezoAddresses {
         address musd;
@@ -40,16 +40,29 @@ contract Deploy is Script {
         revert("Deploy: unsupported chain");
     }
 
+    /// @notice Spec 11.1: 1,000 MUSD on mainnet while unaudited, 1,000,000 MUSD on testnet.
+    function maxMusdInFor(uint256 chainId) public pure returns (uint256) {
+        if (chainId == 31611) return 1_000_000e18;
+        if (chainId == 31612) return 1_000e18;
+        revert("Deploy: unsupported chain");
+    }
+
     function run() external returns (MezoRouteExecutor executor) {
-        // Spec 11.8 invariant 12: mainnet requires an immutable per-transaction cap (Wave 2).
-        require(block.chainid != 31612, "Deploy: mainnet needs the Wave 2 per-transaction cap");
         MezoAddresses memory a = addressesFor(block.chainid);
         uint256 feeBps = vm.envUint("FEE_BPS");
         address feeRecipient = vm.envAddress("FEE_RECIPIENT");
 
         vm.startBroadcast();
         executor = new MezoRouteExecutor(
-            a.musd, a.btc, a.router, a.factory, a.pool, a.borrowerOperationsSignatures, feeBps, feeRecipient
+            a.musd,
+            a.btc,
+            a.router,
+            a.factory,
+            a.pool,
+            a.borrowerOperationsSignatures,
+            feeBps,
+            feeRecipient,
+            maxMusdInFor(block.chainid)
         );
         vm.stopBroadcast();
 

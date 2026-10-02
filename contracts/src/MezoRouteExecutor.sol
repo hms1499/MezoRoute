@@ -27,6 +27,8 @@ contract MezoRouteExecutor is IMezoRouteExecutor, ReentrancyGuard {
     IBorrowerOperationsSignatures public immutable borrowerOperationsSignatures;
     uint256 public immutable feeBps;
     address public immutable feeRecipient;
+    /// @notice Per-transaction cap on `musdIn` for entries; exits are never capped.
+    uint256 public immutable maxMusdIn;
 
     struct Balances {
         uint256 musd;
@@ -42,13 +44,18 @@ contract MezoRouteExecutor is IMezoRouteExecutor, ReentrancyGuard {
         address pool_,
         address borrowerOperationsSignatures_,
         uint256 feeBps_,
-        address feeRecipient_
+        address feeRecipient_,
+        uint256 maxMusdIn_
     ) {
         if (
             musd_ == address(0) || btc_ == address(0) || router_ == address(0) || factory_ == address(0)
                 || pool_ == address(0) || borrowerOperationsSignatures_ == address(0) || feeRecipient_ == address(0)
         ) revert ZeroAddress();
+        if (maxMusdIn_ == 0) revert ZeroAmount();
         if (feeBps_ > MAX_FEE_BPS) revert FeeTooHigh();
+        // addLiquidity/removeLiquidity always use the Router's default factory; the swap route
+        // must use the same one or entry and exit would touch two different pools.
+        if (ITigrisRouter(router_).defaultFactory() != factory_) revert FactoryMismatch();
         if (ITigrisRouter(router_).poolFor(musd_, btc_, false, factory_) != pool_) revert PoolMismatch();
 
         musd = IERC20(musd_);
@@ -59,6 +66,7 @@ contract MezoRouteExecutor is IMezoRouteExecutor, ReentrancyGuard {
         borrowerOperationsSignatures = IBorrowerOperationsSignatures(borrowerOperationsSignatures_);
         feeBps = feeBps_;
         feeRecipient = feeRecipient_;
+        maxMusdIn = maxMusdIn_;
     }
 
     /// @inheritdoc IMezoRouteExecutor
@@ -211,6 +219,7 @@ contract MezoRouteExecutor is IMezoRouteExecutor, ReentrancyGuard {
 
     function _validateEnter(EnterParams calldata p) private view {
         if (p.musdIn == 0) revert ZeroAmount();
+        if (p.musdIn > maxMusdIn) revert AmountAboveCap();
         if (p.recipient == address(0)) revert ZeroAddress();
         _requireValidRecipient(p.recipient);
         if (block.timestamp > p.deadline) revert Expired();

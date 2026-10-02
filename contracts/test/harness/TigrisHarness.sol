@@ -19,6 +19,7 @@ abstract contract TigrisHarness is Test {
     uint256 internal constant FEE_BPS = 10;
     uint256 internal constant SEED_MUSD = 1_000_000e18;
     uint256 internal constant SEED_BTC = 10e18; // 1 BTC = 100,000 MUSD
+    uint256 internal constant MAX_MUSD_IN = 1_000_000e18; // the testnet cap
 
     MockERC20Permit internal musd;
     MockERC20Permit internal btc;
@@ -57,8 +58,20 @@ abstract contract TigrisHarness is Test {
     }
 
     function _deployExecutor(uint256 feeBps) internal returns (MezoRouteExecutor) {
+        return _deployExecutor(feeBps, MAX_MUSD_IN);
+    }
+
+    function _deployExecutor(uint256 feeBps, uint256 maxMusdIn) internal returns (MezoRouteExecutor) {
         return new MezoRouteExecutor(
-            address(musd), address(btc), address(router), address(factory), pool, address(bos), feeBps, feeRecipient
+            address(musd),
+            address(btc),
+            address(router),
+            address(factory),
+            pool,
+            address(bos),
+            feeBps,
+            feeRecipient,
+            maxMusdIn
         );
     }
 
