@@ -45,4 +45,4 @@ Contract development started on 30 Sep 2026, during the hackathon's pre-registra
 
 - `borrowAndEnter` supports EOA signers only (MUSD verifies with `ECDSA.recover`).
 - No gauge staking or MEZO rewards: no MEZO-paying gauge exists for this pool.
-- Unaudited. Mainnet deployment (Wave 2) adds an immutable per-transaction cap.
+- Unaudited (see the self-audit checklist in `SELF_AUDIT.md`). Entries are limited by an immutable per-transaction cap: 1,000 MUSD on mainnet, 1,000,000 MUSD on testnet. Exits are never capped.

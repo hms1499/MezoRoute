@@ -70,6 +70,15 @@ executor_balances() {
 }
 BEFORE=$(executor_balances)
 
+CAP=$(cast call "$EXECUTOR" "maxMusdIn()(uint256)" --rpc-url "$RPC" | first)
+echo "== cap $CAP: an entry of cap + 1 must revert with AmountAboveCap (eth_call only)"
+if OUT=$(cast call "$EXECUTOR" "$ENTER_SIG" "$(enter_params "$(calc "$CAP + 1")" "$ME")" "$NO_PERMIT" \
+  --from "$ME" --rpc-url "$RPC" 2>&1); then
+  echo "FAIL: entry above the cap did not revert" >&2
+  exit 1
+fi
+grep -q "$(cast sig "AmountAboveCap()")" <<<"$OUT" || { echo "FAIL: unexpected revert: $OUT" >&2; exit 1; }
+
 echo "== enter $AMOUNT MUSD as $ME"
 send "$MUSD" "approve(address,uint256)" "$EXECUTOR" "$AMOUNT" >/dev/null
 send "$EXECUTOR" "$ENTER_SIG" "$(enter_params "$AMOUNT" "$ME")" "$NO_PERMIT" >/dev/null

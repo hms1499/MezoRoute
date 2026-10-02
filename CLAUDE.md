@@ -14,7 +14,8 @@ MezoRoute — hackathon project for "Build with MUSD and MEZO" (AKINDO WaveHack,
 - In tests, build params with `_enterParams`/`_exitParams` **before** `vm.prank` — they make external calls that would consume the prank.
 - Run: `cd contracts && forge test`; format with `forge fmt` (`forge fmt --check` must pass before commit).
 - Security invariants from spec 11.8 must hold: every payout is a balance delta measured inside the call (pre-existing executor balances are never paid out), exact allowances reset to 0, no owner/admin/proxy, borrowed MUSD recipient is always the caller, recipient may not be the executor or the pool.
-- Deploy/smoke secrets live in `contracts/.env` (git-ignored; template `.env.example`). Load with `set -a && source .env && set +a`; never print `PRIVATE_KEY`. `Deploy.s.sol` refuses mainnet (31612) until the per-transaction cap exists.
+- Deploy/smoke secrets live in `contracts/.env` (git-ignored; template `.env.example`). Load with `set -a && source .env && set +a`; never print `PRIVATE_KEY`. `Deploy.s.sol` pins the entry cap per chain (`maxMusdInFor`: mainnet 1,000 MUSD, testnet 1,000,000 MUSD).
+- `contracts/SELF_AUDIT.md` maps every spec 11.8 invariant to tests; update it with any change to `src/`.
 - The public testnet RPC intermittently returns null receipts — poll instead of failing (see `send()` in the smoke script).
 
 ## Repo conventions

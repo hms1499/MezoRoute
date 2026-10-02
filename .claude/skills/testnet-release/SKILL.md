@@ -18,7 +18,7 @@ Never print `PRIVATE_KEY` or echo `.env` contents. Load env with `set -a && sour
 
 3. **Verify** on Blockscout:
    `forge verify-contract <addr> src/MezoRouteExecutor.sol:MezoRouteExecutor --chain 31611 --verifier blockscout --verifier-url https://api.explorer.test.mezo.org/api --constructor-args $(cast abi-encode "<constructor signature from src/MezoRouteExecutor.sol>" <testnet addresses from script/Deploy.s.sol> $FEE_BPS $FEE_RECIPIENT …) --watch`
-   Build the constructor args from the current constructor and `Deploy.addressesFor(31611)` — do not assume the argument list is unchanged.
+   Build the constructor args from the current constructor, `Deploy.addressesFor(31611)` and `Deploy.maxMusdInFor(31611)` — do not assume the argument list is unchanged. Then read back every immutable (`cast call <addr> "maxMusdIn()(uint256)"`, `feeBps`, `feeRecipient`, `pool`, …) and compare with spec 11.1 (`contracts/SELF_AUDIT.md` section 4).
 
 4. **Record**: set `EXECUTOR=<addr>` in `contracts/.env` (sed in place), then run the smoke test:
    `./script/smoke-testnet.sh` from `contracts/` (it reads `.env`; pass through any `$ARGUMENTS` overrides). It must end with `PASS: executor balances unchanged`.
