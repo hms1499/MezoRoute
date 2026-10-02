@@ -383,7 +383,7 @@ All dependencies are immutable constructor arguments; the executor accepts no us
 | PoolFactory | `0x4947243CC818b627A5D06d14C4eCe7398A23Ce1A` | `0x83FE469C636C4081b87bA5b3Ae9991c6Ed104248` |
 | MUSD/BTC pool (volatile) | `0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9` | `0x52e604c44417233b6CcEDDDc0d640A405Caacefb` |
 | BorrowerOperationsSignatures | `0xD757e3646AF370b15f32EB557F0F8380Df7D639e` | `0xB57ab578BF20b3e318f3EFAA587C51DBccE5df7a` |
-| **MezoRouteExecutor (deployed, verified)** | `0x10E6334d2716FDE5f2bEb418C66fD7C9c1021fB9` (pre-cap; replaced by the capped build) | Wave 1, after the cap is added |
+| **MezoRouteExecutor (deployed, verified)** | `0xB36B2E012003840951CFf00fA6b1E3237A110920` (cap 1,000,000 MUSD; deployed 2 Oct 2026) | Wave 1 (M1, cap 1,000 MUSD) |
 
 Frontend-only reads and direct calls:
 
@@ -738,6 +738,8 @@ Remaining:
 ### Wave 1 — Done (30 Sep 2026)
 
 T1 scaffold, T2 enter/exit + fee, T3 testnet deploy + verify, T8 permit (contract), T9 `borrowAndEnter` + live smoke, T12 fuzz/invariants.
+
+C1 done 2 Oct 2026: capped executor `0xB36B…0920` on testnet, self-audit checklist in `contracts/SELF_AUDIT.md`.
 
 ### Wave 1 — MVP backlog (in order)
 

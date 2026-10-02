@@ -83,7 +83,7 @@ Legend: ✅ holds, with evidence · ⚠️ accepted risk, see notes.
 - ⚠️ Mezo's BTC ERC-20 is a chain precompile; tests use a mock ERC-20. Real BTC transfers are covered
   only by the live smoke test (section 4).
 - ✅ Compiled for `london` (Mezo has no `PUSH0`).
-- ✅ Gas: `enter` ≈ 0.39M, `borrowAndEnter` ≈ 2.12M (Trove interest accrual) on testnet.
+- ✅ Gas on testnet (2 Oct 2026): `enter` 0.40M, `exit` 0.35M, `borrowAndEnter` 2.18M (Trove interest accrual).
 
 ### Test environment limits
 - The real Tigris Router/Pool/PoolFactory run locally; MUSD/BTC are OZ `ERC20Permit` mocks and
