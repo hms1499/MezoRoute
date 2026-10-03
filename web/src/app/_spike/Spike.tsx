@@ -1,6 +1,7 @@
 "use client";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { EnterPanel } from "./EnterPanel";
 import { WalletInfo } from "./WalletInfo";
 
 export default function Spike() {
@@ -11,6 +12,7 @@ export default function Spike() {
         <ConnectButton />
       </header>
       <WalletInfo />
+      <EnterPanel />
     </main>
   );
 }
