@@ -49,8 +49,8 @@ Vercel: `vercel project add` creates a project without a framework preset, so th
 | Approve tx (relayed) | `0xc6f1616e870c2ffb4f1682546a94ea306bfaf0371743a83196a4943f78f57d1d` (block 15937005; exactly 1 MUSD, owner = Safe) |
 | Enter tx (relayed) | `0x181777d21aa79479be982ae5ef6f1f46b9d7bfaa7cd446ab677640f3d713d1b5` (block 15937007, gas 433,422; from relayer to Safe; logs end with `Entered` and Safe `ExecutionSuccess`) |
 | Entered values | musdIn 1, fee 0.001, swapped 0.4995 MUSD → 0.000006339561315197 BTC, LP 0.001779105586885623, refund 0.00019979757013759 MUSD / 0 BTC, **caller = Safe** |
-| Gas paid by the Safe | ≈ 0.00000000012 BTC for deployment, approval, and entry (testnet gas price 146 wei) |
-| Signature prompts / relay latency | not recorded; deployment, approval, and entry confirmed within 6 blocks |
+| Gas paid by the Safe | 122,307,120 wei (≈ 0.00000000012 BTC): the relayer refunds for the approval and the entry (two `execTransaction`s incl. 2 × baseGas `0x3035F`, at 146 wei). The deploy relayer paid for the Safe deployment. |
+| Signature prompts / relay latency | prompts not counted during the run; OrangeKit's code asks for one `signMessage` per Safe transaction and none for the deployment, so two here (approve, enter). Deployment, approval, and entry confirmed within 6 blocks. |
 | Allowance after / executor balances | Safe allowance 0; executor 0/0/0 before and after |
 
 ## Relayer
@@ -62,12 +62,23 @@ Vercel: `vercel project add` creates a project without a framework preset, so th
 ## Decisions for F1
 
 - Wallet kind: OrangeKit connector first, `getCode` second (`web/src/lib/wallet/capabilities.ts`). This was confirmed with an undeployed Safe.
-- Smart-account receipts: fail on Safe `ExecutionFailure`. A relayer hash that is not 32 bytes (OrangeKit returns `"0x"`) is a relay error (`web/src/lib/tx/send.ts`).
+- Smart-account receipts: fail on Safe `ExecutionFailure`. A relayer hash that is not 32 bytes (OrangeKit returns `"0x"`) is a relay error, and so are failures OrangeKit raises before a hash exists: a non-JSON relayer body, a network/CORS failure, or the deploy relayer's `"0x"` (`web/src/lib/tx/send.ts`, `asRelayFailure` in `errors.ts`).
+- Wallet rejections are not always `Error`s: Xverse (through OrangeKit) throws a plain `{ code: 4001, message }`; the classifier reads plain objects and EIP-1193 code 4001.
 - Wallet list: Bitcoin (Unisat, OKX, Xverse) and Ethereum (MetaMask, WalletConnect, Browser Wallet).
 - Network switch: Passport's `getConfig` builds one network per config, so switching rebuilds the wagmi config.
 - Bitcoin-wallet users need BTC in their Safe before the first transaction, because the Safe pays the relayer refund. F2 readiness should show the Safe's BTC and say so.
 - Receipt route: `/tx/?hash=0x…`.
 - Exact approvals leave allowance at 0 after `enter` for both wallet kinds.
+
+## Follow-ups for F1 from the S1 review
+
+- `sendCall` should pin `account` and `chainId` (wagmi passes `chain: null` otherwise), and `waitForTransactionReceipt` its `chainId`, so a mid-flow account or network switch cannot send `enter` from another account or chain. Do this before the network switch lands.
+- wagmi's `waitForTransactionReceipt` already throws on a reverted transaction (replaying it with `call`); the error decoder must handle viem's `CallExecutionError` text and the empty-message `Error("")` wagmi throws when the replay succeeds.
+- Block entry when the swap amount rounds to 0 (e.g. 1 wei), which today wastes an approval and reverts with `InvalidSwapAmount` (F3 quote engine).
+- Add a postbuild check that `out/_next/static` contains the live relayer URL and not the dead one; Next caches `node_modules` modules by package version, so a stale cache could ship the unpatched OrangeKit.
+- Fail the build, not the browser, when `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` is missing, and set it in the Vercel project env (V1).
+- Mark `.next/` and `out/` with the iCloud ignore xattr as well.
+- Treat a failed `getCode` as "wallet kind unknown", not EOA.
 
 ## Reported upstream
 

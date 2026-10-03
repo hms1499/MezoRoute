@@ -1,7 +1,7 @@
 import type { Address, Hash, Hex, TransactionReceipt } from "viem";
 import type { Config } from "wagmi";
-import { sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
-import { RelayError, SmartAccountCallFailedError } from "./errors";
+import { getAccount, sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
+import { asRelayFailure, RelayError, SmartAccountCallFailedError } from "./errors";
 import { hasSafeExecutionFailure } from "./safe";
 
 const TX_HASH = /^0x[0-9a-fA-F]{64}$/;
@@ -20,7 +20,14 @@ export function assertTxHash(value: unknown): Hash {
  * Safe-relaying override for Bitcoin wallets.
  */
 export async function sendCall(config: Config, call: { to: Address; data: Hex }): Promise<TransactionReceipt> {
-  const hash = assertTxHash(await sendTransaction(config, { to: call.to, data: call.data }));
+  const connectorType = getAccount(config).connector?.type;
+  let sent: unknown;
+  try {
+    sent = await sendTransaction(config, { to: call.to, data: call.data });
+  } catch (error) {
+    throw asRelayFailure(error, connectorType);
+  }
+  const hash = assertTxHash(sent);
   // The public testnet RPC intermittently returns null receipts; viem keeps polling until the timeout.
   const receipt = await waitForTransactionReceipt(config, { hash, pollingInterval: 2_000, timeout: 120_000 });
   if (receipt.status !== "success") throw new Error(`Transaction reverted: ${hash}`);
