@@ -1,3 +1,9 @@
+"use client";
+
+import dynamic from "next/dynamic";
+
+const Spike = dynamic(() => import("./_spike/Spike"), { ssr: false });
+
 export default function Home() {
-  return <main className="p-6">MezoRoute · S1 spike</main>;
+  return <Spike />;
 }
