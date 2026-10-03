@@ -87,10 +87,13 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 | Mezo's BTC ERC-20 (`0x7b7C…`) is backed by a chain precompile: on an anvil fork even `balanceOf` reverts | Local fork spike | No fork tests. Contract tests run against the real Tigris Pool/PoolFactory/Router source deployed locally with mock tokens; real-chain behaviour is covered by a live testnet smoke script |
 | Mezo supports EVM **London** only; Tigris uses Solidity 0.8.24 and OpenZeppelin 4.9.0 | Tigris `hardhat.config.ts`, `package.json` | Compile with `evm_version = london`, Solidity 0.8.24, OpenZeppelin 4.9.0 |
 | Tigris LP tokens are clones whose EIP-712 domain name is empty: `("", "1", chainId, pool)` | `eip712Domain()` on the testnet pool matches `DOMAIN_SEPARATOR` | LP permit typed data uses an empty name; MUSD uses `("Mezo USD", "1")` |
-| Mezo Passport (`@mezo-org/passport` 0.17.2) wraps RainbowKit/wagmi/viem and connects Bitcoin wallets through OrangeKit smart accounts; peer dependency React 18 | npm metadata | Wallet layer is Passport; BTC-wallet users are smart accounts (no `ecrecover`), so they use approvals instead of permits and cannot use Borrow & Deploy; Next.js 14 (React 18) |
+| Mezo Passport (`@mezo-org/passport` 0.17.2) wraps RainbowKit/wagmi/viem and connects Bitcoin wallets through OrangeKit smart accounts; peer dependency React 18 | npm metadata | Wallet layer is Passport; BTC-wallet users are smart accounts (no `ecrecover`), so they use approvals instead of permits and cannot use Borrow & Deploy; Next.js 14 (React 18); wagmi is pinned to 2.x (wagmi 3 is outside Passport's peer range) and RainbowKit to Passport's exact 2.0.2 |
 | Testnet MUSD/BTC pool fee is 4 bps; mainnet default volatile fee is 30 bps | `PoolFactory.getFee(pool, false)` | Quote engine reads the fee from chain; never hardcoded |
 | Tigris LP trading fees accrue in `PoolFees` and are paid only when the LP holder calls `Pool.claimFees()` | Tigris `Pool.sol` | Positions screen shows claimable fees (via `eth_call` of `claimFees` from the user) and a Claim action — the LP route's real yield on mainnet |
 | Borrow authorisation is standard EIP-712 `WithdrawMUSD(uint256 amount,address borrower,address recipient,uint256 nonce,uint256 deadline)` in domain `("BorrowerOperationsSignatures", "1")` | A `cast wallet sign --data` signature passed verification on the live contract via `eth_call` (failed later only on "Trove does not exist"); a tampered amount failed with "Invalid signature" | Frontend uses `signTypedData` with this type; nonce from `getNonce(borrower)` |
+| Passport 0.17.2 (OrangeKit smart-account 1.0.0-beta.24) relays testnet transactions through `test.mezo.org`, which Cloudflare rejects; `testnet.mezo.org/api/v2/relay/*` is live, allows CORS from any origin, and accepts OrangeKit's hardcoded refund receiver | `curl` 3 Oct 2026; S1 Safe deployment, approval, and `enter` relayed on testnet (`docs/spikes/s1-passport-static-export.md`) | `web/scripts/patch-relayer.mjs` rewrites the endpoint after every install and before every build |
+| A Bitcoin wallet's Safe is deployed on its first transaction, so `getCode` is empty before that | OrangeKit `ensureSafeForBtcWallet`; S1 Safe `0x4543…e22D` had no code until its first relayed transaction | Wallet kind comes from the connector (OrangeKit) first, `getCode` second |
+| A relayed Safe transaction confirms even when the inner call reverts (`ExecutionFailure`), and a rejected relay returns hash `"0x"` | Safe `execTransaction` with non-zero `safeTxGas`; OrangeKit `MezoTransactionSender` | Smart-account receipts check `ExecutionFailure`; a malformed hash is a relay error |
 
 ## 5. Goals and success criteria
 
@@ -171,7 +174,7 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 
 ### Flow A — Connect and assess readiness
 
-1. User connects an EVM or Bitcoin wallet through Mezo Passport and picks Testnet or Mainnet; the app detects whether the account is an EOA or a smart account (`getCode`).
+1. User connects an EVM or Bitcoin wallet through Mezo Passport and picks Testnet or Mainnet; the app detects whether the account is an EOA or a smart account (OrangeKit connector first, then `getCode`).
 2. App reads wallet MUSD, BTC gas, LP balance, Stability Pool deposit and pending gain, and Trove state.
 3. App shows one of:
    - **Ready:** sufficient MUSD and gas;
@@ -310,7 +313,7 @@ Precondition: user has a Trove and uses an EOA wallet.
 | 3a | LP confirm | `/route/lp/confirm` | Exact amounts, minimums, deadline; stepper: sign permit (smart account: approve) → sign borrow (if any) → send; no-custody statement | Sign / Send |
 | 2b | Stability Pool | `/route/stability-pool` | Current deposit and pending BTC gain; exposure before/after; risks | Review |
 | 3b | SP confirm | `/route/stability-pool/confirm` | Exact approval (skipped if allowance suffices) → `provideToSP` | Approve / Send |
-| 4 | Receipt | `/tx/[hash]` | Submitted → confirming → confirmed; event-derived values; gas, block, explorer link | View positions |
+| 4 | Receipt | `/tx/?hash=0x…` | (Static export cannot prerender dynamic segments.) Submitted → confirming → confirmed; event-derived values; gas, block, explorer link | View positions |
 | 5 | Positions | `/positions` | LP: balance, underlying, cost basis, estimated exit value, **claimable fees + Claim**; SP: compounded deposit, BTC gain | Exit / Withdraw / Claim |
 | 6a | Exit LP | `/positions/lp/exit` | Percentage or Max; quote; minimum MUSD; permit (smart account: approve) → send | Exit |
 | 6b | Withdraw SP | `/positions/stability-pool/withdraw` | Simulated first; blocked state when a Trove is under-collateralised | Withdraw |
@@ -346,7 +349,7 @@ flowchart LR
 ### Stack
 
 - **Contracts:** Solidity 0.8.24, Foundry, OpenZeppelin Contracts 4.9.0 (same as Tigris), `evm_version = london`, `via_ir = true`; tests against locally deployed Tigris contracts (pinned commit `0a3b5e8`).
-- **Frontend:** Next.js 14 (App Router, static export), React 18 (required by Mezo Passport), TypeScript, `@mezo-org/passport` (RainbowKit), wagmi 2, viem 2, TanStack Query 5, Tailwind CSS, Vitest.
+- **Frontend:** Next.js 14 (App Router, static export), React 18 (required by Mezo Passport), TypeScript, `@mezo-org/passport` 0.17.2 (RainbowKit 2.0.2), wagmi 2 (pinned; Passport does not support wagmi 3), viem 2, TanStack Query 5, Tailwind CSS, Vitest.
 - **Hosting:** Vercel (static); no backend. The Wave 2 Telegram alert service would be the only server component.
 
 ### Frontend module layout
@@ -741,6 +744,8 @@ T1 scaffold, T2 enter/exit + fee, T3 testnet deploy + verify, T8 permit (contrac
 
 C1 done 2 Oct 2026: capped executor `0xB36B…0920` on testnet, self-audit checklist in `contracts/SELF_AUDIT.md`.
 
+S1 done 3 Oct 2026: a static Next.js 14 export on Vercel connects MetaMask and Unisat (through Passport) and runs approve → `enter` on testnet with both; findings in `docs/spikes/s1-passport-static-export.md`.
+
 ### Wave 1 — MVP backlog (in order)
 
 | ID | Task | Depends on |
@@ -804,7 +809,7 @@ Wave 2 work must not be included in the Wave 1 submission.
 | Thin mainnet BTC liquidity for leverage | Small per-transaction cap; price-impact gate; full-size demo on testnet |
 | `msg.value` path not testable locally | Mock-based tests for logic; mandatory live testnet smoke run before mainnet |
 | Solo schedule overrun | Task tiers with explicit cut order |
-| Mezo Passport / OrangeKit (beta) fails for Bitcoin wallets | Spike S1 first; fallback: Passport for EVM wallets only, Bitcoin-wallet support documented as next milestone |
+| Mezo Passport / OrangeKit (beta) fails for Bitcoin wallets | Spike S1 first; fallback: Passport for EVM wallets only, Bitcoin-wallet support documented as next milestone. S1 (3 Oct 2026): Bitcoin wallets work on testnet via the patched relayer; fallback not needed |
 | Real funds on an unaudited contract | Immutable 1,000 MUSD cap, no custody between transactions, self-audit, visible "Unaudited" banner |
 | RPC instability | Retryable reads, clear transaction state |
 
