@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "postinstall": "node scripts/patch-relayer.mjs",
+    "prebuild": "node scripts/patch-relayer.mjs"
   },
   "dependencies": {
     "@mezo-org/passport": "0.17.2",
