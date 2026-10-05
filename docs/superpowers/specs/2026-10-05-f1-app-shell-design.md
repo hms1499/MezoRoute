@@ -54,8 +54,10 @@ export function explorerTxUrl(network: NetworkConfig, hash: string): string;
 
 `web/src/lib/config/network-choice.ts`:
 
-- `readStoredNetwork(storage: Pick<Storage, "getItem"> | undefined): NetworkId`: returns `"testnet"` when the value is missing or invalid, when storage is undefined, or when `getItem` throws (private mode, blocked storage).
-- `storeNetwork(storage, id)`: writes the key `mezoroute.network`; a throwing `setItem` is ignored (the reload then keeps whatever `readStoredNetwork` returns, so the switch has no effect).
+- `safeStorage(getStorage?)`: wraps `window.localStorage` so that neither reaching it nor `getItem`/`setItem`/`removeItem` can throw (private mode, blocked site data, quota). It falls back to a no-op storage. The network choice and wagmi's connection storage both use it.
+- `readStoredNetwork(storage): NetworkId`: returns `"testnet"` when the value is missing or invalid.
+- `storeNetwork(storage, id)`: writes the key `mezoroute.network`. If the write is swallowed by `safeStorage`, the reload keeps the previous network, so the switch has no effect.
+- `switchNetworkAndReload(current, requested, storage, reload)`: does nothing when `requested === current`; otherwise stores and reloads.
 
 `web/src/lib/config/write-gate.ts`, the single gate for every write button (FR-01):
 
@@ -70,9 +72,9 @@ export function writeBlocker(network: NetworkConfig, walletChainId: number | und
 
 - `layout.tsx` stays static: metadata (title "MezoRoute"), Tailwind tokens, and `ClientProviders` (unchanged `next/dynamic`, `ssr: false`).
 - `providers.tsx` reads the stored network once (`useState` initialiser), then builds:
-  - `createWagmiConfig(network, walletConnectProjectId)` in `lib/wallet/passport.ts`: `getConfig({ mezoNetwork: network.id, wallets, storage })`, with Bitcoin wallets `unisat/okx/xverseWalletMezo{Testnet|Mainnet}` matching the network, Ethereum wallets MetaMask, WalletConnect, Browser Wallet, and `storage: createStorage({ key: "mezoroute.<id>", storage: localStorage })` so each network remembers its own connection.
+  - `createWagmiConfig(network, walletConnectProjectId)` in `lib/wallet/passport.ts`: `getConfig({ mezoNetwork: network.id, wallets, storage })`, with Bitcoin wallets `unisat/okx/xverseWalletMezo{Testnet|Mainnet}` matching the network, Ethereum wallets MetaMask, WalletConnect, Browser Wallet, and `storage: createStorage({ key: "mezoroute.<id>", storage: safeStorage() })` so each network remembers its own connection.
   - `QueryClient`, `RainbowKitProvider` with `lightTheme({ accentColor: "#0F766E", borderRadius: "large" })`.
-  - `NetworkProvider` (`lib/config/network-context.tsx`): `useNetwork()` returns `{ network: NetworkConfig, switchNetwork(id: NetworkId) }`; `switchNetwork` calls `storeNetwork` and `location.reload()`, and does nothing when `id` is already active.
+  - `NetworkProvider` (`lib/config/network-context.tsx`): `useNetwork()` returns `{ network: NetworkConfig, switchNetwork(id: NetworkId) }`; `switchNetwork` calls `switchNetworkAndReload` with `location.reload()`.
 - Passport's default RPCs are used (`rpc.test.mezo.org`; mainnet `rpc-internal.mezo.org`, which answered chain 31612 on 5 Oct 2026). The mainnet relayer `mezo.org/api/v2/relay` is live (not the Cloudflare 403 of `test.mezo.org`), so `patch-relayer.mjs` stays testnet-only.
 
 ## 3. Wallet kind and sending
@@ -94,7 +96,12 @@ export async function sendCall(config: Config, call: { to: Address; data: Hex },
 
 - Callers capture `pin` once, when the user starts a flow, and pass the same pin to every step.
 - `sendTransaction(config, { to, data, account: pin.account, chainId: pin.chainId })`: wagmi 2.19.5 throws `ConnectorChainMismatchError` if the wallet moved to another chain and `ConnectorAccountNotFoundError` if the account is no longer connected (checked in `@wagmi/core` `getConnectorClient`), so a later step cannot send from another account or chain.
-- `waitForTransactionReceipt(config, { hash, chainId: pin.chainId, pollingInterval: 2_000, timeout: 120_000 })`.
+- `waitForTransactionReceipt(config, { hash, chainId: pin.chainId, pollingInterval: 2_000, timeout: 120_000 })`. Once a hash exists, a failure of this wait is classified by `receiptFailure(error, hash)`:
+  - viem's `WaitForTransactionReceiptTimeoutError` → `ConfirmationTimeoutError(hash)`;
+  - a revert (revert data on the cause chain, `CallExecutionError`, `ExecutionRevertedError`) → `TransactionRevertedError(hash)`;
+  - an RPC failure (`HttpRequestError`, `TimeoutError`, `WebSocketRequestError`, `RpcRequestError`) → `ConfirmationTimeoutError(hash)`: the outcome is unknown, so the user must not be told to retry (that could send twice);
+  - anything else, including wagmi's `Error(reason)` after replaying a reverted transaction → `TransactionRevertedError(hash)`.
+- A receipt with a status other than `success` also throws `TransactionRevertedError(hash)`.
 - Unchanged from S1: `asRelayFailure` around the send, `assertTxHash` (relayer `"0x"`), `hasSafeExecutionFailure` → `SmartAccountCallFailedError`.
 
 ## 4. Error decoder
@@ -102,12 +109,13 @@ export async function sendCall(config: Config, call: { to: Address; data: Hex },
 `web/src/lib/errors/`:
 
 ```ts
-export type Recovery = "retry" | "refresh-quote" | "switch-network" | "add-gas" | "reduce-amount" | "copy-details";
+export type Recovery =
+  | "retry" | "refresh-quote" | "switch-network" | "add-gas" | "reduce-amount" | "copy-details" | "view-transaction";
 export type ErrorKind =
-  | "rejected" | "relay" | "smart-account-reverted" | "wrong-network" | "account-changed"
+  | "rejected" | "relay" | "smart-account-reverted" | "unconfirmed" | "wrong-network" | "account-changed"
   | "needs-gas" | "quote-expired" | "slippage" | "above-cap" | "amount-too-small"
   | "allowance" | "insufficient-balance" | "pool" | "reverted" | "rpc-unavailable" | "unknown";
-export type DecodedError = { kind: ErrorKind; message: string; recovery: Recovery[]; details?: string };
+export type DecodedError = { kind: ErrorKind; message: string; recovery: Recovery[]; details?: string; hash?: Hash };
 export function decodeError(error: unknown, network: NetworkConfig): DecodedError;
 ```
 
@@ -118,6 +126,7 @@ The first matching rule wins:
 | 1 | EIP-1193 code 4001 anywhere on the cause chain (plain objects included), or rejection text | `rejected` · "Transaction was not signed." · retry |
 | 2 | `RelayError` | `relay` · "Mezo's relayer could not submit the transaction. Retry in a moment." · retry |
 | 3 | `SmartAccountCallFailedError` | `smart-account-reverted` · "Your smart account sent the transaction, but the call reverted." · retry, copy-details |
+| 3b | `ConfirmationTimeoutError` | `unconfirmed` · "Your transaction was sent but is not confirmed yet. Check it in the explorer before trying again." · view-transaction |
 | 4 | `ConnectorChainMismatchError` (by `name`) | `wrong-network` · "MezoRoute executes on {network.name}." · switch-network |
 | 5 | `ConnectorAccountNotFoundError` (by `name`) | `account-changed` · "Your wallet account changed. Review and try again." · retry |
 | 6 | "insufficient funds" / "not enough native token balance" | `needs-gas` · testnet "You need test BTC to submit transactions." · add-gas; mainnet "You need BTC on Mezo to pay for gas." · no recovery |
@@ -140,10 +149,11 @@ Revert table (by decoded error name or `Error(string)` text):
 | Any other decoded error or string | `reverted` · "The transaction reverted." · retry, copy-details (details: error name or string) |
 
 - The combined error ABI is the executor ABI's errors, the Tigris Router and Pool errors, OZ5 ERC-20 errors, `Error(string)`, and `Panic(uint256)`. `scripts/sync-abi.mjs` also writes `src/lib/abi/tigrisErrors.ts` from `contracts/out/Router.sol/Router.json` and `contracts/out/Pool.sol/Pool.json` (error entries only, de-duplicated by selector).
-- Known `Error(string)` texts live in `src/lib/errors/revert-strings.ts` as `{ match: RegExp, kind, message, recovery }` rows; F4 (BOS) and F5 (Stability Pool) add rows there.
-- `lib/tx/errors.ts` keeps `RelayError`, `SmartAccountCallFailedError`, and `asRelayFailure`; `classifySendError` is removed.
+- Known `Error(string)` texts live in `src/lib/errors/revert-strings.ts` as `{ match: RegExp, outcome: { kind, message, recovery } }` rows; F4 (BOS) and F5 (Stability Pool) add rows there.
+- `lib/tx/errors.ts` keeps `RelayError`, `SmartAccountCallFailedError`, and `asRelayFailure`, and adds `TransactionRevertedError` and `ConfirmationTimeoutError` (both carry `hash`); `classifySendError` is removed.
+- `details` are capped at 300 characters; the toast never shows raw error text, only the fixed messages above.
 
-Display: `useErrorToast()` from `components/ErrorToast.tsx` exposes `showError(error: unknown, handlers?: { retry?, refreshQuote?, reduceAmount? })`. It decodes with the active network and renders one button per recovery: `switch-network` calls wagmi `switchChain({ chainId: network.chainId })`, `add-gas` opens `network.faucetUrl`, and `copy-details` writes `details` to the clipboard. The other recoveries show only when the caller passes a handler. An error toast stays until dismissed; a new error replaces the current one.
+Display: `useErrorToast()` from `components/ErrorToast.tsx` exposes `showError(error: unknown, handlers?: { retry?, refreshQuote?, reduceAmount? })`. It decodes with the active network and renders one button per recovery: `switch-network` calls wagmi `switchChain({ chainId: network.chainId })`, `add-gas` opens `network.faucetUrl`, `view-transaction` opens the explorer for `hash`, and `copy-details` writes `details` to the clipboard. The other recoveries show only when the caller passes a handler. An error toast stays until dismissed; a new error replaces the current one.
 
 ## 5. UI
 
@@ -160,7 +170,7 @@ Page `/` (`app/page.tsx` → dynamic, client-only `Home`):
 
 1. Disconnected: a network pill, the headline "Put your MUSD to work, and see what it does to your BTC risk.", one sentence on the LP and Stability Pool routes and no custody, and a "Connect a Bitcoin or EVM wallet" button; footnote "Unaudited software." (+ "Testnet tokens have no value." on Testnet).
 2. Wrong chain (wallet chain ≠ selected network; in practice EVM wallets only, since OrangeKit connectors stay on the configured chain): inline danger alert "MezoRoute executes on {network.name}." with **Switch network**, above the wallet card. Inline rather than a toast because it lasts until fixed. Reads still go to the selected network's RPC, so the card keeps showing balances.
-3. Connected: "Your wallet" card with wallet (connector name and kind: "standard wallet", "Bitcoin wallet (smart account)", "smart account", or "unknown"), Bitcoin address (Bitcoin wallets, from Passport `useBitcoinAccount`), Mezo account, BTC for gas, and MUSD balance. Notes: smart account → "Your Bitcoin wallet acts through a smart account: approvals are exact and sent as separate transactions."; unknown → the §3 message; Mainnet → "Mainnet actions open after launch. Reading only." Buttons: "Get test BTC" (Testnet only, `faucetUrl`) and "Open Mezo app" (`mezoAppUrl`).
+3. Connected: "Your wallet" card with wallet (connector name and kind: "standard wallet", "Bitcoin wallet (smart account)", "smart account", or "unknown"), Bitcoin address (Bitcoin wallets, from Passport `useBitcoinAccount`), Mezo account, BTC for gas, and MUSD balance. Notes: smart account → "Your Bitcoin wallet acts through a smart account: approvals are exact and sent as separate transactions."; unknown → the §3 message; Mainnet → "Mainnet actions open after launch. Reading only." Buttons: "Get test BTC" (Testnet only, `faucetUrl`) and "Open Mezo app" (`mezoAppUrl`). Amounts are truncated (never rounded up) to 6 decimals with thousands separators; a non-zero amount below 0.000001 shows as "<0.000001", never "0". Formatting helpers live in `lib/format.ts`, wallet-kind labels and notes in `lib/wallet/labels.ts`.
 
 F2 replaces the wallet card with readiness, the Trove card, and the exposure panel. Copy follows spec §9 copy rules.
 
@@ -183,11 +193,12 @@ Cleanup:
 
 Vitest (node environment, no component tests):
 
-- `networks`: addresses are checksummed (`getAddress(x) === x`), chain IDs equal Passport's `CHAIN_ID`, testnet executor and fee as pinned, mainnet executor `null`, `faucetUrl` null on mainnet, `explorerTxUrl`.
-- `network-choice`: missing, invalid, valid, undefined storage, throwing `getItem`, throwing `setItem`.
+- `networks`: addresses are checksummed (`getAddress(x) === x`), chain IDs equal OrangeKit's `mezoTestnet.id`/`mezoMainnet.id` (Passport re-exports them; importing Passport itself needs `window`), testnet executor and fee as pinned, mainnet executor `null`, `faucetUrl` null on mainnet, `explorerTxUrl`.
+- `network-choice`: missing, invalid, valid values; `safeStorage` with an unreachable storage, throwing `getItem`, throwing `setItem`; `switchNetworkAndReload` same-network no-op.
 - `writeBlocker`: no executor, wrong chain, undefined chain, OK; `no-executor` wins.
 - `walletKind` / `walletCapabilities`: OrangeKit with and without code, `hasCode` undefined → `unknown`, EOA, contract wallet.
-- `sendCall` (with `vi.mock("wagmi/actions")`): passes `account` and `chainId` to `sendTransaction` and `chainId` to `waitForTransactionReceipt`; relays `"0x"` → `RelayError`; Safe `ExecutionFailure` → `SmartAccountCallFailedError`; OrangeKit fetch failure → `RelayError`.
+- `sendCall` (with `vi.mock("wagmi/actions")`): passes `account` and `chainId` to `sendTransaction` and `chainId` to `waitForTransactionReceipt`; relays `"0x"` → `RelayError`; Safe `ExecutionFailure` → `SmartAccountCallFailedError`; OrangeKit fetch failure → `RelayError`; each `receiptFailure` branch.
+- `format` and `labels`: truncation, separators, the "<0.000001" floor, each wallet-kind label and note.
 - `decodeError`: one case per rule and per revert-table row, built with viem/wagmi error classes and encoded revert data (`encodeErrorResult`), plus the S1 cases already in `tx/errors.test.ts` (Xverse plain `{ code: 4001 }`, relayer JSON/fetch failures).
 - `check-env`, `check-relayer-bundle`, `icloud-ignore` (platform branch only).
 - Existing `params` (ex-`spike`), `receipt`, `amount`, `safe`, `patch-relayer` tests keep passing.
