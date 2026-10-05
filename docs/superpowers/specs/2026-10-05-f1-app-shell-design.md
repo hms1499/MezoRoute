@@ -218,3 +218,14 @@ Manual QA on Testnet, locally and on a Vercel preview:
 ## Out of scope
 
 Readiness, Trove, and exposure (F2); quote engine, LP pages, transaction state machine, receipt page (F3); BOS strings and Borrow & Deploy (F4); Stability Pool and its strings (F5); mainnet executor address (M1); Vercel production env (V1).
+
+## Follow-ups from the F1 review (5 Oct 2026)
+
+Found by the final branch review and deferred; F3 picks up the first three before its first real send flow.
+
+- `sendCall` treats a cancelled (replaced) transaction as success: viem resolves with the replacement's receipt. Pass `onReplaced` to `waitForTransactionReceipt` and fail unless the reason is `repriced`.
+- `decodeError` reports a bare `CallExecutionError` caused by an `HttpRequestError` (an RPC outage during a read or simulation) as "The transaction reverted." For errors without a hash, test the RPC-down rule before the generic revert names.
+- `decodeError` runs the needs-gas text rule before revert evidence, so a mined revert whose wagmi replay fails on gas shows "You need test BTC" without View transaction. Settle errors that carry a `TransactionRevertedError` before the text rules, and match viem's `InsufficientFundsError` by name.
+- Rejecting the network switch in `WrongNetworkAlert` shows "Transaction was not signed." although no transaction exists; the toast's switch-network action drops `switchChain` errors.
+- When storage cannot be written, switching networks reloads onto the same network (accepted above); reading the value back before reloading would avoid the useless reload.
+- Wallet QA on a preview (Task 9 Step 6 of the plan) was still open when F1 merged; F1 sends no transactions, and the checklist is kept in the plan.
