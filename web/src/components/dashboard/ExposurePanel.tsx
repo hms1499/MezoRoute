@@ -39,7 +39,7 @@ export function ExposurePanel({ snapshot }: { snapshot: DashboardSnapshot }) {
         BTC exposure
         <span className="text-xs font-normal text-muted">BTC {price(snapshot.price)} MUSD</span>
       </h2>
-      <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+      <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
         {hasTrove && <StatRow label="Trove collateral">{btc(current.troveBtc)}</StatRow>}
         {hasLp && (
           <StatRow
@@ -60,7 +60,7 @@ export function ExposurePanel({ snapshot }: { snapshot: DashboardSnapshot }) {
       </dl>
       <p className="mt-3 rounded-lg bg-accent-soft px-3 py-2 text-xs text-accent">{DOUBLE_EXPOSURE}</p>
       <div className="mt-3 overflow-x-auto">
-        <table className="w-full min-w-[22rem] text-xs">
+        <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-line text-muted">
               <th className="py-1.5 pr-2 text-left font-medium">If BTC drops</th>

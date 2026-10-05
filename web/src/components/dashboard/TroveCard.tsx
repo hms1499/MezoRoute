@@ -49,7 +49,7 @@ export function TroveCard({
         Your Trove
         {tag && <span className={`rounded-full px-2.5 py-1 text-xs ${tag.tone}`}>{tag.label}</span>}
       </h2>
-      <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+      <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
         <StatRow label="Collateral" sub={`≈ ${formatToken((trove.collateral * price) / WAD, 18, 2)} MUSD`}>
           {formatToken(trove.collateral)} BTC
         </StatRow>
