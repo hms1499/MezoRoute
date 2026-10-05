@@ -25,24 +25,23 @@ export function assertTxHash(value: unknown): Hash {
 export type SendPin = { account: Address; chainId: number };
 
 const REVERT_NAMES = new Set(["CallExecutionError", "ExecutionRevertedError", "ContractFunctionRevertedError"]);
-const TRANSPORT_NAMES = new Set(["HttpRequestError", "TimeoutError", "WebSocketRequestError", "RpcRequestError"]);
 
 /**
- * Classifies a failure while waiting for the receipt of a submitted transaction. wagmi replays a
- * reverted transaction with `call` and throws either that call's revert or `Error(reason)`. A
- * timeout or an RPC failure says nothing about the outcome, so it must not be reported as a revert
- * (a retry could send twice). Revert markers are checked before transport names because a replayed
- * revert also carries an RpcRequestError.
+ * Classifies a failure while waiting for the receipt of a submitted transaction. Only positive
+ * evidence makes it a revert: wagmi replays a reverted transaction with `call` and throws either
+ * that call's revert (revert data or names) or a plain `Error(reason)`. Everything else (timeouts,
+ * RPC failures, viem's TransactionReceiptNotFoundError or BlockNotFoundError after a null receipt
+ * from the flaky testnet RPC) says nothing about the outcome, so it is reported as unconfirmed:
+ * offering a retry there could send twice.
  */
 export function receiptFailure(error: unknown, hash: Hash): TransactionRevertedError | ConfirmationTimeoutError {
   const chain = causeChain(error);
   const names = chainNames(chain);
   if (names.includes("WaitForTransactionReceiptTimeoutError")) return new ConfirmationTimeoutError(hash, { cause: error });
-  if (findRevertData(chain) || names.some((name) => REVERT_NAMES.has(name))) {
-    return new TransactionRevertedError(hash, { cause: error });
-  }
-  if (names.some((name) => TRANSPORT_NAMES.has(name))) return new ConfirmationTimeoutError(hash, { cause: error });
-  return new TransactionRevertedError(hash, { cause: error });
+  const replayReverted = findRevertData(chain) !== undefined || names.some((name) => REVERT_NAMES.has(name));
+  const wagmiReplayError = error instanceof Error && Object.getPrototypeOf(error) === Error.prototype;
+  if (replayReverted || wagmiReplayError) return new TransactionRevertedError(hash, { cause: error });
+  return new ConfirmationTimeoutError(hash, { cause: error });
 }
 
 /**

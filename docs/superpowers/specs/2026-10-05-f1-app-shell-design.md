@@ -98,9 +98,8 @@ export async function sendCall(config: Config, call: { to: Address; data: Hex },
 - `sendTransaction(config, { to, data, account: pin.account, chainId: pin.chainId })`: wagmi 2.19.5 throws `ConnectorChainMismatchError` if the wallet moved to another chain and `ConnectorAccountNotFoundError` if the account is no longer connected (checked in `@wagmi/core` `getConnectorClient`), so a later step cannot send from another account or chain.
 - `waitForTransactionReceipt(config, { hash, chainId: pin.chainId, pollingInterval: 2_000, timeout: 120_000 })`. Once a hash exists, a failure of this wait is classified by `receiptFailure(error, hash)`:
   - viem's `WaitForTransactionReceiptTimeoutError` → `ConfirmationTimeoutError(hash)`;
-  - a revert (revert data on the cause chain, `CallExecutionError`, `ExecutionRevertedError`) → `TransactionRevertedError(hash)`;
-  - an RPC failure (`HttpRequestError`, `TimeoutError`, `WebSocketRequestError`, `RpcRequestError`) → `ConfirmationTimeoutError(hash)`: the outcome is unknown, so the user must not be told to retry (that could send twice);
-  - anything else, including wagmi's `Error(reason)` after replaying a reverted transaction → `TransactionRevertedError(hash)`.
+  - positive evidence of a revert → `TransactionRevertedError(hash)`: revert data on the cause chain, `CallExecutionError`/`ExecutionRevertedError`/`ContractFunctionRevertedError`, or the plain `Error(reason)` wagmi throws after replaying a reverted transaction;
+  - anything else → `ConfirmationTimeoutError(hash)`: RPC failures, and viem's `TransactionReceiptNotFoundError`/`BlockNotFoundError` when the flaky testnet RPC returns null again during viem's replacement check. The outcome is unknown, so the user must not be told to retry (that could send twice).
 - A receipt with a status other than `success` also throws `TransactionRevertedError(hash)`.
 - Unchanged from S1: `asRelayFailure` around the send, `assertTxHash` (relayer `"0x"`), `hasSafeExecutionFailure` → `SmartAccountCallFailedError`.
 

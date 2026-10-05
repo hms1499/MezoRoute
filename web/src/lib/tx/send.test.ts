@@ -1,9 +1,11 @@
 import {
+  BlockNotFoundError,
   CallExecutionError,
   encodeErrorResult,
   ExecutionRevertedError,
   HttpRequestError,
   RpcRequestError,
+  TransactionReceiptNotFoundError,
   WaitForTransactionReceiptTimeoutError,
   type TransactionReceipt,
 } from "viem";
@@ -118,6 +120,9 @@ describe("receiptFailure", () => {
     ["a replay that reverted with data", replayReverted, TransactionRevertedError],
     ["viem's receipt timeout", new WaitForTransactionReceiptTimeoutError({ hash: HASH }), ConfirmationTimeoutError],
     ["an RPC failure while polling", new HttpRequestError({ url: "https://rpc.test.mezo.org" }), ConfirmationTimeoutError],
+    // viem's replacement check after a null receipt: the flaky testnet RPC returns null again.
+    ["a receipt still missing after viem's replacement check", new TransactionReceiptNotFoundError({ hash: HASH }), ConfirmationTimeoutError],
+    ["a block the RPC cannot find yet", new BlockNotFoundError({ blockNumber: 15_936_717n }), ConfirmationTimeoutError],
   ] as const)("maps %s", (_name, error, expected) => {
     const result = receiptFailure(error, HASH);
     expect(result).toBeInstanceOf(expected);
