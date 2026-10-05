@@ -656,6 +656,7 @@ The exposure module is pure TypeScript with unit tests; it is reused by the Wave
 | User rejected signature | "Transaction was not signed." | Try again |
 | Slippage revert | "Output fell below your minimum." | Refresh quote |
 | RPC unavailable | "Mezo testnet is temporarily unavailable." | Retry |
+| BTC price feed stale | "The BTC price feed is temporarily unavailable." | Retry |
 | Unknown revert | Human-readable fallback plus shortened error data | Retry or copy details |
 
 ## 14. Test plan
@@ -871,7 +872,7 @@ Wave 2 work must not be included in the Wave 1 submission.
 ## 21. Open questions (non-blocking)
 
 - Final execution fee value (proposed 10 bps) and fee recipient address.
-- Final price-impact hard limit and CR safety floor after integration tests.
+- Final price-impact hard limit after integration tests. The CR safety floor is set provisionally to 160% (F2, 5 Oct 2026): a borrow must leave the Trove able to survive a 30% BTC drop, and the dashboard shows a Trove as at risk when a 30% drop would put it below the MCR.
 - Mainnet fee recipient address; cap for `MezoRouteLeverage` (Wave 2).
 - Leverage execution fee (proposed: same 10 bps on the MUSD borrowed).
 - Whether Mezo announces MEZO utility for integrators during the event.

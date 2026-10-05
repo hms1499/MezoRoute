@@ -226,7 +226,7 @@ Found by the final branch review and deferred; F3 picks up the first three befor
 Wallet QA on the preview `mezoroute-p1zdj86y3` (the plan's Task 9 checklist) passed on 5 Oct 2026, run by the user after the merge.
 
 - `sendCall` treats a cancelled (replaced) transaction as success: viem resolves with the replacement's receipt. Pass `onReplaced` to `waitForTransactionReceipt` and fail unless the reason is `repriced`.
-- `decodeError` reports a bare `CallExecutionError` caused by an `HttpRequestError` (an RPC outage during a read or simulation) as "The transaction reverted." For errors without a hash, test the RPC-down rule before the generic revert names.
+- `decodeError` reports a bare `CallExecutionError` caused by an `HttpRequestError` (an RPC outage during a read or simulation) as "The transaction reverted." For errors without a hash, test the RPC-down rule before the generic revert names. Closed in F2 (5 Oct 2026).
 - `decodeError` runs the needs-gas text rule before revert evidence, so a mined revert whose wagmi replay fails on gas shows "You need test BTC" without View transaction. Settle errors that carry a `TransactionRevertedError` before the text rules, and match viem's `InsufficientFundsError` by name.
 - Rejecting the network switch in `WrongNetworkAlert` shows "Transaction was not signed." although no transaction exists; the toast's switch-network action drops `switchChain` errors.
 - When storage cannot be written, switching networks reloads onto the same network (accepted above); reading the value back before reloading would avoid the useless reload.
