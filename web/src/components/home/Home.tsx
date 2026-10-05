@@ -1,22 +1,14 @@
 "use client";
 
 import { useAccount } from "wagmi";
-import { useNetwork } from "@/lib/config/network-context";
+import { Dashboard } from "@/components/dashboard/Dashboard";
 import { ConnectHero } from "./ConnectHero";
-import { WalletCard } from "./WalletCard";
-import { WrongNetworkAlert } from "./WrongNetworkAlert";
 
 export default function Home() {
-  const { status, chainId } = useAccount();
-  const { network } = useNetwork();
+  const { status, address } = useAccount();
   if (status === "connecting" || status === "reconnecting") {
     return <p className="text-sm text-muted">Connecting wallet…</p>;
   }
-  if (status !== "connected") return <ConnectHero />;
-  return (
-    <>
-      {chainId !== network.chainId && <WrongNetworkAlert />}
-      <WalletCard />
-    </>
-  );
+  if (status !== "connected" || !address) return <ConnectHero />;
+  return <Dashboard account={address} />;
 }

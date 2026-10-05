@@ -14,6 +14,7 @@ import {
 import { ConnectorAccountNotFoundError, ConnectorChainMismatchError } from "wagmi";
 import { describe, expect, it } from "vitest";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
+import { priceFeedAbi } from "@/lib/abi/musd";
 import { tigrisErrorsAbi } from "@/lib/abi/tigrisErrors";
 import { networks } from "@/lib/config/networks";
 import {
@@ -219,6 +220,34 @@ describe("decodeError: reverts without data, RPC failures, and the rest", () => 
       kind: "rpc-unavailable",
       message: "Mezo Testnet is temporarily unavailable.",
       recovery: ["retry"],
+    });
+  });
+
+  it("maps a stale BTC price feed to a retry, from revert data or from text", () => {
+    const stale = { kind: "price-unavailable", message: "The BTC price feed is temporarily unavailable.", recovery: ["retry"] };
+    const data = encode(ozAbi, "Error", ["PriceFeed: Oracle is stale."]);
+    expect(decodeError(contractRevert(data), testnet)).toMatchObject(stale);
+    expect(decodeError(new Error("execution reverted: PriceFeed: Oracle is stale."), testnet)).toMatchObject(stale);
+  });
+
+  it("reports an RPC outage during a read as unavailable, not as a revert", () => {
+    // wagmi's readContracts falls back to single readContract calls when the multicall request fails.
+    const error = new ContractFunctionExecutionError(
+      new CallExecutionError(new HttpRequestError({ url: "https://rpc.test.mezo.org" }), {}),
+      { abi: priceFeedAbi, functionName: "fetchPrice", args: [] },
+    );
+    expect(decodeError(error, testnet)).toEqual({
+      kind: "rpc-unavailable",
+      message: "Mezo Testnet is temporarily unavailable.",
+      recovery: ["retry"],
+    });
+  });
+
+  it("still reports a mined transaction as reverted when its replay hit an RPC error", () => {
+    const replay = new CallExecutionError(new HttpRequestError({ url: "https://rpc.test.mezo.org" }), {});
+    expect(decodeError(new TransactionRevertedError(HASH, { cause: replay }), testnet)).toMatchObject({
+      kind: "reverted",
+      hash: HASH,
     });
   });
 
