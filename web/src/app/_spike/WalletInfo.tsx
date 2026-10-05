@@ -5,7 +5,7 @@ import { formatUnits } from "viem";
 import { useAccount, useBalance } from "wagmi";
 import { testnet } from "@/lib/config/testnet";
 import { walletCapabilities } from "@/lib/wallet/capabilities";
-import { useWalletKind } from "./useWalletKind";
+import { useWalletKind } from "@/lib/wallet/useWalletKind";
 
 export function WalletInfo() {
   const { address, chainId, connector, status } = useAccount();
