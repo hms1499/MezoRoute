@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 // the static export ships this loading shell.
 const ClientProviders = dynamic(() => import("./providers"), {
   ssr: false,
-  loading: () => <p className="p-6 text-sm text-slate-500">Loading wallet…</p>,
+  loading: () => <p className="p-6 text-sm text-muted">Loading…</p>,
 });
 
 export default ClientProviders;
