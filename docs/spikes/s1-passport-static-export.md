@@ -72,13 +72,13 @@ Vercel: `vercel project add` creates a project without a framework preset, so th
 
 ## Follow-ups for F1 from the S1 review
 
-- `sendCall` should pin `account` and `chainId` (wagmi passes `chain: null` otherwise), and `waitForTransactionReceipt` its `chainId`, so a mid-flow account or network switch cannot send `enter` from another account or chain. Do this before the network switch lands.
-- wagmi's `waitForTransactionReceipt` already throws on a reverted transaction (replaying it with `call`); the error decoder must handle viem's `CallExecutionError` text and the empty-message `Error("")` wagmi throws when the replay succeeds.
-- Block entry when the swap amount rounds to 0 (e.g. 1 wei), which today wastes an approval and reverts with `InvalidSwapAmount` (F3 quote engine).
-- Add a postbuild check that `out/_next/static` contains the live relayer URL and not the dead one; Next caches `node_modules` modules by package version, so a stale cache could ship the unpatched OrangeKit.
-- Fail the build, not the browser, when `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` is missing, and set it in the Vercel project env (V1).
-- Mark `.next/` and `out/` with the iCloud ignore xattr as well.
-- Treat a failed `getCode` as "wallet kind unknown", not EOA.
+- Done in F1: `sendCall` pins `account` and `chainId`, and `waitForTransactionReceipt` its `chainId`, so a mid-flow account or network switch cannot send `enter` from another account or chain.
+- Done in F1: the error decoder handles viem's `CallExecutionError` and the empty-message `Error("")` wagmi throws when its replay of a reverted transaction succeeds (both arrive as `TransactionRevertedError`); a receipt timeout or RPC failure after a hash exists is reported as unconfirmed, never as a retryable failure.
+- Moved to F3: block entry when the swap amount rounds to 0 (e.g. 1 wei), which today wastes an approval and reverts with `InvalidSwapAmount`.
+- Done in F1: a postbuild check that `out/_next/static` contains the live relayer URL and not the dead one (`scripts/check-relayer-bundle.mjs`).
+- Done in F1: the build fails when `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` is missing (`scripts/check-env.mjs`). Moved to V1: set it in the Vercel project env.
+- Done in F1 for `.next/` only: `out/` must not be marked, because `next build` deletes and recreates it and iCloud then renamed the fresh export to `out 2`.
+- Done in F1: a failed `getCode` gives wallet kind "unknown" (exact approvals, no Borrow & Deploy), not EOA.
 
 ## Reported upstream
 

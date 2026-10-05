@@ -28,7 +28,10 @@ MezoRoute — hackathon project for "Build with MUSD and MEZO" (AKINDO WaveHack,
 - After any contract change: `cd contracts && forge build`, then `npm run sync-abi` in `web/`.
 - Run: `cd web && npm test && npm run build` (build includes lint and type check). Don't run `next build` while `next dev` is running — they share `.next`. `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` lives in `web/.env.local` (template `.env.example`).
 - Vercel project `mezoroute` (root `web/`, `vercel.json` sets the Next.js framework). Preview: `cd web && vercel deploy --yes --build-env NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=…`. If `vercel link` appends `.env*` to `.gitignore`, revert it (it would ignore `.env.example`).
-- S1 spike results and live tx hashes: `docs/spikes/s1-passport-static-export.md`. `src/app/_spike/` is throwaway UI that F1 replaces.
+- Networks: every address lives in `src/lib/config/networks.ts`; mainnet `executor` stays `null` until M1, which makes mainnet read-only. The choice is stored in `localStorage` (`mezoroute.network`, default testnet). Switching stores it and reloads, because Passport builds one chain per wagmi config; wagmi's connection storage is per network (`mezoroute.testnet.*`, `mezoroute.mainnet.*`). Write buttons go through `writeBlocker`; sends go through `sendCall(config, call, pin)` with the account and chain captured when the flow starts.
+- Errors: `decodeError` (`src/lib/errors/`) maps any error to a fixed message plus recovery actions; the toast never shows raw error text. Add new `Error(string)` reverts (BOS in F4, Stability Pool in F5) to `revert-strings.ts`. `npm run sync-abi` also regenerates `src/lib/abi/tigrisErrors.ts`.
+- Build guards: `prebuild` fails without `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`; `postbuild` fails unless the exported chunks contain the live relayer URL and not the dead one. `predev`/`prebuild` mark `.next/` with the iCloud ignore xattr. Never mark `out/`: `next build` deletes and recreates it, and iCloud then renames the fresh export to `out 2` (5 Oct 2026); if an `out 2` appears, delete it and rebuild.
+- S1 spike results and live tx hashes: `docs/spikes/s1-passport-static-export.md`. F1 design: `docs/superpowers/specs/2026-10-05-f1-app-shell-design.md`.
 
 ## Repo conventions
 

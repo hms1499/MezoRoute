@@ -4,14 +4,14 @@ import ClientProviders from "./client-providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MezoRoute · S1 spike",
-  description: "Mezo Passport and static-export spike on Mezo testnet",
+  title: "MezoRoute",
+  description: "Compare MUSD routes on Mezo and see what each one does to your BTC risk.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-slate-50 text-slate-900">
+      <body className="min-h-screen bg-canvas text-ink antialiased">
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>

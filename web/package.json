@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/icloud-ignore.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/icloud-ignore.mjs && node scripts/patch-relayer.mjs && node scripts/check-env.mjs",
     "build": "next build",
+    "postbuild": "node scripts/check-relayer-bundle.mjs",
     "lint": "next lint",
     "test": "vitest run",
     "postinstall": "node scripts/patch-relayer.mjs",
-    "prebuild": "node scripts/patch-relayer.mjs",
     "sync-abi": "node scripts/sync-abi.mjs"
   },
   "dependencies": {

@@ -746,6 +746,8 @@ C1 done 2 Oct 2026: capped executor `0xB36B…0920` on testnet, self-audit check
 
 S1 done 3 Oct 2026: a static Next.js 14 export on Vercel connects MetaMask and Unisat (through Passport) and runs approve → `enter` on testnet with both; findings in `docs/spikes/s1-passport-static-export.md`.
 
+F1 done 5 Oct 2026: app shell with a Testnet/Mainnet switch (mainnet read-only until M1), shared header and mainnet banner, wallet-kind detection, pinned sends, and an error decoder with recovery actions; design in `docs/superpowers/specs/2026-10-05-f1-app-shell-design.md`.
+
 ### Wave 1 — MVP backlog (in order)
 
 | ID | Task | Depends on |

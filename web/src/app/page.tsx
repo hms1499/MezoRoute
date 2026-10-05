@@ -2,8 +2,9 @@
 
 import dynamic from "next/dynamic";
 
-const Spike = dynamic(() => import("./_spike/Spike"), { ssr: false });
+// The page reads wallet state, so it renders only on the client (wagmi hooks are browser-only).
+const Home = dynamic(() => import("@/components/home/Home"), { ssr: false });
 
-export default function Home() {
-  return <Spike />;
+export default function Page() {
+  return <Home />;
 }
