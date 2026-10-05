@@ -10,7 +10,9 @@ import { dashboardView } from "@/lib/dashboard/view";
 import { decodeError } from "@/lib/errors/decode";
 import type { WalletKind } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
+import { ExposurePanel } from "./ExposurePanel";
 import { ReadinessCard } from "./ReadinessCard";
+import { TroveCard } from "./TroveCard";
 import { TroveWarning } from "./TroveWarning";
 
 /** The connected home page (spec §9 screen 1): warning, readiness, Trove, exposure. */
@@ -39,6 +41,8 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
     <>
       {warning && <TroveWarning warning={warning} />}
       <ReadinessCard readiness={current} data={data} walletKind={walletKind} account={account} />
+      <TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} />
+      <ExposurePanel snapshot={snapshot} />
     </>
   );
 }
