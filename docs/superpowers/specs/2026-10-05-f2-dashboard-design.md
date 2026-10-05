@@ -284,6 +284,8 @@ Manual QA on a Vercel preview:
   - §16 records F2 as done.
 - `CLAUDE.md` frontend notes describe the snapshot (one multicall, pool token order per network) and the CR constants.
 
+QA passed on 5 Oct 2026 on the preview `mezoroute-1kwmw061f`. Items 1, 2, 4, 5, and 6 ran in Playwright against the local static export with a mock EIP-1193 wallet pointed at real Troves (testnet can-borrow, ready, at-risk, and no-Trove accounts; a mainnet Trove). The numbers were checked against `cast`. The user ran item 3 (Unisat through Passport) and a reload with a real MetaMask. The Playwright run found that every reload dropped the wallet: a discarded first render built a second wagmi config that lost wagmi's reconnect lock. Fixed in `d1fbe3a` (module-level config in `providers.tsx`).
+
 ## Out of scope
 
 - Amount input, route comparison, and "Choose route" (F6).

@@ -749,6 +749,8 @@ S1 done 3 Oct 2026: a static Next.js 14 export on Vercel connects MetaMask and U
 
 F1 done 5 Oct 2026: app shell with a Testnet/Mainnet switch (mainnet read-only until M1), shared header and mainnet banner, wallet-kind detection, pinned sends, and an error decoder with recovery actions; design in `docs/superpowers/specs/2026-10-05-f1-app-shell-design.md`.
 
+F2 done 5 Oct 2026: dashboard with readiness, Trove card, and exposure panel; design in `docs/superpowers/specs/2026-10-05-f2-dashboard-design.md`.
+
 ### Wave 1 — MVP backlog (in order)
 
 | ID | Task | Depends on |
