@@ -66,11 +66,15 @@ export function decodeError(error: unknown, network: NetworkConfig): DecodedErro
   }
   const fromText = revertStringOutcome(text);
   if (fromText) return result(fromText);
+  const rpcDown = names.some((name) => RPC_DOWN_NAMES.includes(name)) || RPC_DOWN_TEXT.test(text);
+  // Without a hash nothing was mined: a read or simulation that never reached a node is an outage,
+  // even though viem wraps it in CallExecutionError.
+  if (rpcDown && !hash) return result(rpcUnavailable(network));
   if (names.some((name) => REVERT_NAMES.includes(name)) || REVERT_TEXT.test(text)) {
     // With a hash, the hash is the useful detail; the message would only repeat it.
     return result(REVERTED, hash ? undefined : messages[0]);
   }
-  if (names.some((name) => RPC_DOWN_NAMES.includes(name)) || RPC_DOWN_TEXT.test(text)) return result(rpcUnavailable(network));
+  if (rpcDown) return result(rpcUnavailable(network));
   return result(UNKNOWN, messages[0] ?? String(error));
 }
 

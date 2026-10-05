@@ -25,6 +25,7 @@ export type ErrorKind =
   | "allowance"
   | "insufficient-balance"
   | "pool"
+  | "price-unavailable"
   | "reverted"
   | "rpc-unavailable"
   | "unknown";

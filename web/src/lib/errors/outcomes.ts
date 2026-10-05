@@ -62,6 +62,12 @@ export const POOL: Outcome = {
   recovery: ["refresh-quote"],
 };
 
+export const PRICE_UNAVAILABLE: Outcome = {
+  kind: "price-unavailable",
+  message: "The BTC price feed is temporarily unavailable.",
+  recovery: ["retry"],
+};
+
 export const REVERTED: Outcome = { kind: "reverted", message: "The transaction reverted.", recovery: ["retry", "copy-details"] };
 
 export const UNKNOWN: Outcome = { kind: "unknown", message: "Something went wrong.", recovery: ["retry", "copy-details"] };
