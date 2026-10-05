@@ -1,3 +1,6 @@
+import type { Hash } from "viem";
+import { causeChain, chainCodes, chainMessages } from "@/lib/errors/chain";
+
 /** The relayer answered without a usable transaction hash, so nothing was submitted. */
 export class RelayError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
@@ -8,38 +11,43 @@ export class RelayError extends Error {
 
 /** The relayed Safe transaction confirmed, but the call inside it reverted (Safe ExecutionFailure). */
 export class SmartAccountCallFailedError extends Error {
-  readonly hash: string;
+  readonly hash: Hash;
 
-  constructor(hash: string) {
+  constructor(hash: Hash) {
     super(`The smart-account call reverted inside relayed transaction ${hash}`);
     this.name = "SmartAccountCallFailedError";
     this.hash = hash;
   }
 }
 
-export type SendErrorKind = "rejected" | "needs-gas" | "relay" | "reverted" | "unknown";
+/** The transaction was mined and reverted (or wagmi's replay of it failed). */
+export class TransactionRevertedError extends Error {
+  readonly hash: Hash;
 
-/**
- * Messages and codes along the cause chain. Wallets do not always throw Error instances:
- * OrangeKit's Xverse provider throws a plain `{ code, message }` object.
- */
-function errorChain(error: unknown): { messages: string[]; codes: unknown[] } {
-  const messages: string[] = [];
-  const codes: unknown[] = [];
-  let current: unknown = error;
-  for (let depth = 0; typeof current === "object" && current !== null && depth < 6; depth++) {
-    const { message, code, cause } = current as { message?: unknown; code?: unknown; cause?: unknown };
-    if (typeof message === "string") messages.push(message);
-    if (code !== undefined) codes.push(code);
-    current = cause;
+  constructor(hash: Hash, options?: { cause?: unknown }) {
+    super(`Transaction ${hash} reverted`, options);
+    this.name = "TransactionRevertedError";
+    this.hash = hash;
   }
-  return { messages, codes };
 }
+
+/** The transaction was submitted, but no receipt arrived in time or the RPC failed while waiting: the outcome is unknown. */
+export class ConfirmationTimeoutError extends Error {
+  readonly hash: Hash;
+
+  constructor(hash: Hash, options?: { cause?: unknown }) {
+    super(`Transaction ${hash} is not confirmed yet`, options);
+    this.name = "ConfirmationTimeoutError";
+    this.hash = hash;
+  }
+}
+
+export type SendErrorKind = "rejected" | "needs-gas" | "relay" | "reverted" | "unknown";
 
 /** EIP-1193 "user rejected request". */
 const USER_REJECTED = 4001;
 
-/** Minimal mapping for the spike; F1 builds the full decoder (spec §13). */
+/** Minimal mapping for the spike; Task 4 replaces it with decodeError (spec §13). */
 export function classifySendError(error: unknown): { kind: SendErrorKind; message: string } {
   if (error instanceof RelayError) {
     return { kind: "relay", message: "Mezo's relayer could not submit the transaction. Retry in a moment." };
@@ -47,9 +55,10 @@ export function classifySendError(error: unknown): { kind: SendErrorKind; messag
   if (error instanceof SmartAccountCallFailedError) {
     return { kind: "reverted", message: "Your smart account sent the transaction, but the call reverted." };
   }
-  const { messages, codes } = errorChain(error);
+  const chain = causeChain(error);
+  const messages = chainMessages(chain);
   const text = messages.join(" | ");
-  if (codes.includes(USER_REJECTED) || /user rejected|user denied|user cancel|rejected the request/i.test(text)) {
+  if (chainCodes(chain).includes(USER_REJECTED) || /user rejected|user denied|user cancel|rejected the request/i.test(text)) {
     return { kind: "rejected", message: "Transaction was not signed." };
   }
   if (/not enough native token balance|insufficient funds/i.test(text)) {
@@ -66,7 +75,7 @@ const RELAY_FAILURE = /is not valid JSON|unexpected token|failed to fetch|networ
 /** For OrangeKit (Bitcoin-wallet) connectors, re-labels relayer failures as RelayError. */
 export function asRelayFailure(error: unknown, connectorType: string | undefined): unknown {
   if (connectorType !== "orangekit" || error instanceof RelayError) return error;
-  const { messages } = errorChain(error);
+  const messages = chainMessages(causeChain(error));
   if (!RELAY_FAILURE.test(messages.join(" | "))) return error;
   return new RelayError(`Mezo's relayer failed: ${messages[0]}`, { cause: error });
 }

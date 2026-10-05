@@ -59,9 +59,10 @@ export function EnterPanel() {
   async function run() {
     if (amount === null || blocker !== null) return;
     try {
+      const pin = { account: owner, chainId: testnet.chainId };
       if (needsApproval(allowance, amount)) {
         setStep({ kind: "busy", label: "Approving the exact MUSD amount…" });
-        await sendCall(config, { to: musd, data: encodeApproveCall(executor, amount) });
+        await sendCall(config, { to: musd, data: encodeApproveCall(executor, amount) }, pin);
       }
       setStep({ kind: "busy", label: "Quoting the swap…" });
       const amounts = await readContract(config, {
@@ -78,7 +79,7 @@ export function EnterPanel() {
         nowSeconds: BigInt(Math.floor(Date.now() / 1000)),
       });
       setStep({ kind: "busy", label: "Sending enter…" });
-      const receipt = await sendCall(config, { to: executor, data: encodeEnterCall(params) });
+      const receipt = await sendCall(config, { to: executor, data: encodeEnterCall(params) }, pin);
       setStep({ kind: "done", receipt, entered: findEnteredEvent(receipt.logs, executor) });
     } catch (error) {
       console.error(error);
