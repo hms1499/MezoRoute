@@ -6,7 +6,9 @@ import { useAccount, useBalance, useConfig, useReadContracts } from "wagmi";
 import { readContract } from "wagmi/actions";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { routerAbi } from "@/lib/abi/router";
+import { networks } from "@/lib/config/networks";
 import { explorerTxUrl, testnet } from "@/lib/config/testnet";
+import { decodeError } from "@/lib/errors/decode";
 import { parseMusdAmount } from "@/lib/quote/amount";
 import { findEnteredEvent, type EnteredEvent } from "@/lib/routes/musd-btc-lp/receipt";
 import {
@@ -18,7 +20,6 @@ import {
   needsApproval,
   spikeSwapAmount,
 } from "@/lib/routes/musd-btc-lp/spike";
-import { classifySendError } from "@/lib/tx/errors";
 import { sendCall } from "@/lib/tx/send";
 
 const { musd, btc, router, poolFactory, executor } = testnet.addresses;
@@ -83,7 +84,7 @@ export function EnterPanel() {
       setStep({ kind: "done", receipt, entered: findEnteredEvent(receipt.logs, executor) });
     } catch (error) {
       console.error(error);
-      setStep({ kind: "error", message: classifySendError(error).message });
+      setStep({ kind: "error", message: decodeError(error, networks.testnet).message });
     } finally {
       await Promise.all([reads.refetch(), gas.refetch()]);
     }

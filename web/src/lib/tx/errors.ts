@@ -1,5 +1,5 @@
 import type { Hash } from "viem";
-import { causeChain, chainCodes, chainMessages } from "@/lib/errors/chain";
+import { causeChain, chainMessages } from "@/lib/errors/chain";
 
 /** The relayer answered without a usable transaction hash, so nothing was submitted. */
 export class RelayError extends Error {
@@ -40,31 +40,6 @@ export class ConfirmationTimeoutError extends Error {
     this.name = "ConfirmationTimeoutError";
     this.hash = hash;
   }
-}
-
-export type SendErrorKind = "rejected" | "needs-gas" | "relay" | "reverted" | "unknown";
-
-/** EIP-1193 "user rejected request". */
-const USER_REJECTED = 4001;
-
-/** Minimal mapping for the spike; Task 4 replaces it with decodeError (spec §13). */
-export function classifySendError(error: unknown): { kind: SendErrorKind; message: string } {
-  if (error instanceof RelayError) {
-    return { kind: "relay", message: "Mezo's relayer could not submit the transaction. Retry in a moment." };
-  }
-  if (error instanceof SmartAccountCallFailedError) {
-    return { kind: "reverted", message: "Your smart account sent the transaction, but the call reverted." };
-  }
-  const chain = causeChain(error);
-  const messages = chainMessages(chain);
-  const text = messages.join(" | ");
-  if (chainCodes(chain).includes(USER_REJECTED) || /user rejected|user denied|user cancel|rejected the request/i.test(text)) {
-    return { kind: "rejected", message: "Transaction was not signed." };
-  }
-  if (/not enough native token balance|insufficient funds/i.test(text)) {
-    return { kind: "needs-gas", message: "You need test BTC to submit transactions." };
-  }
-  return { kind: "unknown", message: messages[0] ?? String(error) };
 }
 
 // What OrangeKit raises when Mezo's relayer fails before a hash exists: a non-JSON body
