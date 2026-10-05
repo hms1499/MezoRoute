@@ -47,7 +47,7 @@ type EntryQuote = {
   musdToSwap: bigint; btcFromSwap: bigint;
   musdAdded: bigint; btcAdded: bigint; liquidity: bigint;
   musdRefund: bigint; btcRefund: bigint;
-  priceImpactBps: bigint;                            // against the pre-trade mid price
+  priceImpact: bigint;                               // 1e18 = 100%, against the pre-trade mid price
   after: PoolState;                                  // reserves and supply after the entry
 };
 ```
@@ -56,7 +56,7 @@ type EntryQuote = {
   `s = (√(r²(2 − f)² + 4g²·a·r) − r(2 − f)) / (2g²)`, computed in bps-scaled integers with `isqrt`.
 - **Simulation.** `simulateEntry(pool, net, s)` follows the contract step by step (swap fee, `getAmountOut`, post-swap reserves, `quoteLiquidity`, `mint`) and returns the amounts and refunds. `quoteEntry` = optimal `s` + simulation. The S1 replays call `simulateEntry` with S1's `s` (a naive half split).
 - **Minimums.** For slippage `bps ∈ {50, 100, 200}`: `min = expected × (10000 − bps) / 10000`, rounded down, for `minBtcFromSwap`, `minMusdAdded`, `minBtcAdded`, and `minLpOut`. Slippage is never raised silently, and the UI warns strongly at 2%.
-- **Price impact.** `1 − btcFromSwap × r / (s × R)`, with `r` and `R` the MUSD and BTC reserves before the swap. It includes the pool fee.
+- **Price impact.** `1 − btcFromSwap × r / (s × R)` as a 1e18 ratio, rounded up, with `r` and `R` the MUSD and BTC reserves before the swap. It includes the pool fee.
 - **Exposure after entry.** `applyEntry(snapshot, quote)` returns the dashboard snapshot with MUSD reduced by `musdIn − musdRefund`, LP balance and supply raised by `liquidity`, and the reserves from `after`. F2's `exposure()` and `drawdownScenarios()` then give the "after" panel.
 - **Gas estimate.** `gas units × gasPrice`, labelled as an estimate. The budget is `enter` 450,000 (S1 max 433,422), plus 60,000 for an approval, plus 197,471 per relayed Safe call. The needs-gas check keeps F2's 3,000,000-unit budget.
 
@@ -72,7 +72,7 @@ type EntryQuote = {
 | `zero` | no amount | (button disabled, no message) |
 | `insufficient-balance` | `musdIn > wallet MUSD` | "Amount exceeds your available MUSD." / Use Max |
 | `above-cap` | `musdIn > maxMusdIn()` (read on chain) | existing `aboveCap` copy |
-| `too-small` | `musdToSwap = 0`, `musdToSwap ≥ net`, or `liquidity = 0` | "Amount is too small to route." |
+| `too-small` | no quote, `musdToSwap = 0`, `musdToSwap ≥ net`, `btcFromSwap = 0`, or `liquidity = 0` | "Amount is too small to route." |
 | `price-impact` | price impact > 500 bps (5%) | "This trade would lose too much value at current liquidity." / Reduce amount |
 | `needs-gas` | F2 readiness gas rule | "You need test BTC to submit transactions." / Open faucet |
 | `quote-expired` | quote older than 60 s (confirm page) | "Pool state changed; refresh your quote." / Refresh quote |
@@ -101,7 +101,7 @@ One multicall at one block: F2's `snapshotContracts` plus `PoolFactory.getFee(po
 
 **Plan.** `entrySteps(kind, allowance, musdIn)`: `["permit", "enter"]` for an EOA, `["approve", "enter"]` for a smart account or an unknown kind, `["enter"]` when the allowance already covers `musdIn`.
 
-**State machine** (`src/lib/tx/stepper.ts`, a pure reducer). Each step moves `idle → awaiting-wallet → (submitted → confirming) → done | failed`; signatures skip the transaction states. Events: `start`, `signed`, `submitted(hash)`, `confirmed`, `failed(DecodedError)`, `retry`, `permit-expired`. A failed step keeps its decoded error and offers that error's recovery; retry restarts the failed step only. The account and chain are pinned when the user starts the first step (`SendPin`), and every later step uses the pin.
+**State machine** (`src/lib/tx/stepper.ts`, a pure reducer). Each step moves `idle → awaiting-wallet → (submitted → confirming) → done | failed`; signatures skip the transaction states. Events: `start`, `signed`, `submitted(hash)`, `confirmed`, `failed(DecodedError)`, `permit-expired`, and `reset(plan)` (before anything started). A failed step keeps its decoded error and the toast offers that error's recovery; `start` on a failed step retries that step only. The account and chain are pinned when the user starts the first step (`SendPin`), and every later step uses the pin.
 
 **Permit** (`src/lib/routes/musd-btc-lp/permit.ts`): typed data `Permit(owner, spender = executor, value = musdIn, nonce, deadline)` with domain `{ name: "Mezo USD", version: "1", chainId, verifyingContract: MUSD }`, signed with wagmi `signTypedData` for the pinned account; the signature is split into `v, r, s`. If the permit's deadline passes before sending, the stepper returns to the permit step.
 
@@ -136,7 +136,7 @@ One multicall at one block: F2's `snapshotContracts` plus `PoolFactory.getFee(po
 - `send`: `onReplaced` (repriced passes; cancelled and replaced fail).
 - `decodeError`: the F1 follow-up-3 cases and the new outcomes.
 
-**QA run by me** (local static export + Playwright, as for F2): a mock EIP-1193 wallet that **signs for real** with the testnet key in `contracts/.env`. Signing runs in the Playwright (Node) process through `page.exposeFunction`; the key is never printed and never enters the page. The run covers permit → `enter` → receipt on live testnet, a check that the quote matches the `Entered` event, a forced slippage revert, quote expiry, and the 360 px layout.
+**QA run by me** (local static export + Playwright, as for F2): a mock EIP-1193 wallet that **signs for real** with the testnet key in `contracts/.env`. Signing runs in the Playwright (Node) process through `page.exposeFunction`; the key is never printed and never enters the page. The run covers permit → `enter` → receipt on live testnet, a check that the quote matches the `Entered` event, quote expiry (RPC blocked for over 60 s), and the 360 px layout. Slippage reverts are covered by the decoder's unit tests: a live pool cannot be moved on demand between the quote and the send.
 
 **QA run by the user** on the Vercel preview: Unisat through Passport (approve → `enter` through the relayer → receipt), and MetaMask (permit → `enter`).
 
