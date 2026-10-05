@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  ensureUsableLocalStorage,
   NETWORK_STORAGE_KEY,
   readStoredNetwork,
   safeStorage,
@@ -80,5 +81,39 @@ describe("switchNetworkAndReload", () => {
     const reload = vi.fn(() => expect(storage.getItem(NETWORK_STORAGE_KEY)).toBe("mainnet"));
     switchNetworkAndReload("testnet", "mainnet", storage, reload);
     expect(reload).toHaveBeenCalledOnce();
+  });
+});
+
+// Passport builds a wagmi config at import time whose default storage reads window.localStorage
+// unguarded; when the browser blocks site data that getter throws and the app cannot boot.
+describe("ensureUsableLocalStorage", () => {
+  function windowWith(descriptor: PropertyDescriptor) {
+    const target = {} as { localStorage: Storage };
+    Object.defineProperty(target, "localStorage", { configurable: true, ...descriptor });
+    return target;
+  }
+
+  it("leaves a working localStorage alone", () => {
+    const storage = memoryStorage() as unknown as Storage;
+    const target = windowWith({ value: storage });
+    expect(ensureUsableLocalStorage(target)).toBe(false);
+    expect(target.localStorage).toBe(storage);
+  });
+
+  it("swaps in an in-memory storage when reaching localStorage throws", () => {
+    const target = windowWith({ get: securityError });
+    expect(ensureUsableLocalStorage(target)).toBe(true);
+    target.localStorage.setItem("k", "v");
+    expect(target.localStorage.getItem("k")).toBe("v");
+    expect(target.localStorage.length).toBe(1);
+    expect(target.localStorage.key(0)).toBe("k");
+    target.localStorage.removeItem("k");
+    expect(target.localStorage.getItem("k")).toBeNull();
+  });
+
+  it("swaps in an in-memory storage when reading from it throws", () => {
+    const target = windowWith({ value: { getItem: securityError } });
+    expect(ensureUsableLocalStorage(target)).toBe(true);
+    expect(target.localStorage.getItem("k")).toBeNull();
   });
 });

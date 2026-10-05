@@ -41,6 +41,50 @@ export function safeStorage(getStorage: () => StorageLike | undefined = () => wi
   };
 }
 
+/** A Storage that lives only in memory: choices are forgotten on reload, but nothing throws. */
+class MemoryStorage implements Storage {
+  private readonly items = new Map<string, string>();
+
+  get length() {
+    return this.items.size;
+  }
+
+  key(index: number) {
+    return [...this.items.keys()][index] ?? null;
+  }
+
+  getItem(key: string) {
+    return this.items.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string) {
+    this.items.set(key, String(value));
+  }
+
+  removeItem(key: string) {
+    this.items.delete(key);
+  }
+
+  clear() {
+    this.items.clear();
+  }
+}
+
+/**
+ * Passport builds a wagmi config at import time whose default storage reads `window.localStorage`
+ * unguarded. When the browser blocks site data, that read throws and the app cannot boot, so this
+ * swaps in an in-memory storage before the wallet code loads. Returns whether it did.
+ */
+export function ensureUsableLocalStorage(target: { localStorage: Storage }): boolean {
+  try {
+    target.localStorage.getItem(NETWORK_STORAGE_KEY);
+    return false;
+  } catch {
+    Object.defineProperty(target, "localStorage", { configurable: true, value: new MemoryStorage() });
+    return true;
+  }
+}
+
 /** The stored network; Testnet when nothing (or an unknown value) is stored. */
 export function readStoredNetwork(storage: Pick<Storage, "getItem">): NetworkId {
   const value = storage.getItem(NETWORK_STORAGE_KEY);
