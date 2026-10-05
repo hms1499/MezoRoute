@@ -5,6 +5,8 @@ import { lightTheme, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
+import { AppShell } from "@/components/AppShell";
+import { ErrorToastProvider } from "@/components/ErrorToast";
 import { readStoredNetwork, safeStorage } from "@/lib/config/network-choice";
 import { NetworkProvider } from "@/lib/config/network-context";
 import { networks } from "@/lib/config/networks";
@@ -21,7 +23,11 @@ export default function Providers({ children }: { children: ReactNode }) {
     <NetworkProvider network={network}>
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider theme={theme}>{children}</RainbowKitProvider>
+          <RainbowKitProvider theme={theme}>
+            <ErrorToastProvider>
+              <AppShell>{children}</AppShell>
+            </ErrorToastProvider>
+          </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>
     </NetworkProvider>
