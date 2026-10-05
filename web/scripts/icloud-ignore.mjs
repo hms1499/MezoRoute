@@ -1,12 +1,14 @@
-// The repo sits in an iCloud-synced Desktop. Marking build output with this xattr makes iCloud
-// (macOS File Provider) skip it. `next build` recreates out/, so this runs before and after builds.
+// The repo sits in an iCloud-synced Desktop. Marking .next/ with this xattr makes iCloud (macOS
+// File Provider) skip it; next build empties .next/ but keeps the directory, so the mark survives.
+// out/ is left alone: next build deletes and recreates it, which drops the mark, and iCloud then
+// sees a new "out" beside the one it recorded and renames ours to "out 2".
 import { execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const ICLOUD_IGNORE_ATTR = "com.apple.fileprovider.ignore#P";
-const IGNORED_DIRS = [".next", "out"];
+const IGNORED_DIRS = [".next"];
 
 export function ignoreCommands(platform, webRoot) {
   if (platform !== "darwin") return [];
