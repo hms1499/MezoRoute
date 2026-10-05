@@ -180,8 +180,8 @@ Scripts in `web/scripts/` (each exports a pure function that a Vitest test cover
 
 - `check-env.mjs` (`prebuild`): loads `.env*` with `@next/env` `loadEnvConfig`, fails the build when `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` is missing or empty. The runtime throw in `walletConnectProjectId()` stays.
 - `check-relayer-bundle.mjs` (`postbuild`): scans `out/_next/static/**/*.js`; fails unless some file contains `https://testnet.mezo.org/api/v2/relay/` and none contains `https://test.mezo.org/api/v2/relay/`.
-- `icloud-ignore.mjs` (`predev`, `prebuild`, `postbuild`): on macOS creates `.next/` and `out/` if missing and sets the xattr `com.apple.fileprovider.ignore#P` on both; no-op on other platforms. It runs again after the build because `next build` recreates `out/`.
-- Script order: `prebuild` = icloud-ignore → patch-relayer → check-env; `postbuild` = check-relayer-bundle → icloud-ignore.
+- `icloud-ignore.mjs` (`predev`, `prebuild`): on macOS creates `.next/` if missing and sets the xattr `com.apple.fileprovider.ignore#P` on it; no-op on other platforms. `out/` is deliberately not marked: `next build` deletes and recreates it, which drops the mark, and iCloud then renamed the fresh export to `out 2` (found during F1, 5 Oct 2026). `.next/` is only emptied, so its mark survives.
+- Script order: `prebuild` = icloud-ignore → patch-relayer → check-env; `postbuild` = check-relayer-bundle.
 
 Cleanup:
 
