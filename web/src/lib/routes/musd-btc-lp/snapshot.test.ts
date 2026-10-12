@@ -1,3 +1,4 @@
+import { encodeFunctionData } from "viem";
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
 import { snapshotContracts, type SnapshotResults } from "@/lib/dashboard/snapshot";
@@ -36,6 +37,12 @@ describe("lpRouteContracts", () => {
         expect(call.chainId).toBe(network.chainId);
         expect(allowed).toContain(call.address);
       }
+    }
+  });
+
+  it("encodes every call against its ABI (each function exists in the ABI it names)", () => {
+    for (const call of lpRouteContracts(networks.testnet, EXECUTOR, ACCOUNT)) {
+      expect(() => encodeFunctionData(call as Parameters<typeof encodeFunctionData>[0])).not.toThrow();
     }
   });
 

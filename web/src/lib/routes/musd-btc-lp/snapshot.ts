@@ -1,5 +1,6 @@
-import { erc20Abi, multicall3Abi, type Address } from "viem";
+import { erc20Abi, type Address } from "viem";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
+import { multicall3BlockAbi } from "@/lib/abi/multicall3";
 import { musdPermitAbi } from "@/lib/abi/musd";
 import { poolFactoryAbi } from "@/lib/abi/pool";
 import type { NetworkConfig } from "@/lib/config/networks";
@@ -45,8 +46,8 @@ export function lpRouteContracts(network: NetworkConfig, executor: Address, acco
     { chainId, address: a.musd, abi: musdPermitAbi, functionName: "nonces", args: [account] },
     { chainId, address: executor, abi: mezoRouteExecutorAbi, functionName: "feeBps" },
     { chainId, address: executor, abi: mezoRouteExecutorAbi, functionName: "maxMusdIn" },
-    { chainId, address: a.multicall3, abi: multicall3Abi, functionName: "getBlockNumber" },
-    { chainId, address: a.multicall3, abi: multicall3Abi, functionName: "getCurrentBlockTimestamp" },
+    { chainId, address: a.multicall3, abi: multicall3BlockAbi, functionName: "getBlockNumber" },
+    { chainId, address: a.multicall3, abi: multicall3BlockAbi, functionName: "getCurrentBlockTimestamp" },
   ] as const;
 }
 
