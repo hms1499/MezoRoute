@@ -111,8 +111,18 @@ describe("loadHistory", () => {
     await loadHistory({ read, head: 2_000n, deployBlock: 0n, cache: { scannedTo: 1_500n, events: [] } });
     expect(seen).toEqual([
       { fromBlock: DEPLOY, toBlock: DEPLOY + 5n },
-      { fromBlock: 1_501n, toBlock: 2_000n },
+      { fromBlock: 1_501n, toBlock: 1_950n },
+      { fromBlock: 1_951n, toBlock: 2_000n },
     ]);
+  });
+
+  it("never caches a range that a node lagging behind the head could have answered empty", async () => {
+    // One node reports head 100,000; the getLogs node is a block behind and answers any range
+    // reaching past its own head with [] (no error), as Mezo's RPC does.
+    const read = async (range: BlockRange) =>
+      range.toBlock > 99_999n ? [] : range.fromBlock <= 99_000n && range.toBlock >= 99_000n ? [entered(99_000n)] : [];
+    const { cache } = await loadHistory({ read, head: 100_000n, deployBlock: 95_000n, cache: null });
+    expect(cache).toEqual({ scannedTo: 99_950n, events: [entered(99_000n)] });
   });
 
   it("rejects, and so writes no cache, when a range keeps failing", async () => {

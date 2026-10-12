@@ -79,7 +79,12 @@ export function mergeHistory(
   return { events, cache: { scannedTo: safeTo, events: events.filter((item) => item.blockNumber <= safeTo) } };
 }
 
-/** Reads what the cache does not cover, up to the head. Rejects (and so caches nothing) if a range fails. */
+/**
+ * Reads what the cache does not cover, up to the head. Rejects (and so caches nothing) if a range fails.
+ * The ranges split at head − REORG_MARGIN: a getLogs node a few blocks behind the head answers a range
+ * past its own head with [] and no error, so only ranges ending at least REORG_MARGIN deep are cached;
+ * the tail is shown and read again on the next load.
+ */
 export async function loadHistory(input: {
   read: ReadChunk;
   head: bigint;
@@ -87,7 +92,10 @@ export async function loadHistory(input: {
   cache: HistoryCache | null;
 }): Promise<{ events: HistoryEvent[]; cache: HistoryCache | null }> {
   const from = scanStart(input.cache, input.deployBlock);
-  const fresh = from > input.head ? [] : await readRanges(input.read, scanRanges(from, input.head));
+  const safeTo = input.head - REORG_MARGIN;
+  const tailFrom = from > safeTo ? from : safeTo + 1n;
+  const ranges = [...scanRanges(from, safeTo < input.head ? safeTo : input.head), ...scanRanges(tailFrom, input.head)];
+  const fresh = ranges.length === 0 ? [] : await readRanges(input.read, ranges);
   return mergeHistory(input.cache, fresh, input.head, input.deployBlock);
 }
 
