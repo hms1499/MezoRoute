@@ -13,13 +13,15 @@ import { explorerTxUrl } from "@/lib/config/networks";
 import { decodeError } from "@/lib/errors/decode";
 import { useDashboardSnapshot } from "@/lib/dashboard/useDashboardSnapshot";
 import { formatPercent, formatToken, shortAddress } from "@/lib/format";
-import { enteredRows, findEnteredEvent } from "@/lib/routes/musd-btc-lp/receipt";
+import { claimRows } from "@/lib/positions/claim";
+import { enteredRows, exitedRows } from "@/lib/routes/musd-btc-lp/receipt";
 import { collateralRatio } from "@/lib/trove/health";
+import { receiptKind } from "@/lib/tx/receipt-kind";
 import { confirmCall, isTxHash } from "@/lib/tx/send";
 
 const RECEIPT_KEY = "entry-receipt";
 
-/** Spec §9 screen 4: progress until confirmed, then values from the Entered event only (FR-11, FR-13). */
+/** Spec §9 screen 4: progress until confirmed, then values from the Entered, Exited, or pool Claim event only (FR-11, FR-13). */
 export default function ReceiptPage() {
   const hash = useSearchParams().get("hash");
   if (!isTxHash(hash)) {
@@ -71,30 +73,35 @@ function Receipt({ hash }: { hash: Hash }) {
   );
 }
 
+const TITLES = { entered: "Deposit confirmed", exited: "Exit confirmed", claim: "Fees claimed" } as const;
+
 function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
   const { network } = useNetwork();
-  const event = network.executor ? findEnteredEvent(receipt.logs, network.executor.address) : null;
+  const result = receiptKind(receipt.logs, network);
+  if (!result) {
+    return (
+      <>
+        <h1 className="text-lg font-semibold">Transaction confirmed</h1>
+        <p className="mt-2 text-sm text-muted">This transaction has no MezoRoute action.</p>
+      </>
+    );
+  }
+  const borrowed = result.kind === "entered" && result.event.musdBorrowed > 0n;
+  const rows =
+    result.kind === "entered" ? enteredRows(result.event) : result.kind === "exited" ? exitedRows(result.event) : claimRows(result.fees);
   return (
     <>
-      <h1 className="text-lg font-semibold">
-        {event && event.musdBorrowed > 0n ? "Borrow & deposit confirmed" : "Deposit confirmed"}
-      </h1>
-      {event ? (
-        <>
-          <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
-            {enteredRows(event).map((row) => (
-              <StatRow key={row.label} label={row.label}>
-                {row.value}
-              </StatRow>
-            ))}
-            <StatRow label="Gas used">{formatToken(receipt.gasUsed, 0, 0)}</StatRow>
-            <StatRow label="Block">{receipt.blockNumber.toString()}</StatRow>
-          </dl>
-          {event.musdBorrowed > 0n && <TroveNow />}
-        </>
-      ) : (
-        <p className="mt-2 text-sm text-muted">This transaction has no MezoRoute entry.</p>
-      )}
+      <h1 className="text-lg font-semibold">{borrowed ? "Borrow & deposit confirmed" : TITLES[result.kind]}</h1>
+      <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
+        {rows.map((row) => (
+          <StatRow key={row.label} label={row.label}>
+            {row.value}
+          </StatRow>
+        ))}
+        <StatRow label="Gas used">{formatToken(receipt.gasUsed, 0, 0)}</StatRow>
+        <StatRow label="Block">{receipt.blockNumber.toString()}</StatRow>
+      </dl>
+      {borrowed && <TroveNow />}
     </>
   );
 }
@@ -126,7 +133,7 @@ function Failed({ error }: { error: Error }) {
   const decoded = decodeError(error, network);
   return (
     <>
-      <h1 className="text-lg font-semibold">{decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Deposit failed"}</h1>
+      <h1 className="text-lg font-semibold">{decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Transaction failed"}</h1>
       <p className="mt-1 text-sm">{decoded.message}</p>
     </>
   );
@@ -138,8 +145,13 @@ function Card({ children }: { children: ReactNode }) {
 
 function BackLink() {
   return (
-    <Link href="/" className="text-xs font-semibold text-accent hover:underline">
-      Back to dashboard
-    </Link>
+    <span className="flex gap-3">
+      <Link href="/positions/" className="text-xs font-semibold text-accent hover:underline">
+        View positions
+      </Link>
+      <Link href="/" className="text-xs font-semibold text-accent hover:underline">
+        Back to dashboard
+      </Link>
+    </span>
   );
 }

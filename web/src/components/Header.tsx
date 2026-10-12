@@ -12,6 +12,11 @@ export function Header() {
         <span aria-hidden className="h-5 w-5 rounded-md bg-accent" />
         <span className="hidden sm:inline">MezoRoute</span>
       </Link>
+      <nav className="mr-auto">
+        <Link href="/positions/" className="text-sm font-semibold text-muted hover:text-accent">
+          Positions
+        </Link>
+      </nav>
       <NetworkSwitch />
       <ConnectButton
         label="Connect"

@@ -44,7 +44,7 @@ export function EntryStepper({ block, ...flow }: EntryFlowInput & { block: Entry
               <p className="text-xs text-muted">{COPY[step.kind].detail}</p>
               {step.status === "failed" && step.error && <p className="mt-1 text-xs text-danger">{step.error.message}</p>}
             </div>
-            <StepAction step={step} active={index === stepper.active} disabled={block !== null} onRun={run} />
+            <StepAction step={step} active={index === stepper.active} disabled={block !== null} label={COPY[step.kind].action} onRun={run} />
           </li>
         ))}
       </ol>
@@ -55,7 +55,19 @@ export function EntryStepper({ block, ...flow }: EntryFlowInput & { block: Entry
   );
 }
 
-function StepAction({ step, active, disabled, onRun }: { step: Step; active: boolean; disabled: boolean; onRun: () => void }) {
+export function StepAction({
+  step,
+  active,
+  disabled,
+  label,
+  onRun,
+}: {
+  step: Step<string>;
+  active: boolean;
+  disabled: boolean;
+  label: string;
+  onRun: () => void;
+}) {
   if (step.status === "done") return <span className="shrink-0 text-xs font-semibold text-accent">Done</span>;
   if (step.status === "awaiting-wallet") return <span className="shrink-0 text-xs text-muted">Check your wallet…</span>;
   if (step.status === "submitted") return <span className="shrink-0 text-xs text-muted">Confirming…</span>;
@@ -67,7 +79,7 @@ function StepAction({ step, active, disabled, onRun }: { step: Step; active: boo
       onClick={onRun}
       className="shrink-0 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent/90 disabled:opacity-50"
     >
-      {step.status === "failed" ? "Try again" : COPY[step.kind].action}
+      {step.status === "failed" ? "Try again" : label}
     </button>
   );
 }

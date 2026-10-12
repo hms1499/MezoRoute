@@ -4,8 +4,8 @@ import { createStepper, hasStarted, stepperReducer, type Stepper, type StepperEv
 
 const HASH = "0x5f17df95a34e55e6f4b4c4de30ecc9d8ff8acfa2ac37fd779113b03ef83a87bf";
 
-function run(state: Stepper, ...events: StepperEvent[]): Stepper {
-  return events.reduce(stepperReducer, state);
+function run<K extends string>(state: Stepper<K>, ...events: StepperEvent<K>[]): Stepper<K> {
+  return events.reduce((current, event) => stepperReducer(current, event), state);
 }
 
 describe("stepper", () => {
@@ -89,5 +89,19 @@ describe("stepper", () => {
   it("never takes a transaction hash for a borrow signature", () => {
     const signing = run(createStepper(["borrow", "enter"]), { type: "start" });
     expect(run(signing, { type: "submitted", hash: HASH })).toEqual(signing);
+  });
+
+  it("runs any step kinds, such as the exit flow's", () => {
+    let state = createStepper<"permit" | "exit">(["permit", "exit"]);
+    state = stepperReducer(state, { type: "start" });
+    state = stepperReducer(state, { type: "signed" });
+    expect(state.active).toBe(1);
+    expect(state.steps[0]).toEqual({ kind: "permit", status: "done" });
+  });
+
+  it("restarts with new kinds even after a step has started or failed", () => {
+    const failed = run(createStepper(["permit", "exit"]), { type: "start" }, { type: "failed", error: REJECTED });
+    expect(run(failed, { type: "reset", kinds: ["exit"] })).toEqual(failed);
+    expect(run(failed, { type: "restart", kinds: ["exit"] })).toEqual(createStepper(["exit"]));
   });
 });

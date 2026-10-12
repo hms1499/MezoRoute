@@ -54,7 +54,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
   const { network } = useNetwork();
   const router = useRouter();
   const { showError } = useErrorToast();
-  const [stepper, dispatch] = useReducer(stepperReducer, input.plan, createStepper);
+  const [stepper, dispatch] = useReducer(stepperReducer<StepKind>, input.plan, createStepper<StepKind>);
   const stepperRef = useRef(stepper);
   stepperRef.current = stepper;
   const pin = useRef<SendPin | null>(null);
