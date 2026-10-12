@@ -751,6 +751,8 @@ F1 done 5 Oct 2026: app shell with a Testnet/Mainnet switch (mainnet read-only u
 
 F2 done 5 Oct 2026: dashboard with readiness, Trove card, and exposure panel; design in `docs/superpowers/specs/2026-10-05-f2-dashboard-design.md`.
 
+F3 done 12 Oct 2026: LP quote engine, LP route page, permit/approve stepper, and receipt; design in `docs/superpowers/specs/2026-10-05-f3-lp-route-design.md`.
+
 ### Wave 1 — MVP backlog (in order)
 
 | ID | Task | Depends on |

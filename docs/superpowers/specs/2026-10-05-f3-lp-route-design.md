@@ -148,6 +148,12 @@ One multicall at one block: F2's `snapshotContracts` plus `PoolFactory.getFee(po
 - `CLAUDE.md` frontend notes cover the URL-intent pattern, the permit domain, and the submit/confirm split.
 - The F1 design doc marks follow-ups 1 and 3 as closed.
 
+### QA result (12 Oct 2026): passed
+
+- **Agent, local export + Playwright:** route page, confirm page, receipt, wallet rejection, malformed hash (no RPC call), quote expiry with the RPC blocked for 66 s, 360 px layout, mainnet read-only. Live permit → `enter` from the deployer EOA through a local signer: tx `0xa0277e8f019f38e437d7fc603b56f2eac2274a04c241f391189927110cd3195c` (5 MUSD); the quote at the previous block matches the `Entered` event to the wei; allowance 0 and executor MUSD/BTC/LP balances 0 afterwards.
+- **User, Vercel preview:** Unisat through Passport, approve → `enter` relayed to Safe `0x4543…e22D`: tx `0xc22fffc77896a5c464da516a692c8eab491e63467378c18acb3a71f5906d1083` (`ExecutionSuccess`, `Entered` caller and recipient the Safe, allowance 0, executor balances 0). EVM wallet with a permit: tx `0x2c65551e30410a6445cf1e7e6a4c06463bbd2981c46175e24285b18d5df0e268`. Reload keeps the Unisat connection.
+- **Bugs found and fixed during QA:** viem's `multicall3Abi` lacks `getBlockNumber` (own ABI); `confirmCall` gave up when the testnet RPC returned a null receipt or block for a mined transaction (now retries within 120 s); every navigation re-rendered `WagmiProvider`, whose `Hydrate` reconnects on render, which logged Unisat out between Review and Approve; OrangeKit rejected wagmi's reconnect (no `chainId`) and skipped a wallet that injects late, so Bitcoin wallets were logged out on reload.
+
 ## Out of scope
 
 - LP exit, positions, cost basis, fee claims (F7).
