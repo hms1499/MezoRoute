@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPercent, formatToken, shortAddress } from "./format";
+import { formatBps, formatPercent, formatToken, shortAddress } from "./format";
 
 const ONE = 10n ** 18n;
 
@@ -72,5 +72,13 @@ describe("formatPercent", () => {
     [1_600_000_000_000_000_000n, 0, "160%"],
   ])("formats %s with %s digits as %s, truncated", (ratio, digits, expected) => {
     expect(formatPercent(ratio, digits)).toBe(expected);
+  });
+});
+
+describe("formatBps", () => {
+  it("shows basis points as a percentage", () => {
+    expect(formatBps(10n)).toBe("0.1%");
+    expect(formatBps(50n)).toBe("0.5%");
+    expect(formatBps(200n)).toBe("2%");
   });
 });
