@@ -13,6 +13,7 @@ import { AMOUNT_TOO_SMALL, BORROW_USED, PERMIT_EXPIRED } from "@/lib/errors/outc
 import { borrowEffect } from "@/lib/trove/borrow";
 import { borrowAuthorisationState, borrowTypedData, type BorrowAuthorisation } from "@/lib/trove/borrow-signature";
 import { findHints, type HintRead } from "@/lib/trove/hints";
+import { APPROVE_GAS, borrowEnterGas, ENTER_GAS } from "@/lib/quote/gas";
 import { BlockedError } from "@/lib/tx/errors";
 import { confirmCall, submitCall, type SendPin } from "@/lib/tx/send";
 import { createStepper, hasStarted, stepperReducer, type Stepper } from "@/lib/tx/stepper";
@@ -112,7 +113,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
   }
 
   async function approve(sendPin: SendPin) {
-    const hash = await submitCall(config, { to: network.addresses.musd, data: encodeApproveCall(input.executor, musdIn) }, sendPin);
+    const hash = await submitCall(config, { to: network.addresses.musd, data: encodeApproveCall(input.executor, musdIn) }, sendPin, APPROVE_GAS);
     dispatch({ type: "submitted", hash });
     await confirmCall(config, hash, sendPin.chainId);
     dispatch({ type: "confirmed" });
@@ -143,6 +144,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
     const params = buildEnterParams(preview.quote, preview.minimums, preview.deadline, sendPin.account);
     const usedPermit = signed ? signed.permit : NO_PERMIT;
     let data = encodeEnterCall(params, usedPermit);
+    let gasBudget = ENTER_GAS;
     // A simulated revert is decoded and nothing is sent.
     if (auth) {
       const { trove, price, protocol } = fresh.snapshot.dashboard;
@@ -164,6 +166,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
         chainId: sendPin.chainId,
       });
       data = encodeBorrowAndEnterCall(borrow, params, usedPermit);
+      gasBudget = borrowEnterGas(hints.found);
     } else {
       await simulateContract(config, {
         address: input.executor,
@@ -174,7 +177,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
         chainId: sendPin.chainId,
       });
     }
-    const hash = await submitCall(config, { to: input.executor, data }, sendPin);
+    const hash = await submitCall(config, { to: input.executor, data }, sendPin, gasBudget);
     dispatch({ type: "submitted", hash });
     router.push(`/tx/?hash=${hash}`);
   }

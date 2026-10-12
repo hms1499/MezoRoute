@@ -10,7 +10,7 @@ import {
   type TransactionReceipt,
 } from "viem";
 import { ConnectorChainMismatchError, type Config } from "wagmi";
-import { getAccount, sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
+import { estimateGas, getAccount, sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import {
@@ -24,6 +24,7 @@ import { SAFE_EXECUTION_FAILURE_TOPIC } from "./safe";
 import { assertTxHash, confirmCall, isTxHash, receiptFailure, sendCall, submitCall } from "./send";
 
 vi.mock("wagmi/actions", () => ({
+  estimateGas: vi.fn(),
   getAccount: vi.fn(),
   sendTransaction: vi.fn(),
   waitForTransactionReceipt: vi.fn(),
@@ -40,7 +41,7 @@ function receipt(overrides: Record<string, unknown> = {}): TransactionReceipt {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getAccount).mockReturnValue({ connector: { type: "injected" } } as never);
+  vi.mocked(getAccount).mockReturnValue({ connector: { type: "injected", id: "io.metamask" } } as never);
   vi.mocked(sendTransaction).mockResolvedValue(HASH);
   vi.mocked(waitForTransactionReceipt).mockResolvedValue(receipt() as never);
 });
@@ -145,6 +146,25 @@ describe("submitCall", () => {
   it("returns the hash without waiting for the receipt", async () => {
     await expect(submitCall(config, CALL, PIN)).resolves.toBe(HASH);
     expect(waitForTransactionReceipt).not.toHaveBeenCalled();
+  });
+
+  it("sets the gas limit itself for an EVM wallet: the budget when the RPC estimate is too low or fails", async () => {
+    vi.mocked(estimateGas).mockResolvedValue(24_408n);
+    await submitCall(config, CALL, PIN, 495_000n);
+    expect(sendTransaction).toHaveBeenLastCalledWith(config, expect.objectContaining({ gas: 495_000n }));
+    vi.mocked(estimateGas).mockRejectedValue(new Error("rpc"));
+    await submitCall(config, CALL, PIN, 495_000n);
+    expect(sendTransaction).toHaveBeenLastCalledWith(config, expect.objectContaining({ gas: 495_000n }));
+    vi.mocked(estimateGas).mockResolvedValue(1_000_000n);
+    await submitCall(config, CALL, PIN, 495_000n);
+    expect(sendTransaction).toHaveBeenLastCalledWith(config, expect.objectContaining({ gas: 1_200_000n }));
+  });
+
+  it("leaves gas to the relayer for a Bitcoin wallet's smart account", async () => {
+    vi.mocked(getAccount).mockReturnValue({ connector: { type: "orangekit", id: "orangekit-unisat" } } as never);
+    await submitCall(config, CALL, PIN, 495_000n);
+    expect(estimateGas).not.toHaveBeenCalled();
+    expect(vi.mocked(sendTransaction).mock.calls[0][1]).not.toHaveProperty("gas");
   });
 });
 

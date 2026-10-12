@@ -10,6 +10,7 @@ import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { useNetwork } from "@/lib/config/network-context";
 import { decodeError } from "@/lib/errors/decode";
 import { AMOUNT_TOO_SMALL, PERMIT_EXPIRED } from "@/lib/errors/outcomes";
+import { APPROVE_GAS, EXIT_GAS } from "@/lib/quote/gas";
 import { DEADLINE_SECONDS, encodeApproveCall, NO_PERMIT } from "@/lib/routes/musd-btc-lp/params";
 import { permitState, toExecutorPermit, type SignedPermit } from "@/lib/routes/musd-btc-lp/permit";
 import { BlockedError } from "@/lib/tx/errors";
@@ -85,7 +86,7 @@ export function useExitFlow(input: ExitFlowInput): {
 
   async function approve(sendPin: SendPin) {
     const call = { to: network.addresses.pool, data: encodeApproveCall(input.executor, liquidityIn()) };
-    const hash = await submitCall(config, call, sendPin);
+    const hash = await submitCall(config, call, sendPin, APPROVE_GAS);
     dispatch({ type: "submitted", hash });
     await confirmCall(config, hash, sendPin.chainId);
     dispatch({ type: "confirmed" });
@@ -123,7 +124,7 @@ export function useExitFlow(input: ExitFlowInput): {
       account: sendPin.account,
       chainId: sendPin.chainId,
     });
-    const hash = await submitCall(config, { to: input.executor, data: encodeExitCall(params, usedPermit) }, sendPin);
+    const hash = await submitCall(config, { to: input.executor, data: encodeExitCall(params, usedPermit) }, sendPin, EXIT_GAS);
     dispatch({ type: "submitted", hash });
     router.push(`/tx/?hash=${hash}`);
   }

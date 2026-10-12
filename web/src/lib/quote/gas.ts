@@ -6,6 +6,12 @@ export const ENTER_GAS = 450_000n;
  * up to 800,000 plus 10%. Without hints SortedTroves walks the list: 2,178,863 (2 Oct 2026).
  */
 export const BORROW_ENTER_GAS = 880_000n;
+/** `borrowAndEnter` with zero hints: 2,178,863 measured (2 Oct 2026), rounded up to 2,200,000 plus 10%. */
+export const BORROW_ENTER_NO_HINTS_GAS = 2_420_000n;
+
+export function borrowEnterGas(hintsFound: boolean): bigint {
+  return hintsFound ? BORROW_ENTER_GAS : BORROW_ENTER_NO_HINTS_GAS;
+}
 /** An ERC-20 approval. */
 export const APPROVE_GAS = 60_000n;
 /** OrangeKit's relayer adds the Safe's baseGas (0x3035F) to the refund of each relayed call. */
@@ -29,4 +35,18 @@ export function exitGasUnits(input: { approve: boolean; smartAccount: boolean })
   const calls = input.approve ? 2n : 1n;
   const units = EXIT_GAS + (input.approve ? APPROVE_GAS : 0n);
   return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
+}
+
+/** `Pool.claimFees()`: 62,555–69,259 measured on testnet (12 Oct 2026), rounded up to 100,000 plus 10%. */
+export const CLAIM_GAS = 110_000n;
+
+/**
+ * The gas limit an EVM wallet is given: the RPC estimate plus 20%, but never below the measured budget.
+ * A Mezo testnet RPC backend answered eth_estimateGas with the bare intrinsic gas (12 Oct 2026); a
+ * wallet adding its margin to that could send a transaction that runs out of gas on chain. Unused gas
+ * is not charged, so the floor costs nothing.
+ */
+export function gasLimit(budget: bigint, estimate: bigint | undefined): bigint {
+  const padded = estimate === undefined ? 0n : (estimate * 12n) / 10n;
+  return padded > budget ? padded : budget;
 }
