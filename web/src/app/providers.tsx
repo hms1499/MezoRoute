@@ -3,7 +3,7 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import { lightTheme, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { createContext, memo, useContext, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
 import { AppShell } from "@/components/AppShell";
 import { ErrorToastProvider } from "@/components/ErrorToast";
@@ -22,18 +22,37 @@ const network = networks[readStoredNetwork(safeStorage())];
 const config = createWagmiConfig(network, walletConnectProjectId());
 const queryClient = new QueryClient();
 
+// The current page, passed around the wallet tree so that navigating never re-renders it: without
+// SSR, wagmi's Hydrate calls reconnect() on every render of WagmiProvider, and a reconnect drops
+// OrangeKit (Bitcoin) wallets, so each page change logged a Unisat user out (found in F3 QA).
+const PageContext = createContext<ReactNode>(null);
+
+function Page() {
+  return <>{useContext(PageContext)}</>;
+}
+
+const WalletTree = memo(function WalletTree() {
+  return (
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider theme={theme}>
+          <ErrorToastProvider>
+            <AppShell>
+              <Page />
+            </AppShell>
+          </ErrorToastProvider>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
+  );
+});
+
 export default function Providers({ children }: { children: ReactNode }) {
   return (
     <NetworkProvider network={network}>
-      <WagmiProvider config={config}>
-        <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider theme={theme}>
-            <ErrorToastProvider>
-              <AppShell>{children}</AppShell>
-            </ErrorToastProvider>
-          </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>
+      <PageContext.Provider value={children}>
+        <WalletTree />
+      </PageContext.Provider>
     </NetworkProvider>
   );
 }
