@@ -39,6 +39,9 @@ export type ErrorKind =
   | "above-headroom"
   | "borrow-used"
   | "signature-invalid"
+  | "no-lp"
+  | "lp-changed"
+  | "nothing-to-claim"
   | "reverted"
   | "rpc-unavailable"
   | "unknown";

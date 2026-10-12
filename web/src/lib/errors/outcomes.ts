@@ -134,6 +134,16 @@ export const SIGNATURE_INVALID: Outcome = {
   recovery: ["retry"],
 };
 
+export const NO_LP: Outcome = { kind: "no-lp", message: "You have no MUSD/BTC LP to exit.", recovery: [] };
+
+export const LP_CHANGED: Outcome = {
+  kind: "lp-changed",
+  message: "Your LP balance changed. Review the exit again.",
+  recovery: [],
+};
+
+export const NOTHING_TO_CLAIM: Outcome = { kind: "nothing-to-claim", message: "You have no fees to claim yet.", recovery: [] };
+
 export const REVERTED: Outcome = { kind: "reverted", message: "The transaction reverted.", recovery: ["retry", "copy-details"] };
 
 export const UNKNOWN: Outcome = { kind: "unknown", message: "Something went wrong.", recovery: ["retry", "copy-details"] };
