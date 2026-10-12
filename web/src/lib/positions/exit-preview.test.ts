@@ -13,8 +13,8 @@ describe("exitPreview", () => {
     expect(preview.quote?.musdOut).toBe(39936013820348314126n);
     expect(preview.minimums?.minMusdOut).toBe(39536653682144830984n);
     expect(preview.steps).toEqual(["permit", "exit"]);
-    expect(preview.gasUnits).toBe(400_000n);
-    expect(preview.gasCost).toBe(400_000n * 146n);
+    expect(preview.gasUnits).toBe(495_000n);
+    expect(preview.gasCost).toBe(495_000n * 146n);
     expect(preview.deadline).toBe(1_790_903_700n + 600n);
     expect(preview.block).toBeNull();
   });
@@ -29,7 +29,7 @@ describe("exitPreview", () => {
   it("adds the approval and relayer gas for a smart account", () => {
     const preview = exitPreview({ ...base, data: positionsDataWith(), intent: { percent: 100, slippageBps: 100n }, walletKind: "smart-account" });
     expect(preview.steps).toEqual(["approve", "exit"]);
-    expect(preview.gasUnits).toBe(400_000n + 60_000n + 2n * 197_471n);
+    expect(preview.gasUnits).toBe(495_000n + 60_000n + 2n * 197_471n);
   });
 
   it("has no gas cost when the gas price failed to load", () => {

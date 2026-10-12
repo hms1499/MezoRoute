@@ -56,7 +56,7 @@ describe("exitMinimums", () => {
 
 describe("exitGasUnits", () => {
   it("adds the approval and the relayer's overhead per relayed call", () => {
-    expect(exitGasUnits({ approve: false, smartAccount: false })).toBe(400_000n);
-    expect(exitGasUnits({ approve: true, smartAccount: true })).toBe(400_000n + 60_000n + 2n * 197_471n);
+    expect(exitGasUnits({ approve: false, smartAccount: false })).toBe(495_000n);
+    expect(exitGasUnits({ approve: true, smartAccount: true })).toBe(495_000n + 60_000n + 2n * 197_471n);
   });
 });

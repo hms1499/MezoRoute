@@ -18,8 +18,11 @@ export function entryGasUnits(input: { approve: boolean; smartAccount: boolean; 
   return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
 }
 
-/** `exit`: 350,049 measured on testnet with an approval (2 Oct 2026); Task 10 of F7 re-measures it with a permit. */
-export const EXIT_GAS = 400_000n;
+/**
+ * `exit`: 417,468 measured on testnet with an LP permit (tx 0x05ae…dad0, 12 Oct 2026; 350,049 with an
+ * approval on 2 Oct), rounded up to 450,000 plus 10%.
+ */
+export const EXIT_GAS = 495_000n;
 
 /** Estimated gas units for the whole exit flow, for the preview's network-fee line. */
 export function exitGasUnits(input: { approve: boolean; smartAccount: boolean }): bigint {
