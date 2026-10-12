@@ -7,6 +7,7 @@ import { needsGas, noExecutor, NOTHING_TO_CLAIM, wrongNetwork } from "@/lib/erro
 import type { Outcome } from "@/lib/errors/types";
 import { formatToken } from "@/lib/format";
 import type { LogLike } from "@/lib/routes/musd-btc-lp/receipt";
+import { BlockedError } from "@/lib/tx/errors";
 import type { Fees } from "./fees";
 
 export type ClaimBlock = { reason: "no-executor" | "wrong-network" | "nothing-to-claim" | "needs-gas"; outcome: Outcome };
@@ -45,4 +46,9 @@ export function claimRows(fees: Fees): { label: string; value: string }[] {
     { label: "MUSD claimed", value: `${formatToken(fees.musd)} MUSD` },
     { label: "BTC claimed", value: `${formatToken(fees.btc)} BTC` },
   ];
+}
+
+/** After simulating `claimFees()`: a (0, 0) result means the fees were claimed elsewhere since the snapshot. */
+export function assertClaimable(claimed: readonly [bigint, bigint]): void {
+  if (claimed[0] === 0n && claimed[1] === 0n) throw new BlockedError(NOTHING_TO_CLAIM);
 }

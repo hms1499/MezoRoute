@@ -4,7 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import type { Address } from "viem";
 import { usePublicClient } from "wagmi";
 import { useNetwork } from "@/lib/config/network-context";
-import { historyKey, loadHistory, parseHistory, serializeHistory, type HistoryCache, type HistoryEvent } from "./history";
+import {
+  historyKey,
+  loadHistory,
+  parseHistory,
+  serializeHistory,
+  visibleHistory,
+  type HistoryCache,
+  type HistoryEvent,
+} from "./history";
 import { readExecutorEvents, type LogsClient } from "./history-reader";
 
 const HISTORY_REFRESH_MS = 60_000;
@@ -56,5 +64,5 @@ export function usePositionsHistory(account: Address): {
     },
   });
   if (!executor) return { events: [], error: null, retry: () => undefined };
-  return { events: query.data, error: query.error, retry: () => void query.refetch() };
+  return { ...visibleHistory(query.data, query.error), retry: () => void query.refetch() };
 }

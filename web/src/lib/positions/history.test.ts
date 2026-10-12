@@ -9,6 +9,7 @@ import {
   readRanges,
   scanRanges,
   serializeHistory,
+  visibleHistory,
   type BlockRange,
   type HistoryEvent,
 } from "./history";
@@ -82,8 +83,13 @@ describe("readRanges", () => {
       if (calls < 3) throw new Error("rpc");
       return [entered(1n)];
     };
-    await expect(readRanges(flaky, [{ fromBlock: 0n, toBlock: 9n }])).resolves.toHaveLength(1);
-    await expect(readRanges(async () => Promise.reject(new Error("down")), [{ fromBlock: 0n, toBlock: 9n }])).rejects.toThrow("down");
+    const pauses: number[] = [];
+    const sleep = async (ms: number) => void pauses.push(ms);
+    await expect(readRanges(flaky, [{ fromBlock: 0n, toBlock: 9n }], 1, sleep)).resolves.toHaveLength(1);
+    expect(pauses).toEqual([500, 1_000]);
+    await expect(
+      readRanges(async () => Promise.reject(new Error("down")), [{ fromBlock: 0n, toBlock: 9n }], 1, async () => undefined),
+    ).rejects.toThrow("down");
   });
 });
 
@@ -127,8 +133,18 @@ describe("loadHistory", () => {
 
   it("rejects, and so writes no cache, when a range keeps failing", async () => {
     await expect(
-      loadHistory({ read: async () => Promise.reject(new Error("down")), head: 100n, deployBlock: 0n, cache: null }),
+      loadHistory({ read: async () => Promise.reject(new Error("down")), head: 100n, deployBlock: 0n, cache: null, sleep: async () => undefined }),
     ).rejects.toThrow("down");
+  });
+});
+
+describe("visibleHistory", () => {
+  it("keeps showing loaded events when a background refresh fails, and the error only without them", () => {
+    const events = [entered(900n)];
+    const down = new Error("down");
+    expect(visibleHistory(events, down)).toEqual({ events, error: null });
+    expect(visibleHistory(undefined, down)).toEqual({ events: undefined, error: down });
+    expect(visibleHistory(events, null)).toEqual({ events, error: null });
   });
 });
 

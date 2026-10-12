@@ -8,6 +8,11 @@ export const LOG_RANGE = 10_000n;
 export const REORG_MARGIN = 50n;
 export const SCAN_CONCURRENCY = 6;
 const ATTEMPTS = 3;
+/** Pause before retry n: n × 500 ms, so a brief RPC hiccup or rate limit does not fail all attempts at once. */
+const RETRY_PAUSE_MS = 500;
+
+export type Sleep = (ms: number) => Promise<void>;
+const wait: Sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export type BlockRange = { fromBlock: bigint; toBlock: bigint };
 export type HistoryEvent =
@@ -33,21 +38,26 @@ function sortEvents(events: HistoryEvent[]): HistoryEvent[] {
   );
 }
 
-async function withAttempts<T>(run: () => Promise<T>): Promise<T> {
+async function withAttempts<T>(run: () => Promise<T>, sleep: Sleep): Promise<T> {
   for (let attempt = 1; ; attempt += 1) {
     try {
       return await run();
     } catch (error) {
       if (attempt >= ATTEMPTS) throw error;
+      await sleep(RETRY_PAUSE_MS * attempt);
     }
   }
 }
 
-/** Reads every range, `concurrency` at a time, each with three attempts; one failed range fails the whole read. */
+/**
+ * Reads every range, `concurrency` at a time, each with three attempts (pausing 500 ms, then 1 s); one
+ * failed range fails the whole read.
+ */
 export async function readRanges(
   read: ReadChunk,
   ranges: BlockRange[],
   concurrency: number = SCAN_CONCURRENCY,
+  sleep: Sleep = wait,
 ): Promise<HistoryEvent[]> {
   const results: HistoryEvent[][] = [];
   let next = 0;
@@ -55,7 +65,7 @@ export async function readRanges(
     while (next < ranges.length) {
       const index = next;
       next += 1;
-      results[index] = await withAttempts(() => read(ranges[index]));
+      results[index] = await withAttempts(() => read(ranges[index]), sleep);
     }
   }
   await Promise.all(Array.from({ length: Math.min(concurrency, ranges.length) }, worker));
@@ -90,13 +100,25 @@ export async function loadHistory(input: {
   head: bigint;
   deployBlock: bigint;
   cache: HistoryCache | null;
+  sleep?: Sleep;
 }): Promise<{ events: HistoryEvent[]; cache: HistoryCache | null }> {
   const from = scanStart(input.cache, input.deployBlock);
   const safeTo = input.head - REORG_MARGIN;
   const tailFrom = from > safeTo ? from : safeTo + 1n;
   const ranges = [...scanRanges(from, safeTo < input.head ? safeTo : input.head), ...scanRanges(tailFrom, input.head)];
-  const fresh = ranges.length === 0 ? [] : await readRanges(input.read, ranges);
+  const fresh = ranges.length === 0 ? [] : await readRanges(input.read, ranges, SCAN_CONCURRENCY, input.sleep);
   return mergeHistory(input.cache, fresh, input.head, input.deployBlock);
+}
+
+/**
+ * What the page shows: once events have loaded, a failed background refresh keeps them on screen
+ * (they are still right up to their block); the error shows only when there is nothing to show.
+ */
+export function visibleHistory(
+  events: HistoryEvent[] | undefined,
+  error: Error | null,
+): { events: HistoryEvent[] | undefined; error: Error | null } {
+  return { events, error: events ? null : error };
 }
 
 /** One cache per network, executor, and account (spec §12: a convenience only). */

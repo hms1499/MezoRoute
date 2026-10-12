@@ -10,8 +10,8 @@ import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { useNetwork } from "@/lib/config/network-context";
 import { decodeError } from "@/lib/errors/decode";
 import { AMOUNT_TOO_SMALL, PERMIT_EXPIRED } from "@/lib/errors/outcomes";
-import { DEADLINE_SECONDS, encodeApproveCall, NO_PERMIT, type ExecutorPermit } from "@/lib/routes/musd-btc-lp/params";
-import { permitUsable, toExecutorPermit } from "@/lib/routes/musd-btc-lp/permit";
+import { DEADLINE_SECONDS, encodeApproveCall, NO_PERMIT } from "@/lib/routes/musd-btc-lp/params";
+import { permitState, toExecutorPermit, type SignedPermit } from "@/lib/routes/musd-btc-lp/permit";
 import { BlockedError } from "@/lib/tx/errors";
 import { confirmCall, submitCall, type SendPin } from "@/lib/tx/send";
 import { createStepper, hasStarted, stepperReducer, type Stepper } from "@/lib/tx/stepper";
@@ -57,7 +57,7 @@ export function useExitFlow(input: ExitFlowInput): {
   const pin = useRef<SendPin | null>(null);
   const pinnedLiquidity = useRef<bigint | null>(null);
   const [pinnedShown, setPinnedShown] = useState<bigint | null>(null);
-  const permit = useRef<ExecutorPermit | null>(null);
+  const permit = useRef<SignedPermit | null>(null);
   const planKey = input.plan.join(",");
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export function useExitFlow(input: ExitFlowInput): {
       deadline,
     });
     const signature = await signTypedData(config, { account: sendPin.account, ...typedData });
-    permit.current = toExecutorPermit(signature, value, deadline);
+    permit.current = { permit: toExecutorPermit(signature, value, deadline), nonce: fresh.snapshot.permitNonce };
     dispatch({ type: "signed" });
   }
 
@@ -93,13 +93,14 @@ export function useExitFlow(input: ExitFlowInput): {
 
   async function exit(sendPin: SendPin) {
     const hasPermitStep = stepperRef.current.steps.some((step) => step.kind === "permit");
-    const signed = permit.current;
-    if (hasPermitStep && (!signed || !permitUsable(signed, nowSeconds()))) {
+    const fresh = await input.refresh();
+    // Expired, or spent elsewhere (the nonce moved): sign again rather than send a permit the executor would skip.
+    const signed = hasPermitStep && permitState(permit.current, nowSeconds(), fresh.snapshot.permitNonce) === "usable" ? permit.current : null;
+    if (hasPermitStep && !signed) {
       permit.current = null;
       dispatch({ type: "signature-expired" });
       throw new BlockedError(PERMIT_EXPIRED);
     }
-    const fresh = await input.refresh();
     const preview = exitPreview({
       network,
       data: fresh,
@@ -112,7 +113,7 @@ export function useExitFlow(input: ExitFlowInput): {
     if (preview.block) throw new BlockedError(preview.block.outcome ?? AMOUNT_TOO_SMALL);
     if (!preview.quote || !preview.minimums) throw new BlockedError(AMOUNT_TOO_SMALL);
     const params = buildExitParams(preview.quote, preview.minimums, preview.deadline, sendPin.account);
-    const usedPermit = hasPermitStep && signed ? signed : NO_PERMIT;
+    const usedPermit = signed ? signed.permit : NO_PERMIT;
     // A simulated revert is decoded and nothing is sent.
     await simulateContract(config, {
       address: input.executor,
