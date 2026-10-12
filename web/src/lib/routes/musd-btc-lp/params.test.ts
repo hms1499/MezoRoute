@@ -1,7 +1,9 @@
 import { decodeFunctionData, erc20Abi, zeroHash } from "viem";
 import { describe, expect, it } from "vitest";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
+import { entryMinimums, quoteEntry } from "@/lib/quote/entry";
 import {
+  buildEnterParams,
   DEADLINE_SECONDS,
   encodeApproveCall,
   encodeEnterCall,
@@ -10,6 +12,7 @@ import {
   NO_PERMIT,
   type EnterParams,
 } from "./params";
+import { ONE, TESTNET_POOL } from "./test-fixtures";
 
 const ME = "0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49";
 const EXECUTOR = "0xB36B2E012003840951CFf00fA6b1E3237A110920";
@@ -50,5 +53,37 @@ describe("needsApproval", () => {
   it("skips the approval when the allowance already covers the amount", () => {
     expect(needsApproval(10n, 10n)).toBe(false);
     expect(needsApproval(9n, 10n)).toBe(true);
+  });
+});
+
+describe("buildEnterParams", () => {
+  it("copies the quote's amounts and the minimums, with the deadline and recipient", () => {
+    const quote = quoteEntry(TESTNET_POOL, 100n * ONE, 10n)!;
+    const minimums = entryMinimums(quote, 100n);
+    expect(buildEnterParams(quote, minimums, 1_759_600_600n, ME)).toEqual({
+      musdIn: 100n * ONE,
+      musdToSwap: quote.musdToSwap,
+      ...minimums,
+      deadline: 1_759_600_600n,
+      recipient: ME,
+    });
+  });
+});
+
+describe("encodeEnterCall with a permit", () => {
+  it("encodes the signed permit as the second argument", () => {
+    const params: EnterParams = {
+      musdIn: MUSD_20,
+      musdToSwap: 9_990000000000000000n,
+      minBtcFromSwap: 1n,
+      minMusdAdded: 0n,
+      minBtcAdded: 0n,
+      minLpOut: 0n,
+      deadline: DEADLINE_SECONDS,
+      recipient: ME,
+    };
+    const permit = { value: MUSD_20, deadline: 99n, v: 27, r: `0x${"11".repeat(32)}`, s: `0x${"22".repeat(32)}` } as const;
+    const decoded = decodeFunctionData({ abi: mezoRouteExecutorAbi, data: encodeEnterCall(params, permit) });
+    expect(decoded.args).toEqual([params, permit]);
   });
 });
