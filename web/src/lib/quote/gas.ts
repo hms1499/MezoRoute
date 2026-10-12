@@ -17,3 +17,13 @@ export function entryGasUnits(input: { approve: boolean; smartAccount: boolean; 
   const units = (input.borrow ? BORROW_ENTER_GAS : ENTER_GAS) + (input.approve ? APPROVE_GAS : 0n);
   return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
 }
+
+/** `exit`: 350,049 measured on testnet with an approval (2 Oct 2026); Task 10 of F7 re-measures it with a permit. */
+export const EXIT_GAS = 400_000n;
+
+/** Estimated gas units for the whole exit flow, for the preview's network-fee line. */
+export function exitGasUnits(input: { approve: boolean; smartAccount: boolean }): bigint {
+  const calls = input.approve ? 2n : 1n;
+  const units = EXIT_GAS + (input.approve ? APPROVE_GAS : 0n);
+  return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
+}
