@@ -26,9 +26,8 @@ import {
   encodeBorrowAndEnterCall,
   encodeEnterCall,
   NO_PERMIT,
-  type ExecutorPermit,
 } from "./params";
-import { permitTypedData, permitUsable, toExecutorPermit } from "./permit";
+import { permitState, permitTypedData, toExecutorPermit, type SignedPermit } from "./permit";
 import { entryPreview } from "./preview";
 import type { LpRouteData } from "./snapshot";
 import type { StepKind } from "./steps";
@@ -58,7 +57,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
   const stepperRef = useRef(stepper);
   stepperRef.current = stepper;
   const pin = useRef<SendPin | null>(null);
-  const permit = useRef<ExecutorPermit | null>(null);
+  const permit = useRef<SignedPermit | null>(null);
   const borrowAuth = useRef<BorrowAuthorisation | null>(null);
   const planKey = input.plan.join(",");
 
@@ -80,7 +79,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
       deadline,
     });
     const signature = await signTypedData(config, { account: sendPin.account, ...typedData });
-    permit.current = toExecutorPermit(signature, musdIn, deadline);
+    permit.current = { permit: toExecutorPermit(signature, musdIn, deadline), nonce: fresh.snapshot.permitNonce };
     dispatch({ type: "signed" });
   }
 
@@ -121,13 +120,14 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
 
   async function enter(sendPin: SendPin) {
     const hasPermitStep = stepperRef.current.steps.some((step) => step.kind === "permit");
-    const signed = permit.current;
-    if (hasPermitStep && (!signed || !permitUsable(signed, nowSeconds()))) {
+    const fresh = await input.refresh();
+    // Expired, or spent elsewhere (the nonce moved): sign again rather than send a permit the executor would skip.
+    const signed = hasPermitStep && permitState(permit.current, nowSeconds(), fresh.snapshot.permitNonce) === "usable" ? permit.current : null;
+    if (hasPermitStep && !signed) {
       permit.current = null;
       dispatch({ type: "signature-expired" });
       throw new BlockedError(PERMIT_EXPIRED);
     }
-    const fresh = await input.refresh();
     const borrowing = input.intent.mode === "borrow";
     const auth = borrowing ? usableBorrow(fresh.snapshot.borrowNonce) : null;
     const preview = entryPreview({
@@ -141,7 +141,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
     if (preview.block) throw new BlockedError(preview.block.outcome ?? AMOUNT_TOO_SMALL);
     if (!preview.quote || !preview.minimums) throw new BlockedError(AMOUNT_TOO_SMALL);
     const params = buildEnterParams(preview.quote, preview.minimums, preview.deadline, sendPin.account);
-    const usedPermit = hasPermitStep && signed ? signed : NO_PERMIT;
+    const usedPermit = signed ? signed.permit : NO_PERMIT;
     let data = encodeEnterCall(params, usedPermit);
     // A simulated revert is decoded and nothing is sent.
     if (auth) {

@@ -2,7 +2,7 @@ import { domainSeparator, recoverTypedDataAddress, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
-import { musdPermitDomain, permitTypedData, permitUsable, toExecutorPermit } from "./permit";
+import { musdPermitDomain, permitState, permitTypedData, permitUsable, toExecutorPermit } from "./permit";
 
 const testnet = networks.testnet;
 // Anvil's first well-known test key; it holds nothing on Mezo.
@@ -47,5 +47,17 @@ describe("permitUsable", () => {
     expect(permitUsable(permit, 939n)).toBe(true);
     expect(permitUsable(permit, 940n)).toBe(false);
     expect(permitUsable(permit, 2_000n)).toBe(false);
+  });
+});
+
+describe("permitState", () => {
+  const permit = { value: 5n, deadline: 1_000n, v: 27, r: "0x00", s: "0x00" } as const;
+
+  it("is used once the token nonce moved past the signed one, whatever the deadline", () => {
+    // The executor swallows a failed permit (try/catch), so a stale one only shows up as a transfer revert.
+    expect(permitState({ permit, nonce: 3n }, 900n, 3n)).toBe("usable");
+    expect(permitState({ permit, nonce: 3n }, 900n, 4n)).toBe("used");
+    expect(permitState({ permit, nonce: 3n }, 940n, 3n)).toBe("expired");
+    expect(permitState(null, 900n, 3n)).toBe("expired");
   });
 });

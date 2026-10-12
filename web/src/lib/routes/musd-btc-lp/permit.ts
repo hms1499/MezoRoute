@@ -59,3 +59,16 @@ export const PERMIT_MARGIN_SECONDS = 60n;
 export function permitUsable(permit: ExecutorPermit, nowSeconds: bigint): boolean {
   return nowSeconds + PERMIT_MARGIN_SECONDS < permit.deadline;
 }
+
+/** A signed permit with the token nonce it was signed for. */
+export type SignedPermit = { permit: ExecutorPermit; nonce: bigint };
+
+/**
+ * Whether a signed permit can still be sent: "used" once the token nonce moved past the signed one (the
+ * permit was spent elsewhere; the executor's try/catch would swallow it and the transfer would revert),
+ * otherwise "expired" without a minute of margin.
+ */
+export function permitState(signed: SignedPermit | null, nowSeconds: bigint, chainNonce: bigint): "usable" | "expired" | "used" {
+  if (signed && signed.nonce !== chainNonce) return "used";
+  return signed && permitUsable(signed.permit, nowSeconds) ? "usable" : "expired";
+}
