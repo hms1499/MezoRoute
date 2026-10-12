@@ -4,15 +4,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import type { Hash, TransactionReceipt } from "viem";
-import { useConfig } from "wagmi";
+import type { Address, Hash, TransactionReceipt } from "viem";
+import { useAccount, useConfig } from "wagmi";
 import { StatRow } from "@/components/dashboard/StatRow";
 import { ExternalButton } from "@/components/ExternalButton";
 import { useNetwork } from "@/lib/config/network-context";
 import { explorerTxUrl } from "@/lib/config/networks";
 import { decodeError } from "@/lib/errors/decode";
-import { formatToken, shortAddress } from "@/lib/format";
+import { useDashboardSnapshot } from "@/lib/dashboard/useDashboardSnapshot";
+import { formatPercent, formatToken, shortAddress } from "@/lib/format";
 import { enteredRows, findEnteredEvent } from "@/lib/routes/musd-btc-lp/receipt";
+import { collateralRatio } from "@/lib/trove/health";
 import { confirmCall, isTxHash } from "@/lib/tx/send";
 
 const RECEIPT_KEY = "entry-receipt";
@@ -74,20 +76,47 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
   const event = network.executor ? findEnteredEvent(receipt.logs, network.executor.address) : null;
   return (
     <>
-      <h1 className="text-lg font-semibold">Deposit confirmed</h1>
+      <h1 className="text-lg font-semibold">
+        {event && event.musdBorrowed > 0n ? "Borrow & deposit confirmed" : "Deposit confirmed"}
+      </h1>
       {event ? (
-        <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
-          {enteredRows(event).map((row) => (
-            <StatRow key={row.label} label={row.label}>
-              {row.value}
-            </StatRow>
-          ))}
-          <StatRow label="Gas used">{formatToken(receipt.gasUsed, 0, 0)}</StatRow>
-          <StatRow label="Block">{receipt.blockNumber.toString()}</StatRow>
-        </dl>
+        <>
+          <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
+            {enteredRows(event).map((row) => (
+              <StatRow key={row.label} label={row.label}>
+                {row.value}
+              </StatRow>
+            ))}
+            <StatRow label="Gas used">{formatToken(receipt.gasUsed, 0, 0)}</StatRow>
+            <StatRow label="Block">{receipt.blockNumber.toString()}</StatRow>
+          </dl>
+          {event.musdBorrowed > 0n && <TroveNow />}
+        </>
       ) : (
         <p className="mt-2 text-sm text-muted">This transaction has no MezoRoute entry.</p>
       )}
+    </>
+  );
+}
+
+function TroveNow() {
+  const { address } = useAccount();
+  return address ? <TroveNowFor account={address} /> : null;
+}
+
+/** The Trove read after confirmation (Flow D step 7). */
+function TroveNowFor({ account }: { account: Address }) {
+  const { data } = useDashboardSnapshot(account);
+  const trove = data?.snapshot.trove;
+  if (!data || !trove) return null;
+  const cr = collateralRatio(trove, data.snapshot.price);
+  return (
+    <>
+      <h2 className="mt-4 text-sm font-semibold">Your Trove now</h2>
+      <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
+        <StatRow label="Debt">{`${formatToken(trove.debt, 18, 2)} MUSD`}</StatRow>
+        <StatRow label="Collateral ratio">{cr === null ? "—" : formatPercent(cr, 1)}</StatRow>
+      </dl>
     </>
   );
 }
