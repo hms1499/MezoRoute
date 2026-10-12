@@ -17,6 +17,17 @@ export type EnteredEvent = {
   btcRefund: bigint;
 };
 
+export type ExitedEvent = {
+  caller: Address;
+  recipient: Address;
+  liquidityIn: bigint;
+  musdRemoved: bigint;
+  btcRemoved: bigint;
+  musdFromSwap: bigint;
+  musdOut: bigint;
+  btcRefund: bigint;
+};
+
 type LogLike = { address: Address; topics: readonly Hex[]; data: Hex };
 
 /** The executor's `Entered` event from a receipt; receipts show only event values (spec FR-11). */
