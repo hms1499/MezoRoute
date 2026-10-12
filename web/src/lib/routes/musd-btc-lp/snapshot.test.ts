@@ -24,14 +24,28 @@ function results(reserves: readonly [bigint, bigint, bigint]): LpRouteResults {
     0n,
     0n,
   ];
-  return [...dashboard, 4n, 7n * ONE, 3n, 10n, 1_000_000n * ONE, 15936716n, 1_759_600_000n];
+  return [
+    ...dashboard,
+    4n,
+    7n * ONE,
+    3n,
+    10n,
+    1_000_000n * ONE,
+    15936716n,
+    1_759_600_000n,
+    2n,
+    15_413n * ONE,
+    428_873_804n * ONE,
+    1_500_000_000_000_000_000n,
+    242n,
+  ];
 }
 
 describe("lpRouteContracts", () => {
   it("adds the LP-route reads after the dashboard's, all on the selected network", () => {
     for (const network of [networks.testnet, networks.mainnet]) {
       const calls = lpRouteContracts(network, EXECUTOR, ACCOUNT);
-      expect(calls).toHaveLength(DASHBOARD_READS + 7);
+      expect(calls).toHaveLength(DASHBOARD_READS + 12);
       const allowed: string[] = [...Object.values(network.addresses), EXECUTOR];
       for (const call of calls) {
         expect(call.chainId).toBe(network.chainId);
@@ -44,6 +58,13 @@ describe("lpRouteContracts", () => {
     for (const call of lpRouteContracts(networks.testnet, EXECUTOR, ACCOUNT)) {
       expect(() => encodeFunctionData(call as Parameters<typeof encodeFunctionData>[0])).not.toThrow();
     }
+  });
+
+  it("reads the borrower's BOS nonce for the account", () => {
+    const calls = lpRouteContracts(networks.testnet, EXECUTOR, ACCOUNT);
+    const nonce = calls.find((call) => call.functionName === "getNonce");
+    expect(nonce?.address).toBe(networks.testnet.addresses.borrowerOperationsSignatures);
+    expect(nonce && "args" in nonce && nonce.args).toEqual([ACCOUNT]);
   });
 
   it("keeps the dashboard's reads first, so DASHBOARD_READS stays true", () => {
@@ -78,6 +99,8 @@ describe("parseLpRouteSnapshot", () => {
       maxMusdIn: 1_000_000n * ONE,
       blockNumber: 15936716n,
       blockTimestamp: 1_759_600_000n,
+      borrowNonce: 2n,
+      system: { coll: 15_413n * ONE, debt: 428_873_804n * ONE, ccr: 1_500_000_000_000_000_000n, troveCount: 242n },
     });
     expect(parsed.dashboard.musd).toBe(120n * ONE);
   });

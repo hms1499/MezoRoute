@@ -1,11 +1,12 @@
 import { erc20Abi, type Address } from "viem";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { multicall3BlockAbi } from "@/lib/abi/multicall3";
-import { musdPermitAbi } from "@/lib/abi/musd";
+import { borrowerOperationsSignaturesAbi, musdPermitAbi, troveSystemAbi } from "@/lib/abi/musd";
 import { poolFactoryAbi } from "@/lib/abi/pool";
 import type { NetworkConfig } from "@/lib/config/networks";
 import { parseSnapshot, snapshotContracts, type DashboardSnapshot, type SnapshotResults } from "@/lib/dashboard/snapshot";
 import type { PoolState } from "@/lib/quote/entry";
+import type { SystemState } from "@/lib/trove/borrow";
 
 /** Everything the LP route reads, from one block. */
 export type LpRouteSnapshot = {
@@ -17,6 +18,8 @@ export type LpRouteSnapshot = {
   maxMusdIn: bigint; // the executor's per-transaction entry cap
   blockNumber: bigint;
   blockTimestamp: bigint;
+  borrowNonce: bigint; // BorrowerOperationsSignatures nonce of the account
+  system: SystemState; // recovery mode and hint trials
 };
 
 /** The snapshot plus gas, as the hook returns it; `fetchedAt` (ms) dates the quote. */
@@ -33,6 +36,11 @@ type LpRouteTail = readonly [
   maxMusdIn: bigint,
   blockNumber: bigint,
   blockTimestamp: bigint,
+  borrowNonce: bigint,
+  systemColl: bigint,
+  systemDebt: bigint,
+  ccr: bigint,
+  troveCount: bigint,
 ];
 export type LpRouteResults = readonly [...SnapshotResults, ...LpRouteTail];
 
@@ -48,12 +56,30 @@ export function lpRouteContracts(network: NetworkConfig, executor: Address, acco
     { chainId, address: executor, abi: mezoRouteExecutorAbi, functionName: "maxMusdIn" },
     { chainId, address: a.multicall3, abi: multicall3BlockAbi, functionName: "getBlockNumber" },
     { chainId, address: a.multicall3, abi: multicall3BlockAbi, functionName: "getCurrentBlockTimestamp" },
+    { chainId, address: a.borrowerOperationsSignatures, abi: borrowerOperationsSignaturesAbi, functionName: "getNonce", args: [account] },
+    { chainId, address: a.troveManager, abi: troveSystemAbi, functionName: "getEntireSystemColl" },
+    { chainId, address: a.troveManager, abi: troveSystemAbi, functionName: "getEntireSystemDebt" },
+    { chainId, address: a.troveManager, abi: troveSystemAbi, functionName: "CCR" },
+    { chainId, address: a.troveManager, abi: troveSystemAbi, functionName: "getTroveOwnersCount" },
   ] as const;
 }
 
 export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteResults): LpRouteSnapshot {
   const dashboard = parseSnapshot(network, results.slice(0, DASHBOARD_READS) as unknown as SnapshotResults);
-  const [poolFeeBps, allowance, permitNonce, executorFeeBps, maxMusdIn, blockNumber, blockTimestamp] = results.slice(
+  const [
+    poolFeeBps,
+    allowance,
+    permitNonce,
+    executorFeeBps,
+    maxMusdIn,
+    blockNumber,
+    blockTimestamp,
+    borrowNonce,
+    systemColl,
+    systemDebt,
+    ccr,
+    troveCount,
+  ] = results.slice(
     DASHBOARD_READS,
   ) as unknown as LpRouteTail;
   return {
@@ -70,5 +96,7 @@ export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteRes
     maxMusdIn,
     blockNumber,
     blockTimestamp,
+    borrowNonce,
+    system: { coll: systemColl, debt: systemDebt, ccr, troveCount },
   };
 }

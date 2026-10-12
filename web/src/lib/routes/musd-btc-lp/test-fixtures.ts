@@ -1,5 +1,6 @@
 import { snapshotWith } from "@/lib/dashboard/test-fixtures";
 import type { PoolState } from "@/lib/quote/entry";
+import type { SystemState } from "@/lib/trove/borrow";
 import type { LpRouteData, LpRouteSnapshot } from "./snapshot";
 
 // Test data only: the testnet pool at block 15936716 (before S1's first entry), read with `cast`.
@@ -12,6 +13,14 @@ export const TESTNET_POOL: PoolState = {
 };
 
 export const ONE = 10n ** 18n;
+
+/** Testnet system totals on 12 Oct 2026 (TCR ≈ 300%). */
+export const TESTNET_SYSTEM: SystemState = {
+  coll: 15_413_774_352_354_411_406_618n,
+  debt: 428_873_804_402_699_388_378_829_611n,
+  ccr: 1_500_000_000_000_000_000n,
+  troveCount: 242n,
+};
 
 export function lpRouteSnapshotWith(overrides: Partial<LpRouteSnapshot> = {}): LpRouteSnapshot {
   return {
@@ -26,6 +35,8 @@ export function lpRouteSnapshotWith(overrides: Partial<LpRouteSnapshot> = {}): L
     maxMusdIn: 1_000_000n * ONE,
     blockNumber: 15936716n,
     blockTimestamp: 1_759_600_000n,
+    borrowNonce: 0n,
+    system: TESTNET_SYSTEM,
     ...overrides,
   };
 }
