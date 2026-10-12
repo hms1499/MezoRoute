@@ -68,23 +68,39 @@ export async function submitCall(config: Config, call: { to: Address; data: Hex 
   return assertTxHash(sent);
 }
 
-/** Waits for a submitted transaction's successful receipt; also serves the receipt page after a reload. */
+/** How long to wait for a receipt in total, and the pause before asking again after a flaky-RPC miss. */
+const CONFIRM_TIMEOUT_MS = 120_000;
+const RETRY_PAUSE_MS = 2_000;
+
+/**
+ * Waits for a submitted transaction's successful receipt; also serves the receipt page after a reload.
+ * The public testnet RPC sometimes answers null for a mined transaction's receipt and block, which
+ * makes viem give up early; such a miss is retried until the overall timeout.
+ */
 export async function confirmCall(config: Config, hash: Hash, chainId: number): Promise<TransactionReceipt> {
+  const deadline = Date.now() + CONFIRM_TIMEOUT_MS;
   let replacement: { reason: string; transaction: { hash: Hash } } | undefined;
   let receipt: TransactionReceipt;
-  try {
-    // The public testnet RPC intermittently returns null receipts; viem keeps polling until the timeout.
-    receipt = await waitForTransactionReceipt(config, {
-      hash,
-      chainId,
-      pollingInterval: 2_000,
-      timeout: 120_000,
-      onReplaced: (replaced) => {
-        replacement = replaced;
-      },
-    });
-  } catch (error) {
-    throw receiptFailure(error, hash);
+  for (;;) {
+    try {
+      receipt = await waitForTransactionReceipt(config, {
+        hash,
+        chainId,
+        pollingInterval: RETRY_PAUSE_MS,
+        timeout: Math.max(deadline - Date.now(), 1),
+        onReplaced: (replaced) => {
+          replacement = replaced;
+        },
+      });
+      break;
+    } catch (error) {
+      const failure = receiptFailure(error, hash);
+      const viemTimedOut = chainNames(causeChain(error)).includes("WaitForTransactionReceiptTimeoutError");
+      if (!(failure instanceof ConfirmationTimeoutError) || viemTimedOut || Date.now() + RETRY_PAUSE_MS >= deadline) {
+        throw failure;
+      }
+      await new Promise((resolve) => setTimeout(resolve, RETRY_PAUSE_MS));
+    }
   }
   // viem follows a replacement and resolves with its receipt; only a repriced copy is the same call.
   if (replacement && replacement.reason !== "repriced") {

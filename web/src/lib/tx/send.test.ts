@@ -11,7 +11,7 @@ import {
 } from "viem";
 import { ConnectorChainMismatchError, type Config } from "wagmi";
 import { getAccount, sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import {
   ConfirmationTimeoutError,
@@ -173,5 +173,39 @@ describe("confirmCall", () => {
   it("waits on the given chain", async () => {
     await confirmCall(config, HASH, 31611);
     expect(waitForTransactionReceipt).toHaveBeenCalledWith(config, expect.objectContaining({ hash: HASH, chainId: 31611 }));
+  });
+});
+
+describe("confirmCall on the flaky testnet RPC", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("keeps waiting after a null-receipt miss instead of reporting a mined transaction as unconfirmed", async () => {
+    vi.useFakeTimers();
+    vi.mocked(waitForTransactionReceipt)
+      .mockRejectedValueOnce(new BlockNotFoundError({ blockNumber: 15_936_717n }))
+      .mockResolvedValueOnce(receipt() as never);
+    const confirmed = confirmCall(config, HASH, 31611);
+    await vi.advanceTimersByTimeAsync(2_000);
+    await expect(confirmed).resolves.toMatchObject({ transactionHash: HASH });
+    expect(waitForTransactionReceipt).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports unconfirmed once the 120 s budget is spent", async () => {
+    vi.useFakeTimers();
+    vi.mocked(waitForTransactionReceipt).mockRejectedValue(new TransactionReceiptNotFoundError({ hash: HASH }));
+    const confirmed = confirmCall(config, HASH, 31611).catch((caught: unknown) => caught);
+    await vi.advanceTimersByTimeAsync(121_000);
+    expect(await confirmed).toBeInstanceOf(ConfirmationTimeoutError);
+    expect(vi.mocked(waitForTransactionReceipt).mock.calls.length).toBeLessThanOrEqual(61);
+  });
+
+  it("does not wait again after viem's own timeout or a revert", async () => {
+    vi.mocked(waitForTransactionReceipt).mockRejectedValueOnce(new WaitForTransactionReceiptTimeoutError({ hash: HASH }));
+    await expect(confirmCall(config, HASH, 31611)).rejects.toBeInstanceOf(ConfirmationTimeoutError);
+    vi.mocked(waitForTransactionReceipt).mockRejectedValueOnce(new Error("execution reverted"));
+    await expect(confirmCall(config, HASH, 31611)).rejects.toBeInstanceOf(TransactionRevertedError);
+    expect(waitForTransactionReceipt).toHaveBeenCalledTimes(2);
   });
 });
