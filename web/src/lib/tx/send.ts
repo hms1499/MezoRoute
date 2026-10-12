@@ -1,7 +1,9 @@
 import type { Address, Hash, Hex, TransactionReceipt } from "viem";
 import type { Config } from "wagmi";
-import { getAccount, sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
+import { estimateGas, getAccount, sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
 import { causeChain, chainNames, findRevertData } from "@/lib/errors/chain";
+import { gasLimit } from "@/lib/quote/gas";
+import { isOrangeKitConnector } from "@/lib/wallet/capabilities";
 import {
   asRelayFailure,
   ConfirmationTimeoutError,
@@ -52,16 +54,36 @@ export function receiptFailure(error: unknown, hash: Hash): TransactionRevertedE
 /**
  * Sends one call from the connected wallet and returns its hash. The same path serves EOAs and
  * OrangeKit smart accounts: wagmi resolves `sendTransaction` to OrangeKit's Safe-relaying override
- * for Bitcoin wallets.
+ * for Bitcoin wallets. With a `gasBudget`, an EVM wallet gets an explicit gas limit (`gasLimit`: the
+ * estimate plus 20%, never below the budget); a smart account's gas is left to the relayer.
  */
-export async function submitCall(config: Config, call: { to: Address; data: Hex }, pin: SendPin): Promise<Hash> {
-  const connectorType = getAccount(config).connector?.type;
+export async function submitCall(
+  config: Config,
+  call: { to: Address; data: Hex },
+  pin: SendPin,
+  gasBudget?: bigint,
+): Promise<Hash> {
+  const connector = getAccount(config).connector;
+  const connectorType = connector?.type;
+  const gas =
+    gasBudget === undefined || (connector && isOrangeKitConnector(connector))
+      ? undefined
+      : gasLimit(
+          gasBudget,
+          await estimateGas(config, { to: call.to, data: call.data, account: pin.account, chainId: pin.chainId }).catch(() => undefined),
+        );
   let sent: unknown;
   try {
     // With account and chain pinned, wagmi throws (ConnectorAccountNotFoundError,
     // ConnectorChainMismatchError) instead of sending from an account or chain the user switched
     // to after the flow started.
-    sent = await sendTransaction(config, { to: call.to, data: call.data, account: pin.account, chainId: pin.chainId });
+    sent = await sendTransaction(config, {
+      to: call.to,
+      data: call.data,
+      account: pin.account,
+      chainId: pin.chainId,
+      ...(gas === undefined ? {} : { gas }),
+    });
   } catch (error) {
     throw asRelayFailure(error, connectorType);
   }
@@ -112,6 +134,11 @@ export async function confirmCall(config: Config, hash: Hash, chainId: number): 
 }
 
 /** Submit, then confirm: used for steps that must finish before the next one (the approval). */
-export async function sendCall(config: Config, call: { to: Address; data: Hex }, pin: SendPin): Promise<TransactionReceipt> {
-  return confirmCall(config, await submitCall(config, call, pin), pin.chainId);
+export async function sendCall(
+  config: Config,
+  call: { to: Address; data: Hex },
+  pin: SendPin,
+  gasBudget?: bigint,
+): Promise<TransactionReceipt> {
+  return confirmCall(config, await submitCall(config, call, pin, gasBudget), pin.chainId);
 }
