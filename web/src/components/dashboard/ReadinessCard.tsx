@@ -1,6 +1,7 @@
 "use client";
 
 import { useBitcoinAccount } from "@mezo-org/passport";
+import Link from "next/link";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { ExternalButton } from "@/components/ExternalButton";
@@ -49,6 +50,16 @@ export function ReadinessCard({
       {copy.action && (
         <div className="mt-4">
           <ExternalButton href={copy.action.href}>{copy.action.label}</ExternalButton>
+        </div>
+      )}
+      {readiness.state === "ready" && network.executor && (
+        <div className="mt-4">
+          <Link
+            href="/route/lp/"
+            className="inline-block rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent/90"
+          >
+            Deposit into LP
+          </Link>
         </div>
       )}
       <p className="mt-4 flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-line pt-3 text-xs text-muted">

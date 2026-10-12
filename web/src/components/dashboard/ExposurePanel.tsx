@@ -15,7 +15,7 @@ const musd = (value: bigint) => formatToken(value, 18, 2);
 const price = (value: bigint) => formatToken(value, 18, 0);
 
 /** Total BTC exposure and the 10/20/30% drawdown table (FR-15, PRODUCT_SPEC §12). */
-export function ExposurePanel({ snapshot }: { snapshot: DashboardSnapshot }) {
+export function ExposurePanel({ snapshot, title = "BTC exposure" }: { snapshot: DashboardSnapshot; title?: string }) {
   const current = exposure(snapshot);
   const scenarios = drawdownScenarios(snapshot, current);
   const hasTrove = snapshot.trove !== null;
@@ -26,7 +26,7 @@ export function ExposurePanel({ snapshot }: { snapshot: DashboardSnapshot }) {
   if (!hasTrove && !hasLp && !hasSp) {
     return (
       <section id="exposure" className="scroll-mt-4 rounded-2xl bg-white p-5 shadow-card">
-        <h2 className="font-semibold">BTC exposure</h2>
+        <h2 className="font-semibold">{title}</h2>
         <p className="mt-2 text-sm text-muted">No BTC exposure in a Trove, the LP, or the Stability Pool yet.</p>
       </section>
     );
@@ -36,7 +36,7 @@ export function ExposurePanel({ snapshot }: { snapshot: DashboardSnapshot }) {
   return (
     <section id="exposure" className="scroll-mt-4 rounded-2xl bg-white p-5 shadow-card">
       <h2 className="flex items-baseline justify-between gap-3 font-semibold">
-        BTC exposure
+        {title}
         <span className="text-xs font-normal text-muted">BTC {price(snapshot.price)} MUSD</span>
       </h2>
       <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
