@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enteredRows, findEnteredEvent } from "./receipt";
+import { enteredRows, exitedRows, findEnteredEvent, findExitedEvent } from "./receipt";
 
 const EXECUTOR = "0xB36B2E012003840951CFf00fA6b1E3237A110920";
 const ME = "0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49";
@@ -65,5 +65,53 @@ describe("enteredRows for Borrow & Deploy", () => {
     const rows = enteredRows({ ...event, musdBorrowed: 20_000_000_000_000_000_000n });
     expect(rows[0]).toEqual({ label: "MUSD borrowed", value: "20 MUSD" });
     expect(rows).toHaveLength(10);
+  });
+});
+
+// The live smoke exit, tx 0x38a45ffe…7e30 (2 Oct 2026).
+const exitedLog = {
+  address: "0xb36b2e012003840951cff00fa6b1e3237a110920",
+  topics: [
+    "0x60d07dbee244732f25c764b0682faec5d991001c2be707658ecaf4d12db76c23",
+    "0x000000000000000000000000d74f60bb70d2a8b412ff12d8ef0ffdaae81b2b49",
+    "0x000000000000000000000000d74f60bb70d2a8b412ff12d8ef0ffdaae81b2b49",
+  ],
+  data: "0x00000000000000000000000000000000000000000000000000fcd376919622bc000000000000000000000000000000000000000000000001152acf247df896e50000000000000000000000000000000000000000000000000000e6a1bdd82f39000000000000000000000000000000000000000000000001150e69d644fb1b290000000000000000000000000000000000000000000000022a3938fac2f3b20e0000000000000000000000000000000000000000000000000000000000000000",
+} as const;
+
+describe("findExitedEvent", () => {
+  it("decodes the live smoke Exited event", () => {
+    expect(findExitedEvent([enteredLog, exitedLog], EXECUTOR)).toEqual({
+      caller: ME,
+      recipient: ME,
+      liquidityIn: 71164200333222588n,
+      musdRemoved: 19972003253167101669n,
+      btcRemoved: 253582349184825n,
+      musdFromSwap: 19964010567181212457n,
+      musdOut: 39936013820348314126n,
+      btcRefund: 0n,
+    });
+  });
+
+  it("ignores another contract and an Entered event", () => {
+    expect(findExitedEvent([{ ...exitedLog, address: "0x0000000000000000000000000000000000000001" }], EXECUTOR)).toBeNull();
+    expect(findExitedEvent([enteredLog], EXECUTOR)).toBeNull();
+  });
+
+  it("is not mistaken for an Entered event (viem decodes by topic, whatever eventName says)", () => {
+    expect(findEnteredEvent([exitedLog], EXECUTOR)).toBeNull();
+  });
+});
+
+describe("exitedRows", () => {
+  it("lists the live exit's values for the receipt", () => {
+    expect(exitedRows(findExitedEvent([exitedLog], EXECUTOR)!)).toEqual([
+      { label: "LP exited", value: "0.071164 LP" },
+      { label: "MUSD from the pool", value: "19.972003 MUSD" },
+      { label: "BTC from the pool", value: "0.000253 BTC" },
+      { label: "MUSD from selling the BTC", value: "19.96401 MUSD" },
+      { label: "MUSD received", value: "39.936013 MUSD" },
+      { label: "BTC returned", value: "0 BTC" },
+    ]);
   });
 });
