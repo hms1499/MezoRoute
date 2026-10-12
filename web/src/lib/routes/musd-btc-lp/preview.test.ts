@@ -82,7 +82,7 @@ describe("entryPreview in borrow mode", () => {
   it("plans permit → borrow → send, adds the borrow to the Trove, and keeps the wallet MUSD", () => {
     const result = borrowPreview("amount=100");
     expect(result.steps).toEqual(["permit", "borrow", "enter"]);
-    expect(result.gasUnits).toBe(2_200_000n);
+    expect(result.gasUnits).toBe(880_000n);
     expect(result.borrow?.effect?.fee).toBe(100_000_000_000_000_000n);
     expect(result.after?.trove?.debt).toBe(result.borrow?.effect?.newDebt);
     expect(result.after?.musd).toBe(3n * ONE + result.quote!.musdRefund);

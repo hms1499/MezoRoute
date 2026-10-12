@@ -1,8 +1,11 @@
 /** Gas units for `enter`; S1 measured 328,115–433,422 (5 Oct 2026). */
 export const ENTER_GAS = 450_000n;
 
-/** `borrowAndEnter`; provisional until F4 QA measures it with hints (zero hints: 2,178,863 on 2 Oct 2026). */
-export const BORROW_ENTER_GAS = 2_200_000n;
+/**
+ * `borrowAndEnter` with Trove hints: 754,103 measured on testnet (12 Oct 2026, 242 Troves), rounded
+ * up to 800,000 plus 10%. Without hints SortedTroves walks the list: 2,178,863 (2 Oct 2026).
+ */
+export const BORROW_ENTER_GAS = 880_000n;
 /** An ERC-20 approval. */
 export const APPROVE_GAS = 60_000n;
 /** OrangeKit's relayer adds the Safe's baseGas (0x3035F) to the refund of each relayed call. */
