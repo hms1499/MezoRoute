@@ -6,3 +6,6 @@ export const poolAbi = parseAbi([
   "function totalSupply() view returns (uint256)",
   "function balanceOf(address account) view returns (uint256)",
 ]);
+
+/** Tigris PoolFactory: the swap fee in bps (testnet 4, mainnet 30). */
+export const poolFactoryAbi = parseAbi(["function getFee(address pool, bool stable) view returns (uint256)"]);

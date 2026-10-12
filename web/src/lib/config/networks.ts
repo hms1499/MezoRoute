@@ -16,6 +16,7 @@ export type NetworkAddresses = {
   hintHelpers: Address;
   sortedTroves: Address;
   stabilityPool: Address;
+  multicall3: Address;
 };
 
 export type NetworkConfig = {
@@ -53,6 +54,8 @@ export const networks: Record<NetworkId, NetworkConfig> = {
       hintHelpers: "0x4e4cBA3779d56386ED43631b4dCD6d8EacEcBCF6",
       sortedTroves: "0x722E4D24FD6Ff8b0AC679450F3D91294607268fA",
       stabilityPool: "0x1CCA7E410eE41739792eA0A24e00349Dd247680e",
+      // Multicall3 (same address on both networks; Passport's chains declare it).
+      multicall3: "0xcA11bde05977b3631167028862bE2a173976CA11",
     },
   },
   mainnet: {
@@ -77,6 +80,8 @@ export const networks: Record<NetworkId, NetworkConfig> = {
       hintHelpers: "0xD267b3bE2514375A075fd03C3D9CBa6b95317DC3",
       sortedTroves: "0x8C5DB4C62BF29c1C4564390d10c20a47E0b2749f",
       stabilityPool: "0x73245Eff485aB3AAc1158B3c4d8f4b23797B0e32",
+      // Multicall3 (same address on both networks; Passport's chains declare it).
+      multicall3: "0xcA11bde05977b3631167028862bE2a173976CA11",
     },
   },
 };
