@@ -21,6 +21,7 @@ import { ExposureChange } from "./ExposureChange";
 import { ModeToggle } from "./ModeToggle";
 import { NoExecutorCard } from "./NoExecutorCard";
 import { RisksCard } from "./RisksCard";
+import { TroveChangeCard } from "./TroveChangeCard";
 
 /** Spec §9 screen 2a: amount, preview, exposure before/after, risks, Review. */
 export default function LpRoutePage() {
@@ -41,7 +42,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
   const [intent, setIntent] = useState<EntryIntent>(() => parseEntryIntent(searchParams));
   const { data, error, refresh } = useLpRouteSnapshot(account, executor);
 
-  function update(next: Pick<EntryIntent, "amount" | "slippageBps">) {
+  function update(next: Pick<EntryIntent, "amount" | "slippageBps" | "mode">) {
     const query = entryQuery(next);
     setIntent(parseEntryIntent(new URLSearchParams(query)));
     window.history.replaceState(null, "", query);
@@ -70,12 +71,13 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <section className="rounded-2xl bg-white p-5 shadow-card">
         <h1 className="text-lg font-semibold">Earn swap fees in the MUSD/BTC pool</h1>
-        <ModeToggle walletKind={walletKind} />
+        <ModeToggle walletKind={walletKind} mode={intent.mode} onChange={(mode) => update({ ...intent, mode })} />
         <AmountForm
           amount={intent.amount}
           slippageBps={intent.slippageBps}
-          walletMusd={data.snapshot.dashboard.musd}
-          onChange={update}
+          max={preview.borrow ? preview.borrow.limit : data.snapshot.dashboard.musd}
+          maxLabel={preview.borrow ? "You can borrow" : "In your wallet"}
+          onChange={(next) => update({ ...next, mode: intent.mode })}
         />
       </section>
       {preview.quote && preview.minimums && (
@@ -84,11 +86,20 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           minimums={preview.minimums}
           feeBps={data.snapshot.executorFeeBps}
           gasCost={preview.gasCost}
+          borrowFee={preview.borrow?.effect?.fee}
+        />
+      )}
+      {preview.borrow?.trove && preview.borrow.effect && (
+        <TroveChangeCard
+          trove={preview.borrow.trove}
+          effect={preview.borrow.effect}
+          price={data.snapshot.dashboard.price}
+          mcr={data.snapshot.dashboard.protocol.mcr}
         />
       )}
       {preview.after && <ExposureChange before={data.snapshot.dashboard} after={preview.after} />}
       {preview.after && <ExposurePanel snapshot={preview.after} title="BTC exposure after this deposit" />}
-      <RisksCard />
+      <RisksCard borrow={intent.mode === "borrow"} />
       <div className="flex items-center justify-between gap-3">
         <BlockNotice block={preview.block} />
         {preview.block ? (

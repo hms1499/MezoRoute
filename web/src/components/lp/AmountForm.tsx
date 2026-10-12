@@ -7,9 +7,10 @@ type Inputs = { amount: string; slippageBps: SlippageBps };
 export function AmountForm({
   amount,
   slippageBps,
-  walletMusd,
+  max,
+  maxLabel,
   onChange,
-}: Inputs & { walletMusd: bigint; onChange: (next: Inputs) => void }) {
+}: Inputs & { max: bigint; maxLabel: string; onChange: (next: Inputs) => void }) {
   return (
     <div className="mt-4 space-y-3">
       <label htmlFor="amount" className="block text-sm font-medium">
@@ -28,13 +29,15 @@ export function AmountForm({
         <span className="text-sm text-muted">MUSD</span>
         <button
           type="button"
-          onClick={() => onChange({ amount: formatUnits(walletMusd, 18), slippageBps })}
+          onClick={() => onChange({ amount: formatUnits(max, 18), slippageBps })}
           className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent"
         >
           Max
         </button>
       </div>
-      <p className="text-xs text-muted">In your wallet: {formatToken(walletMusd, 18, 2)} MUSD</p>
+      <p className="text-xs text-muted">
+        {maxLabel}: {formatToken(max, 18, 2)} MUSD
+      </p>
       <fieldset>
         <legend className="text-sm font-medium">Slippage</legend>
         <div className="mt-1 flex gap-2">

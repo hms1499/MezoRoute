@@ -9,16 +9,23 @@ export function EntryPreviewCard({
   minimums,
   feeBps,
   gasCost,
+  borrowFee,
 }: {
   quote: EntryQuote;
   minimums: EntryMinimums;
   feeBps: bigint;
   gasCost: bigint | null;
+  borrowFee?: bigint;
 }) {
   return (
     <section className="rounded-2xl bg-white p-5 shadow-card">
       <h2 className="font-semibold">What happens</h2>
       <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted">
+        {borrowFee !== undefined && (
+          <li>
+            MezoRoute borrows {musd(quote.musdIn)} from your Trove; the {musd(borrowFee)} borrowing fee is added to your debt.
+          </li>
+        )}
         <li>
           MezoRoute takes its {formatBps(feeBps)} fee: {musd(quote.fee)}.
         </li>
