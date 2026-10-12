@@ -1,6 +1,6 @@
 import type { CreateWalletFn } from "@mezo-org/orangekit";
 import type { CreateConnectorFn } from "wagmi";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { withReconnectChain } from "./reconnect-chain";
 
 type ConnectCall = { parameters: unknown; self: unknown };
@@ -52,5 +52,85 @@ describe("withReconnectChain", () => {
     const used = { ...connector, uid: "wagmi-uid" };
     await used.connect({});
     expect(calls[0].self).toBe(used);
+  });
+});
+
+describe("withReconnectChain: a wallet extension that injects after the config was built", () => {
+  type Injected = { getAccounts(): Promise<string[]> };
+
+  /** OrangeKit's connector keeps the injected provider it saw when the config was built. */
+  function lateWallet(id: string, seen: Injected | undefined): CreateWalletFn {
+    return (() => ({
+      id,
+      name: id,
+      iconUrl: "",
+      iconBackground: "",
+      createConnector: () =>
+        (() => {
+          let provider = seen;
+          const bitcoinProvider = {
+            isInstalled: () => Boolean(provider),
+            setProvider: (next: Injected) => {
+              provider = next;
+            },
+          };
+          return {
+            id,
+            getBitcoinProvider: () => bitcoinProvider,
+            async isAuthorized() {
+              if (!bitcoinProvider.isInstalled()) return false;
+              return (await provider!.getAccounts()).length > 0;
+            },
+          };
+        }) as unknown as CreateConnectorFn,
+    })) as unknown as CreateWalletFn;
+  }
+
+  function authorizedOf(createWallet: CreateWalletFn, recentConnectorId = "orangekit-unisat") {
+    const createConnector = createWallet().createConnector({} as never) as unknown as (config: unknown) => {
+      isAuthorized(): Promise<boolean>;
+    };
+    const storage = { getItem: async (key: string) => (key === "recentConnectorId" ? recentConnectorId : null) };
+    return createConnector({ storage }).isAuthorized();
+  }
+
+  const unisat: Injected = { getAccounts: async () => ["tb1qcjzphr67dug28rw9ueewrqllmxlqe5f0v7g34m"] };
+
+  afterEach(() => {
+    vi.useRealTimers();
+    delete (globalThis as { window?: unknown }).window;
+  });
+
+  it("picks up Unisat once it appears, so a reload keeps the wallet", async () => {
+    vi.useFakeTimers();
+    const window: { unisat?: Injected } = {};
+    (globalThis as { window?: unknown }).window = window;
+    const authorized = authorizedOf(withReconnectChain(lateWallet("orangekit-unisat", undefined), 31611));
+    setTimeout(() => {
+      window.unisat = unisat;
+    }, 300);
+    await vi.advanceTimersByTimeAsync(400);
+    await expect(authorized).resolves.toBe(true);
+  });
+
+  it("gives up after a short wait when the extension is not installed", async () => {
+    vi.useFakeTimers();
+    (globalThis as { window?: unknown }).window = {};
+    const authorized = authorizedOf(withReconnectChain(lateWallet("orangekit-unisat", undefined), 31611));
+    await vi.advanceTimersByTimeAsync(3_000);
+    await expect(authorized).resolves.toBe(false);
+  });
+
+  it("does not wait for a wallet that was not the last one used", async () => {
+    vi.useFakeTimers();
+    (globalThis as { window?: unknown }).window = {};
+    const authorized = authorizedOf(withReconnectChain(lateWallet("orangekit-okx", undefined), 31611));
+    await vi.advanceTimersByTimeAsync(0);
+    await expect(authorized).resolves.toBe(false);
+  });
+
+  it("does not wait when the provider was already there", async () => {
+    (globalThis as { window?: unknown }).window = {};
+    await expect(authorizedOf(withReconnectChain(lateWallet("orangekit-unisat", unisat), 31611))).resolves.toBe(true);
   });
 });

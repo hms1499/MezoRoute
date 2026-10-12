@@ -2,12 +2,40 @@ import type { CreateWalletFn } from "@mezo-org/orangekit";
 import type { CreateConnectorFn } from "wagmi";
 
 type ConnectParameters = { chainId?: number; isReconnecting?: boolean } | undefined;
-type Connector = ReturnType<CreateConnectorFn> & { connect(parameters?: ConnectParameters): Promise<unknown> };
+type BitcoinProvider = { isInstalled(): boolean; setProvider(provider: unknown): void };
+type Connector = ReturnType<CreateConnectorFn> & {
+  connect(parameters?: ConnectParameters): Promise<unknown>;
+  isAuthorized(): Promise<boolean>;
+  getBitcoinProvider?(): BitcoinProvider;
+};
+
+/** How long a reload waits for the last-used wallet extension to inject its provider. */
+const INJECTION_WAIT_MS = 2_000;
+const INJECTION_POLL_MS = 100;
+
+/** The injected provider OrangeKit reads for each wallet (Xverse needs OrangeKit's own wrapper, so none). */
+function injectedProvider(connectorId: string): unknown {
+  const page = globalThis.window as { unisat?: unknown; okxwallet?: { bitcoin?: unknown } } | undefined;
+  if (connectorId === "orangekit-unisat") return page?.unisat;
+  if (connectorId === "orangekit-okx") return page?.okxwallet?.bitcoin;
+  return undefined;
+}
+
+async function waitForInjected(connectorId: string): Promise<unknown> {
+  for (let waited = 0; ; waited += INJECTION_POLL_MS) {
+    const provider = injectedProvider(connectorId);
+    if (provider || waited >= INJECTION_WAIT_MS) return provider;
+    await new Promise((resolve) => setTimeout(resolve, INJECTION_POLL_MS));
+  }
+}
 
 /**
- * wagmi reconnects (after a reload) with `connect({ isReconnecting: true })` and no chainId, which
- * OrangeKit's connector rejects as an unsupported network, so wagmi dropped every Bitcoin wallet
- * on reload (found in F3 QA). This fills in the network's chain when the caller passes none.
+ * Makes OrangeKit's Bitcoin connectors survive wagmi's reconnect after a reload (found in F3 QA):
+ * - wagmi calls `connect({ isReconnecting: true })` without a chainId, which OrangeKit rejects as an
+ *   unsupported network; the network's chain is filled in.
+ * - OrangeKit keeps the extension's provider from when the config was built, and `isAuthorized`
+ *   (unlike `connect`) never looks again, so an extension that injects late was skipped; for the
+ *   wallet used last it now waits briefly for the provider and hands it to the connector.
  */
 export function withReconnectChain(createWallet: CreateWalletFn, chainId: number): CreateWalletFn {
   return () => {
@@ -16,14 +44,24 @@ export function withReconnectChain(createWallet: CreateWalletFn, chainId: number
       ...wallet,
       createConnector: (details: Parameters<ReturnType<CreateWalletFn>["createConnector"]>[0]) => {
         const createConnector = wallet.createConnector(details) as unknown as (config: unknown) => Connector;
-        return ((config: unknown) => {
+        return ((config: { storage?: { getItem(key: string): unknown } | null }) => {
           const connector = createConnector(config);
-          const connect = connector.connect;
+          const { connect, isAuthorized } = connector;
           return {
             ...connector,
-            // A method, not an arrow: wagmi calls it on its own copy of the connector.
+            // Methods, not arrows: wagmi calls them on its own copy of the connector.
             connect(this: Connector, connectParameters?: ConnectParameters) {
               return connect.call(this, { ...connectParameters, chainId: connectParameters?.chainId ?? chainId });
+            },
+            async isAuthorized(this: Connector) {
+              const bitcoinProvider = this.getBitcoinProvider?.();
+              // Only the wallet used last is worth waiting for; the others answer at once.
+              const lastUsed = (await config.storage?.getItem("recentConnectorId")) === this.id;
+              if (bitcoinProvider && !bitcoinProvider.isInstalled() && lastUsed) {
+                const injected = await waitForInjected(this.id);
+                if (injected) bitcoinProvider.setProvider(injected);
+              }
+              return isAuthorized.call(this);
             },
           };
         }) as unknown as ReturnType<typeof wallet.createConnector>;
