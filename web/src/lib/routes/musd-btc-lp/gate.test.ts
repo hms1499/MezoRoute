@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
 import { lacksGas } from "@/lib/dashboard/readiness";
 import { quoteEntry, type EntryQuote } from "@/lib/quote/entry";
+import { CR_SAFETY_FLOOR } from "@/lib/trove/constants";
 import { entryBlock, PRICE_IMPACT_LIMIT, QUOTE_TTL_MS, type EntryGateInput } from "./gate";
 import { ONE, TESTNET_POOL } from "./test-fixtures";
 
@@ -97,5 +98,31 @@ describe("lacksGas", () => {
     expect(lacksGas(1n, undefined)).toBe(false);
     expect(lacksGas(146n * 3_000_000n, 146n)).toBe(false);
     expect(lacksGas(146n * 3_000_000n - 1n, 146n)).toBe(true);
+  });
+});
+
+describe("entryBlock in borrow mode", () => {
+  const borrow = { canSign: true, hasTrove: true, recoveryMode: false, limit: 200n * ONE, newCr: CR_SAFETY_FLOOR };
+  const borrowInput = (overrides: Partial<EntryGateInput> = {}) => input({ walletMusd: 0n, borrow, ...overrides });
+
+  it("lets a borrow through without wallet MUSD", () => {
+    expect(entryBlock(borrowInput())).toBeNull();
+  });
+
+  it.each([
+    ["smart-account-borrow", { ...borrow, canSign: false }],
+    ["no-trove", { ...borrow, hasTrove: false }],
+    ["recovery-mode", { ...borrow, recoveryMode: true }],
+  ])("blocks %s before any amount check", (reason, gate) => {
+    expect(entryBlock(borrowInput({ borrow: gate, musdIn: null, quote: null }))?.reason).toBe(reason);
+  });
+
+  it("blocks a CR below the floor, then an amount above the limit", () => {
+    expect(entryBlock(borrowInput({ borrow: { ...borrow, newCr: CR_SAFETY_FLOOR - 1n } }))).toMatchObject({
+      reason: "cr-floor",
+      outcome: { message: "This borrow would leave your Trove too close to liquidation." },
+    });
+    expect(entryBlock(borrowInput({ borrow: { ...borrow, limit: 100n * ONE - 1n } }))?.reason).toBe("above-headroom");
+    expect(entryBlock(borrowInput({ borrow: { ...borrow, limit: 100n * ONE } }))).toBeNull();
   });
 });
