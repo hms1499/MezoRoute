@@ -92,6 +92,48 @@ export const PERMIT_EXPIRED: Outcome = {
   recovery: ["retry"],
 };
 
+export const SMART_ACCOUNT_BORROW: Outcome = {
+  kind: "smart-account-borrow",
+  message: "Borrow & Deploy needs a standard wallet signature.",
+  recovery: [],
+};
+
+export const NO_TROVE: Outcome = {
+  kind: "no-trove",
+  message: "You need an open Trove to borrow. Open one in the Mezo app.",
+  recovery: [],
+};
+
+export const RECOVERY_MODE: Outcome = {
+  kind: "recovery-mode",
+  message: "Borrowing is paused while Mezo is in Recovery Mode.",
+  recovery: [],
+};
+
+export const CR_FLOOR: Outcome = {
+  kind: "cr-floor",
+  message: "This borrow would leave your Trove too close to liquidation.",
+  recovery: ["reduce-amount"],
+};
+
+export const ABOVE_HEADROOM: Outcome = {
+  kind: "above-headroom",
+  message: "Amount exceeds what your Trove can safely borrow.",
+  recovery: ["reduce-amount"],
+};
+
+export const BORROW_USED: Outcome = {
+  kind: "borrow-used",
+  message: "Your borrow authorisation was already used; the MUSD is in your wallet.",
+  recovery: ["use-deposit"],
+};
+
+export const SIGNATURE_INVALID: Outcome = {
+  kind: "signature-invalid",
+  message: "Your borrow authorisation is no longer valid. Sign again.",
+  recovery: ["retry"],
+};
+
 export const REVERTED: Outcome = { kind: "reverted", message: "The transaction reverted.", recovery: ["retry", "copy-details"] };
 
 export const UNKNOWN: Outcome = { kind: "unknown", message: "Something went wrong.", recovery: ["retry", "copy-details"] };

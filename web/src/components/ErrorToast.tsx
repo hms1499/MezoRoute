@@ -8,7 +8,12 @@ import { decodeError } from "@/lib/errors/decode";
 import type { DecodedError, Recovery } from "@/lib/errors/types";
 
 /** Recoveries only the calling page can perform; their buttons show only when a handler is passed. */
-export type RecoveryHandlers = { retry?: () => void; refreshQuote?: () => void; reduceAmount?: () => void };
+export type RecoveryHandlers = {
+  retry?: () => void;
+  refreshQuote?: () => void;
+  reduceAmount?: () => void;
+  useDeposit?: () => void;
+};
 
 type ErrorToastApi = { showError: (error: unknown, handlers?: RecoveryHandlers) => void; dismiss: () => void };
 
@@ -22,6 +27,7 @@ const LABELS: Record<Recovery, string> = {
   "reduce-amount": "Change amount",
   "copy-details": "Copy details",
   "view-transaction": "View transaction",
+  "use-deposit": "Deposit MUSD",
 };
 
 export function ErrorToastProvider({ children }: { children: ReactNode }) {
@@ -77,6 +83,8 @@ function ErrorToast({
         return thenDismiss(handlers.refreshQuote);
       case "reduce-amount":
         return thenDismiss(handlers.reduceAmount);
+      case "use-deposit":
+        return thenDismiss(handlers.useDeposit);
       case "switch-network":
         return thenDismiss(() => switchChain({ chainId: network.chainId }));
       case "add-gas":
