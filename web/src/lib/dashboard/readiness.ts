@@ -10,6 +10,11 @@ export const GAS_BUDGET = 3_000_000n;
 /** Below 1 MUSD the wallet has nothing worth routing. */
 export const MIN_USABLE_MUSD = 10n ** 18n;
 
+/** An empty wallet can never pay; an unknown gas price trusts any non-zero balance. */
+export function lacksGas(gasBalance: bigint, gasPrice: bigint | undefined): boolean {
+  return gasBalance === 0n || (gasPrice !== undefined && gasBalance < gasPrice * GAS_BUDGET);
+}
+
 export type ReadinessState = "needs-gas" | "ready" | "can-borrow" | "borrow-in-mezo" | "no-room" | "no-trove";
 export type Readiness = { state: ReadinessState; borrowable: bigint; health: TroveHealth | null };
 
@@ -24,8 +29,7 @@ export function readiness(input: {
   const { trove, price, protocol, musd } = snapshot;
   const borrowable = trove ? borrowHeadroom(trove, price, protocol) : 0n;
   const health = trove ? troveHealth(collateralRatio(trove, price), protocol.mcr) : null;
-  // An empty wallet can never pay; an unknown gas price trusts any non-zero balance.
-  const needsGas = gasBalance === 0n || (gasPrice !== undefined && gasBalance < gasPrice * GAS_BUDGET);
+  const needsGas = lacksGas(gasBalance, gasPrice);
 
   let state: ReadinessState;
   if (needsGas) state = "needs-gas";

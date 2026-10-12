@@ -5,6 +5,7 @@ import {
   encodeErrorResult,
   ExecutionRevertedError,
   HttpRequestError,
+  InsufficientFundsError,
   parseAbi,
   RpcRequestError,
   UserRejectedRequestError,
@@ -19,12 +20,15 @@ import { tigrisErrorsAbi } from "@/lib/abi/tigrisErrors";
 import { networks } from "@/lib/config/networks";
 import {
   asRelayFailure,
+  BlockedError,
   ConfirmationTimeoutError,
   RelayError,
   SmartAccountCallFailedError,
+  TransactionReplacedError,
   TransactionRevertedError,
 } from "@/lib/tx/errors";
 import { decodeError, MAX_DETAILS } from "./decode";
+import { PRICE_IMPACT } from "./outcomes";
 
 const testnet = networks.testnet;
 const mainnet = networks.mainnet;
@@ -267,5 +271,32 @@ describe("decodeError: reverts without data, RPC failures, and the rest", () => 
     expect(decoded.message).toBe("Something went wrong.");
     expect(decoded.details?.length).toBe(MAX_DETAILS);
     expect(decoded.details?.endsWith("…")).toBe(true);
+  });
+});
+
+describe("decodeError: F3 additions", () => {
+  it("returns a pre-send block's outcome unchanged", () => {
+    expect(decodeError(new BlockedError(PRICE_IMPACT), testnet)).toEqual(PRICE_IMPACT);
+  });
+
+  it("maps a replaced transaction to View transaction on the replacement", () => {
+    const replacement = "0x1111111111111111111111111111111111111111111111111111111111111111";
+    expect(decodeError(new TransactionReplacedError(HASH, replacement), testnet)).toMatchObject({
+      kind: "replaced",
+      recovery: ["view-transaction"],
+      hash: replacement,
+    });
+  });
+
+  it("settles a mined revert before the needs-gas text rule (F1 follow-up 3)", () => {
+    const replay = new Error("insufficient funds for gas * price + value");
+    expect(decodeError(new TransactionRevertedError(HASH, { cause: replay }), testnet)).toMatchObject({
+      kind: "reverted",
+      hash: HASH,
+    });
+  });
+
+  it("matches viem's InsufficientFundsError by name (F1 follow-up 3)", () => {
+    expect(decodeError(new InsufficientFundsError({}), testnet).kind).toBe("needs-gas");
   });
 });

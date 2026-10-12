@@ -3,11 +3,11 @@
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
+import { LoadError } from "@/components/LoadError";
 import { useNetwork } from "@/lib/config/network-context";
 import { readiness, troveWarning } from "@/lib/dashboard/readiness";
 import { useDashboardSnapshot, type DashboardData } from "@/lib/dashboard/useDashboardSnapshot";
 import { dashboardView } from "@/lib/dashboard/view";
-import { decodeError } from "@/lib/errors/decode";
 import type { WalletKind } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { ExposurePanel } from "./ExposurePanel";
@@ -44,22 +44,6 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
       <TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} />
       <ExposurePanel snapshot={snapshot} />
     </>
-  );
-}
-
-function LoadError({ error, onRetry }: { error: Error; onRetry: () => void }) {
-  const { network } = useNetwork();
-  return (
-    <section role="alert" className="rounded-2xl bg-white p-5 shadow-card">
-      <p className="text-sm">{decodeError(error, network).message}</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="mt-3 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent/90"
-      >
-        Retry
-      </button>
-    </section>
   );
 }
 

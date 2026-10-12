@@ -1,5 +1,6 @@
 import type { Hash } from "viem";
 import { causeChain, chainMessages } from "@/lib/errors/chain";
+import type { Outcome } from "@/lib/errors/types";
 
 /** The relayer answered without a usable transaction hash, so nothing was submitted. */
 export class RelayError extends Error {
@@ -53,4 +54,28 @@ export function asRelayFailure(error: unknown, connectorType: string | undefined
   const messages = chainMessages(causeChain(error));
   if (!RELAY_FAILURE.test(messages.join(" | "))) return error;
   return new RelayError(`Mezo's relayer failed: ${messages[0]}`, { cause: error });
+}
+
+/** The wallet replaced the transaction with a different one (cancelled, or sped up with other data). */
+export class TransactionReplacedError extends Error {
+  readonly hash: Hash;
+  readonly replacement: Hash;
+
+  constructor(hash: Hash, replacement: Hash) {
+    super(`Transaction ${hash} was replaced by ${replacement}`);
+    this.name = "TransactionReplacedError";
+    this.hash = hash;
+    this.replacement = replacement;
+  }
+}
+
+/** A check before sending stopped the flow; the decoder shows its outcome unchanged. */
+export class BlockedError extends Error {
+  readonly outcome: Outcome;
+
+  constructor(outcome: Outcome) {
+    super(outcome.message);
+    this.name = "BlockedError";
+    this.outcome = outcome;
+  }
 }

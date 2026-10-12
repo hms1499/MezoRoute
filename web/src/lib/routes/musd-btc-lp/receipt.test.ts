@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findEnteredEvent } from "./receipt";
+import { enteredRows, findEnteredEvent } from "./receipt";
 
 const EXECUTOR = "0xB36B2E012003840951CFf00fA6b1E3237A110920";
 const ME = "0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49";
@@ -39,5 +39,22 @@ describe("findEnteredEvent", () => {
 
   it("returns null when the receipt has no Entered event", () => {
     expect(findEnteredEvent([], EXECUTOR)).toBeNull();
+  });
+});
+
+describe("enteredRows", () => {
+  it("lists the live smoke event's values for the receipt", () => {
+    const event = findEnteredEvent([enteredLog], EXECUTOR)!;
+    expect(enteredRows(event)).toEqual([
+      { label: "MUSD in", value: "20 MUSD" },
+      { label: "MezoRoute fee", value: "0.02 MUSD" },
+      { label: "MUSD swapped", value: "9.99 MUSD" },
+      { label: "BTC from the swap", value: "0.000126 BTC" },
+      { label: "MUSD deposited", value: "9.986004 MUSD" },
+      { label: "BTC deposited", value: "0.000126 BTC" },
+      { label: "LP received", value: "0.035582 LP" },
+      { label: "MUSD returned", value: "0.003995 MUSD" },
+      { label: "BTC returned", value: "0 BTC" },
+    ]);
   });
 });

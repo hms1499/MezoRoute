@@ -11,16 +11,17 @@ import {
 } from "viem";
 import { ConnectorChainMismatchError, type Config } from "wagmi";
 import { getAccount, sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import {
   ConfirmationTimeoutError,
   RelayError,
   SmartAccountCallFailedError,
+  TransactionReplacedError,
   TransactionRevertedError,
 } from "./errors";
 import { SAFE_EXECUTION_FAILURE_TOPIC } from "./safe";
-import { assertTxHash, receiptFailure, sendCall } from "./send";
+import { assertTxHash, confirmCall, isTxHash, receiptFailure, sendCall, submitCall } from "./send";
 
 vi.mock("wagmi/actions", () => ({
   getAccount: vi.fn(),
@@ -128,5 +129,83 @@ describe("receiptFailure", () => {
     expect(result).toBeInstanceOf(expected);
     expect(result.hash).toBe(HASH);
     expect(result.cause).toBe(error);
+  });
+});
+
+describe("isTxHash", () => {
+  it("accepts only a 32-byte hex hash", () => {
+    expect(isTxHash(HASH)).toBe(true);
+    for (const value of ["0x", HASH.slice(0, 65), `${HASH}00`, "hello", null, undefined, 42]) {
+      expect(isTxHash(value)).toBe(false);
+    }
+  });
+});
+
+describe("submitCall", () => {
+  it("returns the hash without waiting for the receipt", async () => {
+    await expect(submitCall(config, CALL, PIN)).resolves.toBe(HASH);
+    expect(waitForTransactionReceipt).not.toHaveBeenCalled();
+  });
+});
+
+describe("confirmCall", () => {
+  const REPLACEMENT = "0x1111111111111111111111111111111111111111111111111111111111111111";
+
+  function replacedWith(reason: "repriced" | "cancelled" | "replaced") {
+    vi.mocked(waitForTransactionReceipt).mockImplementation((async (_config: Config, options: { onReplaced?: (r: unknown) => void }) => {
+      options.onReplaced?.({ reason, transaction: { hash: REPLACEMENT } });
+      return receipt({ transactionHash: REPLACEMENT });
+    }) as never);
+  }
+
+  it("accepts a repriced (sped-up) copy of the same call", async () => {
+    replacedWith("repriced");
+    await expect(confirmCall(config, HASH, 31611)).resolves.toMatchObject({ transactionHash: REPLACEMENT });
+  });
+
+  it.each(["cancelled", "replaced"] as const)("fails when the wallet %s the transaction", async (reason) => {
+    replacedWith(reason);
+    const error = await confirmCall(config, HASH, 31611).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(TransactionReplacedError);
+    expect(error).toMatchObject({ hash: HASH, replacement: REPLACEMENT });
+  });
+
+  it("waits on the given chain", async () => {
+    await confirmCall(config, HASH, 31611);
+    expect(waitForTransactionReceipt).toHaveBeenCalledWith(config, expect.objectContaining({ hash: HASH, chainId: 31611 }));
+  });
+});
+
+describe("confirmCall on the flaky testnet RPC", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("keeps waiting after a null-receipt miss instead of reporting a mined transaction as unconfirmed", async () => {
+    vi.useFakeTimers();
+    vi.mocked(waitForTransactionReceipt)
+      .mockRejectedValueOnce(new BlockNotFoundError({ blockNumber: 15_936_717n }))
+      .mockResolvedValueOnce(receipt() as never);
+    const confirmed = confirmCall(config, HASH, 31611);
+    await vi.advanceTimersByTimeAsync(2_000);
+    await expect(confirmed).resolves.toMatchObject({ transactionHash: HASH });
+    expect(waitForTransactionReceipt).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports unconfirmed once the 120 s budget is spent", async () => {
+    vi.useFakeTimers();
+    vi.mocked(waitForTransactionReceipt).mockRejectedValue(new TransactionReceiptNotFoundError({ hash: HASH }));
+    const confirmed = confirmCall(config, HASH, 31611).catch((caught: unknown) => caught);
+    await vi.advanceTimersByTimeAsync(121_000);
+    expect(await confirmed).toBeInstanceOf(ConfirmationTimeoutError);
+    expect(vi.mocked(waitForTransactionReceipt).mock.calls.length).toBeLessThanOrEqual(61);
+  });
+
+  it("does not wait again after viem's own timeout or a revert", async () => {
+    vi.mocked(waitForTransactionReceipt).mockRejectedValueOnce(new WaitForTransactionReceiptTimeoutError({ hash: HASH }));
+    await expect(confirmCall(config, HASH, 31611)).rejects.toBeInstanceOf(ConfirmationTimeoutError);
+    vi.mocked(waitForTransactionReceipt).mockRejectedValueOnce(new Error("execution reverted"));
+    await expect(confirmCall(config, HASH, 31611)).rejects.toBeInstanceOf(TransactionRevertedError);
+    expect(waitForTransactionReceipt).toHaveBeenCalledTimes(2);
   });
 });

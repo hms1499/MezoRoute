@@ -68,12 +68,40 @@ export const PRICE_UNAVAILABLE: Outcome = {
   recovery: ["retry"],
 };
 
+export const FEE_MISMATCH: Outcome = {
+  kind: "fee-mismatch",
+  message: "This MezoRoute deployment does not match the app. Reload the page.",
+  recovery: ["retry"],
+};
+
+export const PRICE_IMPACT: Outcome = {
+  kind: "price-impact",
+  message: "This trade would lose too much value at current liquidity.",
+  recovery: ["reduce-amount"],
+};
+
+export const REPLACED: Outcome = {
+  kind: "replaced",
+  message: "Your transaction was replaced in your wallet. Check it before trying again.",
+  recovery: ["view-transaction"],
+};
+
+export const PERMIT_EXPIRED: Outcome = {
+  kind: "permit-expired",
+  message: "Your signature expired. Sign again.",
+  recovery: ["retry"],
+};
+
 export const REVERTED: Outcome = { kind: "reverted", message: "The transaction reverted.", recovery: ["retry", "copy-details"] };
 
 export const UNKNOWN: Outcome = { kind: "unknown", message: "Something went wrong.", recovery: ["retry", "copy-details"] };
 
 export function wrongNetwork(network: NetworkConfig): Outcome {
   return { kind: "wrong-network", message: writeBlockerMessage("wrong-network", network), recovery: ["switch-network"] };
+}
+
+export function noExecutor(network: NetworkConfig): Outcome {
+  return { kind: "no-executor", message: writeBlockerMessage("no-executor", network), recovery: [] };
 }
 
 export function needsGas(network: NetworkConfig): Outcome {

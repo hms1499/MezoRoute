@@ -11,6 +11,7 @@ import { injectedWallet, metaMaskWallet, walletConnectWallet } from "@rainbow-me
 import { createStorage } from "wagmi";
 import { safeStorage } from "@/lib/config/network-choice";
 import type { NetworkConfig } from "@/lib/config/networks";
+import { withReconnectChain } from "./reconnect-chain";
 
 // OrangeKit's Bitcoin connectors are bound to one chain and RPC, so each network has its own set.
 const bitcoinWallets = {
@@ -29,7 +30,7 @@ export function createWagmiConfig(network: NetworkConfig, walletConnectProjectId
     mezoNetwork: network.id,
     walletConnectProjectId,
     wallets: [
-      { groupName: "Bitcoin", wallets: bitcoinWallets[network.id] },
+      { groupName: "Bitcoin", wallets: bitcoinWallets[network.id].map((wallet) => withReconnectChain(wallet, network.chainId)) },
       { groupName: "Ethereum", wallets: [metaMaskWallet, walletConnectWallet, injectedWallet] },
     ],
     storage: createStorage({ key: `mezoroute.${network.id}`, storage: safeStorage() }),

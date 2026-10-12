@@ -618,7 +618,7 @@ The exposure module is pure TypeScript with unit tests; it is reused by the Wave
 ### LP quote engine
 
 - Pool fee `f` is read from `PoolFactory.getFee(pool, false)` (testnet 4 bps, mainnet 30 bps).
-- Optimal MUSD to swap for a single-sided deposit of net amount `a` (after the MezoRoute fee) into reserve `r` of MUSD: `s = (√(r²(2−f)² + 4(1−f)·a·r) − r(2−f)) / (2(1−f))`, computed in `bigint` with Newton's integer square root.
+- Optimal MUSD to swap for a single-sided deposit of net amount `a` (after the MezoRoute fee) into reserve `r` of MUSD. Tigris moves the swap fee out of the pool (to `PoolFees`), so with `g = 1 − f`: `g²s² + r(2 − f)s − a·r = 0`, i.e. `s = (√(r²(2−f)² + 4g²·a·r) − r(2−f)) / (2g²)`, computed in `bigint` with Newton's integer square root. (Corrected in F3, 5 Oct 2026: the earlier Uniswap V2 form assumed the fee stays in the pool and left about 0.97 MUSD of residue on a 1,000,000 MUSD testnet deposit.)
 - Expected BTC, deposited amounts, and LP are computed from post-swap reserves; LP = `min(musdAdded·supply/rMUSD', btcAdded·supply/rBTC')`.
 - Minimums = expected × (1 − slippage); price impact is measured against the pre-trade mid price.
 - Exit: `quoteRemoveLiquidity`, then the BTC→MUSD swap on post-removal reserves.
@@ -691,7 +691,7 @@ A `cast`-based script runs against the deployed executor: approve → `enter` �
 
 ### Frontend tests (Vitest)
 
-- Optimal-swap and quote maths, checked against numbers produced by the Tigris harness.
+- Optimal-swap and quote maths: an exact integer simulation of Pool and Router, checked by replaying live `Entered` events from the on-chain reserves at the previous block (to the wei).
 - Exposure module (no Trove, no LP, no Stability Pool deposit, zero debt).
 - Fee calculation, route comparison output, wallet-capability logic.
 - Error decoder (Router and executor custom errors, OZ4 strings, OZ5 `ERC20InsufficientAllowance`, BOS and Stability Pool strings).
@@ -750,6 +750,8 @@ S1 done 3 Oct 2026: a static Next.js 14 export on Vercel connects MetaMask and U
 F1 done 5 Oct 2026: app shell with a Testnet/Mainnet switch (mainnet read-only until M1), shared header and mainnet banner, wallet-kind detection, pinned sends, and an error decoder with recovery actions; design in `docs/superpowers/specs/2026-10-05-f1-app-shell-design.md`.
 
 F2 done 5 Oct 2026: dashboard with readiness, Trove card, and exposure panel; design in `docs/superpowers/specs/2026-10-05-f2-dashboard-design.md`.
+
+F3 done 12 Oct 2026: LP quote engine, LP route page, permit/approve stepper, and receipt; design in `docs/superpowers/specs/2026-10-05-f3-lp-route-design.md`.
 
 ### Wave 1 — MVP backlog (in order)
 

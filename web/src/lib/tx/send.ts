@@ -7,18 +7,23 @@ import {
   ConfirmationTimeoutError,
   RelayError,
   SmartAccountCallFailedError,
+  TransactionReplacedError,
   TransactionRevertedError,
 } from "./errors";
 import { hasSafeExecutionFailure } from "./safe";
 
 const TX_HASH = /^0x[0-9a-fA-F]{64}$/;
 
+export function isTxHash(value: unknown): value is Hash {
+  return typeof value === "string" && TX_HASH.test(value);
+}
+
 /** Mezo's relayer reports failure as hash "0x" instead of throwing (OrangeKit MezoTransactionSender). */
 export function assertTxHash(value: unknown): Hash {
-  if (typeof value !== "string" || !TX_HASH.test(value)) {
+  if (!isTxHash(value)) {
     throw new RelayError(`The wallet returned no transaction hash (${String(value)}); nothing was submitted.`);
   }
-  return value as Hash;
+  return value;
 }
 
 /** The account and chain a flow started with; every step of the flow sends with the same pin. */
@@ -45,11 +50,11 @@ export function receiptFailure(error: unknown, hash: Hash): TransactionRevertedE
 }
 
 /**
- * Sends one call from the connected wallet and waits for a successful receipt. The same path
- * serves EOAs and OrangeKit smart accounts: wagmi resolves `sendTransaction` to OrangeKit's
- * Safe-relaying override for Bitcoin wallets.
+ * Sends one call from the connected wallet and returns its hash. The same path serves EOAs and
+ * OrangeKit smart accounts: wagmi resolves `sendTransaction` to OrangeKit's Safe-relaying override
+ * for Bitcoin wallets.
  */
-export async function sendCall(config: Config, call: { to: Address; data: Hex }, pin: SendPin): Promise<TransactionReceipt> {
+export async function submitCall(config: Config, call: { to: Address; data: Hex }, pin: SendPin): Promise<Hash> {
   const connectorType = getAccount(config).connector?.type;
   let sent: unknown;
   try {
@@ -60,20 +65,53 @@ export async function sendCall(config: Config, call: { to: Address; data: Hex },
   } catch (error) {
     throw asRelayFailure(error, connectorType);
   }
-  const hash = assertTxHash(sent);
+  return assertTxHash(sent);
+}
+
+/** How long to wait for a receipt in total, and the pause before asking again after a flaky-RPC miss. */
+const CONFIRM_TIMEOUT_MS = 120_000;
+const RETRY_PAUSE_MS = 2_000;
+
+/**
+ * Waits for a submitted transaction's successful receipt; also serves the receipt page after a reload.
+ * The public testnet RPC sometimes answers null for a mined transaction's receipt and block, which
+ * makes viem give up early; such a miss is retried until the overall timeout.
+ */
+export async function confirmCall(config: Config, hash: Hash, chainId: number): Promise<TransactionReceipt> {
+  const deadline = Date.now() + CONFIRM_TIMEOUT_MS;
+  let replacement: { reason: string; transaction: { hash: Hash } } | undefined;
   let receipt: TransactionReceipt;
-  try {
-    // The public testnet RPC intermittently returns null receipts; viem keeps polling until the timeout.
-    receipt = await waitForTransactionReceipt(config, {
-      hash,
-      chainId: pin.chainId,
-      pollingInterval: 2_000,
-      timeout: 120_000,
-    });
-  } catch (error) {
-    throw receiptFailure(error, hash);
+  for (;;) {
+    try {
+      receipt = await waitForTransactionReceipt(config, {
+        hash,
+        chainId,
+        pollingInterval: RETRY_PAUSE_MS,
+        timeout: Math.max(deadline - Date.now(), 1),
+        onReplaced: (replaced) => {
+          replacement = replaced;
+        },
+      });
+      break;
+    } catch (error) {
+      const failure = receiptFailure(error, hash);
+      const viemTimedOut = chainNames(causeChain(error)).includes("WaitForTransactionReceiptTimeoutError");
+      if (!(failure instanceof ConfirmationTimeoutError) || viemTimedOut || Date.now() + RETRY_PAUSE_MS >= deadline) {
+        throw failure;
+      }
+      await new Promise((resolve) => setTimeout(resolve, RETRY_PAUSE_MS));
+    }
   }
-  if (receipt.status !== "success") throw new TransactionRevertedError(hash);
-  if (hasSafeExecutionFailure(receipt.logs)) throw new SmartAccountCallFailedError(hash);
+  // viem follows a replacement and resolves with its receipt; only a repriced copy is the same call.
+  if (replacement && replacement.reason !== "repriced") {
+    throw new TransactionReplacedError(hash, replacement.transaction.hash);
+  }
+  if (receipt.status !== "success") throw new TransactionRevertedError(receipt.transactionHash);
+  if (hasSafeExecutionFailure(receipt.logs)) throw new SmartAccountCallFailedError(receipt.transactionHash);
   return receipt;
+}
+
+/** Submit, then confirm: used for steps that must finish before the next one (the approval). */
+export async function sendCall(config: Config, call: { to: Address; data: Hex }, pin: SendPin): Promise<TransactionReceipt> {
+  return confirmCall(config, await submitCall(config, call, pin), pin.chainId);
 }

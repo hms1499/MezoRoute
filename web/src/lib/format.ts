@@ -37,3 +37,8 @@ export function formatPercent(ratio: bigint, fractionDigits = 1): string {
 export function shortAddress(address: string): string {
   return address.length <= 12 ? address : `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
+
+/** Basis points as a percentage: 10n → "0.1%". */
+export function formatBps(bps: bigint, fractionDigits = 2): string {
+  return formatPercent(bps * 10n ** 14n, fractionDigits);
+}

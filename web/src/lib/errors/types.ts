@@ -26,6 +26,11 @@ export type ErrorKind =
   | "insufficient-balance"
   | "pool"
   | "price-unavailable"
+  | "no-executor"
+  | "fee-mismatch"
+  | "price-impact"
+  | "replaced"
+  | "permit-expired"
   | "reverted"
   | "rpc-unavailable"
   | "unknown";

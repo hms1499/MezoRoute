@@ -17,3 +17,6 @@ export const stabilityPoolAbi = parseAbi([
   "function getCompoundedMUSDDeposit(address depositor) view returns (uint256)",
   "function getDepositorCollateralGain(address depositor) view returns (uint256)",
 ]);
+
+/** MUSD's EIP-2612 nonce (the token has no PERMIT_TYPEHASH or version() getter; its domain is in eip712Domain()). */
+export const musdPermitAbi = parseAbi(["function nonces(address owner) view returns (uint256)"]);
