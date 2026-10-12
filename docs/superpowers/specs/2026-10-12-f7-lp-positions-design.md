@@ -55,7 +55,7 @@ A user who holds MUSD/BTC LP sees what it is worth, what it cost, and what fees 
 
 ## 4. Errors and blocks
 
-Exit gate order: wrong network / no executor (`writeBlocker`), no LP, zero removal (amount too small), price impact above 5%, stale quote (60 s, at send), expired permit (at send, resets to the permit step). Claim: `writeBlocker`, nothing to claim. Tigris (`InsufficientLiquidityBurned`, …) and executor (`InsufficientFinalOutput`, …) reverts already decode; new outcomes only where a pre-send check needs one (`NO_LP`, `NOTHING_TO_CLAIM`).
+Exit gate order: no executor / wrong network (`writeBlocker`), no LP, LP balance below the pinned amount (`LP_CHANGED`), zero removal (amount too small), price impact above 5%, not enough gas, stale quote (60 s); at send, an expired permit resets to the permit step. Claim: `writeBlocker`, nothing to claim, not enough gas. Tigris (`InsufficientLiquidityBurned`, …) and executor (`InsufficientFinalOutput`, …) reverts already decode; new outcomes only where a pre-send check needs one (`NO_LP`, `LP_CHANGED`, `NOTHING_TO_CLAIM`).
 
 ## 5. Testing
 
