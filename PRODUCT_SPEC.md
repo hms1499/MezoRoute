@@ -504,6 +504,8 @@ Verified on testnet (30 Sep 2026, tx `0xb0eb…a762`): the recipient receives ex
 8. Transfer exactly `musdOut` and any attributable BTC dust to `recipient`.
 9. Reset allowances to zero; emit `Exited`.
 
+Note (verified 12 Oct 2026): `Pool.burn` pays `liquidity × balance / totalSupply` per token from the pool's **token balances**, not its reserves, and reverts with `InsufficientLiquidityBurned` when either amount is zero; the BTC→MUSD swap then runs on the post-burn reserves (= balances). The frontend quote (`quoteExit`) mirrors this exactly.
+
 ### 11.6 Events
 
 ```solidity
@@ -627,7 +629,8 @@ The exposure module is pure TypeScript with unit tests; it is reused by the Wave
 ### Positions data
 
 - Cost basis history: `Entered`/`Exited` logs filtered by the indexed `recipient`, and Stability Pool `UserDepositChanged`/`CollateralGainWithdrawn` logs by depositor, queried in block chunks from each contract's deployment block; cached in `localStorage` as a convenience only.
-- Claimable LP fees: `eth_call` of `Pool.claimFees()` with `from = user`.
+- Claimable LP fees: computed in the positions snapshot as `claimable + balance × (index − supplyIndex) / 1e18` per token (mirroring `Pool._updateFor`), so they come from the snapshot's block; QA checks them against an `eth_call` of `Pool.claimFees()` with `from = user`.
+- `eth_getLogs` on Mezo serves at most 10,000 blocks per request, and a range whose `toBlock` is above the head returns an empty list **without an error** (12 Oct 2026); every range is clamped to the head. The cache keeps only events at least 50 blocks below the head, and a failed chunk fails the whole scan (no partial history, no cache write). `Exited` is filtered by the indexed `caller` (whose LP is pulled).
 - Stability Pool: `getCompoundedMUSDDeposit`, `getDepositorCollateralGain`.
 
 ### Quote expiration, slippage, and limits
@@ -765,9 +768,9 @@ F4 done 12 Oct 2026: Borrow & Deploy (borrow authorisation, Trove hints, 160% CR
 | F2 | Dashboard: readiness, Trove card, exposure module + panel | F1 |
 | F3 | LP quote engine (optimal swap) + LP route page + confirm stepper (permit/approve) + receipt page | F1, C1 |
 | F4 | Borrow & Deploy (hints, EIP-712, CR floor) | F3 |
-| F5 | Stability Pool route + confirm + receipt | F1 |
+| F5 | Stability Pool route + confirm + receipt; SP position + withdraw on `/positions` | F1 |
 | F6 | Route comparison on dashboard | F2, F3, F5 |
-| F7 | Positions: LP underlying, cost basis, claimable fees + Claim, exit; SP withdraw | F3, F5 |
+| F7 | Positions (LP): underlying, cost basis, claimable fees + Claim, exit | F3 |
 | F8 | Mainnet reference card; quote-accuracy script | F3 |
 | M1 | Mainnet deployment (cap 1,000 MUSD) + verification; mainnet config in frontend; real round trip | C1, F7 |
 | V1 | Vercel production deploy; QA checklist on both wallet types | all F |
