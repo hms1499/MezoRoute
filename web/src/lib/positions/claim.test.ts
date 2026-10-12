@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
-import { claimBlock, claimRows, findClaimEvent } from "./claim";
+import { NOTHING_TO_CLAIM } from "@/lib/errors/outcomes";
+import { BlockedError } from "@/lib/tx/errors";
+import { assertClaimable, claimBlock, claimRows, findClaimEvent } from "./claim";
 
 const testnet = networks.testnet;
 const fees = { musd: 1n, btc: 0n };
@@ -53,5 +55,13 @@ describe("claimRows", () => {
       { label: "MUSD claimed", value: "0.391293 MUSD" },
       { label: "BTC claimed", value: "0.000005 BTC" },
     ]);
+  });
+});
+
+describe("assertClaimable", () => {
+  it("blocks a claim the simulation says would pay nothing (fees claimed elsewhere after the snapshot)", () => {
+    expect(() => assertClaimable([0n, 0n])).toThrow(new BlockedError(NOTHING_TO_CLAIM));
+    expect(() => assertClaimable([1n, 0n])).not.toThrow();
+    expect(() => assertClaimable([0n, 1n])).not.toThrow();
   });
 });

@@ -9,6 +9,7 @@ import { useErrorToast } from "@/components/ErrorToast";
 import { poolAbi } from "@/lib/abi/pool";
 import { useNetwork } from "@/lib/config/network-context";
 import { submitCall } from "@/lib/tx/send";
+import { assertClaimable } from "./claim";
 
 /** Flow G2: the user calls `Pool.claimFees()` directly (simulated first); the receipt decodes `Claim`. */
 export function useClaimFees(account: Address): { claim: () => void; pending: boolean } {
@@ -22,13 +23,14 @@ export function useClaimFees(account: Address): { claim: () => void; pending: bo
     const pin = { account, chainId: network.chainId };
     setPending(true);
     try {
-      await simulateContract(config, {
+      const { result } = await simulateContract(config, {
         address: network.addresses.pool,
         abi: poolAbi,
         functionName: "claimFees",
         account: pin.account,
         chainId: pin.chainId,
       });
+      assertClaimable(result);
       const data = encodeFunctionData({ abi: poolAbi, functionName: "claimFees" });
       const hash = await submitCall(config, { to: network.addresses.pool, data }, pin);
       router.push(`/tx/?hash=${hash}`);
