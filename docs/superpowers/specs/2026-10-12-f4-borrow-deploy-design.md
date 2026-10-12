@@ -64,6 +64,11 @@ An EOA user with a Trove borrows MUSD against it and deposits that MUSD into the
 - `PRODUCT_SPEC.md`: Flow D step 3 says 160%; §11.4's gas note cites the measured gas with hints; §16 records F4.
 - `CLAUDE.md` frontend notes cover the borrow mode, hints, and the chain-replayed signature fixture.
 
+### QA result (12 Oct 2026): passed
+
+- **Agent, local export + local signer:** `borrowAndEnter` of 5 MUSD from the deployer's Trove, tx `0x9d459851de6f25d7370a2ca223dedf0418877f65ae60387d635acce5795f2623`: gas 754,103 with hints (2,178,863 without, 2 Oct); the quote at the previous block matches `Entered` to the wei; principal +5.005 MUSD, BOS nonce +1, allowance 0, executor balances 0. CR-floor block at 300 MUSD, 360 px layouts, and the disabled toggle for a Bitcoin wallet (Unisat mock) checked.
+- **User, Vercel preview, MetaMask:** 1 MUSD, tx `0x77ef8ece0b4df29cbe94f81e103014a741f419bbb46dfbda2cde9b2ad3475a51`: permit → borrow authorisation → send; receipt "Borrow & deposit confirmed" with the Trove after it; gas 684,436; principal +1.001 MUSD, nonce +1, allowance 0, executor balances 0.
+
 ## Open question (not in F4)
 
 Bitcoin-wallet users cannot use Borrow & Deploy (the Safe cannot sign ECDSA). If a Trove opened through the Mezo app with a Bitcoin wallet is owned by the user's Safe, the Safe could call `BorrowerOperations.withdrawMUSD` directly and then use F3's approve → `enter`: two relayed transactions instead of one. Verify the Trove owner before planning it.

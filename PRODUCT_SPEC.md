@@ -753,6 +753,8 @@ F2 done 5 Oct 2026: dashboard with readiness, Trove card, and exposure panel; de
 
 F3 done 12 Oct 2026: LP quote engine, LP route page, permit/approve stepper, and receipt; design in `docs/superpowers/specs/2026-10-05-f3-lp-route-design.md`.
 
+F4 done 12 Oct 2026: Borrow & Deploy (borrow authorisation, Trove hints, 160% CR floor, recovery-mode block) on the LP route; design in `docs/superpowers/specs/2026-10-12-f4-borrow-deploy-design.md`.
+
 ### Wave 1 — MVP backlog (in order)
 
 | ID | Task | Depends on |
