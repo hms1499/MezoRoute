@@ -17,10 +17,11 @@ import {
   ConfirmationTimeoutError,
   RelayError,
   SmartAccountCallFailedError,
+  TransactionReplacedError,
   TransactionRevertedError,
 } from "./errors";
 import { SAFE_EXECUTION_FAILURE_TOPIC } from "./safe";
-import { assertTxHash, receiptFailure, sendCall } from "./send";
+import { assertTxHash, confirmCall, isTxHash, receiptFailure, sendCall, submitCall } from "./send";
 
 vi.mock("wagmi/actions", () => ({
   getAccount: vi.fn(),
@@ -128,5 +129,49 @@ describe("receiptFailure", () => {
     expect(result).toBeInstanceOf(expected);
     expect(result.hash).toBe(HASH);
     expect(result.cause).toBe(error);
+  });
+});
+
+describe("isTxHash", () => {
+  it("accepts only a 32-byte hex hash", () => {
+    expect(isTxHash(HASH)).toBe(true);
+    for (const value of ["0x", HASH.slice(0, 65), `${HASH}00`, "hello", null, undefined, 42]) {
+      expect(isTxHash(value)).toBe(false);
+    }
+  });
+});
+
+describe("submitCall", () => {
+  it("returns the hash without waiting for the receipt", async () => {
+    await expect(submitCall(config, CALL, PIN)).resolves.toBe(HASH);
+    expect(waitForTransactionReceipt).not.toHaveBeenCalled();
+  });
+});
+
+describe("confirmCall", () => {
+  const REPLACEMENT = "0x1111111111111111111111111111111111111111111111111111111111111111";
+
+  function replacedWith(reason: "repriced" | "cancelled" | "replaced") {
+    vi.mocked(waitForTransactionReceipt).mockImplementation((async (_config: Config, options: { onReplaced?: (r: unknown) => void }) => {
+      options.onReplaced?.({ reason, transaction: { hash: REPLACEMENT } });
+      return receipt({ transactionHash: REPLACEMENT });
+    }) as never);
+  }
+
+  it("accepts a repriced (sped-up) copy of the same call", async () => {
+    replacedWith("repriced");
+    await expect(confirmCall(config, HASH, 31611)).resolves.toMatchObject({ transactionHash: REPLACEMENT });
+  });
+
+  it.each(["cancelled", "replaced"] as const)("fails when the wallet %s the transaction", async (reason) => {
+    replacedWith(reason);
+    const error = await confirmCall(config, HASH, 31611).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(TransactionReplacedError);
+    expect(error).toMatchObject({ hash: HASH, replacement: REPLACEMENT });
+  });
+
+  it("waits on the given chain", async () => {
+    await confirmCall(config, HASH, 31611);
+    expect(waitForTransactionReceipt).toHaveBeenCalledWith(config, expect.objectContaining({ hash: HASH, chainId: 31611 }));
   });
 });

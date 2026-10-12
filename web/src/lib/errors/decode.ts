@@ -1,9 +1,11 @@
 import type { Hash } from "viem";
 import type { NetworkConfig } from "@/lib/config/networks";
 import {
+  BlockedError,
   ConfirmationTimeoutError,
   RelayError,
   SmartAccountCallFailedError,
+  TransactionReplacedError,
   TransactionRevertedError,
 } from "@/lib/tx/errors";
 import { causeChain, chainCodes, chainMessages, chainNames, findRevertData, type ChainLink } from "./chain";
@@ -13,6 +15,7 @@ import {
   needsGas,
   REJECTED,
   RELAY,
+  REPLACED,
   REVERTED,
   rpcUnavailable,
   SMART_ACCOUNT_REVERTED,
@@ -49,13 +52,20 @@ export function decodeError(error: unknown, network: NetworkConfig): DecodedErro
   const hash = transactionHash(chain);
   const result = (outcome: Outcome, detail?: string) => withDetails(outcome, detail, hash);
 
+  const blocked = chain.find((link): link is BlockedError => link instanceof BlockedError);
+  if (blocked) return { ...blocked.outcome, recovery: [...blocked.outcome.recovery] };
   if (chainCodes(chain).includes(USER_REJECTED) || REJECTED_TEXT.test(text)) return result(REJECTED);
   if (chain.some((link) => link instanceof RelayError)) return result(RELAY);
   if (chain.some((link) => link instanceof SmartAccountCallFailedError)) return result(SMART_ACCOUNT_REVERTED);
   if (chain.some((link) => link instanceof ConfirmationTimeoutError)) return result(UNCONFIRMED);
+  if (chain.some((link) => link instanceof TransactionReplacedError)) return result(REPLACED);
   if (names.includes("ConnectorChainMismatchError")) return result(wrongNetwork(network));
   if (names.includes("ConnectorAccountNotFoundError")) return result(ACCOUNT_CHANGED);
-  if (NEEDS_GAS_TEXT.test(text)) return result(needsGas(network));
+  // A mined revert is settled by its revert evidence below, even if wagmi's replay of it ran out of gas.
+  const mined = chain.some((link) => link instanceof TransactionRevertedError);
+  if (!mined && (NEEDS_GAS_TEXT.test(text) || names.includes("InsufficientFundsError"))) {
+    return result(needsGas(network));
+  }
 
   const data = findRevertData(chain);
   if (data) {
@@ -80,6 +90,7 @@ export function decodeError(error: unknown, network: NetworkConfig): DecodedErro
 
 function transactionHash(chain: readonly ChainLink[]): Hash | undefined {
   for (const link of chain) {
+    if (link instanceof TransactionReplacedError) return link.replacement;
     if (
       link instanceof SmartAccountCallFailedError ||
       link instanceof TransactionRevertedError ||
