@@ -1,22 +1,45 @@
-import type { WalletKind } from "@/lib/wallet/capabilities";
+import type { EntryMode } from "@/lib/routes/musd-btc-lp/intent";
+import { walletCapabilities, type WalletKind } from "@/lib/wallet/capabilities";
 
-/** Deposit MUSD is the only mode in F3; Borrow & Deploy arrives in F4 (and never for smart accounts). */
-export function ModeToggle({ walletKind }: { walletKind: WalletKind | undefined }) {
-  const reason =
-    walletKind === "smart-account"
-      ? "Borrow & Deploy needs a standard wallet signature."
-      : "Borrow & Deploy is coming next.";
+/** Deposit wallet MUSD, or Borrow & Deploy (EOAs only, FR-23). */
+export function ModeToggle({
+  walletKind,
+  mode,
+  onChange,
+}: {
+  walletKind: WalletKind | undefined;
+  mode: EntryMode;
+  onChange: (mode: EntryMode) => void;
+}) {
+  const canBorrow = walletKind !== undefined && walletCapabilities(walletKind).borrowAndDeploy;
+  const option = (value: EntryMode, label: string, disabled = false) => (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={mode === value}
+      disabled={disabled}
+      onClick={() => onChange(value)}
+      className={
+        mode === value
+          ? "rounded-full bg-white px-3 py-1.5 shadow-sm"
+          : "rounded-full px-3 py-1.5 text-muted disabled:opacity-60"
+      }
+    >
+      {label}
+    </button>
+  );
   return (
     <div className="mt-4">
       <div role="radiogroup" aria-label="Funding" className="inline-flex rounded-full bg-line p-1 text-xs font-semibold">
-        <button type="button" role="radio" aria-checked="true" className="rounded-full bg-white px-3 py-1.5 shadow-sm">
-          Deposit MUSD
-        </button>
-        <button type="button" role="radio" aria-checked="false" disabled className="rounded-full px-3 py-1.5 text-muted opacity-60">
-          Borrow &amp; Deploy
-        </button>
+        {option("deposit", "Deposit MUSD")}
+        {option("borrow", "Borrow & Deploy", !canBorrow)}
       </div>
-      <p className="mt-1 text-xs text-muted">{reason}</p>
+      {walletKind === "smart-account" && (
+        <p className="mt-1 text-xs text-muted">Borrow & Deploy needs a standard wallet signature.</p>
+      )}
+      {mode === "borrow" && (
+        <p className="mt-1 text-xs text-muted">Borrow MUSD against your Trove and deposit it in one transaction.</p>
+      )}
     </div>
   );
 }

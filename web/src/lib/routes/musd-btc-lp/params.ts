@@ -1,6 +1,8 @@
 import { encodeFunctionData, erc20Abi, zeroHash, type Address, type Hex } from "viem";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import type { EntryMinimums, EntryQuote } from "@/lib/quote/entry";
+import type { BorrowAuthorisation } from "@/lib/trove/borrow-signature";
+import type { Hints } from "@/lib/trove/hints";
 
 export type EnterParams = {
   musdIn: bigint;
@@ -39,6 +41,23 @@ export function buildEnterParams(
   recipient: Address,
 ): EnterParams {
   return { musdIn: quote.musdIn, musdToSwap: quote.musdToSwap, ...minimums, deadline, recipient };
+}
+
+/** The executor's Borrow struct (spec 11.2). */
+export type BorrowCall = { amount: bigint; upperHint: Address; lowerHint: Address; signature: Hex; deadline: bigint };
+
+export function buildBorrow(auth: BorrowAuthorisation, hints: Hints): BorrowCall {
+  return {
+    amount: auth.amount,
+    upperHint: hints.upperHint,
+    lowerHint: hints.lowerHint,
+    signature: auth.signature,
+    deadline: auth.deadline,
+  };
+}
+
+export function encodeBorrowAndEnterCall(borrow: BorrowCall, params: EnterParams, permit: ExecutorPermit = NO_PERMIT): Hex {
+  return encodeFunctionData({ abi: mezoRouteExecutorAbi, functionName: "borrowAndEnter", args: [borrow, permit, params] });
 }
 
 export function encodeApproveCall(spender: Address, amount: bigint): Hex {

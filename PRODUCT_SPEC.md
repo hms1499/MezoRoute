@@ -215,7 +215,7 @@ Precondition: user has a Trove and uses an EOA wallet (the option is shown disab
 
 1. User enters an MUSD amount to borrow and deploy.
 2. App shows everything in Flow C plus new debt, resulting collateral ratio, and the protocol minimum collateral ratio.
-3. App blocks confirmation if the resulting collateral ratio falls below the UI safety floor (default: MCR + 40 percentage points, configurable in constants).
+3. App blocks confirmation if the resulting collateral ratio falls below the UI safety floor of 160% (`CR_SAFETY_FLOOR`, set in F2 so a Trove survives a 30% BTC drop), or Mezo is in recovery mode.
 4. App computes Trove hints (`HintHelpers.getApproxHint` + `SortedTroves.findInsertPosition`) and reads the user's signature nonce.
 5. User signs two typed-data messages: the borrow authorisation (`recipient` = the user's own address) and the MUSD permit to the executor.
 6. User sends one `borrowAndEnter` transaction.
@@ -490,7 +490,7 @@ interface IMezoRouteExecutor {
 
 Requiring `msg.sender == borrower` also prevents a third party from using a leaked signature with weaker minimums.
 
-Verified on testnet (30 Sep 2026, tx `0xb0eb…a762`): the recipient receives exactly `amount`; the 0.1% borrowing fee is minted to the PCV and added to debt. `borrowAndEnter` used ≈ 2.12M gas (Trove interest accrual), versus ≈ 0.39M for `enter`.
+Verified on testnet (30 Sep 2026, tx `0xb0eb…a762`): the recipient receives exactly `amount`; the 0.1% borrowing fee is minted to the PCV and added to debt. `borrowAndEnter` used ≈ 2.12M gas with zero Trove hints (SortedTroves walks the list), versus ≈ 0.39M for `enter`; with hints from `HintHelpers.getApproxHint` + `SortedTroves.findInsertPosition` it used 754,103 gas (F4, 12 Oct 2026, tx `0x9d45…2623`).
 
 ### 11.5 Exit algorithm
 
@@ -752,6 +752,8 @@ F1 done 5 Oct 2026: app shell with a Testnet/Mainnet switch (mainnet read-only u
 F2 done 5 Oct 2026: dashboard with readiness, Trove card, and exposure panel; design in `docs/superpowers/specs/2026-10-05-f2-dashboard-design.md`.
 
 F3 done 12 Oct 2026: LP quote engine, LP route page, permit/approve stepper, and receipt; design in `docs/superpowers/specs/2026-10-05-f3-lp-route-design.md`.
+
+F4 done 12 Oct 2026: Borrow & Deploy (borrow authorisation, Trove hints, 160% CR floor, recovery-mode block) on the LP route; design in `docs/superpowers/specs/2026-10-12-f4-borrow-deploy-design.md`.
 
 ### Wave 1 — MVP backlog (in order)
 

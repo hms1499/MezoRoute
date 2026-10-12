@@ -1,10 +1,12 @@
+import { formatUnits } from "viem";
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
+import { deployerTrove, snapshotWith } from "@/lib/dashboard/test-fixtures";
 import { exposure } from "@/lib/exposure/exposure";
 import { afterEntry } from "./after-entry";
 import { parseEntryIntent } from "./intent";
 import { entryPreview } from "./preview";
-import { lpRouteDataWith, lpRouteSnapshotWith, ONE } from "./test-fixtures";
+import { lpRouteDataWith, lpRouteSnapshotWith, ONE, TESTNET_POOL } from "./test-fixtures";
 
 const testnet = networks.testnet;
 
@@ -64,5 +66,43 @@ describe("afterEntry", () => {
     expect(after.lp.totalSupply).toBe(result.quote!.after.totalSupply);
     expect(exposure(after).lpBtc).toBeGreaterThan(0n);
     expect(exposure(snapshot).lpBtc).toBe(0n);
+  });
+});
+
+describe("entryPreview in borrow mode", () => {
+  const dashboard = snapshotWith({
+    trove: deployerTrove,
+    musd: 3n * ONE,
+    lp: { balance: 0n, totalSupply: TESTNET_POOL.totalSupply, reserveMusd: TESTNET_POOL.reserveMusd, reserveBtc: TESTNET_POOL.reserveBtc },
+  });
+  const data = lpRouteDataWith({ snapshot: lpRouteSnapshotWith({ dashboard }) });
+  const borrowPreview = (query: string, overrides: Partial<Parameters<typeof entryPreview>[0]> = {}) =>
+    preview(`${query}&mode=borrow`, { data, ...overrides });
+
+  it("plans permit → borrow → send, adds the borrow to the Trove, and keeps the wallet MUSD", () => {
+    const result = borrowPreview("amount=100");
+    expect(result.steps).toEqual(["permit", "borrow", "enter"]);
+    expect(result.gasUnits).toBe(880_000n);
+    expect(result.borrow?.effect?.fee).toBe(100_000_000_000_000_000n);
+    expect(result.after?.trove?.debt).toBe(result.borrow?.effect?.newDebt);
+    expect(result.after?.musd).toBe(3n * ONE + result.quote!.musdRefund);
+    expect(result.block).toBeNull();
+  });
+
+  it("allows borrowing exactly the limit and blocks one wei more", () => {
+    const limit = borrowPreview("amount=1").borrow!.limit;
+    expect(borrowPreview(`amount=${formatUnits(limit, 18)}`).block).toBeNull();
+    expect(borrowPreview(`amount=${formatUnits(limit + 1n, 18)}`).block?.reason).toBe("above-headroom");
+  });
+
+  it("blocks a smart account", () => {
+    expect(borrowPreview("amount=1", { walletKind: "smart-account" }).block?.reason).toBe("smart-account-borrow");
+  });
+
+  it("blocks without a Trove and shows no after-state", () => {
+    const noTrove = lpRouteDataWith({ snapshot: lpRouteSnapshotWith({ dashboard: { ...dashboard, trove: null } }) });
+    const result = borrowPreview("amount=1", { data: noTrove });
+    expect(result.block?.reason).toBe("no-trove");
+    expect(result.after).toBeNull();
   });
 });

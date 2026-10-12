@@ -58,3 +58,12 @@ describe("enteredRows", () => {
     ]);
   });
 });
+
+describe("enteredRows for Borrow & Deploy", () => {
+  it("lists the borrowed MUSD first", () => {
+    const event = findEnteredEvent([enteredLog], EXECUTOR)!;
+    const rows = enteredRows({ ...event, musdBorrowed: 20_000_000_000_000_000_000n });
+    expect(rows[0]).toEqual({ label: "MUSD borrowed", value: "20 MUSD" });
+    expect(rows).toHaveLength(10);
+  });
+});

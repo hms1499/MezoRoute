@@ -13,7 +13,7 @@ export type StepperEvent =
   | { type: "submitted"; hash: Hash }
   | { type: "confirmed" }
   | { type: "failed"; error: DecodedError }
-  | { type: "permit-expired" }
+  | { type: "signature-expired" }
   | { type: "reset"; kinds: StepKind[] };
 
 export function createStepper(kinds: StepKind[]): Stepper {
@@ -22,6 +22,11 @@ export function createStepper(kinds: StepKind[]): Stepper {
 
 export function hasStarted(state: Stepper): boolean {
   return state.steps.some((step) => step.status !== "idle");
+}
+
+/** Steps the user signs without a transaction. */
+function isSignature(kind: StepKind): boolean {
+  return kind === "permit" || kind === "borrow";
 }
 
 /** The confirm page's stepper (spec §9 screen 3a); events that do not fit the active step are ignored. */
@@ -35,12 +40,12 @@ export function stepperReducer(state: Stepper, event: StepperEvent): Stepper {
   switch (event.type) {
     case "reset":
       return hasStarted(state) ? state : createStepper(event.kinds);
-    case "permit-expired": {
-      const permit = state.steps.findIndex((current) => current.kind === "permit");
-      if (permit === -1) return state;
+    case "signature-expired": {
+      const first = state.steps.findIndex((current) => isSignature(current.kind));
+      if (first === -1) return state;
       return {
-        steps: state.steps.map((current, index) => (index >= permit ? { kind: current.kind, status: "idle" } : current)),
-        active: permit,
+        steps: state.steps.map((current, index) => (index >= first ? { kind: current.kind, status: "idle" } : current)),
+        active: first,
       };
     }
     case "start":
@@ -48,9 +53,9 @@ export function stepperReducer(state: Stepper, event: StepperEvent): Stepper {
         ? replace({ kind: step.kind, status: "awaiting-wallet" })
         : state;
     case "signed":
-      return step?.kind === "permit" && step.status === "awaiting-wallet" ? replace({ ...step, status: "done" }, true) : state;
+      return step && isSignature(step.kind) && step.status === "awaiting-wallet" ? replace({ ...step, status: "done" }, true) : state;
     case "submitted":
-      return step && step.kind !== "permit" && step.status === "awaiting-wallet"
+      return step && !isSignature(step.kind) && step.status === "awaiting-wallet"
         ? replace({ ...step, status: "submitted", hash: event.hash })
         : state;
     case "confirmed":

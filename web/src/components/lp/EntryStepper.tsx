@@ -17,6 +17,11 @@ const COPY: Record<StepKind, { title: string; detail: string; action: string }> 
     detail: "Your Bitcoin wallet approves the exact amount in a separate transaction.",
     action: "Approve",
   },
+  borrow: {
+    title: "Sign the borrow authorisation",
+    detail: "Lets MezoRoute borrow exactly this amount from your Trove to your own wallet, inside the deposit transaction. Signing costs no gas.",
+    action: "Sign",
+  },
   enter: {
     title: "Deposit into the pool",
     detail: "One transaction: fee, swap, and add liquidity. Leftovers return to you.",

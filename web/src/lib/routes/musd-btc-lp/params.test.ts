@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { entryMinimums, quoteEntry } from "@/lib/quote/entry";
 import {
+  buildBorrow,
   buildEnterParams,
   DEADLINE_SECONDS,
   encodeApproveCall,
+  encodeBorrowAndEnterCall,
   encodeEnterCall,
   needsApproval,
   netOfFee,
@@ -85,5 +87,27 @@ describe("encodeEnterCall with a permit", () => {
     const permit = { value: MUSD_20, deadline: 99n, v: 27, r: `0x${"11".repeat(32)}`, s: `0x${"22".repeat(32)}` } as const;
     const decoded = decodeFunctionData({ abi: mezoRouteExecutorAbi, data: encodeEnterCall(params, permit) });
     expect(decoded.args).toEqual([params, permit]);
+  });
+});
+
+describe("borrowAndEnter call", () => {
+  it("builds the Borrow struct from the authorisation and hints, and encodes all three arguments", () => {
+    const auth = { amount: MUSD_20, nonce: 2n, deadline: 99n, signature: `0x${"ab".repeat(65)}` } as const;
+    const hints = { upperHint: EXECUTOR, lowerHint: ME, found: true } as const;
+    const borrow = buildBorrow(auth, hints);
+    expect(borrow).toEqual({ amount: MUSD_20, upperHint: EXECUTOR, lowerHint: ME, signature: auth.signature, deadline: 99n });
+    const params: EnterParams = {
+      musdIn: MUSD_20,
+      musdToSwap: 9_990000000000000000n,
+      minBtcFromSwap: 1n,
+      minMusdAdded: 0n,
+      minBtcAdded: 0n,
+      minLpOut: 0n,
+      deadline: 99n,
+      recipient: ME,
+    };
+    const decoded = decodeFunctionData({ abi: mezoRouteExecutorAbi, data: encodeBorrowAndEnterCall(borrow, params) });
+    expect(decoded.functionName).toBe("borrowAndEnter");
+    expect(decoded.args).toEqual([borrow, NO_PERMIT, params]);
   });
 });

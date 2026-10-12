@@ -1,5 +1,5 @@
 import { StatRow } from "@/components/dashboard/StatRow";
-import { formatBps } from "@/lib/format";
+import { formatBps, formatPercent } from "@/lib/format";
 import { QUOTE_TTL_MS } from "@/lib/routes/musd-btc-lp/gate";
 import type { EntryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import type { LpRouteData } from "@/lib/routes/musd-btc-lp/snapshot";
@@ -24,15 +24,26 @@ export function ConfirmSummary({
   const expired = now - data.fetchedAt > QUOTE_TTL_MS;
   return (
     <section className="rounded-2xl bg-white p-5 shadow-card">
-      <h1 className="text-lg font-semibold">Review your deposit</h1>
+      <h1 className="text-lg font-semibold">{preview.borrow ? "Review your borrow and deposit" : "Review your deposit"}</h1>
       {quote && minimums && (
         <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
-          <StatRow label="You deposit" strong>
+          <StatRow label={preview.borrow ? "You borrow and deposit" : "You deposit"} strong>
             {musd(quote.musdIn)}
           </StatRow>
           <StatRow label="MezoRoute fee" sub={formatBps(data.snapshot.executorFeeBps)}>
             {musd(quote.fee)}
           </StatRow>
+          {preview.borrow?.effect && (
+            <>
+              <StatRow label="Borrowing fee" sub="added to your Trove debt">
+                {musd(preview.borrow.effect.fee)}
+              </StatRow>
+              <StatRow label="Trove debt after">{musd(preview.borrow.effect.newDebt)}</StatRow>
+              <StatRow label="Collateral ratio after" strong>
+                {preview.borrow.effect.newCr === null ? "—" : formatPercent(preview.borrow.effect.newCr, 1)}
+              </StatRow>
+            </>
+          )}
           <StatRow label="Swapped to BTC" sub={`at least ${btc(minimums.minBtcFromSwap)}`}>
             {musd(quote.musdToSwap)}
           </StatRow>

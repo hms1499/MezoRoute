@@ -8,7 +8,8 @@ export type Recovery =
   | "add-gas"
   | "reduce-amount"
   | "copy-details"
-  | "view-transaction";
+  | "view-transaction"
+  | "use-deposit";
 
 export type ErrorKind =
   | "rejected"
@@ -31,6 +32,13 @@ export type ErrorKind =
   | "price-impact"
   | "replaced"
   | "permit-expired"
+  | "smart-account-borrow"
+  | "no-trove"
+  | "recovery-mode"
+  | "cr-floor"
+  | "above-headroom"
+  | "borrow-used"
+  | "signature-invalid"
   | "reverted"
   | "rpc-unavailable"
   | "unknown";

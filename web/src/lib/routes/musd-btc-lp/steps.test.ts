@@ -19,3 +19,13 @@ describe("entrySteps", () => {
     expect(entrySteps("smart-account", 6n, 5n)).toEqual(["enter"]);
   });
 });
+
+describe("entrySteps in borrow mode", () => {
+  it("signs a permit and the borrow authorisation, then sends", () => {
+    expect(entrySteps("eoa", 0n, 5n, "borrow")).toEqual(["permit", "borrow", "enter"]);
+  });
+
+  it("skips the permit when the allowance covers the amount", () => {
+    expect(entrySteps("eoa", 5n, 5n, "borrow")).toEqual(["borrow", "enter"]);
+  });
+});

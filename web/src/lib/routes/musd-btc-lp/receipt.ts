@@ -43,6 +43,7 @@ export function enteredRows(event: EnteredEvent): { label: string; value: string
   const musd = (value: bigint) => `${formatToken(value)} MUSD`;
   const btc = (value: bigint) => `${formatToken(value)} BTC`;
   return [
+    ...(event.musdBorrowed > 0n ? [{ label: "MUSD borrowed", value: musd(event.musdBorrowed) }] : []),
     { label: "MUSD in", value: musd(event.musdIn) },
     { label: "MezoRoute fee", value: musd(event.fee) },
     { label: "MUSD swapped", value: musd(event.musdSwapped) },

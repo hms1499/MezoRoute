@@ -62,6 +62,16 @@ export function ReadinessCard({
           </Link>
         </div>
       )}
+      {readiness.state === "can-borrow" && network.executor && (
+        <div className="mt-4">
+          <Link
+            href="/route/lp/?mode=borrow"
+            className="inline-block rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent/90"
+          >
+            Borrow & Deploy
+          </Link>
+        </div>
+      )}
       <p className="mt-4 flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-line pt-3 text-xs text-muted">
         <span title={btcAddress ?? account}>
           {connector?.name ?? "Wallet"} · {walletKindLabel(walletKind, bitcoinWallet)} · {shortAddress(account)}
