@@ -14,7 +14,9 @@ export type StepperEvent<K extends string = StepKind> =
   | { type: "confirmed" }
   | { type: "failed"; error: DecodedError }
   | { type: "signature-expired" }
-  | { type: "reset"; kinds: K[] };
+  | { type: "reset"; kinds: K[] }
+  /** "Start over": a fresh stepper even after a step started (the flow drops its pinned values too). */
+  | { type: "restart"; kinds: K[] };
 
 export function createStepper<K extends string = StepKind>(kinds: K[]): Stepper<K> {
   return { steps: kinds.map((kind) => ({ kind, status: "idle" })), active: 0 };
@@ -40,6 +42,8 @@ export function stepperReducer<K extends string = StepKind>(state: Stepper<K>, e
   switch (event.type) {
     case "reset":
       return hasStarted(state) ? state : createStepper(event.kinds);
+    case "restart":
+      return createStepper(event.kinds);
     case "signature-expired": {
       const first = state.steps.findIndex((current) => isSignature(current.kind));
       if (first === -1) return state;

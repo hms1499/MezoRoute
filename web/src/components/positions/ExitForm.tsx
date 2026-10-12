@@ -6,21 +6,21 @@ import { SLIPPAGE_PRESETS } from "@/lib/quote/entry";
 const pill = (on: boolean) =>
   on ? "rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white" : "rounded-full border border-line px-3 py-1 text-xs font-semibold text-muted";
 
-/** Share of the LP and slippage; locked once the first step starts (the flow pinned the amount). */
+/** Share of the LP (locked once the first step pins it; "Start over" unlocks it) and slippage (read again at send). */
 export function ExitForm({
   intent,
   lpBalance,
-  locked,
+  amountLocked,
   onChange,
 }: {
   intent: ExitIntent;
   lpBalance: bigint;
-  locked: boolean;
+  amountLocked: boolean;
   onChange: (next: ExitIntent) => void;
 }) {
   return (
     <div className="mt-4 space-y-3">
-      <fieldset disabled={locked}>
+      <fieldset disabled={amountLocked}>
         <legend className="text-sm font-medium">Amount to exit</legend>
         <div className="mt-1 flex flex-wrap gap-2">
           {EXIT_PERCENTS.map((percent) => (
@@ -37,7 +37,7 @@ export function ExitForm({
         </div>
         <p className="mt-1 text-xs text-muted">Your LP: {lp(lpBalance)}</p>
       </fieldset>
-      <fieldset disabled={locked}>
+      <fieldset>
         <legend className="text-sm font-medium">Slippage</legend>
         <div className="mt-1 flex gap-2">
           {SLIPPAGE_PRESETS.map((bps) => (

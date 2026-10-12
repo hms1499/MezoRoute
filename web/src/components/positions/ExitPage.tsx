@@ -75,29 +75,26 @@ function ExitFlowView(props: {
   const { network } = useNetwork();
   const { chainId } = useAccount();
   const now = useNow(1_000);
-  const preview = exitPreview({
-    network,
-    data: props.data,
-    intent: props.intent,
-    walletKind: props.walletKind,
-    walletChainId: chainId,
-    now,
-  });
-  const { stepper, run } = useExitFlow({
+  const previewInput = { network, data: props.data, intent: props.intent, walletKind: props.walletKind, walletChainId: chainId, now };
+  // Before the first step the amount follows the percent; the flow then pins it.
+  const unpinned = exitPreview(previewInput);
+  const { stepper, run, restart, pinnedLiquidity } = useExitFlow({
     account: props.account,
     executor: props.executor,
     intent: props.intent,
-    liquidityIn: preview.liquidityIn,
+    liquidityIn: unpinned.liquidityIn,
     walletKind: props.walletKind,
-    plan: preview.steps,
+    plan: unpinned.steps,
     refresh: props.refresh,
   });
+  // What the page shows and gates on is what the flow will send.
+  const preview = pinnedLiquidity === null ? unpinned : exitPreview({ ...previewInput, liquidityIn: pinnedLiquidity });
   return (
     <>
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <section className="rounded-2xl bg-white p-5 shadow-card">
         <h1 className="text-lg font-semibold">Exit the MUSD/BTC pool to MUSD</h1>
-        <ExitForm intent={props.intent} lpBalance={props.data.snapshot.lpBalance} locked={hasStarted(stepper)} onChange={props.onIntent} />
+        <ExitForm intent={props.intent} lpBalance={props.data.snapshot.lpBalance} amountLocked={hasStarted(stepper)} onChange={props.onIntent} />
       </section>
       {preview.quote && preview.minimums && (
         <ExitPreviewCard
@@ -107,7 +104,7 @@ function ExitFlowView(props: {
           blockNumber={props.data.snapshot.blockNumber}
         />
       )}
-      <ExitStepper stepper={stepper} run={run} block={preview.block} />
+      <ExitStepper stepper={stepper} run={run} restart={restart} block={preview.block} />
       <Link href="/positions/" className="inline-block text-xs font-semibold text-accent hover:underline">
         Back to positions
       </Link>

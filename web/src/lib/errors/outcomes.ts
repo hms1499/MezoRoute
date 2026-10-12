@@ -139,7 +139,7 @@ export const NO_LP: Outcome = { kind: "no-lp", message: "You have no MUSD/BTC LP
 export const LP_CHANGED: Outcome = {
   kind: "lp-changed",
   message: "Your LP balance changed. Review the exit again.",
-  recovery: [],
+  recovery: ["reduce-amount"],
 };
 
 export const NOTHING_TO_CLAIM: Outcome = { kind: "nothing-to-claim", message: "You have no fees to claim yet.", recovery: [] };

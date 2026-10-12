@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import type { Address } from "viem";
 import { useConfig } from "wagmi";
 import { getAccount, signTypedData, simulateContract } from "wagmi/actions";
@@ -38,9 +38,15 @@ const nowSeconds = () => BigInt(Math.floor(Date.now() / 1000));
 /**
  * The exit stepper (spec §9 screen 6a): LP permit (EOA) or exact LP approval (smart account), then
  * `exit`. The account, chain, and LP amount are pinned on the first step; the send re-quotes,
- * re-gates, simulates, submits, and hands the hash to the receipt page.
+ * re-gates, simulates, submits, and hands the hash to the receipt page. `restart` drops the pins and
+ * the signature ("Start over" / "Change amount"); `pinnedLiquidity` lets the page preview what is sent.
  */
-export function useExitFlow(input: ExitFlowInput): { stepper: Stepper<ExitStepKind>; run: () => void } {
+export function useExitFlow(input: ExitFlowInput): {
+  stepper: Stepper<ExitStepKind>;
+  run: () => void;
+  restart: () => void;
+  pinnedLiquidity: bigint | null;
+} {
   const config = useConfig();
   const { network } = useNetwork();
   const router = useRouter();
@@ -50,6 +56,7 @@ export function useExitFlow(input: ExitFlowInput): { stepper: Stepper<ExitStepKi
   stepperRef.current = stepper;
   const pin = useRef<SendPin | null>(null);
   const pinnedLiquidity = useRef<bigint | null>(null);
+  const [pinnedShown, setPinnedShown] = useState<bigint | null>(null);
   const permit = useRef<ExecutorPermit | null>(null);
   const planKey = input.plan.join(",");
 
@@ -124,7 +131,10 @@ export function useExitFlow(input: ExitFlowInput): { stepper: Stepper<ExitStepKi
     const step = stepperRef.current.steps[stepperRef.current.active];
     if (!step) return;
     pin.current ??= { account: input.account, chainId: network.chainId };
-    pinnedLiquidity.current ??= input.liquidityIn;
+    if (pinnedLiquidity.current === null) {
+      pinnedLiquidity.current = input.liquidityIn;
+      setPinnedShown(input.liquidityIn);
+    }
     const sendPin = pin.current;
     dispatch({ type: "start" });
     try {
@@ -136,9 +146,18 @@ export function useExitFlow(input: ExitFlowInput): { stepper: Stepper<ExitStepKi
       showError(error, {
         retry: () => void runActive(),
         refreshQuote: () => void input.refresh().catch(() => undefined),
+        reduceAmount: restart,
       });
     }
   }
 
-  return { stepper, run: () => void runActive() };
+  function restart() {
+    pin.current = null;
+    pinnedLiquidity.current = null;
+    permit.current = null;
+    setPinnedShown(null);
+    dispatch({ type: "restart", kinds: input.plan });
+  }
+
+  return { stepper, run: () => void runActive(), restart, pinnedLiquidity: pinnedShown };
 }

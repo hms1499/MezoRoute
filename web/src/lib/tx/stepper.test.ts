@@ -98,4 +98,10 @@ describe("stepper", () => {
     expect(state.active).toBe(1);
     expect(state.steps[0]).toEqual({ kind: "permit", status: "done" });
   });
+
+  it("restarts with new kinds even after a step has started or failed", () => {
+    const failed = run(createStepper(["permit", "exit"]), { type: "start" }, { type: "failed", error: REJECTED });
+    expect(run(failed, { type: "reset", kinds: ["exit"] })).toEqual(failed);
+    expect(run(failed, { type: "restart", kinds: ["exit"] })).toEqual(createStepper(["exit"]));
+  });
 });

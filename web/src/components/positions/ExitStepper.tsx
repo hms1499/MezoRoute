@@ -4,7 +4,7 @@ import { BlockNotice } from "@/components/lp/BlockNotice";
 import { StepAction } from "@/components/lp/EntryStepper";
 import type { ExitBlock } from "@/lib/positions/exit-gate";
 import type { ExitStepKind } from "@/lib/positions/exit-steps";
-import type { Stepper } from "@/lib/tx/stepper";
+import { hasStarted, type Stepper } from "@/lib/tx/stepper";
 
 const COPY: Record<ExitStepKind, { title: string; detail: string; action: string }> = {
   permit: {
@@ -24,7 +24,19 @@ const COPY: Record<ExitStepKind, { title: string; detail: string; action: string
   },
 };
 
-export function ExitStepper({ stepper, run, block }: { stepper: Stepper<ExitStepKind>; run: () => void; block: ExitBlock | null }) {
+export function ExitStepper({
+  stepper,
+  run,
+  restart,
+  block,
+}: {
+  stepper: Stepper<ExitStepKind>;
+  run: () => void;
+  restart: () => void;
+  block: ExitBlock | null;
+}) {
+  // A failed step, or a block on the pinned amount (e.g. the LP balance changed), needs a way back.
+  const stuck = hasStarted(stepper) && (block !== null || stepper.steps.some((step) => step.status === "failed"));
   return (
     <section className="rounded-2xl bg-white p-5 shadow-card">
       <h2 className="font-semibold">Confirm</h2>
@@ -42,8 +54,13 @@ export function ExitStepper({ stepper, run, block }: { stepper: Stepper<ExitStep
           </li>
         ))}
       </ol>
-      <div className="mt-3">
+      <div className="mt-3 flex items-center justify-between gap-3">
         <BlockNotice block={block} />
+        {stuck && (
+          <button type="button" onClick={restart} className="ml-auto shrink-0 text-xs font-semibold text-accent hover:underline">
+            Start over
+          </button>
+        )}
       </div>
     </section>
   );
