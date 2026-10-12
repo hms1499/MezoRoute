@@ -71,6 +71,12 @@ Exit gate order: no executor / wrong network (`writeBlocker`), no LP, LP balance
 - `PRODUCT_SPEC.md`: F7 scope (LP), SP withdraw under F5, §11.5/§12 note on `burn` using balances and the `eth_getLogs` head clamp, §16 records F7.
 - `CLAUDE.md` frontend notes cover positions, history scanning, and the LP permit domain.
 
+### QA result (12 Oct 2026): passed
+
+- **Agent, local export + local signer (deployer):** positions page against chain reads (LP balance; claimable from the fee indexes = `claimFees()` simulated at the same block; cost basis 31.996 MUSD incl. 0.032 MUSD fees = an independent recount from RPC logs; a reload rescans only past the cached `scannedTo`). Exit 50% with an LP permit, tx `0x05ae908c1fad2db77774c866dda050daf56edb67a37fa06fa95b07e8cb7cdad0`: gas 417,468 (`EXIT_GAS` set to 495,000); the quote at the previous block matches `Exited` to the wei; allowance 0, executor balances 0, no MezoRoute fee. Claim, tx `0x43654902af89b8d9ae56b9f6d98f5a248043ce554f569de952670f7c9aa02786`: `Claim` = the simulation; the page then shows zero fees and Claim disabled. Mainnet read-only; 360 px layouts. "Start over" after a rejected signature checked with a rejecting mock wallet.
+- **Final review fixes:** the history scan caches only ranges ending at head − 50 (a lagging RPC node answers a range past its head with an empty list); the exit page can start over after a block or failure and previews the pinned amount.
+- **User, Vercel preview, deployer wallet:** Claim, tx `0x4b0c9fb74d3ef49483a52808a69c46cdf5a77e8d452e8194cc71d3f207343b0a`: `Claim` (15,562,004 wei MUSD, 0 BTC) = the simulation at the previous block. Exit 25% with an LP permit, tx `0x8f22c6067778bbb26c52e754ba00d08dde2006e139dd01c125e0dc676bd0ea80`: `liquidityIn` = 25% of the balance (rounded down), the quote at the previous block matches `Exited` to the wei, gas 348,035, allowance 0, executor balances 0. Unisat: the exit page shows "Approve LP" first.
+
 ## Out of scope
 
 Stability Pool position and withdraw (F5); gauge staking (spec §4: gauges pay BTC, not in scope); exit to BTC or to both tokens; LP received from outside MezoRoute gets a value but no cost basis.

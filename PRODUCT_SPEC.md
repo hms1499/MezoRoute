@@ -758,6 +758,8 @@ F3 done 12 Oct 2026: LP quote engine, LP route page, permit/approve stepper, and
 
 F4 done 12 Oct 2026: Borrow & Deploy (borrow authorisation, Trove hints, 160% CR floor, recovery-mode block) on the LP route; design in `docs/superpowers/specs/2026-10-12-f4-borrow-deploy-design.md`.
 
+F7 done 12 Oct 2026: Positions (LP): underlying, exit value, cost basis from executor logs, claimable fees + Claim, and exit to MUSD (permit or approval); design in `docs/superpowers/specs/2026-10-12-f7-lp-positions-design.md`. The Stability Pool position and withdraw move to F5.
+
 ### Wave 1 — MVP backlog (in order)
 
 | ID | Task | Depends on |
