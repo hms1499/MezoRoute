@@ -63,12 +63,16 @@ export function snapshotContracts(network: NetworkConfig, account: Address) {
   ] as const;
 }
 
+/** Tigris sorts a pair by address: testnet's token0 is MUSD, mainnet's is BTC. */
+export function musdIsToken0(network: NetworkConfig): boolean {
+  return BigInt(network.addresses.musd) < BigInt(network.addresses.btc);
+}
+
 export function parseSnapshot(network: NetworkConfig, results: SnapshotResults): DashboardSnapshot {
   const [price, mcr, borrowingRate, status, debtAndColl, maxBorrowingCapacity, musd, lpBalance, lpTotalSupply, reserves, spDeposit, spBtcGain] =
     results;
   const [collateral, principal, interest] = debtAndColl;
-  // Tigris sorts a pair by address: testnet's token0 is MUSD, mainnet's is BTC.
-  const musdIsToken0 = BigInt(network.addresses.musd) < BigInt(network.addresses.btc);
+  const musdFirst = musdIsToken0(network);
   return {
     price,
     protocol: { mcr, borrowingRate },
@@ -80,8 +84,8 @@ export function parseSnapshot(network: NetworkConfig, results: SnapshotResults):
     lp: {
       balance: lpBalance,
       totalSupply: lpTotalSupply,
-      reserveMusd: musdIsToken0 ? reserves[0] : reserves[1],
-      reserveBtc: musdIsToken0 ? reserves[1] : reserves[0],
+      reserveMusd: musdFirst ? reserves[0] : reserves[1],
+      reserveBtc: musdFirst ? reserves[1] : reserves[0],
     },
     sp: { deposit: spDeposit, btcGain: spBtcGain },
   };

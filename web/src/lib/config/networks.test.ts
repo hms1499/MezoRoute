@@ -24,6 +24,7 @@ describe("networks", () => {
     expect(networks.testnet.executor).toEqual({
       address: "0xB36B2E012003840951CFf00fA6b1E3237A110920",
       feeBps: 10n,
+      deployBlock: 15_903_010n,
     });
   });
 

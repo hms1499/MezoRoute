@@ -26,8 +26,11 @@ export type NetworkConfig = {
   explorerUrl: string;
   faucetUrl: string | null;
   mezoAppUrl: string;
-  /** Pinned executor and its fee (F3 compares the fee with the chain before writing); null until deployed. */
-  executor: { address: Address; feeBps: bigint } | null;
+  /**
+   * Pinned executor, its fee (F3 compares the fee with the chain before writing), and its deployment
+   * block (F7 scans its events from there); null until deployed.
+   */
+  executor: { address: Address; feeBps: bigint; deployBlock: bigint } | null;
   addresses: NetworkAddresses;
 };
 
@@ -40,7 +43,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     explorerUrl: "https://explorer.test.mezo.org",
     faucetUrl: "https://faucet.test.mezo.org",
     mezoAppUrl: "https://testnet.mezo.org",
-    executor: { address: "0xB36B2E012003840951CFf00fA6b1E3237A110920", feeBps: 10n },
+    executor: { address: "0xB36B2E012003840951CFf00fA6b1E3237A110920", feeBps: 10n, deployBlock: 15_903_010n },
     addresses: {
       musd: "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503",
       btc: "0x7b7C000000000000000000000000000000000000",
