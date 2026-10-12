@@ -45,20 +45,20 @@ describe("stepper", () => {
     expect(run(signing, { type: "start" })).toEqual(signing);
   });
 
-  it("returns to the permit when it expires, resetting the steps after it", () => {
+  it("returns to the first signature when one expires, resetting the steps after it", () => {
     const state = run(
       createStepper(["permit", "enter"]),
       { type: "start" },
       { type: "signed" },
       { type: "start" },
-      { type: "permit-expired" },
+      { type: "signature-expired" },
     );
     expect(state).toEqual(createStepper(["permit", "enter"]));
   });
 
-  it("ignores permit expiry without a permit step", () => {
+  it("ignores signature expiry without a signature step", () => {
     const state = createStepper(["approve", "enter"]);
-    expect(run(state, { type: "permit-expired" })).toEqual(state);
+    expect(run(state, { type: "signature-expired" })).toEqual(state);
   });
 
   it("replans only before anything started", () => {
@@ -68,5 +68,26 @@ describe("stepper", () => {
     expect(run(started, { type: "reset", kinds: ["enter"] })).toEqual(started);
     expect(hasStarted(idle)).toBe(false);
     expect(hasStarted(started)).toBe(true);
+  });
+  it("walks permit → borrow authorisation → send", () => {
+    const state = run(
+      createStepper(["permit", "borrow", "enter"]),
+      { type: "start" },
+      { type: "signed" },
+      { type: "start" },
+      { type: "signed" },
+    );
+    expect(state.active).toBe(2);
+    expect(state.steps.map((step) => step.status)).toEqual(["done", "done", "idle"]);
+  });
+
+  it("resets a borrow-only plan to the borrow signature when it expires", () => {
+    const state = run(createStepper(["borrow", "enter"]), { type: "start" }, { type: "signed" }, { type: "signature-expired" });
+    expect(state).toEqual(createStepper(["borrow", "enter"]));
+  });
+
+  it("never takes a transaction hash for a borrow signature", () => {
+    const signing = run(createStepper(["borrow", "enter"]), { type: "start" });
+    expect(run(signing, { type: "submitted", hash: HASH })).toEqual(signing);
   });
 });

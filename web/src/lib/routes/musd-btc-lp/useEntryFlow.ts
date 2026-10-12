@@ -83,7 +83,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
     const signed = permit.current;
     if (hasPermitStep && (!signed || !permitUsable(signed, nowSeconds()))) {
       permit.current = null;
-      dispatch({ type: "permit-expired" });
+      dispatch({ type: "signature-expired" });
       throw new BlockedError(PERMIT_EXPIRED);
     }
     const fresh = await input.refresh();
