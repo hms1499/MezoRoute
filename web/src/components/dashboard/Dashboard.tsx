@@ -11,6 +11,7 @@ import { dashboardView } from "@/lib/dashboard/view";
 import type { WalletKind } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { ExposurePanel } from "./ExposurePanel";
+import { PositionsSummary } from "./PositionsSummary";
 import { ReadinessCard } from "./ReadinessCard";
 import { TroveCard } from "./TroveCard";
 import { TroveWarning } from "./TroveWarning";
@@ -43,6 +44,7 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
       <ReadinessCard readiness={current} data={data} walletKind={walletKind} account={account} />
       <TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} />
       <ExposurePanel snapshot={snapshot} />
+      <PositionsSummary account={account} />
     </>
   );
 }
