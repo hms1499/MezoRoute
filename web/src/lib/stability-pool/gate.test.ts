@@ -18,7 +18,7 @@ describe("spDepositBlock", () => {
     [{ musdIn: null }, "zero"],
     [{ musdIn: 10n * ONE + 1n }, "insufficient-balance"],
     [{ lacksGas: true }, "needs-gas"],
-  ] as const)("%j → %s", (over, reason) => {
+  ] as const)("case %#", (over, reason) => {
     expect(deposit(over)?.reason).toBe(reason);
   });
 
@@ -41,7 +41,7 @@ describe("spWithdrawBlock", () => {
     [{ amount: 0n }, "too-small"],
     [{ lacksGas: true }, "needs-gas"],
     [{ walletChainId: 1 }, "wrong-network"],
-  ] as const)("%j → %s", (over, reason) => {
+  ] as const)("case %#", (over, reason) => {
     expect(withdraw(over)?.reason ?? null).toBe(reason);
   });
 });
@@ -55,7 +55,7 @@ describe("spClaimBlock", () => {
     [{ initialDeposit: 0n, gain: 0n }, "no-deposit"],
     [{ gain: 0n }, "no-gain"],
     [{ lacksGas: true }, "needs-gas"],
-  ] as const)("%j → %s", (over, reason) => {
+  ] as const)("case %#", (over, reason) => {
     expect(claim(over)?.reason ?? null).toBe(reason);
   });
 });
