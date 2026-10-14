@@ -8,6 +8,7 @@ import { useNetwork } from "@/lib/config/network-context";
 import { readiness, troveWarning } from "@/lib/dashboard/readiness";
 import { useDashboardSnapshot, type DashboardData } from "@/lib/dashboard/useDashboardSnapshot";
 import { dashboardView } from "@/lib/dashboard/view";
+import { exposure } from "@/lib/exposure/exposure";
 import type { WalletKind } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { ExposurePanel } from "./ExposurePanel";
@@ -44,7 +45,7 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
       <ReadinessCard readiness={current} data={data} walletKind={walletKind} account={account} />
       <TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} />
       <ExposurePanel snapshot={snapshot} />
-      <PositionsSummary account={account} />
+      <PositionsSummary account={account} spValue={exposure(snapshot).spValue} />
     </>
   );
 }
