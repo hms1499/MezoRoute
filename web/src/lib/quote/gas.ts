@@ -50,3 +50,17 @@ export function gasLimit(budget: bigint, estimate: bigint | undefined): bigint {
   const padded = estimate === undefined ? 0n : (estimate * 12n) / 10n;
   return padded > budget ? padded : budget;
 }
+
+/**
+ * `provideToSP` and `withdrawFromSP` (F5). Provisional until QA measures them: `cast estimate` of
+ * withdrawFromSP with a pending BTC gain gave 225,416 (14 Oct 2026). The budget is only a floor.
+ */
+export const SP_DEPOSIT_GAS = 330_000n;
+export const SP_WITHDRAW_GAS = 330_000n;
+
+/** Estimated gas units for a Stability Pool action, for the preview's network-fee line. */
+export function spGasUnits(input: { approve: boolean; smartAccount: boolean; action: "deposit" | "withdraw" }): bigint {
+  const calls = input.approve ? 2n : 1n;
+  const units = (input.action === "deposit" ? SP_DEPOSIT_GAS : SP_WITHDRAW_GAS) + (input.approve ? APPROVE_GAS : 0n);
+  return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
+}
