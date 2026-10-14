@@ -5,8 +5,8 @@ import type { SpSnapshot } from "./snapshot";
 export type SpCostView = {
   basis: bigint;
   valueChange: bigint; // value now − basis: "Estimated position value change", never "profit"
-  gainsClaimed: bigint; // BTC already paid to the wallet
-  absorbed: bigint; // MUSD the deposit gave up to liquidations: realised at past actions + pending now
+  gainsClaimed: bigint; // BTC already paid to the wallet since this position started
+  absorbed: bigint; // MUSD this position gave up to liquidations: realised at past actions + pending now
 };
 export type SpView = { deposit: bigint; gain: bigint; gainValue: bigint; value: bigint; empty: boolean; cost: SpCostView | null };
 

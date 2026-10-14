@@ -130,13 +130,24 @@ function WithdrawView(props: {
           </div>
         </section>
       ) : (
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <BlockNotice block={preview.block} />
+          {/* A pending gain can be taken without touching the deposit, even when nothing is left to withdraw. */}
+          {claimBlock === null && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={actions.claim}
+              className="ml-auto rounded-full border border-accent px-5 py-2.5 text-sm font-semibold text-accent hover:bg-accent-soft disabled:opacity-50"
+            >
+              {actions.pending === "claim" ? "Check your wallet…" : "Claim BTC gain only"}
+            </button>
+          )}
           <button
             type="button"
             disabled={preview.block !== null || busy || check.isPending}
             onClick={() => actions.withdraw(props.percent)}
-            className="ml-auto rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-50"
+            className={`${claimBlock === null ? "" : "ml-auto "}rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-50`}
           >
             {actions.pending === "withdraw" ? "Check your wallet…" : "Withdraw"}
           </button>

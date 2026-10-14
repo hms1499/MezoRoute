@@ -600,7 +600,7 @@ Wallet balance deltas are never the source for entry cost, LP minted, gains, or 
 ### Cost basis
 
 - LP: cost basis = `Entered.musdIn − Entered.musdRefund` (plus BTC refund valued at entry price, shown separately); the fee is part of cost basis and shown as its own line. Partial exits reduce cost basis pro rata by LP exited. Reconstructed client-side from the user's `Entered`/`Exited` logs.
-- Stability Pool: cost basis = deposits added, and each withdrawal removes cost pro rata to the share of the compounded deposit it takes (`basis × amount / before`, the LP-exit rule; a plain "deposits − withdrawals" sum goes wrong once the deposit has absorbed liquidated debt), rebuilt from `UserDepositChanged`/`CollateralGainWithdrawn` history; BTC gains received and MUSD absorbed by liquidations are shown separately. (Updated in F5, 14 Oct 2026.)
+- Stability Pool: cost basis = deposits added, and each withdrawal removes cost pro rata to the share of the compounded deposit it takes (`basis × amount / before`, the LP-exit rule; a plain "deposits − withdrawals" sum goes wrong once the deposit has absorbed liquidated debt), rebuilt from `UserDepositChanged`/`CollateralGainWithdrawn` history; BTC gains received and MUSD absorbed by liquidations are shown separately. All of it describes the current position: a deposit that starts from zero (after a full withdrawal or a wipe-out) opens a new one. (Updated in F5, 14 Oct 2026.)
 - This is a UX estimate, not tax accounting.
 
 ### Exposure model

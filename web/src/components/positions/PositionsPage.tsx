@@ -35,23 +35,18 @@ function Positions({ account }: { account: Address }) {
   const spHistory = useSpHistory(account, sp.data?.snapshot.initialDeposit);
   const spActions = useSpActions(account, sp.refresh);
 
-  if (!data || !sp.data) {
-    const failed = error ?? sp.error;
-    return failed ? (
-      <LoadError
-        error={failed}
-        onRetry={() => {
-          void refresh().catch(() => undefined);
-          void sp.refresh().catch(() => undefined);
-        }}
-      />
+  // A failed Stability Pool read shows its own error; it never hides the LP cards.
+  const spFailed = !sp.data && sp.error !== null;
+  if (!data || (!sp.data && !spFailed)) {
+    return error ? (
+      <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
     ) : (
       <div aria-busy="true" aria-label="Loading your positions" className="h-48 animate-pulse rounded-2xl bg-white shadow-card" />
     );
   }
 
   const view = positionView(data.snapshot, history.events ?? null);
-  const pool = spView(sp.data.snapshot, spHistory.basis);
+  const pool = sp.data ? spView(sp.data.snapshot, spHistory.basis) : null;
   const block = claimBlock({
     network,
     walletChainId: chainId,
@@ -62,7 +57,7 @@ function Positions({ account }: { account: Address }) {
     <>
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <h1 className="text-lg font-semibold">Your positions</h1>
-      {view.empty && pool.empty ? (
+      {view.empty && pool?.empty ? (
         <section className="rounded-2xl bg-white p-5 shadow-card">
           <p className="text-sm">You have no MUSD/BTC LP, no unclaimed pool fees, and no Stability Pool deposit on {network.name}.</p>
           <div className="mt-3 flex gap-4">
@@ -78,7 +73,8 @@ function Positions({ account }: { account: Address }) {
         <>
           {view.lp.balance > 0n && <LpPositionCard lp={view.lp} history={history} />}
           {!view.empty && <FeesCard account={account} fees={view.fees} block={block} />}
-          {!pool.empty && (
+          {sp.error && !sp.data && <LoadError error={sp.error} onRetry={() => void sp.refresh().catch(() => undefined)} />}
+          {sp.data && pool && !pool.empty && (
             <SpPositionCard
               view={pool}
               history={spHistory}
