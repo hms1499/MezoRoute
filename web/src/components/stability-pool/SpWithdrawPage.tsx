@@ -77,7 +77,8 @@ function WithdrawView(props: {
     args: [preview.amount],
     account: props.account,
     chainId: network.chainId,
-    query: { enabled: preview.block === null },
+    // A revert is deterministic; retrying it only delays the paused state by ~7 s.
+    query: { enabled: preview.block === null, retry: false },
   });
   const paused = check.error !== null && decodeError(check.error, network).kind === SP_WITHDRAW_BLOCKED.kind;
   const busy = actions.pending !== null;

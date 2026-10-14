@@ -75,6 +75,19 @@ A user deposits wallet MUSD into the MUSD Stability Pool, sees the compounded de
 - `PRODUCT_SPEC.md`: §12 SP cost basis rule (pro rata) and history source (explorer API), §16 records F5.
 - `CLAUDE.md` frontend notes cover the SP route, the explorer API, and Claim via `withdrawFromSP(0)`.
 
+### QA result (14 Oct 2026): agent run passed
+
+Local export + local signer (deployer `0xd74f…2B49`), Playwright:
+- Dashboard "Back the system" → route; 10 MUSD preview (deposit now 0, deposit after 10, no fee, exposure before/after); mainnet route shows "Mainnet actions open after launch. Reading only." with Review disabled.
+- Deposit 10 MUSD: Approve MUSD → Deposit, tx `0x8e3ee43a4f71fe1b85e9e309c506acc814235e3447649a489cc3b1d12bede3e7`; receipt = events (10 deposited, deposit now 10) = `deposits(deployer)`; allowance back to 0.
+- Positions: deposit 10, cost basis 10 from the explorer API; Claim BTC gain disabled (zero gain).
+- Withdraw 50%, tx `0xd604b86a840127362ff40d9829435e1a10cd7a52891ca616f809ac6059c31b8d`: 5 withdrawn; positions then shows deposit 5, cost basis 5 (pro rata) within 2 s.
+- Withdraw Max, tx `0x576f2e877256be24d10f15dc53c9b5993257ec5486c64c3149529136c40a693d`: 5 withdrawn, deposit 0; the SP card disappears.
+- Paused state (the withdrawFromSP `eth_call` intercepted to revert with the pool's string): the §13 message with Claim BTC gain and Retry, no Withdraw button. With wagmi's default retries it took ≈7 s, so the simulation now runs with `retry: false`.
+- 360 px: no horizontal scroll on the route, confirm, positions, withdraw, and dashboard pages.
+- Gas: Mezo charges at least half the gas limit (the 330,000-limit deposit and withdrawals each used exactly 165,000). Measured: `provideToSP` top-up estimate 86,499; `withdrawFromSP` 146,084–151,240, `withdrawFromSP(0)` 53,399. Budgets set to 180,000 / 200,000; a 1 MUSD Max withdrawal with the new budget used 134,924 (tx `0x3a96d2db1f189a147e461753457c9f4fed5cf23053675568cb554357896ac5ec`, after a 1 MUSD deposit `0xd05916729835c0938e0525b10db0a1b0be1bc97a68331924539c5c6769dfc85f`).
+- Bitcoin wallets: not run with a Unisat mock; the step list does not depend on the wallet kind (no permit on the pool; `spDepositSteps` unit tests), and the relayed path is the same `submitCall` as F3/F7.
+
 ## Out of scope
 
 Borrow → Stability Pool in one transaction (deposits are keyed to `msg.sender`); `withdrawCollateralGainToTrove`; the LP vs SP comparison (F6); a history cache; mainnet writes before M1.
