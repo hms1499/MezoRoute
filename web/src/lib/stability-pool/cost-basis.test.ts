@@ -1,6 +1,6 @@
 import type { Hex } from "viem";
 import { describe, expect, it } from "vitest";
-import { HistoryLagError, historyLagging, historyStatus, spCostBasis } from "./cost-basis";
+import { HistoryLagError, historyLagging, historyStatus, shouldFetchHistory, spCostBasis } from "./cost-basis";
 import type { SpAction } from "./history";
 
 const ONE = 10n ** 18n;
@@ -44,6 +44,23 @@ describe("spCostBasis", () => {
     expect(spCostBasis([action("deposit", 10n * ONE, 0n, 10n * ONE), action("withdraw", 10n * ONE, 10n * ONE, 0n)]).basis).toBe(0n);
   });
 
+  it("starts a new position after liquidations wiped the deposit out", () => {
+    const result = spCostBasis([
+      action("deposit", 100n * ONE, 0n, 100n * ONE),
+      action("deposit", 50n * ONE, 0n, 50n * ONE, 5n, 100n * ONE),
+    ]);
+    expect(result).toEqual({ basis: 50n * ONE, gainsClaimed: 0n, lossRealised: 0n, lastDeposit: 50n * ONE });
+  });
+
+  it("starts a new position after a full withdrawal, without the old position's gains and losses", () => {
+    const result = spCostBasis([
+      action("deposit", 10n * ONE, 0n, 10n * ONE),
+      action("withdraw", 9n * ONE, 9n * ONE, 0n, 2n, 1n * ONE),
+      action("deposit", 20n * ONE, 0n, 20n * ONE),
+    ]);
+    expect(result).toEqual({ basis: 20n * ONE, gainsClaimed: 0n, lossRealised: 0n, lastDeposit: 20n * ONE });
+  });
+
   it("keeps the basis on a claim and counts the gain", () => {
     const result = spCostBasis([action("deposit", 10n * ONE, 0n, 10n * ONE), action("claim", 0n, 10n * ONE, 10n * ONE, 3n)]);
     expect(result.basis).toBe(10n * ONE);
@@ -71,5 +88,15 @@ describe("historyStatus", () => {
     [{ hasData: false, error: null, failureReason: null }, "loading"],
   ] as const)("%j → %s", (input, status) => {
     expect(historyStatus(input)).toBe(status);
+  });
+});
+
+describe("shouldFetchHistory", () => {
+  it.each([
+    [undefined, false],
+    [0n, false],
+    [1n, true],
+  ] as const)("deposits() %s → %s", (initialDeposit, fetch) => {
+    expect(shouldFetchHistory(initialDeposit)).toBe(fetch);
   });
 });

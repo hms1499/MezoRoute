@@ -3,7 +3,15 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Address } from "viem";
 import { useNetwork } from "@/lib/config/network-context";
-import { HistoryLagError, historyLagging, historyStatus, spCostBasis, type HistoryStatus, type SpCostBasis } from "./cost-basis";
+import {
+  HistoryLagError,
+  historyLagging,
+  historyStatus,
+  shouldFetchHistory,
+  spCostBasis,
+  type HistoryStatus,
+  type SpCostBasis,
+} from "./cost-basis";
 import { browserFetchJson } from "./explorer";
 import { fetchSpHistoryRows, spActions } from "./history";
 
@@ -23,7 +31,7 @@ export function useSpHistory(
   const { network } = useNetwork();
   const query = useQuery({
     queryKey: ["sp-history", network.chainId, account, initialDeposit?.toString()],
-    enabled: initialDeposit !== undefined,
+    enabled: shouldFetchHistory(initialDeposit),
     refetchInterval: HISTORY_REFRESH_MS,
     retry: (failures, error) => error instanceof HistoryLagError && failures < LAG_RETRIES,
     retryDelay: LAG_RETRY_MS,

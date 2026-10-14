@@ -80,8 +80,12 @@ function CostRows({ view, history }: { view: SpView; history: History }) {
       <StatRow label="Estimated position value change" sub="Value now minus cost basis">
         {signedMusd(view.cost.valueChange)}
       </StatRow>
-      <StatRow label="BTC gains received">{btc(view.cost.gainsClaimed)}</StatRow>
-      <StatRow label="Absorbed by liquidations">{musd(view.cost.absorbed)}</StatRow>
+      <StatRow label="BTC gains received" sub="Since this deposit started">
+        {btc(view.cost.gainsClaimed)}
+      </StatRow>
+      <StatRow label="Absorbed by liquidations" sub="Since this deposit started">
+        {musd(view.cost.absorbed)}
+      </StatRow>
     </>
   );
 }
