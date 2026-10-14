@@ -32,6 +32,14 @@ describe("spCostBasis", () => {
     expect(result).toEqual({ basis: 50n * ONE, gainsClaimed: 5n, lossRealised: 20n * ONE, lastDeposit: 40n * ONE });
   });
 
+  it("adds a top-up made after the deposit absorbed a loss", () => {
+    const result = spCostBasis([
+      action("deposit", 100n * ONE, 0n, 100n * ONE),
+      action("deposit", 30n * ONE, 80n * ONE, 110n * ONE, 2n, 20n * ONE),
+    ]);
+    expect(result).toEqual({ basis: 130n * ONE, gainsClaimed: 2n, lossRealised: 20n * ONE, lastDeposit: 110n * ONE });
+  });
+
   it("clears the basis on a full withdrawal", () => {
     expect(spCostBasis([action("deposit", 10n * ONE, 0n, 10n * ONE), action("withdraw", 10n * ONE, 10n * ONE, 0n)]).basis).toBe(0n);
   });

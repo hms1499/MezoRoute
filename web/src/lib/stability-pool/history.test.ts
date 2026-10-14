@@ -68,6 +68,11 @@ describe("spActions", () => {
     expect(actions[1]).toMatchObject({ kind: "withdraw", before: 80n * ONE, amount: 40n * ONE, gain: 5n, loss: 20n * ONE });
   });
 
+  it("reads a top-up after a loss as a deposit of the MUSD added", () => {
+    const actions = spActions([changed(1, 10n, 0, 100n * ONE), gained(1, 10n, 1, 0n, 0n), changed(2, 20n, 0, 110n * ONE), gained(2, 20n, 1, 2n, 20n * ONE)]);
+    expect(actions[1]).toMatchObject({ kind: "deposit", before: 80n * ONE, amount: 30n * ONE, gain: 2n, loss: 20n * ONE });
+  });
+
   it("reads an unchanged deposit as a claim", () => {
     const actions = spActions([changed(1, 10n, 0, 50n * ONE), gained(1, 10n, 1, 0n, 0n), changed(2, 20n, 0, 50n * ONE), gained(2, 20n, 1, 7n, 0n)]);
     expect(actions[1]).toMatchObject({ kind: "claim", amount: 0n, gain: 7n });
