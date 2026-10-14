@@ -39,7 +39,7 @@ A user deposits wallet MUSD into the MUSD Stability Pool, sees the compounded de
 - `gate.ts`: deposit gate (`writeBlocker`; zero amount; amount above MUSD balance; not enough BTC gas) and withdraw gate (`writeBlocker`; no deposit; zero amount; not enough gas); `claimGate` (`writeBlocker`; no deposit; zero gain; gas).
 - `steps.ts`: deposit steps `["approve", "deposit"]` or `["deposit"]` when the allowance covers the amount; withdraw and claim are one `send` step.
 - `calls.ts`: `encodeApproveCall` (reusing F3's MUSD approve encoder), `encodeProvideCall(amount)`, `encodeWithdrawCall(amount)`; claim is `encodeWithdrawCall(0n)`.
-- `receipt.ts`: `findSpReceipt(logs, network, account)` → `{ kind: "sp-deposit" | "sp-withdraw" | "sp-claim", amount, gain, loss, depositAfter }` from the pool's `UserDepositChanged` and `CollateralGainWithdrawn` plus the MUSD `Transfer` between the account and the pool (account → pool: deposit; pool → account: withdraw; none: claim).
+- `receipt.ts`: `findSpReceipt(logs, network)` → `{ kind: "sp-deposit" | "sp-withdraw" | "sp-claim", depositor, amount, gain, loss, depositAfter }` from the pool's `UserDepositChanged` (whose indexed topic names the depositor) and `CollateralGainWithdrawn`, plus the MUSD `Transfer` between the depositor and the pool (depositor → pool: deposit; pool → depositor: withdraw; none, since a zero withdrawal sends no MUSD: claim).
 - `withdraw-intent.ts`: `percent` (25/50/75/100, default 100) parsed from and written to the URL.
 - `src/lib/quote/gas.ts`: `SP_APPROVE_GAS`, `SP_DEPOSIT_GAS`, `SP_WITHDRAW_GAS` from measured QA transactions, used through the existing `gasLimit` rule.
 
@@ -59,7 +59,7 @@ A user deposits wallet MUSD into the MUSD Stability Pool, sees the compounded de
 
 ## 4. Errors
 
-`revert-strings.ts` gains: "Cannot withdraw while there are troves with ICR < MCR" → `SP_WITHDRAW_BLOCKED` (recoveries: Claim BTC gain, Retry); "User must have a non-zero deposit" → `NO_SP_DEPOSIT`; "Amount must be non-zero" → `AMOUNT_TOO_SMALL` (existing outcome). Pre-send gate outcomes reuse F3/F7 ones (`INSUFFICIENT_BALANCE`, gas, `writeBlocker`) plus `NOTHING_TO_CLAIM` from F7.
+`revert-strings.ts` gains: "Cannot withdraw while there are troves with ICR < MCR" → `SP_WITHDRAW_BLOCKED` (toast recovery: Retry; the withdraw page shows the blocked state inline with Claim BTC gain and Retry buttons); "User must have a non-zero deposit" → `NO_SP_DEPOSIT`; "Amount must be non-zero" → `AMOUNT_TOO_SMALL` (existing outcome). Pre-send gate outcomes reuse F3/F7 ones (`INSUFFICIENT_BALANCE`, gas, `writeBlocker`) plus `NOTHING_TO_CLAIM` from F7.
 
 ## 5. Testing
 
