@@ -19,6 +19,15 @@ describe("receiptKind", () => {
     expect(receiptKind([claim], testnet)).toEqual({ kind: "claim", fees: { musd: 3n, btc: 4n } });
   });
 
+  it("decodes a Stability Pool action when there is no executor or pool event", () => {
+    const depositChanged = {
+      address: testnet.addresses.stabilityPool,
+      topics: ["0xbce78369dccab09eec1986f4d409ab09ffbb47d65423e5148fcf98411c5111c9", topic(ME)] as Hex[],
+      data: `0x${word(5n)}` as Hex,
+    };
+    expect(receiptKind([depositChanged], testnet)).toMatchObject({ kind: "sp-claim", sp: { depositAfter: 5n } });
+  });
+
   it("is null for a receipt without MezoRoute or pool events", () => {
     expect(receiptKind([], testnet)).toBeNull();
   });

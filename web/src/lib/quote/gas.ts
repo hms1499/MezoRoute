@@ -43,10 +43,31 @@ export const CLAIM_GAS = 110_000n;
 /**
  * The gas limit an EVM wallet is given: the RPC estimate plus 20%, but never below the measured budget.
  * A Mezo testnet RPC backend answered eth_estimateGas with the bare intrinsic gas (12 Oct 2026); a
- * wallet adding its margin to that could send a transaction that runs out of gas on chain. Unused gas
- * is not charged, so the floor costs nothing.
+ * wallet adding its margin to that could send a transaction that runs out of gas on chain. Mezo
+ * charges at least half of the gas limit (a provideToSP with a 330,000 limit used 165,000 exactly, tx
+ * 0x8e3e…e3e7, 14 Oct 2026), so a budget should stay close to the measured use.
  */
 export function gasLimit(budget: bigint, estimate: bigint | undefined): bigint {
   const padded = estimate === undefined ? 0n : (estimate * 12n) / 10n;
   return padded > budget ? padded : budget;
+}
+
+/**
+ * `withdrawFromSP` (14 Oct 2026 estimates): 225,416 when it pays a BTC gain, 146,084–151,240 without
+ * one (the Trove-ICR check reads the price feed), 53,399 for a zero-amount claim. 280,000 is the
+ * gain-paying case plus 20%, rounded up. Mezo charges at least half the limit (see `gasLimit`), so a plain
+ * withdrawal costs about 140,000, close to its real use.
+ */
+export const SP_WITHDRAW_GAS = 280_000n;
+/**
+ * `provideToSP`: 86,499 estimated for a top-up without a BTC gain; paying a gain adds about 79,000
+ * (the withdrawal difference above), so 220,000 is that sum plus 20%.
+ */
+export const SP_DEPOSIT_GAS = 220_000n;
+
+/** Estimated gas units for a Stability Pool action, for the preview's network-fee line. */
+export function spGasUnits(input: { approve: boolean; smartAccount: boolean; action: "deposit" | "withdraw" }): bigint {
+  const calls = input.approve ? 2n : 1n;
+  const units = (input.action === "deposit" ? SP_DEPOSIT_GAS : SP_WITHDRAW_GAS) + (input.approve ? APPROVE_GAS : 0n);
+  return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
 }

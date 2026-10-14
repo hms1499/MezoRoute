@@ -53,12 +53,18 @@ export function ReadinessCard({
         </div>
       )}
       {readiness.state === "ready" && network.executor && (
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Link
             href="/route/lp/"
             className="inline-block rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent/90"
           >
             Deposit into LP
+          </Link>
+          <Link
+            href="/route/stability-pool/"
+            className="inline-block rounded-full border border-accent px-4 py-2 text-xs font-semibold text-accent hover:bg-accent-soft"
+          >
+            Back the system
           </Link>
         </div>
       )}

@@ -18,3 +18,17 @@ describe("revertStringOutcome: BorrowerOperations and its signatures (F4)", () =
     expect(revertStringOutcome("ERC20: insufficient allowance")?.kind).toBe("allowance");
   });
 });
+
+describe("revertStringOutcome: StabilityPool (F5)", () => {
+  it.each([
+    ["StabilityPool: Cannot withdraw while there are troves with ICR < MCR", "sp-withdraw-blocked"],
+    ["StabilityPool: User must have a non-zero deposit", "no-sp-deposit"],
+    ["StabilityPool: Amount must be non-zero", "amount-too-small"],
+  ])("maps %j", (reason, kind) => {
+    expect(revertStringOutcome(reason)?.kind).toBe(kind);
+  });
+
+  it("does not mistake the blocked withdrawal for a Trove CR revert", () => {
+    expect(revertStringOutcome("StabilityPool: Cannot withdraw while there are troves with ICR < MCR")?.kind).not.toBe("cr-floor");
+  });
+});

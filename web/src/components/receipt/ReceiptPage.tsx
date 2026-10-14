@@ -15,13 +15,14 @@ import { useDashboardSnapshot } from "@/lib/dashboard/useDashboardSnapshot";
 import { formatPercent, formatToken, shortAddress } from "@/lib/format";
 import { claimRows } from "@/lib/positions/claim";
 import { enteredRows, exitedRows } from "@/lib/routes/musd-btc-lp/receipt";
+import { spReceiptRows } from "@/lib/stability-pool/receipt";
 import { collateralRatio } from "@/lib/trove/health";
 import { receiptKind } from "@/lib/tx/receipt-kind";
 import { confirmCall, isTxHash } from "@/lib/tx/send";
 
 const RECEIPT_KEY = "entry-receipt";
 
-/** Spec §9 screen 4: progress until confirmed, then values from the Entered, Exited, or pool Claim event only (FR-11, FR-13). */
+/** Spec §9 screen 4: progress until confirmed, then values from the Entered, Exited, pool Claim, or Stability Pool events only (FR-11, FR-13). */
 export default function ReceiptPage() {
   const hash = useSearchParams().get("hash");
   if (!isTxHash(hash)) {
@@ -73,7 +74,14 @@ function Receipt({ hash }: { hash: Hash }) {
   );
 }
 
-const TITLES = { entered: "Deposit confirmed", exited: "Exit confirmed", claim: "Fees claimed" } as const;
+const TITLES = {
+  entered: "Deposit confirmed",
+  exited: "Exit confirmed",
+  claim: "Fees claimed",
+  "sp-deposit": "Stability Pool deposit confirmed",
+  "sp-withdraw": "Stability Pool withdrawal confirmed",
+  "sp-claim": "BTC gain claimed",
+} as const;
 
 function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
   const { network } = useNetwork();
@@ -88,7 +96,13 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
   }
   const borrowed = result.kind === "entered" && result.event.musdBorrowed > 0n;
   const rows =
-    result.kind === "entered" ? enteredRows(result.event) : result.kind === "exited" ? exitedRows(result.event) : claimRows(result.fees);
+    result.kind === "entered"
+      ? enteredRows(result.event)
+      : result.kind === "exited"
+        ? exitedRows(result.event)
+        : result.kind === "claim"
+          ? claimRows(result.fees)
+          : spReceiptRows(result.sp);
   return (
     <>
       <h1 className="text-lg font-semibold">{borrowed ? "Borrow & deposit confirmed" : TITLES[result.kind]}</h1>

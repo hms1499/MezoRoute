@@ -13,9 +13,15 @@ export const priceFeedAbi = parseAbi(["function fetchPrice() view returns (uint2
 
 export const borrowerOperationsAbi = parseAbi(["function borrowingRate() view returns (uint256)"]);
 
+/** StabilityPool (mezo-org/musd `StabilityPool.sol`); deposits and withdrawals act only for msg.sender. */
 export const stabilityPoolAbi = parseAbi([
   "function getCompoundedMUSDDeposit(address depositor) view returns (uint256)",
   "function getDepositorCollateralGain(address depositor) view returns (uint256)",
+  "function deposits(address depositor) view returns (uint256)",
+  "function provideToSP(uint256 amount)",
+  "function withdrawFromSP(uint256 amount)",
+  "event UserDepositChanged(address indexed depositor, uint256 newDeposit)",
+  "event CollateralGainWithdrawn(address indexed depositor, uint256 collateral, uint256 MUSDLoss)",
 ]);
 
 /** MUSD's EIP-2612 nonce (the token has no PERMIT_TYPEHASH or version() getter; its domain is in eip712Domain()). */

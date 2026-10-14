@@ -144,6 +144,17 @@ export const LP_CHANGED: Outcome = {
 
 export const NOTHING_TO_CLAIM: Outcome = { kind: "nothing-to-claim", message: "You have no fees to claim yet.", recovery: [] };
 
+// Stability Pool (F5); the blocked-withdrawal message is PRODUCT_SPEC §13's.
+export const SP_WITHDRAW_BLOCKED: Outcome = {
+  kind: "sp-withdraw-blocked",
+  message: "Withdrawals are paused while some Troves are under-collateralised.",
+  recovery: ["retry"],
+};
+
+export const NO_SP_DEPOSIT: Outcome = { kind: "no-sp-deposit", message: "You have no Stability Pool deposit.", recovery: [] };
+
+export const NO_SP_GAIN: Outcome = { kind: "nothing-to-claim", message: "You have no BTC gain to claim yet.", recovery: [] };
+
 export const REVERTED: Outcome = { kind: "reverted", message: "The transaction reverted.", recovery: ["retry", "copy-details"] };
 
 export const UNKNOWN: Outcome = { kind: "unknown", message: "Something went wrong.", recovery: ["retry", "copy-details"] };

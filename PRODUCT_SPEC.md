@@ -600,7 +600,7 @@ Wallet balance deltas are never the source for entry cost, LP minted, gains, or 
 ### Cost basis
 
 - LP: cost basis = `Entered.musdIn − Entered.musdRefund` (plus BTC refund valued at entry price, shown separately); the fee is part of cost basis and shown as its own line. Partial exits reduce cost basis pro rata by LP exited. Reconstructed client-side from the user's `Entered`/`Exited` logs.
-- Stability Pool: cost basis = sum of `provideToSP` amounts minus withdrawals, from `UserDepositChanged` history; deposit loss and BTC gains come from `CollateralGainWithdrawn`.
+- Stability Pool: cost basis = deposits added, and each withdrawal removes cost pro rata to the share of the compounded deposit it takes (`basis × amount / before`, the LP-exit rule; a plain "deposits − withdrawals" sum goes wrong once the deposit has absorbed liquidated debt), rebuilt from `UserDepositChanged`/`CollateralGainWithdrawn` history; BTC gains received and MUSD absorbed by liquidations are shown separately. (Updated in F5, 14 Oct 2026.)
 - This is a UX estimate, not tax accounting.
 
 ### Exposure model
@@ -628,7 +628,7 @@ The exposure module is pure TypeScript with unit tests; it is reused by the Wave
 
 ### Positions data
 
-- Cost basis history: `Entered`/`Exited` logs filtered by the indexed `recipient`, and Stability Pool `UserDepositChanged`/`CollateralGainWithdrawn` logs by depositor, queried in block chunks from each contract's deployment block; cached in `localStorage` as a convenience only.
+- Cost basis history: `Entered`/`Exited` logs filtered by the indexed `recipient`, queried in block chunks from the executor's deployment block and cached in `localStorage` as a convenience only. Stability Pool `UserDepositChanged`/`CollateralGainWithdrawn` logs by depositor come from the explorer's Blockscout API (`api.explorer.test.mezo.org`, `api.explorer.mezo.org`; one request per event), because the pool was deployed millions of blocks before the head (≈1,160 RPC chunks on testnet); a history that does not end at `deposits(account)` is treated as indexer lag and fetched again.
 - Claimable LP fees: computed in the positions snapshot as `claimable + balance × (index − supplyIndex) / 1e18` per token (mirroring `Pool._updateFor`), so they come from the snapshot's block; QA checks them against an `eth_call` of `Pool.claimFees()` with `from = user`.
 - `eth_getLogs` on Mezo serves at most 10,000 blocks per request, and a range whose `toBlock` is above the head returns an empty list **without an error** (12 Oct 2026); every range is clamped to the head. The cache keeps only events at least 50 blocks below the head, and a failed chunk fails the whole scan (no partial history, no cache write). `Exited` is filtered by the indexed `caller` (whose LP is pulled).
 - Stability Pool: `getCompoundedMUSDDeposit`, `getDepositorCollateralGain`.
@@ -759,6 +759,8 @@ F3 done 12 Oct 2026: LP quote engine, LP route page, permit/approve stepper, and
 F4 done 12 Oct 2026: Borrow & Deploy (borrow authorisation, Trove hints, 160% CR floor, recovery-mode block) on the LP route; design in `docs/superpowers/specs/2026-10-12-f4-borrow-deploy-design.md`.
 
 F7 done 12 Oct 2026: Positions (LP): underlying, exit value, cost basis from executor logs, claimable fees + Claim, and exit to MUSD (permit or approval); design in `docs/superpowers/specs/2026-10-12-f7-lp-positions-design.md`. The Stability Pool position and withdraw move to F5.
+
+F5 done 14 Oct 2026: Stability Pool deposit (exact approval → `provideToSP`), position with cost basis from the explorer API, BTC-gain claim (`withdrawFromSP(0)`, which the pool never pauses), and withdraw 25/50/75/Max with the paused-pool state; design in `docs/superpowers/specs/2026-10-14-f5-stability-pool-design.md`.
 
 ### Wave 1 — MVP backlog (in order)
 
