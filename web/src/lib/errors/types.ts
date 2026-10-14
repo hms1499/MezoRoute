@@ -42,6 +42,8 @@ export type ErrorKind =
   | "no-lp"
   | "lp-changed"
   | "nothing-to-claim"
+  | "sp-withdraw-blocked"
+  | "no-sp-deposit"
   | "reverted"
   | "rpc-unavailable"
   | "unknown";

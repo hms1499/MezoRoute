@@ -24,6 +24,8 @@ export type NetworkConfig = {
   chainId: 31611 | 31612;
   name: "Mezo Testnet" | "Mezo Mainnet";
   explorerUrl: string;
+  /** The explorer's Blockscout API (F5 reads Stability Pool history from it; the frontend host serves no API). */
+  explorerApiUrl: string;
   faucetUrl: string | null;
   mezoAppUrl: string;
   /**
@@ -41,6 +43,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     chainId: 31611,
     name: "Mezo Testnet",
     explorerUrl: "https://explorer.test.mezo.org",
+    explorerApiUrl: "https://api.explorer.test.mezo.org",
     faucetUrl: "https://faucet.test.mezo.org",
     mezoAppUrl: "https://testnet.mezo.org",
     executor: { address: "0xB36B2E012003840951CFf00fA6b1E3237A110920", feeBps: 10n, deployBlock: 15_903_010n },
@@ -66,6 +69,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     chainId: 31612,
     name: "Mezo Mainnet",
     explorerUrl: "https://explorer.mezo.org",
+    explorerApiUrl: "https://api.explorer.mezo.org",
     faucetUrl: null,
     mezoAppUrl: "https://mezo.org",
     // Deployed in M1 with a 1,000 MUSD cap; until then mainnet is read-only.
