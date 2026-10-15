@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { Address } from "viem";
@@ -9,6 +8,10 @@ import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { NoExecutorCard } from "@/components/lp/NoExecutorCard";
+import { RouteLayout } from "@/components/route/RouteLayout";
+import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadingCard } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/lib/config/network-context";
 import { exitQuery, parseExitIntent, type ExitIntent } from "@/lib/positions/exit-intent";
 import { exitPreview } from "@/lib/positions/exit-preview";
@@ -44,7 +47,7 @@ function ExitLoader({ account, executor }: { account: Address; executor: Address
     return error ? (
       <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
     ) : (
-      <div aria-busy="true" aria-label="Loading the quote" className="h-48 animate-pulse rounded-2xl bg-white shadow-card" />
+      <LoadingCard label="Loading the quote" />
     );
   }
   return (
@@ -90,24 +93,24 @@ function ExitFlowView(props: {
   // What the page shows and gates on is what the flow will send.
   const preview = pinnedLiquidity === null ? unpinned : exitPreview({ ...previewInput, liquidityIn: pinnedLiquidity });
   return (
-    <>
-      {chainId !== network.chainId && <WrongNetworkAlert />}
-      <section className="card">
-        <h1 className="text-lg font-semibold">Exit the MUSD/BTC pool to MUSD</h1>
-        <ExitForm intent={props.intent} lpBalance={props.data.snapshot.lpBalance} amountLocked={hasStarted(stepper)} onChange={props.onIntent} />
-      </section>
-      {preview.quote && preview.minimums && (
-        <ExitPreviewCard
-          quote={preview.quote}
-          minimums={preview.minimums}
-          gasCost={preview.gasCost}
-          blockNumber={props.data.snapshot.blockNumber}
+    <RouteLayout
+      header={
+        <PageHeader
+          back={{ href: "/positions/", label: "Positions" }}
+          step={hasStarted(stepper) ? 2 : 1}
+          labels={["Amount", "Sign", "Done"]}
+          title="Exit the MUSD/BTC pool to MUSD"
         />
+      }
+      summary={<ExitStepper stepper={stepper} run={run} restart={restart} block={preview.block} />}
+    >
+      {chainId !== network.chainId && <WrongNetworkAlert />}
+      <Card>
+        <ExitForm intent={props.intent} lpBalance={props.data.snapshot.lpBalance} amountLocked={hasStarted(stepper)} onChange={props.onIntent} />
+      </Card>
+      {preview.quote && preview.minimums && (
+        <ExitPreviewCard quote={preview.quote} minimums={preview.minimums} gasCost={preview.gasCost} blockNumber={props.data.snapshot.blockNumber} />
       )}
-      <ExitStepper stepper={stepper} run={run} restart={restart} block={preview.block} />
-      <Link href="/positions/" className="inline-block text-xs font-semibold text-accent hover:underline">
-        Back to positions
-      </Link>
-    </>
+    </RouteLayout>
   );
 }

@@ -8,7 +8,7 @@ const ExitPage = dynamic(() => import("@/components/positions/ExitPage"), { ssr:
 
 export default function Page() {
   return (
-    <Column>
+    <Column width="wide">
       <ExitPage />
     </Column>
   );

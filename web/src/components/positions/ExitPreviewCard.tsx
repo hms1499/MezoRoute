@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/Card";
 import { Stat } from "@/components/ui/Stat";
 import { btc, lp, musd } from "@/components/lp/units";
 import { formatPercent } from "@/lib/format";
@@ -16,8 +17,7 @@ export function ExitPreviewCard({
   blockNumber: bigint;
 }) {
   return (
-    <section className="card">
-      <h2 className="font-semibold">Estimated result</h2>
+    <Card title="Estimated result">
       <dl className="mt-3 stat-list">
         <Stat label="LP to exit">{lp(quote.liquidityIn)}</Stat>
         <Stat label="MUSD from the pool">{musd(quote.musdRemoved)}</Stat>
@@ -31,11 +31,11 @@ export function ExitPreviewCard({
         <Stat label="MezoRoute fee">None on exit</Stat>
         <Stat label="Network fee (estimated)">{gasCost === null ? "—" : btc(gasCost)}</Stat>
       </dl>
-      <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted">
+      <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-muted">
         <li>Unclaimed pool fees stay claimable after you exit.</li>
         <li>The BTC half is sold for MUSD at the pool price; the minimum protects you from a worse fill.</li>
         <li>Quote from block {blockNumber.toString()}; it refreshes every 15 seconds and again before sending.</li>
       </ul>
-    </section>
+    </Card>
   );
 }

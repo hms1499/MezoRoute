@@ -22,7 +22,7 @@ export function ExitForm({
   onChange: (next: ExitIntent) => void;
 }) {
   return (
-    <div className="mt-4 space-y-3">
+    <div className="space-y-4">
       <fieldset disabled={amountLocked}>
         <legend className="text-sm font-medium">Amount to exit</legend>
         <div className="mt-1 flex flex-wrap gap-2">

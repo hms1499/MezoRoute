@@ -8,7 +8,7 @@ const SpWithdrawPage = dynamic(() => import("@/components/stability-pool/SpWithd
 
 export default function Page() {
   return (
-    <Column>
+    <Column width="wide">
       <SpWithdrawPage />
     </Column>
   );
