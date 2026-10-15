@@ -109,6 +109,31 @@ The user approved this design on 15 Oct 2026.
 - `npm test && npm run build` pass, the testnet quote-accuracy run passes, and agent QA passes.
 - `PRODUCT_SPEC.md` §16 records F8. `CLAUDE.md` frontend notes cover the reference card (its own mainnet client, `rpcUrl`) and the quote-accuracy command.
 
+### Quote-accuracy result (15 Oct 2026)
+
+`npm run quote-accuracy` on testnet (head 16,164,987). Summary: `{ total: 14, checked: 14, skipped: 0, simulationMismatches: 0, feeMismatches: 0, outsideSlippage: 0, maxDeviationBps: 1, passed: true }`.
+- **Simulation and fees:** every event's own swap simulated to the wei, and every fee was `musdIn × 10 / 10,000`.
+- **Caller-chosen swaps** (5 events, all deviating 1 bps from the optimal quote): the first two entries (blocks 15,903,026 and 15,903,035, the second a borrow) and S1's three 1 MUSD entries.
+- **App-sent swaps** (9 events, including two borrows): all deviated 0 bps.
+- **Same-block activity:** none of the six second-in-block transactions had earlier pool activity in their block.
+- **Mainnet:** `QUOTE_NETWORK=mainnet` printed "No executor on Mezo Mainnet yet: nothing to check."
+- **Fixed while building it:** Vitest 5 hides console output of passing tests, so the script prints its report straight to stdout.
+
+### QA result (15 Oct 2026): agent run passed
+
+Local export with the keyless mock wallet (Playwright):
+- **Testnet** (can-borrow account `0xe618…0D56`): "Mainnet today" is the last dashboard card, with a dashed border and the "Mainnet · reference only" badge. It showed:
+  - Reserves 101,866 MUSD + 1.2505 BTC; value ≈203,670 MUSD; swap fee 0.3%.
+  - "Fees 0.12% (≈1.5% a year, fees only)".
+  - Deposits 14,172,031 MUSD, which is 47.4% of 29,871,966 MUSD.
+  - "No liquidations reached the pool".
+  - `cast` against `rpc-internal.mezo.org` returned the same reserves (101,866.83 MUSD, 1.25053 BTC), SP deposits (14,172,031.98), and MUSD supply (29,871,966.51).
+- **History failure** (historical `eth_call` aborted): both 30-day rows read "Unavailable", and reserves, value, and deposits still showed.
+- **Head failure** (every mainnet RPC request aborted): "Mainnet data unavailable." with Retry, while the route comparison above kept working. Retry without the interceptor filled the card.
+- **Mainnet:** the card is absent.
+- **360 px:** no horizontal scroll; the two halves stack.
+- **Left for U1:** at 360 px, short labels such as "Swap fee" wrap onto two lines.
+
 ## Out of scope
 
 Mainnet quote accuracy before M1; a chart; mainnet reference data on the mainnet dashboard; caching the script's results.
