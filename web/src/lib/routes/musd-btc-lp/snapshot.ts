@@ -2,7 +2,6 @@ import { erc20Abi, type Address } from "viem";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { multicall3BlockAbi } from "@/lib/abi/multicall3";
 import { borrowerOperationsSignaturesAbi, musdPermitAbi, troveSystemAbi } from "@/lib/abi/musd";
-import { poolFactoryAbi } from "@/lib/abi/pool";
 import type { NetworkConfig } from "@/lib/config/networks";
 import { parseSnapshot, snapshotContracts, type DashboardSnapshot, type SnapshotResults } from "@/lib/dashboard/snapshot";
 import type { PoolState } from "@/lib/quote/entry";
@@ -26,10 +25,9 @@ export type LpRouteSnapshot = {
 export type LpRouteData = { snapshot: LpRouteSnapshot; gasBalance: bigint; gasPrice: bigint | undefined; fetchedAt: number };
 
 /** How many reads `snapshotContracts` makes; the LP-route reads follow them. */
-export const DASHBOARD_READS = 12;
+export const DASHBOARD_READS = 13;
 
 type LpRouteTail = readonly [
-  poolFeeBps: bigint,
   allowance: bigint,
   permitNonce: bigint,
   executorFeeBps: bigint,
@@ -49,7 +47,6 @@ export function lpRouteContracts(network: NetworkConfig, executor: Address, acco
   const { addresses: a, chainId } = network;
   return [
     ...snapshotContracts(network, account),
-    { chainId, address: a.poolFactory, abi: poolFactoryAbi, functionName: "getFee", args: [a.pool, false] },
     { chainId, address: a.musd, abi: erc20Abi, functionName: "allowance", args: [account, executor] },
     { chainId, address: a.musd, abi: musdPermitAbi, functionName: "nonces", args: [account] },
     { chainId, address: executor, abi: mezoRouteExecutorAbi, functionName: "feeBps" },
@@ -67,7 +64,6 @@ export function lpRouteContracts(network: NetworkConfig, executor: Address, acco
 export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteResults): LpRouteSnapshot {
   const dashboard = parseSnapshot(network, results.slice(0, DASHBOARD_READS) as unknown as SnapshotResults);
   const [
-    poolFeeBps,
     allowance,
     permitNonce,
     executorFeeBps,
@@ -88,7 +84,7 @@ export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteRes
       reserveMusd: dashboard.lp.reserveMusd,
       reserveBtc: dashboard.lp.reserveBtc,
       totalSupply: dashboard.lp.totalSupply,
-      feeBps: poolFeeBps,
+      feeBps: dashboard.poolFeeBps,
     },
     allowance,
     permitNonce,

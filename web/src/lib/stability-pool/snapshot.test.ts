@@ -19,20 +19,21 @@ const dashboardResults: SnapshotResults = [
   [100n * ONE, 1n * ONE, 0n],
   40n * ONE,
   7n,
+  30n,
 ];
 
 describe("spContracts", () => {
   it("reads the dashboard, the initial deposit, the MUSD allowance to the pool, and the block, on the selected chain", () => {
     const contracts = spContracts(networks.testnet, ACCOUNT);
-    expect(contracts).toHaveLength(15);
+    expect(contracts).toHaveLength(16);
     expect(contracts.every((call) => call.chainId === 31611)).toBe(true);
-    expect(contracts[12]).toMatchObject({ address: networks.testnet.addresses.stabilityPool, functionName: "deposits", args: [ACCOUNT] });
-    expect(contracts[13]).toMatchObject({
+    expect(contracts[13]).toMatchObject({ address: networks.testnet.addresses.stabilityPool, functionName: "deposits", args: [ACCOUNT] });
+    expect(contracts[14]).toMatchObject({
       address: networks.testnet.addresses.musd,
       functionName: "allowance",
       args: [ACCOUNT, networks.testnet.addresses.stabilityPool],
     });
-    expect(contracts[14]).toMatchObject({ functionName: "getBlockNumber" });
+    expect(contracts[15]).toMatchObject({ functionName: "getBlockNumber" });
   });
 });
 

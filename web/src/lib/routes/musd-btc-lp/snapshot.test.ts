@@ -23,10 +23,10 @@ function results(reserves: readonly [bigint, bigint, bigint]): LpRouteResults {
     reserves,
     0n,
     0n,
+    4n,
   ];
   return [
     ...dashboard,
-    4n,
     7n * ONE,
     3n,
     10n,
@@ -45,7 +45,7 @@ describe("lpRouteContracts", () => {
   it("adds the LP-route reads after the dashboard's, all on the selected network", () => {
     for (const network of [networks.testnet, networks.mainnet]) {
       const calls = lpRouteContracts(network, EXECUTOR, ACCOUNT);
-      expect(calls).toHaveLength(DASHBOARD_READS + 12);
+      expect(calls).toHaveLength(DASHBOARD_READS + 11);
       const allowed: string[] = [...Object.values(network.addresses), EXECUTOR];
       for (const call of calls) {
         expect(call.chainId).toBe(network.chainId);

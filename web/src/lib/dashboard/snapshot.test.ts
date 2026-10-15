@@ -20,6 +20,7 @@ function raw(status: number, reserves: readonly [bigint, bigint, bigint]): Snaps
     reserves,
     50n * ONE,
     20_000_000_000_000n,
+    30n,
   ];
 }
 
@@ -27,7 +28,7 @@ describe("snapshotContracts", () => {
   it("reads only the selected network's contracts, on that network's chain", () => {
     for (const network of [networks.testnet, networks.mainnet]) {
       const calls = snapshotContracts(network, ACCOUNT);
-      expect(calls).toHaveLength(12);
+      expect(calls).toHaveLength(13);
       const allowed: string[] = Object.values(network.addresses);
       for (const call of calls) {
         expect(call.chainId).toBe(network.chainId);
@@ -37,9 +38,23 @@ describe("snapshotContracts", () => {
   });
 
   it("asks about the connected account in every per-user read", () => {
-    const withArgs = snapshotContracts(networks.testnet, ACCOUNT).filter((call) => "args" in call);
+    const network = networks.testnet;
+    const withArgs = snapshotContracts(network, ACCOUNT).filter(
+      (call) => "args" in call && call.address !== network.addresses.poolFactory,
+    );
     expect(withArgs).toHaveLength(7);
     for (const call of withArgs) expect("args" in call && call.args[0]).toBe(ACCOUNT);
+  });
+
+  it("reads the pool's swap fee from the factory, last", () => {
+    for (const network of [networks.testnet, networks.mainnet]) {
+      const calls = snapshotContracts(network, ACCOUNT);
+      expect(calls[calls.length - 1]).toMatchObject({
+        address: network.addresses.poolFactory,
+        functionName: "getFee",
+        args: [network.addresses.pool, false],
+      });
+    }
   });
 });
 
@@ -53,6 +68,7 @@ describe("parseSnapshot", () => {
       musd: 120n * ONE,
       lp: { balance: 100n * ONE, totalSupply: 1_000n * ONE, reserveMusd: 520n * ONE, reserveBtc: 6_000_000_000_000_000n },
       sp: { deposit: 50n * ONE, btcGain: 20_000_000_000_000n },
+      poolFeeBps: 30n,
     });
   });
 
