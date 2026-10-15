@@ -1,31 +1,39 @@
 "use client";
 
-import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { AmountInput } from "@/components/lp/AmountInput";
-import { btc, musd } from "@/components/lp/units";
-import { compareRoutes, STRESS_DROP, type ComparedRoutes } from "@/lib/compare/comparison";
+import { musd } from "@/components/lp/units";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
+import { RiskList } from "@/components/ui/RiskList";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { compareRoutes } from "@/lib/compare/comparison";
 import { backtestRoutes, type RouteBacktests } from "@/lib/compare/history";
 import { useRouteHistory } from "@/lib/compare/useRouteHistory";
 import { amountState, lpHistoryLine, REFERENCE_AMOUNT, signedChange, spHistoryLine, windowDate, windowDays } from "@/lib/compare/view";
 import { useNetwork } from "@/lib/config/network-context";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
-import { formatBps, formatPercent, formatToken } from "@/lib/format";
+import { formatToken } from "@/lib/format";
 import { DEFAULT_SLIPPAGE } from "@/lib/quote/entry";
 import { LP_RETURN_SOURCE, LP_RISKS, SP_RETURN_SOURCE, SP_RISKS } from "@/lib/routes/copy";
 import { entryQuery } from "@/lib/routes/musd-btc-lp/intent";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
+import { cx } from "@/lib/ui/cx";
+import { lpAmountRows, lpFee, spAmountRows, type Row } from "./compare-rows";
 
 const FOOTNOTE =
   "Past results, not a forecast. LP values use the pool's own price (before your trade), not the oracle; Stability Pool BTC gains use the oracle price. LP gauge rewards are not included; the −30% row uses the constant-product approximation and does not model new liquidations.";
-const ENTER_AMOUNT = "Enter an amount";
+const GRID = "grid grid-cols-[minmax(7rem,0.7fr)_1fr_1fr] gap-x-6";
 
-type Row = { label: string; title?: string; value: ReactNode; sub?: string };
+type RouteId = "lp" | "sp";
+type Route = { id: RouteId; title: string; tagline: string; rows: Row[]; risks: string[]; href: string; cta: string };
 
-/** Flow B / FR-19: both routes for the typed amount, with what each paid over the last 30 days. */
+/** Flow B / FR-19: both routes for the typed amount, aligned row by row, with what each paid over the last 30 days. */
 export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
   const { network } = useNetwork();
   const [text, setText] = useState("");
+  const [tab, setTab] = useState<RouteId>("lp");
   const { amount, error: amountError } = amountState(text);
   const executorFeeBps = network.executor?.feeBps ?? null;
   const compared = amount === null ? null : compareRoutes({ snapshot, amount, executorFeeBps });
@@ -36,7 +44,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
   const typed = amount === null ? "" : text.trim();
 
   const pending = (value: (b: RouteBacktests) => ReactNode): ReactNode =>
-    backtests ? value(backtests) : historyFailed ? "Unavailable" : <Skeleton />;
+    backtests ? value(backtests) : historyFailed ? "Unavailable" : <Skeleton className="h-4 w-28" />;
   const historyRow = (line: (b: RouteBacktests) => string): Row => ({
     label: backtests ? `Last ${windowDays(backtests.seconds)} days` : "Last 30 days",
     title: backtests ? `Blocks ${backtests.pastBlock} → ${backtests.headBlock}` : undefined,
@@ -51,162 +59,165 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
     };
   };
 
-  const lpRows: Row[] = [
-    { label: "Return source", value: LP_RETURN_SOURCE },
-    historyRow((b) => (b.lp ? lpHistoryLine(b.lp) : "Unavailable")),
-    backtestRow((b) => b.lp?.valueNow ?? null),
-    { label: "MezoRoute fee", value: lpFee(executorFeeBps, compared) },
-    ...lpAmountRows(compared),
+  const routes: Route[] = [
+    {
+      id: "lp",
+      title: "MUSD/BTC LP",
+      tagline: "Earn swap fees",
+      rows: [
+        { label: "Return source", value: LP_RETURN_SOURCE },
+        historyRow((b) => (b.lp ? lpHistoryLine(b.lp) : "Unavailable")),
+        backtestRow((b) => b.lp?.valueNow ?? null),
+        { label: "MezoRoute fee", value: lpFee(executorFeeBps, compared) },
+        ...lpAmountRows(compared),
+      ],
+      risks: LP_RISKS,
+      href: `/route/lp/${entryQuery({ amount: typed, slippageBps: DEFAULT_SLIPPAGE })}`,
+      cta: "Choose LP",
+    },
+    {
+      id: "sp",
+      title: "Stability Pool",
+      tagline: "Back the system",
+      rows: [
+        { label: "Return source", value: SP_RETURN_SOURCE },
+        historyRow((b) => spHistoryLine(b.sp)),
+        backtestRow((b) => b.sp.valueNow),
+        { label: "MezoRoute fee", value: "None (direct to the pool)" },
+        ...spAmountRows(compared),
+      ],
+      risks: SP_RISKS,
+      href: `/route/stability-pool/${spDepositQuery(typed)}`,
+      cta: "Choose Stability Pool",
+    },
   ];
-  const spRows: Row[] = [
-    { label: "Return source", value: SP_RETURN_SOURCE },
-    historyRow((b) => spHistoryLine(b.sp)),
-    backtestRow((b) => b.sp.valueNow),
-    { label: "MezoRoute fee", value: "None (direct to the pool)" },
-    ...spAmountRows(compared),
-  ];
+  const [lp, sp] = routes;
 
   return (
-    <section id="compare" className="scroll-mt-4 card">
-      <h2 className="font-semibold">Compare routes</h2>
-      <p className="mt-1 text-xs text-muted">Where to put MUSD: both routes for the same amount.</p>
-      <div className="mt-3">
+    <Card id="compare" title="Compare routes" subtitle="Where to put MUSD: both routes for the same amount.">
+      <div className="mt-4 max-w-md">
         <AmountInput amount={text} max={snapshot.musd} maxLabel="Wallet balance" onAmount={setText} />
-        {amountError && <p className="mt-2 text-xs text-danger">{amountError}</p>}
+        {amountError && (
+          <p role="alert" className="mt-2 text-sm text-danger">
+            {amountError}
+          </p>
+        )}
         {compared?.overBalance && (
-          <p className="mt-2 text-xs text-muted">More than your wallet holds; the route page will ask for a smaller amount.</p>
+          <p className="mt-2 text-sm text-muted">More than your wallet holds; the route page will ask for a smaller amount.</p>
         )}
       </div>
       {historyFailed && (
-        <p className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-accent-soft px-3 py-2 text-xs text-accent">
+        <Notice
+          className="mt-4"
+          action={
+            <Button size="sm" variant="secondary" onClick={retry}>
+              Retry
+            </Button>
+          }
+        >
           30-day results unavailable.
-          <button type="button" onClick={retry} className="font-semibold underline">
-            Retry
-          </button>
-        </p>
+        </Notice>
       )}
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <RouteColumn
-          title="MUSD/BTC LP"
-          tagline="Earn swap fees"
-          rows={lpRows}
-          risks={LP_RISKS}
-          href={`/route/lp/${entryQuery({ amount: typed, slippageBps: DEFAULT_SLIPPAGE })}`}
-          cta="Choose LP"
-        />
-        <RouteColumn
-          title="Stability Pool"
-          tagline="Back the system"
-          rows={spRows}
-          risks={SP_RISKS}
-          href={`/route/stability-pool/${spDepositQuery(typed)}`}
-          cta="Choose Stability Pool"
-        />
-      </div>
-      <p className="mt-3 text-[11px] leading-snug text-muted">{FOOTNOTE}</p>
-    </section>
-  );
-}
+      {compared === null && (
+        <p className="mt-4 text-sm text-muted">Enter an amount to see the position, BTC exposure, and a 30% BTC drop for each route.</p>
+      )}
 
-function lpFee(executorFeeBps: bigint | null, compared: ComparedRoutes | null): string {
-  if (executorFeeBps === null) return "Set at launch";
-  if (compared?.lp.status === "ok") return `${formatBps(executorFeeBps)} (${musd(compared.lp.fee)})`;
-  return formatBps(executorFeeBps);
-}
-
-function lpAmountRows(compared: ComparedRoutes | null): Row[] {
-  const dropLabel = `If BTC drops ${STRESS_DROP}%`;
-  if (compared === null) {
-    return [
-      { label: "Position after", value: ENTER_AMOUNT },
-      { label: "BTC exposure", value: ENTER_AMOUNT },
-      { label: dropLabel, value: ENTER_AMOUNT },
-    ];
-  }
-  const { lp } = compared;
-  if (lp.status === "unavailable") {
-    return [
-      { label: "Position after", value: "Pool quote unavailable" },
-      { label: "BTC exposure", value: "Pool quote unavailable" },
-      { label: dropLabel, value: "Pool quote unavailable" },
-    ];
-  }
-  return [
-    {
-      label: "Position after",
-      value: `≈ ${musd(lp.positionValue)}`,
-      sub: `≈ half becomes BTC · price impact ${formatPercent(lp.priceImpact, 2)}`,
-    },
-    { label: "BTC exposure", value: `${btc(lp.btcBefore)} → ${btc(lp.btcAfter)}` },
-    { label: dropLabel, value: `≈ ${musd(lp.valueAfterDrop)}` },
-  ];
-}
-
-function spAmountRows(compared: ComparedRoutes | null): Row[] {
-  const dropLabel = `If BTC drops ${STRESS_DROP}%`;
-  if (compared === null) {
-    return [
-      { label: "Position after", value: ENTER_AMOUNT },
-      { label: "BTC exposure", value: ENTER_AMOUNT },
-      { label: dropLabel, value: ENTER_AMOUNT },
-    ];
-  }
-  const { sp } = compared;
-  return [
-    { label: "Position after", value: musd(sp.positionValue), sub: "Stays in MUSD until liquidations" },
-    { label: "BTC exposure", value: `${btc(sp.btcBefore)} → ${btc(sp.btcAfter)}` },
-    { label: dropLabel, value: musd(sp.valueAfterDrop), sub: "New liquidations not modelled" },
-  ];
-}
-
-function RouteColumn({
-  title,
-  tagline,
-  rows,
-  risks,
-  href,
-  cta,
-}: {
-  title: string;
-  tagline: string;
-  rows: Row[];
-  risks: string[];
-  href: string;
-  cta: string;
-}) {
-  return (
-    <div className="flex flex-col rounded-xl border border-line p-4">
-      <h3 className="font-semibold">{title}</h3>
-      <p className="text-xs text-muted">{tagline}</p>
-      <dl className="mt-3 space-y-2 text-sm">
-        {rows.map((row) => (
-          <div key={row.label}>
-            <dt className="text-xs text-muted" title={row.title}>
+      {/* From 640 px: one table, so like values line up. */}
+      <div role="table" aria-label="Route comparison" className="mt-4 hidden sm:block">
+        <div role="row" className={cx(GRID, "border-b border-line pb-3")}>
+          {/* The cell keeps its grid column; only the text is visually hidden. */}
+          <span role="columnheader">
+            <span className="sr-only">Detail</span>
+          </span>
+          {routes.map((route) => (
+            <div key={route.id} role="columnheader">
+              <p className="font-semibold">{route.title}</p>
+              <p className="text-sm font-normal text-muted">{route.tagline}</p>
+            </div>
+          ))}
+        </div>
+        {lp.rows.map((row, index) => (
+          <div key={row.label} role="row" className={cx(GRID, "border-b border-line/60 py-3 text-sm")}>
+            <span role="rowheader" title={row.title} className="text-muted">
               {row.label}
-            </dt>
-            <dd>
-              {row.value}
-              {row.sub && <span className="block text-xs text-muted">{row.sub}</span>}
-            </dd>
+            </span>
+            <Cell row={row} />
+            <Cell row={sp.rows[index]} />
           </div>
         ))}
-      </dl>
-      <p className="mt-3 text-xs font-medium">Risks</p>
-      <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-muted">
-        {risks.map((risk) => (
-          <li key={risk}>{risk}</li>
+        <div role="row" className={cx(GRID, "py-3")}>
+          <span role="rowheader" className="text-sm text-muted">
+            Risks
+          </span>
+          {routes.map((route) => (
+            <div key={route.id} role="cell">
+              <RiskList risks={route.risks} />
+            </div>
+          ))}
+        </div>
+        <div role="row" className={cx(GRID, "pt-2")}>
+          <span aria-hidden />
+          {routes.map((route) => (
+            <div key={route.id} role="cell">
+              <ButtonLink href={route.href}>{route.cta}</ButtonLink>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Below 640 px: one route at a time. */}
+      <div className="mt-4 sm:hidden">
+        <div role="tablist" aria-label="Routes" className="flex rounded-full bg-line p-1 text-sm font-medium">
+          {routes.map((route) => (
+            <button
+              key={route.id}
+              type="button"
+              role="tab"
+              id={`tab-${route.id}`}
+              aria-selected={tab === route.id}
+              aria-controls={`panel-${route.id}`}
+              onClick={() => setTab(route.id)}
+              className={cx("min-h-10 flex-1 rounded-full px-3 transition-colors duration-150", tab === route.id ? "bg-white text-ink shadow-card" : "text-muted")}
+            >
+              {route.title}
+            </button>
+          ))}
+        </div>
+        {routes.map((route) => (
+          <div key={route.id} role="tabpanel" id={`panel-${route.id}`} aria-labelledby={`tab-${route.id}`} hidden={tab !== route.id} className="mt-4">
+            <p className="text-sm text-muted">{route.tagline}</p>
+            <dl className="mt-3 space-y-3 text-sm">
+              {route.rows.map((row) => (
+                <div key={row.label}>
+                  <dt className="text-xs text-muted" title={row.title}>
+                    {row.label}
+                  </dt>
+                  <dd className="[overflow-wrap:anywhere]">
+                    {row.value}
+                    {row.sub && <span className="block text-xs text-muted">{row.sub}</span>}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <div className="mt-4">
+              <RiskList risks={route.risks} />
+            </div>
+            <ButtonLink href={route.href} className="mt-4 w-full">
+              {route.cta}
+            </ButtonLink>
+          </div>
         ))}
-      </ul>
-      <Link
-        href={href}
-        className="mt-4 inline-block self-start rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent/90"
-      >
-        {cta}
-      </Link>
-    </div>
+      </div>
+      <p className="mt-4 text-xs leading-relaxed text-muted">{FOOTNOTE}</p>
+    </Card>
   );
 }
 
-function Skeleton() {
-  return <span aria-label="Loading" className="inline-block h-4 w-28 animate-pulse rounded bg-line" />;
+function Cell({ row }: { row: Row }) {
+  return (
+    <div role="cell" className="min-w-0 [overflow-wrap:anywhere]">
+      {row.value}
+      {row.sub && <span className="block text-xs text-muted">{row.sub}</span>}
+    </div>
+  );
 }
