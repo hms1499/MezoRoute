@@ -25,7 +25,7 @@ export type HistoryClient = {
   getBlock(args?: { blockNumber: bigint }): Promise<{ number: bigint | null; timestamp: bigint }>;
   multicall(args: {
     contracts: readonly unknown[];
-    blockNumber: bigint;
+    blockNumber?: bigint; // omitted: the latest block
     allowFailure: false;
     multicallAddress: Address;
   }): Promise<readonly unknown[]>;

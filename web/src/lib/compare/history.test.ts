@@ -40,7 +40,7 @@ const headState = [
   0n,
 ];
 
-type Call = { blockNumber: bigint; names: string[]; args: unknown[]; multicallAddress: string };
+type Call = { blockNumber: bigint | undefined; names: string[]; args: unknown[]; multicallAddress: string };
 
 function fakeClient(options: { failPast?: boolean } = {}) {
   const calls: Call[] = [];

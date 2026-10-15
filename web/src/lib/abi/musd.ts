@@ -22,6 +22,7 @@ export const stabilityPoolAbi = parseAbi([
   "function currentEpoch() view returns (uint128)",
   "function currentScale() view returns (uint128)",
   "function epochToScaleToSum(uint128 epoch, uint128 scale) view returns (uint256)",
+  "function getTotalMUSDDeposits() view returns (uint256)",
   "function provideToSP(uint256 amount)",
   "function withdrawFromSP(uint256 amount)",
   "event UserDepositChanged(address indexed depositor, uint256 newDeposit)",
