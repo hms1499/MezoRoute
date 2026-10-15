@@ -1,3 +1,5 @@
+import { mix } from "./contrast";
+
 /** Colour tokens (U1): the one source for tailwind.config.ts and the contrast test. */
 export const colors = {
   canvas: "#F6F8F7",
@@ -9,9 +11,25 @@ export const colors = {
   danger: { DEFAULT: "#B42318", soft: "#FEECEB" },
   // Marks BTC-exposure figures and badges only; never a button colour.
   btc: { DEFAULT: "#C2410C", soft: "#FFF4EC" },
+  // U2 landing only: a deep teal-black page with the two route colours (LP teal, Stability Pool orange).
+  // panel and line are white 5% / 10% over bg, flattened to solid colours so the contrast test can check them.
+  night: {
+    bg: "#0A1416",
+    glow: "#123B3A",
+    panel: "#162022",
+    line: "#222B2D",
+    ink: "#E8F1EF",
+    muted: "#9FB3AF",
+    lp: "#2DD4BF",
+    sp: "#FB923C",
+    onLp: "#062221",
+  },
 };
 
 const WHITE = "#FFFFFF";
+
+/** The simulator dims its table while the typed amount is invalid (`opacity-80`); its text must still pass. */
+export const NIGHT_DIM_OPACITY = 0.8;
 
 /** Every text-on-surface pair the UI uses; each must reach WCAG AA (4.5:1). */
 export const TEXT_PAIRS: [name: string, foreground: string, background: string][] = [
@@ -30,4 +48,16 @@ export const TEXT_PAIRS: [name: string, foreground: string, background: string][
   ["btc on white", colors.btc.DEFAULT, WHITE],
   ["btc on btc-soft", colors.btc.DEFAULT, colors.btc.soft],
   ["white on ink (toast)", WHITE, colors.ink],
+  ["night ink on night bg", colors.night.ink, colors.night.bg],
+  ["night muted on night bg", colors.night.muted, colors.night.bg],
+  ["night ink on night panel", colors.night.ink, colors.night.panel],
+  ["night muted on night panel", colors.night.muted, colors.night.panel],
+  ["night lp on night bg", colors.night.lp, colors.night.bg],
+  ["night lp on night panel", colors.night.lp, colors.night.panel],
+  ["night sp on night bg", colors.night.sp, colors.night.bg],
+  ["night sp on night panel", colors.night.sp, colors.night.panel],
+  ["night on-lp on lp (CTA)", colors.night.onLp, colors.night.lp],
+  ["night muted dimmed on panel", mix(colors.night.muted, colors.night.panel, NIGHT_DIM_OPACITY), colors.night.panel],
+  ["night sp dimmed on panel", mix(colors.night.sp, colors.night.panel, NIGHT_DIM_OPACITY), colors.night.panel],
+  ["night ink dimmed on panel", mix(colors.night.ink, colors.night.panel, NIGHT_DIM_OPACITY), colors.night.panel],
 ];

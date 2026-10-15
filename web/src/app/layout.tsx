@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import ClientProviders from "./client-providers";
 import "./globals.css";
 
 // Downloaded at build time and served from the export (no runtime request to Google).
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
+// The landing's figures and labels (U2); self-hosted by next/font like Inter.
+const mono = JetBrains_Mono({ subsets: ["latin"], display: "swap", variable: "--font-mono" });
 
 export const metadata: Metadata = {
   title: "MezoRoute",
@@ -14,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${inter.variable} ${mono.variable}`}>
       <body className="min-h-screen bg-canvas font-sans text-ink antialiased">
         <ClientProviders>{children}</ClientProviders>
       </body>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contrastRatio } from "./contrast";
+import { contrastRatio, mix } from "./contrast";
 import { TEXT_PAIRS } from "./tokens";
 
 describe("contrastRatio", () => {
@@ -17,5 +17,13 @@ describe("contrastRatio", () => {
 describe("design tokens", () => {
   it.each(TEXT_PAIRS)("%s reaches WCAG AA (4.5:1)", (_name, foreground, background) => {
     expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("mix", () => {
+  it("blends a colour over a background at an opacity", () => {
+    expect(mix("#000000", "#FFFFFF", 1)).toBe("#000000");
+    expect(mix("#000000", "#FFFFFF", 0)).toBe("#FFFFFF");
+    expect(mix("#000000", "#FFFFFF", 0.5)).toBe("#808080");
   });
 });

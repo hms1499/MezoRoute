@@ -5,12 +5,13 @@ import {
   withTimeout,
   type HistoryClient,
   type RouteBacktests,
+  type RouteHistory,
 } from "@/lib/compare/history";
 import { REFERENCE_AMOUNT } from "@/lib/compare/view";
 import { networks } from "@/lib/config/networks";
 import { parseReference, referenceContracts, type MainnetReference, type ReferenceResults } from "./snapshot";
 
-export type MainnetReferenceData = { reference: MainnetReference; backtests: RouteBacktests | null };
+export type MainnetReferenceData = { reference: MainnetReference; backtests: RouteBacktests | null; history: RouteHistory | null };
 
 /**
  * The head figures and F6's 30-day history, fetched side by side (spec F8 §4): a failed head read
@@ -29,5 +30,6 @@ export async function loadMainnetReference(client: HistoryClient, timeoutMs = HI
   return {
     reference: parseReference(network, head.value as unknown as ReferenceResults),
     backtests: history.status === "fulfilled" ? backtestRoutes(history.value, REFERENCE_AMOUNT, 0n) : null,
+    history: history.status === "fulfilled" ? history.value : null,
   };
 }

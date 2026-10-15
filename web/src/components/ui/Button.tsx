@@ -3,24 +3,29 @@ import Link from "next/link";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cx } from "@/lib/ui/cx";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "night" | "nightOutline" | "nightGhost";
 type Size = "md" | "sm";
 
 const BASE =
   "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
-const VARIANTS: Record<Variant, string> = {
+const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bg-accent text-white hover:bg-accent/90 active:bg-accent/80",
   secondary: "border border-line bg-white text-accent hover:bg-accent-soft",
   ghost: "text-accent hover:bg-accent-soft",
   danger: "bg-danger text-white hover:bg-danger/90",
+  // U2 landing (dark): solid teal, outlined teal, and quiet text.
+  night: "bg-night-lp text-night-onLp hover:bg-night-lp/90",
+  // An inset ring, not a border: the 360 px header has no room for the 2 px a border adds.
+  nightOutline: "text-night-lp ring-1 ring-inset ring-night-lp hover:bg-night-lp/10",
+  nightGhost: "text-night-muted hover:text-night-ink",
 };
 const SIZES: Record<Size, string> = { md: "min-h-11 px-5 text-sm", sm: "min-h-9 px-3.5 text-xs" };
 
-export function buttonClass(variant: Variant = "primary", size: Size = "md", className?: string): string {
+export function buttonClass(variant: ButtonVariant = "primary", size: Size = "md", className?: string): string {
   return cx(BASE, VARIANTS[variant], SIZES[size], className);
 }
 
-type Common = { variant?: Variant; size?: Size; className?: string; children: ReactNode };
+type Common = { variant?: ButtonVariant; size?: Size; className?: string; children: ReactNode };
 
 /** The app's one button style; `loading` shows a spinner and disables it. */
 export function Button({

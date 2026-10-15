@@ -33,6 +33,11 @@ describe("loadMainnetReference", () => {
     expect(data.reference.spDeposits).toBe(14_172_031_977_066_897_384_115_018n);
   });
 
+  it("returns no history when the history read fails", async () => {
+    const data = await loadMainnetReference(client({ historyFails: true }));
+    expect(data.history).toBeNull();
+  });
+
   it("rejects when the head read fails, so the card shows its unavailable state", async () => {
     await expect(loadMainnetReference(client({ headFails: true, historyFails: true }))).rejects.toThrow("fetch failed");
   });

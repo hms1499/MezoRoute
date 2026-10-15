@@ -20,6 +20,7 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 | F8 mainnet reference card + quote accuracy | Done (15 Oct) | `npm run quote-accuracy`: 14/14 testnet entries exact |
 | M1 mainnet deployment | Done (15 Oct) | Executor `0x046449b1229C863e278f369869BA10e12bd80d9E`; round trips and hashes in `PRODUCT_SPEC.md` §20 |
 | U1 UI polish | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u1-ui-polish-design.md`, plan `docs/superpowers/plans/2026-10-15-u1-ui-polish.md` (11 tasks, all done) |
+| U2 landing redesign | Implemented and QA-passed (15 Oct); final review, then merge on the user's word | Branch `feat/u2-landing-redesign`: spec `docs/superpowers/specs/2026-10-15-u2-landing-redesign-design.md`, plan `docs/superpowers/plans/2026-10-15-u2-landing-redesign.md` |
 | V1 Vercel production + QA on both wallet types | Not started | The current preview sits behind a Vercel login; judges need a public URL |
 | D1 README, deck, 2-minute video, submission form | Not started | Needs V1 and M1 |
 
@@ -104,6 +105,16 @@ Optional prep that needs no funds:
 - Retry shows no feedback.
 - Load tests lack the success and hang paths.
 
+**U2 deferred (final review minors):**
+- The simulator table reflows slightly while figures count, because trailing zeros are trimmed.
+- No `@supports` fallback for `offset-path` on the travelling dots.
+- The Stability Pool glow is clipped by its reveal mask.
+- The stacked mobile table may lose table semantics in VoiceOver.
+- The "// trust" eyebrow is the section's only heading.
+- The first landing frame and the overscroll bands are light.
+- `Simulator` writes a ref during render.
+- Hover state re-renders the whole landing.
+
 **Older deferred items:**
 - The receipt explorer link uses the original hash for a replaced transaction.
 - `confirmCall` has no abort on unmount.
@@ -151,6 +162,11 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
+- **15 Oct 2026, overnight (Claude Code):**
+  - The user found the U1 landing generic. Ten DeFi landings were researched (DeFi Saver, Liquity v2, Ethena, Pendle, Euler, Sky, Mezo…), and a direction was chosen with browser mockups: "B · route map, dark", the landing only.
+  - U2 implemented inline on `feat/u2-landing-redesign` (6 tasks): live wallet-free simulator on mainnet data, dark chrome via `SurfaceContext`, CSS motion.
+  - QA passed: 8 width × network combinations, reduced motion, keyboard, RPC failures, leaving the landing.
+  - Next: final review, merge on the user's word, then V1.
 - **15 Oct 2026, late night (Claude Code):** after a local preview at the user's request, `feat/u1-ui-polish` merged into `main` and pushed. Next: V1.
 - **15 Oct 2026, late night (Claude Code):**
   - Final U1 review (fresh reviewer): ready "with fixes". Three Important findings fixed with tests, plus two minors regraded to Important (stepper contrast, landing copy).
