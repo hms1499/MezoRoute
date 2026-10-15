@@ -10,9 +10,12 @@ import { ErrorToastProvider } from "@/components/ErrorToast";
 import { readStoredNetwork, safeStorage } from "@/lib/config/network-choice";
 import { NetworkProvider } from "@/lib/config/network-context";
 import { networks } from "@/lib/config/networks";
+import { colors } from "@/lib/ui/tokens";
 import { createWagmiConfig, walletConnectProjectId } from "@/lib/wallet/passport";
 
-const theme = lightTheme({ accentColor: "#0F766E", borderRadius: "large" });
+// The wallet button and modal match the app's buttons (U1): theme options only, no CSS into the library.
+const baseTheme = lightTheme({ accentColor: colors.accent.DEFAULT, accentColorForeground: "white", borderRadius: "large" });
+const theme = { ...baseTheme, fonts: { body: "var(--font-inter), ui-sans-serif, system-ui, sans-serif" } };
 
 // Built once per page load (switching networks stores the choice and reloads the page), and outside
 // React: wagmi starts reconnecting while it renders, and React may discard a first render with its
