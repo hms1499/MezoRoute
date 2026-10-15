@@ -1,6 +1,6 @@
 import { erc20Abi, type Address } from "viem";
 import { borrowerOperationsAbi, priceFeedAbi, stabilityPoolAbi, troveManagerAbi } from "@/lib/abi/musd";
-import { poolAbi } from "@/lib/abi/pool";
+import { poolAbi, poolFactoryAbi } from "@/lib/abi/pool";
 import type { NetworkConfig } from "@/lib/config/networks";
 
 export type Trove = {
@@ -20,6 +20,7 @@ export type DashboardSnapshot = {
   musd: bigint;
   lp: LpPosition;
   sp: SpPosition;
+  poolFeeBps: bigint; // the pool's swap fee in bps (PoolFactory.getFee)
 };
 
 /** The multicall results in `snapshotContracts` order (`allowFailure: false`). */
@@ -36,6 +37,7 @@ export type SnapshotResults = readonly [
   reserves: readonly [bigint, bigint, bigint],
   spDeposit: bigint,
   spBtcGain: bigint,
+  poolFeeBps: bigint,
 ];
 
 /** TroveManager `Status.active`; none, closedByOwner, closedByLiquidation, and closedByRedemption mean no open Trove. */
@@ -60,6 +62,7 @@ export function snapshotContracts(network: NetworkConfig, account: Address) {
     { chainId, address: a.pool, abi: poolAbi, functionName: "getReserves" },
     { chainId, address: a.stabilityPool, abi: stabilityPoolAbi, functionName: "getCompoundedMUSDDeposit", args: [account] },
     { chainId, address: a.stabilityPool, abi: stabilityPoolAbi, functionName: "getDepositorCollateralGain", args: [account] },
+    { chainId, address: a.poolFactory, abi: poolFactoryAbi, functionName: "getFee", args: [a.pool, false] },
   ] as const;
 }
 
@@ -69,7 +72,7 @@ export function musdIsToken0(network: NetworkConfig): boolean {
 }
 
 export function parseSnapshot(network: NetworkConfig, results: SnapshotResults): DashboardSnapshot {
-  const [price, mcr, borrowingRate, status, debtAndColl, maxBorrowingCapacity, musd, lpBalance, lpTotalSupply, reserves, spDeposit, spBtcGain] =
+  const [price, mcr, borrowingRate, status, debtAndColl, maxBorrowingCapacity, musd, lpBalance, lpTotalSupply, reserves, spDeposit, spBtcGain, poolFeeBps] =
     results;
   const [collateral, principal, interest] = debtAndColl;
   const musdFirst = musdIsToken0(network);
@@ -88,5 +91,6 @@ export function parseSnapshot(network: NetworkConfig, results: SnapshotResults):
       reserveBtc: musdFirst ? reserves[1] : reserves[0],
     },
     sp: { deposit: spDeposit, btcGain: spBtcGain },
+    poolFeeBps,
   };
 }

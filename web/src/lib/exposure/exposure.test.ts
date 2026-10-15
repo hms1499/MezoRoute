@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { atRiskTrove, deployerTrove, lpShare, snapshotWith, spPosition } from "@/lib/dashboard/test-fixtures";
-import { drawdownScenarios, exposure } from "./exposure";
+import { drawdownScenarios, exposure, lpValueAfterDrop } from "./exposure";
 
 const full = snapshotWith({ trove: deployerTrove, lp: lpShare, sp: spPosition });
 
@@ -92,5 +92,13 @@ describe("drawdownScenarios", () => {
       expect(scenario.lpValue).toBe(0n);
       expect(scenario.spValue).toBe(0n);
     }
+  });
+});
+
+describe("lpValueAfterDrop", () => {
+  it("scales a constant-product LP value with the square root of the price ratio", () => {
+    // √0.7 = 0.836660026534075547…; 1,000 MUSD → 836.660026534075547 MUSD (rounded down).
+    expect(lpValueAfterDrop(1_000n * 10n ** 18n, 30)).toBe(836_660_026_534_075_547_000n);
+    expect(lpValueAfterDrop(0n, 30)).toBe(0n);
   });
 });

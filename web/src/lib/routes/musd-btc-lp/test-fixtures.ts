@@ -27,6 +27,7 @@ export function lpRouteSnapshotWith(overrides: Partial<LpRouteSnapshot> = {}): L
     dashboard: snapshotWith({
       musd: 500n * ONE,
       lp: { balance: 0n, totalSupply: TESTNET_POOL.totalSupply, reserveMusd: TESTNET_POOL.reserveMusd, reserveBtc: TESTNET_POOL.reserveBtc },
+      poolFeeBps: TESTNET_POOL.feeBps,
     }),
     pool: TESTNET_POOL,
     allowance: 0n,

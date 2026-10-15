@@ -4,6 +4,7 @@ import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { exitLiquidity, type ExitPercent } from "@/lib/positions/exit-intent";
 import { spGasUnits } from "@/lib/quote/gas";
 import type { WalletKind } from "@/lib/wallet/capabilities";
+import { afterSpDeposit } from "./after-deposit";
 import { spClaimBlock, spDepositBlock, spWithdrawBlock, type SpBlock } from "./gate";
 import type { SpData } from "./snapshot";
 import { spDepositSteps, type SpStepKind } from "./steps";
@@ -35,10 +36,7 @@ export function spDepositPreview(input: Common & { musdIn: bigint | null; wallet
     depositNow: dashboard.sp.deposit,
     gainPaid: dashboard.sp.btcGain,
     depositAfter,
-    after:
-      input.musdIn === null || depositAfter === null
-        ? null
-        : { ...dashboard, musd: dashboard.musd - input.musdIn, sp: { deposit: depositAfter, btcGain: 0n } },
+    after: input.musdIn === null ? null : afterSpDeposit(dashboard, input.musdIn),
     block: spDepositBlock({
       network: input.network,
       walletChainId: input.walletChainId,
