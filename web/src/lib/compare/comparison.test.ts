@@ -4,6 +4,7 @@ import { exposure, lpValueAfterDrop } from "@/lib/exposure/exposure";
 import { WAD } from "@/lib/math";
 import { quoteEntry } from "@/lib/quote/entry";
 import { TESTNET_POOL } from "@/lib/routes/musd-btc-lp/test-fixtures";
+import { MAINNET_POOL_NOW } from "./test-fixtures";
 import { compareRoutes } from "./comparison";
 
 const ONE = WAD;
@@ -70,6 +71,27 @@ describe("compareRoutes", () => {
     if (result.lp.status !== "ok") throw new Error("expected a quote");
     expect(result.lp.positionValue).toBeLessThan(20n * ONE);
     expect(result.lp.positionValue).toBeGreaterThan((20n * ONE * 99n) / 100n);
+  });
+
+  it.each([
+    ["1,000 MUSD on the mainnet pool (the mainnet cap)", "mainnet", 1_000n],
+    ["100,000 MUSD on the mainnet pool", "mainnet", 100_000n],
+    ["1,000,000 MUSD on the testnet pool (the testnet cap)", "testnet", 1_000_000n],
+    ["10,000,000 MUSD on the testnet pool", "testnet", 10_000_000n],
+  ] as const)("never shows a gain on entry for %s, even with a large price impact", (_, pool, musd) => {
+    // Valued at the post-trade mid, the user's own swap inflated the BTC they had just bought (review, 15 Oct 2026).
+    const state = pool === "mainnet" ? MAINNET_POOL_NOW : TESTNET_POOL;
+    const big = snapshotWith({
+      price: POOL_PRICE,
+      musd: 0n,
+      poolFeeBps: state.feeBps,
+      lp: { balance: 0n, totalSupply: state.totalSupply, reserveMusd: state.reserveMusd, reserveBtc: state.reserveBtc },
+    });
+    const amount = musd * ONE;
+    const result = compareRoutes({ snapshot: big, amount, executorFeeBps: 0n });
+    if (result.lp.status !== "ok") throw new Error("expected a quote");
+    expect(result.lp.positionValue).toBeLessThan(amount);
+    expect(result.lp.valueAfterDrop).toBeLessThan((amount * 84n) / 100n);
   });
 
   it("marks the LP side unavailable for an empty pool", () => {
