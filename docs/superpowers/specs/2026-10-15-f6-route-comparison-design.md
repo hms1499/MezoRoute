@@ -18,7 +18,7 @@ On the dashboard, a user types an MUSD amount and sees the MUSD/BTC LP route and
 | SP 30-day figure | No annualised rate. SP returns arrive in bursts (Liquity once reported 751% for a single week), so a rate from one window misleads. Show what happened: "No liquidations reached the pool" or "BTC gains X% · deposit absorbed Y%". |
 | "Your amount 30 days ago" | Both routes are backtested with the typed amount (1,000 MUSD when the field is empty), valued today at the oracle price. Labelled "Past results, not a forecast". |
 | LP fee | The executor fee comes from `network.executor.feeBps`. Mainnet has no executor until M1: the quote uses 0 and the fee row reads "Set at launch". The route CTAs stay enabled on mainnet, and the route pages show the read-only state. |
-| Pool swap fee | `PoolFactory.getFee(pool, false)` moves into the dashboard snapshot, so the comparison quotes from the same block as everything else. The LP route snapshot reuses it instead of reading it again. |
+| Pool swap fee | `PoolFactory.getFee(pool, false)` moves into the dashboard snapshot (`DashboardSnapshot.poolFeeBps`), so the comparison quotes from the same block as everything else. The LP route snapshot reuses it instead of reading it again. |
 
 ## Chain facts (15 Oct 2026)
 
@@ -27,6 +27,7 @@ On the dashboard, a user types an MUSD amount and sees the MUSD/BTC LP route and
 - Tigris `Pool._update0/_update1` (`lib/tigris/solidity/contracts/Pool.sol`) take the swap fee out to `PoolFees` and add `fee × 1e18 / totalSupply` to `index0`/`index1`. An LP token held through a window earns exactly `Δindex / 1e18` of each token (F7's claimable formula, rounding down per swap). LP tokens staked in a gauge earn emissions instead, and the gauge passes their fees to voters. MezoRoute users hold LP unstaked, so the index is what they earn. Gauge rewards are out of scope.
 - Mainnet pool `0x52e6…acefb`: token0 is BTC, swap fee 30 bps. From block 11,878,862 (16 Sep 2026 03:23 UTC) to ≈12,518,862: `index0` +4.03e12 (BTC per 1e18 LP), `index1` +3.648e17 (MUSD per 1e18 LP). LP token value today ≈ 571.8 MUSD (287.3 MUSD + 0.00348 BTC at 81,733.75), so fees ≈ 0.69 MUSD per LP token, **≈0.12% in 29 days, ≈1.5% a year**. LP supply fell from 688.4 to 356.9 over the window, which does not affect the per-token figure.
 - Testnet pool `0xd16A…6AA9` (token0 MUSD): `index0` +2.8e12 over 31 days, so fees are effectively zero.
+- Liquity v1 maths checked against the live testnet pool: depositor `0x4ddd70f4c603b6089c07875be02fedfd626b80af` (snapshot `P` = 1e18, `S` = 0, epoch 0, scale 0; `deposits` 1e26) at block 16,164,226 with `P` = 862,311,608,208,321,926 and `epochToScaleToSum(0,0)` = 1,762,242,400,191,991,938,652,754,983,974: the formulas below give 86,231,160,820,832,192,600,000,000 and 176,224,240,019,199,193,865, exactly `getCompoundedMUSDDeposit` and `getDepositorCollateralGain`.
 - Stability Pool, both networks: `P`, `epochToScaleToSum(0,0)`, epoch 0 and scale 0 were the same at the old block and the head. **No liquidation was offset by the Stability Pool in the last 30 days**, so the SP backtest returns the deposit unchanged with no BTC gain. Mainnet SP: 14.17M MUSD deposited. `SCALE_FACTOR` = 1e9 (Liquity v1 maths).
 
 ## 1. Pure modules (`src/lib/compare/`)
@@ -37,27 +38,27 @@ On the dashboard, a user types an MUSD amount and sees the MUSD/BTC LP route and
   - Fees: `liquidity × ΔindexMusd / 1e18` MUSD and `liquidity × ΔindexBtc / 1e18` BTC.
   - Position today: `liquidity × reserve / totalSupply` of each token at `now`.
   - Value today: position MUSD + `musdRefund` + fees MUSD + (position BTC + fees BTC) × price now.
-  - Returns `{ valueNow, feesValue, feeReturnWad: feesValue × 1e18 / amount, feeRateWad: annualise(...) }`. Every division rounds down.
+  - Returns `{ liquidity, feesMusd, feesBtc, feesValue, valueNow, feeReturn: feesValue × 1e18 / amount, feeRate: annualise(feeReturn, seconds) }`. Every division rounds down.
 - `sp-backtest.ts`: `spBacktest({ past, now, amount })` with `past = { P, S, epoch, scale }` and `now = { P, epoch, scale, sumAtPastScale, sumAtNextScale, price }`, following Liquity v1's `getCompoundedStakeFromSnapshots` and `getDepositorCollateralGain`:
   - BTC gain: `amount × (sumAtPastScale − S + sumAtNextScale / 1e9) / P / 1e18`.
   - Deposit: 0 if the epoch moved. Otherwise `amount × P_now / P` when the scale is unchanged, that divided by 1e9 when it moved by one, and 0 when it moved by more. Below `amount / 1e9` the deposit counts as 0.
-  - Returns `{ depositNow, btcGain, valueNow: depositNow + btcGain × price, gainReturnWad, lossReturnWad, liquidated: P or S changed }`.
+  - Returns `{ depositNow, btcGain, valueNow: depositNow + btcGain × price, gainReturn, lossReturn, liquidated: P, S, epoch, or scale changed }`.
 - `comparison.ts`: `compareRoutes({ snapshot, amount, executorFeeBps, network })`, the per-amount part:
   - LP: `quoteEntry` with the snapshot's pool and swap fee, then `afterEntry`, then `exposure` and `drawdownScenarios` (the −30% row).
   - SP: `afterSpDeposit(snapshot, amount)`, then the same exposure maths.
-  - Each side returns `fee` (MUSD; SP 0), `positionAfter` (LP: the new LP share's value at the oracle price; SP: `amount`), `btcBefore`, `btcAfter`, `valueAtMinus30` (the new position only: the −30% scenario's LP or SP value after the deposit minus the same value before it), `overBalance`, and an LP `status` of `"ok" | "too-large"` (`quoteEntry` null).
+  - The LP side returns `status: "ok"` with `fee`, `priceImpact`, `positionValue` (the new LP share's value at the oracle price), `btcBefore`, `btcAfter`, and `valueAfterDrop` (`lpValueAfterDrop(positionValue, 30)`, the exposure module's √-price rule, extracted from `drawdownScenarios`), or `status: "unavailable"` when `quoteEntry` returns null (an empty pool; it never rejects an amount for size). The SP side returns `positionValue` = `valueAfterDrop` = `amount` (a deposit does not move with the BTC price; new liquidations are not modelled), `btcBefore`, `btcAfter`. Both share `overBalance` (amount above wallet MUSD).
 - `src/lib/stability-pool/after-deposit.ts`: `afterSpDeposit(snapshot, musdIn)` is extracted from `spDepositPreview().after`, which then calls it. The behaviour is unchanged: deposit + amount, the gain is paid to the wallet, wallet MUSD − amount.
-- `copy.ts`: return source, risk lines, and route labels as constants, taken from Flow B and F5's risk sentences, so the card and the route pages say the same thing.
+- `src/lib/routes/copy.ts`: return sources and risk lines as constants (the risk arrays move here from `RisksCard` and `SpRisksCard`), taken from Flow B and F5's risk sentences, so the card and the route pages say the same thing.
 
 ## 2. Data
 
-- **Dashboard snapshot** (`src/lib/dashboard/snapshot.ts`): add `PoolFactory.getFee(pool, false)` as the last dashboard read; `DashboardSnapshot.lp` gains `feeBps`. `DASHBOARD_READS` grows by one; `lpRouteContracts` drops its own `getFee` and `parseLpRouteSnapshot` takes `feeBps` from the dashboard part. The SP snapshot slices by `DASHBOARD_READS` and needs no other change.
+- **Dashboard snapshot** (`src/lib/dashboard/snapshot.ts`): add `PoolFactory.getFee(pool, false)` as the last dashboard read; `DashboardSnapshot` gains `poolFeeBps`. `DASHBOARD_READS` grows by one; `lpRouteContracts` drops its own `getFee` and `parseLpRouteSnapshot` takes `feeBps` from the dashboard part. The SP snapshot slices by `DASHBOARD_READS` and needs no other change.
 - **History** (`src/lib/compare/history.ts`, `useRouteHistory`): uses wagmi's public client for the selected `chainId`.
   1. `getBlock("latest")`, then `getBlock(head − 100,000)`, then `pastBlock(...)`.
-  2. In parallel: `getBlock(past)` (its timestamp) and the past-state multicall (`multicall({ blockNumber: past, allowFailure: false })`): pool `index0`, `index1`, `getReserves`, `totalSupply`, `PoolFactory.getFee`, `fetchPrice`; SP `P`, `currentEpoch`, `currentScale`.
+  2. In parallel: `getBlock(past)` (its timestamp) and the past-state multicall (`multicall({ blockNumber: past, allowFailure: false })`): pool `index0`, `index1`, `getReserves`, `totalSupply`, `PoolFactory.getFee`; SP `P`, `currentEpoch`, `currentScale`. Today's value uses today's price, so no past price is read.
   3. In parallel, since both need the past epoch and scale:
      - at `past`: SP `epochToScaleToSum(pastEpoch, pastScale)`.
-     - at `head` (pinned to the head block number): pool `index0`, `index1`, `getReserves`, `totalSupply`, `fetchPrice`; SP `P`, `currentEpoch`, `currentScale`, `epochToScaleToSum(pastEpoch, pastScale)`, `epochToScaleToSum(pastEpoch, pastScale + 1)`.
+     - at `head` (pinned to the head block number): pool `index0`, `index1`, `getReserves`, `totalSupply`, `PoolFactory.getFee`, `fetchPrice`; SP `P`, `currentEpoch`, `currentScale`, `epochToScaleToSum(pastEpoch, pastScale)`, `epochToScaleToSum(pastEpoch, pastScale + 1)`.
   4. Results are parsed into the backtest inputs (indexes and reserves mapped with `musdIsToken0`).
   - react-query key `[network.id, "route-history"]`, `staleTime` 10 minutes, no interval refetch, 15 s timeout. A failure shows "30-day results unavailable" with Retry inside the card and never hides the rest of it.
 - `src/lib/abi/musd.ts` gains the SP getters `P`, `currentEpoch`, `currentScale`, `epochToScaleToSum`. `src/lib/abi/pool.ts` gains `index0`, `index1` if missing.
@@ -74,7 +75,7 @@ On the dashboard, a user types an MUSD amount and sees the MUSD/BTC LP route and
   4. *MezoRoute fee*:
      - LP: "0.10% (0.02 MUSD)", or "Set at launch" on mainnet.
      - SP: "None (direct to the pool)".
-  5. *Position after*: estimated value in MUSD. LP also shows "≈ half becomes BTC".
+  5. *Position after*: estimated value in MUSD. LP also shows "≈ half becomes BTC · price impact X%".
   6. *BTC exposure*: before → after, from the exposure module.
   7. *If BTC drops 30%*: the new position's value.
   8. *Risks*: two or three short lines each (impermanent loss, pool liquidity / deposit can shrink, withdrawals pause while any Trove is under-collateralised).
@@ -90,7 +91,7 @@ On the dashboard, a user types an MUSD amount and sees the MUSD/BTC LP route and
 ## 4. Errors and edge cases
 
 - Malformed amount: inline message. Zero is treated as empty.
-- LP quote null: the LP column's rows 5–7 read "Amount too large for the pool", and Choose LP stays enabled (the route page explains the block).
+- LP quote null (empty pool): the LP column's rows 5–7 read "Pool quote unavailable", and Choose LP stays enabled. A large amount is not blocked here; its price impact shows in row 5.
 - Amount above wallet MUSD: a note under the field. Both CTAs stay enabled; the route gates block it.
 - History failure or timeout: the inline unavailable state with Retry. The old block before the pool or SP existed (a revert at `past`) is the same state.
 - No new revert strings or `decodeError` outcomes.
@@ -101,7 +102,7 @@ On the dashboard, a user types an MUSD amount and sees the MUSD/BTC LP route and
 - `pastBlock` and `annualise` (exact maths, rounding).
 - `lpBacktest` against the mainnet facts above, recorded as a fixture: fee return ≈0.12%, value change including the price move. Also a no-swaps case (zero fees) and a null quote.
 - `spBacktest`: unchanged state (live fixture, returns the deposit), a liquidation within one scale (loss and gain against hand-computed Liquity figures), a scale change, an epoch change (deposit 0, gain from the old epoch), and the 1e-9 floor.
-- `compareRoutes`: fee rows, mainnet zero fee, exposure before/after, −30% values, over-balance flag, too-large status.
+- `compareRoutes`: fee rows, mainnet zero fee, exposure before/after, −30% values, over-balance flag, unavailable status.
 - `afterSpDeposit` keeps `spDepositPreview` unchanged (existing tests).
 - Dashboard and LP route snapshot parsing with the moved `getFee`.
 - History parsing of multicall results into backtest inputs.
