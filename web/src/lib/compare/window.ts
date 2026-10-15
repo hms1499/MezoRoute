@@ -2,8 +2,11 @@ const DAY = 86_400n;
 /** The comparison looks back this far (spec F6). */
 export const HISTORY_SECONDS = 30n * DAY;
 const YEAR = 365n * DAY;
-/** Blocks used to measure the recent average block time. */
-export const REF_SPAN = 100_000n;
+/**
+ * Blocks used to measure the average block time: about the window itself, because block times
+ * drift (testnet's last 100,000 blocks ran fast enough to make a 30-day estimate land at 26.5 days).
+ */
+export const REF_SPAN = 600_000n;
 
 /**
  * The block ≈30 days before `head`, from the average block time over the last REF_SPAN blocks
