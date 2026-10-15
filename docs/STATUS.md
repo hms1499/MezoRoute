@@ -2,7 +2,7 @@
 
 Living handover file for every agent (see `AGENTS.md` → Session protocol). Update it and commit at the end of each session or milestone. Scope and the backlog are in `PRODUCT_SPEC.md` §16; this file says where we are in it.
 
-**Last updated:** 15 Oct 2026 · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** clean, pushed; M1 work on `feat/m1-mainnet-executor`.
+**Last updated:** 15 Oct 2026 · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** clean, pushed; M1 (done) waits to merge from `feat/m1-mainnet-executor`.
 
 ## Where we are
 
@@ -18,25 +18,30 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 | F6 route comparison | Done (15 Oct) | Includes 30-day on-chain results and a backtest |
 | F7 LP positions | Done | |
 | F8 mainnet reference card + quote accuracy | Done (15 Oct) | `npm run quote-accuracy`: 14/14 testnet entries exact |
-| **M1 mainnet deployment** | **In progress: executor deployed and verified; round trips next** | See "Next" |
+| M1 mainnet deployment | Done (15 Oct) | Executor `0x046449b1229C863e278f369869BA10e12bd80d9E`; round trips and hashes in `PRODUCT_SPEC.md` §20 |
 | U1 UI polish | Not started | Added 15 Oct; after M1, before V1 |
 | V1 Vercel production + QA on both wallet types | Not started | The current preview sits behind a Vercel login; judges need a public URL |
 | D1 README, deck, 2-minute video, submission form | Not started | Needs V1 and M1 |
 
 Tests on `feat/m1-mainnet-executor` (15 Oct): 635 Vitest and 75 Foundry. `npm run build` passes.
 
-## Next: M1c (mainnet round trips)
+## Next: merge M1, then U1 → V1 → D1
 
-**Mainnet executor (15 Oct):** `0x046449b1229C863e278f369869BA10e12bd80d9E`, block 12,524,142, tx `0x8aa55418f1da98ea1700c9e950f01d8cadf94fc34633650f5e60f9e68aafb71d`, fee 10 bps to `0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8`, cap 1,000 MUSD. Every immutable read back from chain matches; source verified on the explorer. Pinned in `networks.ts` on branch `feat/m1-mainnet-executor` (not merged yet). Read-only mainnet QA with the mock wallet passed: dashboard shows the 0.1% fee and the cap banner, the LP and Stability Pool route pages quote 20 MUSD, positions are empty.
+1. Merge `feat/m1-mainnet-executor` into `main` and push (waits on the user's go-ahead).
+2. U1 UI polish (testnet and mainnet screens). Known inputs:
+   - At 360 px, short labels wrap (reference card, comparison card).
+   - On mainnet the dashboard's "No MUSD" card says to open a Trove, but the minimum net debt is 1,800 MUSD; swapping BTC for MUSD on mezo.org is the realistic path.
+   - Mainnet gas: Mezo charged exactly half the gas limit on every round-trip transaction, and the limits came from wallet estimates far above the testnet-measured budgets (LP enter limit 1,437,360, exit 1,473,891; testnet exit ≈ 417k). Cost is tiny (≈0.000001 BTC each), but check why the estimate is so high on mainnet before tightening.
+3. V1: public Vercel production URL; QA on both wallet types. Bitcoin wallets on mainnet can no longer deposit BTC natively (bridge-in closed 13 Oct).
+4. D1: README, deck, video, submission form.
 
-**Deployer exception (user's decision):** the mainnet deployer is `0xd74f…2B49`, the same key as the testnet deployer in `contracts/.env` (plaintext), imported into the keystore `mezo-mainnet`. The executor has no admin, so the key controls only that wallet's own funds. Don't keep more than gas money there.
+## M1 record (15 Oct)
 
-**Funding route (15 Oct):** Mezo's native BTC bridge-in from Bitcoin closed on 13 Oct 2026. BTC now enters Mezo as tBTC from Ethereum through the Mezo app's Deposit (it took 17 minutes, about Ethereum finality plus a few minutes). MUSD can also come from Base or Ethereum through Wormhole NTT (Portal).
+**Mainnet executor:** `0x046449b1229C863e278f369869BA10e12bd80d9E`, block 12,524,142, tx `0x8aa55418f1da98ea1700c9e950f01d8cadf94fc34633650f5e60f9e68aafb71d`, fee 10 bps to `0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8`, cap 1,000 MUSD. Every immutable read back from chain matches; source verified on the explorer. Round trips passed with the user's MetaMask (`0x375a…d6e8`); hashes in `PRODUCT_SPEC.md` §20. `QUOTE_NETWORK=mainnet npm run quote-accuracy`: 1/1 exact.
 
-Remaining:
-1. Get about 20 MUSD on mainnet (swap BTC on mezo.org) into the wallet that does the round trips.
-2. Round trips through the UI: Stability Pool deposit → withdraw first, then LP enter → claim fees → exit.
-3. `QUOTE_NETWORK=mainnet npm run quote-accuracy`; record tx hashes in `PRODUCT_SPEC.md` §11.1/§20 and here; merge the branch.
+**Deployer exception (user's decision):** the mainnet deployer is `0xd74f…2B49`, the same key as the testnet deployer in `contracts/.env` (plaintext), imported into the keystore `mezo-mainnet`. The executor has no admin, so the key controls only that wallet's own funds (≈0.000017 BTC left). Don't keep more than gas money there.
+
+**Funding route:** Mezo's native BTC bridge-in from Bitcoin closed on 13 Oct 2026. BTC now enters Mezo as tBTC from Ethereum through the Mezo app's Deposit (17 minutes: Ethereum finality plus a few minutes). MUSD can also come from Base or Ethereum through Wormhole NTT (Portal).
 
 ### M1b plan (kept for reference)
 
@@ -79,7 +84,7 @@ Optional prep that needs no funds:
 
 ## Waiting on the user
 
-- Mainnet wallet funding and keystore import (M1b steps 1–2).
+- Go-ahead to merge `feat/m1-mainnet-executor` and push.
 - T0 research for the deck: 1–2 quotes from Mezo Discord users, and the step count for borrow → LP in the Mezo app.
 - Report to the Mezo team (Discord):
   - Passport/OrangeKit hard-code the dead relayer `test.mezo.org` (patched locally by `web/scripts/patch-relayer.mjs`).
@@ -141,7 +146,7 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
-- **15 Oct 2026, afternoon (Claude Code):** user bridged tBTC from Ethereum; mainnet executor deployed by the user from the keystore, verified by the agent, pinned in the app on `feat/m1-mainnet-executor`; read-only mainnet QA passed.
+- **15 Oct 2026, afternoon (Claude Code):** user bridged tBTC from Ethereum; mainnet executor deployed by the user from the keystore, verified by the agent, pinned in the app on `feat/m1-mainnet-executor`; read-only mainnet QA passed; the user ran the Stability Pool and LP round trips through the UI; mainnet quote accuracy 1/1 exact. M1 done.
 - **15 Oct 2026 (Claude Code):**
   - F6 and F8 designed, built, reviewed, merged, and pushed.
   - U1 added to the backlog.
