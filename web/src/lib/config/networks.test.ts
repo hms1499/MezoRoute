@@ -11,6 +11,12 @@ describe("networks", () => {
     expect([networks.testnet.chainId, networks.mainnet.chainId]).toEqual([31611, 31612]);
   });
 
+  it("reads through the RPCs Passport's chains use (viem's rpc.mezo.org has no DNS record)", () => {
+    expect(networks.testnet.rpcUrl).toBe(mezoTestnet.rpcUrls.default.http[0]);
+    expect(networks.mainnet.rpcUrl).toBe(mezoMainnet.rpcUrls.default.http[0]);
+    expect([networks.testnet.rpcUrl, networks.mainnet.rpcUrl]).toEqual(["https://rpc.test.mezo.org", "https://rpc-internal.mezo.org"]);
+  });
+
   it.each(
     Object.values(networks).flatMap((network) =>
       Object.entries(network.addresses).map(([name, address]) => [`${network.id} ${name}`, address] as const),

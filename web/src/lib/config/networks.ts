@@ -23,6 +23,8 @@ export type NetworkConfig = {
   id: NetworkId;
   chainId: 31611 | 31612;
   name: "Mezo Testnet" | "Mezo Mainnet";
+  /** JSON-RPC endpoint Passport's chain uses; the mainnet reference card and the quote-accuracy script read through it. */
+  rpcUrl: string;
   explorerUrl: string;
   /** The explorer's Blockscout API (F5 reads Stability Pool history from it; the frontend host serves no API). */
   explorerApiUrl: string;
@@ -42,6 +44,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     id: "testnet",
     chainId: 31611,
     name: "Mezo Testnet",
+    rpcUrl: "https://rpc.test.mezo.org",
     explorerUrl: "https://explorer.test.mezo.org",
     explorerApiUrl: "https://api.explorer.test.mezo.org",
     faucetUrl: "https://faucet.test.mezo.org",
@@ -68,6 +71,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     id: "mainnet",
     chainId: 31612,
     name: "Mezo Mainnet",
+    rpcUrl: "https://rpc-internal.mezo.org",
     explorerUrl: "https://explorer.mezo.org",
     explorerApiUrl: "https://api.explorer.mezo.org",
     faucetUrl: null,
