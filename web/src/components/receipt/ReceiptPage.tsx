@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import type { Address, Hash, TransactionReceipt } from "viem";
 import { useAccount, useConfig } from "wagmi";
-import { StatRow } from "@/components/dashboard/StatRow";
+import { Stat } from "@/components/ui/Stat";
 import { ExternalButton } from "@/components/ExternalButton";
 import { useNetwork } from "@/lib/config/network-context";
 import { explorerTxUrl } from "@/lib/config/networks";
@@ -106,14 +106,14 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
   return (
     <>
       <h1 className="text-lg font-semibold">{borrowed ? "Borrow & deposit confirmed" : TITLES[result.kind]}</h1>
-      <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
+      <dl className="mt-3 stat-list">
         {rows.map((row) => (
-          <StatRow key={row.label} label={row.label}>
+          <Stat key={row.label} label={row.label}>
             {row.value}
-          </StatRow>
+          </Stat>
         ))}
-        <StatRow label="Gas used">{formatToken(receipt.gasUsed, 0, 0)}</StatRow>
-        <StatRow label="Block">{receipt.blockNumber.toString()}</StatRow>
+        <Stat label="Gas used">{formatToken(receipt.gasUsed, 0, 0)}</Stat>
+        <Stat label="Block">{receipt.blockNumber.toString()}</Stat>
       </dl>
       {borrowed && <TroveNow />}
     </>
@@ -134,9 +134,9 @@ function TroveNowFor({ account }: { account: Address }) {
   return (
     <>
       <h2 className="mt-4 text-sm font-semibold">Your Trove now</h2>
-      <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
-        <StatRow label="Debt">{`${formatToken(trove.debt, 18, 2)} MUSD`}</StatRow>
-        <StatRow label="Collateral ratio">{cr === null ? "—" : formatPercent(cr, 1)}</StatRow>
+      <dl className="mt-2 stat-list">
+        <Stat label="Debt">{`${formatToken(trove.debt, 18, 2)} MUSD`}</Stat>
+        <Stat label="Collateral ratio">{cr === null ? "—" : formatPercent(cr, 1)}</Stat>
       </dl>
     </>
   );
@@ -154,7 +154,7 @@ function Failed({ error }: { error: Error }) {
 }
 
 function Card({ children }: { children: ReactNode }) {
-  return <section className="rounded-2xl bg-white p-5 shadow-card">{children}</section>;
+  return <section className="card">{children}</section>;
 }
 
 function BackLink() {

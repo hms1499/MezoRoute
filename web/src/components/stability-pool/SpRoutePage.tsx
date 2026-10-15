@@ -48,7 +48,7 @@ function SpRoute({ account }: { account: Address }) {
   return (
     <>
       {chainId !== network.chainId && <WrongNetworkAlert />}
-      <section className="rounded-2xl bg-white p-5 shadow-card">
+      <section className="card">
         <h1 className="text-lg font-semibold">Back the system in the Stability Pool</h1>
         <p className="mt-1 text-sm text-muted">
           Your MUSD repays liquidated debt; in return you receive the liquidated BTC collateral.

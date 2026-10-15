@@ -1,4 +1,4 @@
-import { StatRow } from "@/components/dashboard/StatRow";
+import { Stat } from "@/components/ui/Stat";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { exposure } from "@/lib/exposure/exposure";
 import { btc } from "./units";
@@ -8,20 +8,20 @@ export function ExposureChange({ before, after }: { before: DashboardSnapshot; a
   const now = exposure(before);
   const next = exposure(after);
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-card">
+    <section className="card">
       <h2 className="font-semibold">Your BTC exposure</h2>
-      <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
-        <StatRow label="MUSD/BTC pool (your share)">
+      <dl className="mt-3 stat-list">
+        <Stat label="MUSD/BTC pool (your share)">
           {btc(now.lpBtc)} → {btc(next.lpBtc)}
-        </StatRow>
+        </Stat>
         {(now.spDeposit > 0n || next.spDeposit > 0n || now.spBtcGain > 0n) && (
-          <StatRow label="Stability Pool BTC gain">
+          <Stat label="Stability Pool BTC gain">
             {btc(now.spBtcGain)} → {btc(next.spBtcGain)}
-          </StatRow>
+          </Stat>
         )}
-        <StatRow label="Total BTC exposure" strong>
+        <Stat label="Total BTC exposure" strong>
           {btc(now.totalBtc)} → {btc(next.totalBtc)}
-        </StatRow>
+        </Stat>
       </dl>
     </section>
   );

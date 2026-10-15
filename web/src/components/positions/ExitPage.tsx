@@ -92,7 +92,7 @@ function ExitFlowView(props: {
   return (
     <>
       {chainId !== network.chainId && <WrongNetworkAlert />}
-      <section className="rounded-2xl bg-white p-5 shadow-card">
+      <section className="card">
         <h1 className="text-lg font-semibold">Exit the MUSD/BTC pool to MUSD</h1>
         <ExitForm intent={props.intent} lpBalance={props.data.snapshot.lpBalance} amountLocked={hasStarted(stepper)} onChange={props.onIntent} />
       </section>

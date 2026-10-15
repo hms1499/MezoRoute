@@ -32,7 +32,7 @@ const COPY: Record<StepKind, { title: string; detail: string; action: string }> 
 export function EntryStepper({ block, ...flow }: EntryFlowInput & { block: EntryBlock | null }) {
   const { stepper, run } = useEntryFlow(flow);
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-card">
+    <section className="card">
       <h2 className="font-semibold">Confirm</h2>
       <ol className="mt-3 space-y-3">
         {stepper.steps.map((step, index) => (

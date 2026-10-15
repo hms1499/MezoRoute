@@ -7,7 +7,7 @@ import { decodeError } from "@/lib/errors/decode";
 export function LoadError({ error, onRetry }: { error: Error; onRetry: () => void }) {
   const { network } = useNetwork();
   return (
-    <section role="alert" className="rounded-2xl bg-white p-5 shadow-card">
+    <section role="alert" className="card">
       <p className="text-sm">{decodeError(error, network).message}</p>
       <button
         type="button"

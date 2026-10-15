@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { StatRow } from "@/components/dashboard/StatRow";
+import { Stat } from "@/components/ui/Stat";
 import { BlockNotice } from "@/components/lp/BlockNotice";
 import { btc, musd, signedMusd } from "@/components/lp/units";
 import type { HistoryStatus } from "@/lib/stability-pool/cost-basis";
@@ -24,18 +24,18 @@ export function SpPositionCard({
   claiming: boolean;
 }) {
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-card">
+    <section className="card">
       <h2 className="font-semibold">Stability Pool</h2>
-      <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
-        <StatRow label="Deposit now" sub="After absorbed liquidations">
+      <dl className="mt-3 stat-list">
+        <Stat label="Deposit now" sub="After absorbed liquidations">
           {musd(view.deposit)}
-        </StatRow>
-        <StatRow label="Pending BTC gain" sub={`≈ ${musd(view.gainValue)}`}>
+        </Stat>
+        <Stat label="Pending BTC gain" sub={`≈ ${musd(view.gainValue)}`}>
           {btc(view.gain)}
-        </StatRow>
-        <StatRow label="Value now (estimated)" strong>
+        </Stat>
+        <Stat label="Value now (estimated)" strong>
           {musd(view.value)}
-        </StatRow>
+        </Stat>
         <CostRows view={view} history={history} />
       </dl>
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -62,30 +62,30 @@ export function SpPositionCard({
 function CostRows({ view, history }: { view: SpView; history: History }) {
   if (history.status === "unavailable") {
     return (
-      <StatRow label="Cost basis">
+      <Stat label="Cost basis">
         Unavailable{" "}
         <button type="button" onClick={history.retry} className="text-xs font-semibold text-accent hover:underline">
           Retry
         </button>
-      </StatRow>
+      </Stat>
     );
   }
-  if (history.status === "updating") return <StatRow label="Cost basis">Updating…</StatRow>;
-  if (!view.cost) return <StatRow label="Cost basis">Loading…</StatRow>;
+  if (history.status === "updating") return <Stat label="Cost basis">Updating…</Stat>;
+  if (!view.cost) return <Stat label="Cost basis">Loading…</Stat>;
   return (
     <>
-      <StatRow label="Cost basis" sub="MUSD you put in, less what you took out">
+      <Stat label="Cost basis" sub="MUSD you put in, less what you took out">
         {musd(view.cost.basis)}
-      </StatRow>
-      <StatRow label="Estimated position value change" sub="Value now minus cost basis">
+      </Stat>
+      <Stat label="Estimated position value change" sub="Value now minus cost basis">
         {signedMusd(view.cost.valueChange)}
-      </StatRow>
-      <StatRow label="BTC gains received" sub="Since this deposit started">
+      </Stat>
+      <Stat label="BTC gains received" sub="Since this deposit started">
         {btc(view.cost.gainsClaimed)}
-      </StatRow>
-      <StatRow label="Absorbed by liquidations" sub="Since this deposit started">
+      </Stat>
+      <Stat label="Absorbed by liquidations" sub="Since this deposit started">
         {musd(view.cost.absorbed)}
-      </StatRow>
+      </Stat>
     </>
   );
 }

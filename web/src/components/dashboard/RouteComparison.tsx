@@ -67,7 +67,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
   ];
 
   return (
-    <section id="compare" className="scroll-mt-4 rounded-2xl bg-white p-5 shadow-card">
+    <section id="compare" className="scroll-mt-4 card">
       <h2 className="font-semibold">Compare routes</h2>
       <p className="mt-1 text-xs text-muted">Where to put MUSD: both routes for the same amount.</p>
       <div className="mt-3">

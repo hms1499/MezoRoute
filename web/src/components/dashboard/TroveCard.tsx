@@ -7,7 +7,7 @@ import { formatPercent, formatToken } from "@/lib/format";
 import { WAD } from "@/lib/math";
 import { CR_SAFETY_FLOOR } from "@/lib/trove/constants";
 import { collateralRatio, liquidationPrice, type TroveHealth } from "@/lib/trove/health";
-import { StatRow } from "./StatRow";
+import { Stat } from "@/components/ui/Stat";
 
 const HEALTH_TAG: Record<TroveHealth, { label: string; tone: string }> = {
   healthy: { label: "Healthy", tone: "bg-accent-soft text-accent" },
@@ -30,7 +30,7 @@ export function TroveCard({
 
   if (!trove) {
     return (
-      <section className="rounded-2xl bg-white p-5 shadow-card">
+      <section className="card">
         <h2 className="font-semibold">Your Trove</h2>
         <p className="mt-2 text-sm text-muted">No open Trove.</p>
         <div className="mt-4">
@@ -44,25 +44,25 @@ export function TroveCard({
   const liquidation = liquidationPrice(trove, protocol.mcr);
   const tag = health ? HEALTH_TAG[health] : null;
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-card">
+    <section className="card">
       <h2 className="flex items-center justify-between font-semibold">
         Your Trove
         {tag && <span className={`rounded-full px-2.5 py-1 text-xs ${tag.tone}`}>{tag.label}</span>}
       </h2>
-      <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
-        <StatRow label="Collateral" sub={`≈ ${formatToken((trove.collateral * price) / WAD, 18, 2)} MUSD`}>
+      <dl className="mt-3 stat-list">
+        <Stat label="Collateral" sub={`≈ ${formatToken((trove.collateral * price) / WAD, 18, 2)} MUSD`}>
           {formatToken(trove.collateral)} BTC
-        </StatRow>
-        <StatRow label="Debt" sub={`includes ${formatToken(trove.interest, 18, 2, "up")} MUSD interest`}>
+        </Stat>
+        <Stat label="Debt" sub={`includes ${formatToken(trove.interest, 18, 2, "up")} MUSD interest`}>
           {formatToken(trove.debt, 18, 2, "up")} MUSD
-        </StatRow>
-        <StatRow label="Collateral ratio">{cr === null ? "—" : formatPercent(cr)}</StatRow>
-        <StatRow label="Liquidation price">
+        </Stat>
+        <Stat label="Collateral ratio">{cr === null ? "—" : formatPercent(cr)}</Stat>
+        <Stat label="Liquidation price">
           {liquidation === null ? "—" : `${formatToken(liquidation, 18, 0, "up")} MUSD / BTC`}
-        </StatRow>
-        <StatRow label="Borrowing room" sub={`keeps CR ≥ ${formatPercent(CR_SAFETY_FLOOR, 0)}`}>
+        </Stat>
+        <Stat label="Borrowing room" sub={`keeps CR ≥ ${formatPercent(CR_SAFETY_FLOOR, 0)}`}>
           {formatToken(borrowable, 18, 2)} MUSD
-        </StatRow>
+        </Stat>
       </dl>
     </section>
   );

@@ -3,7 +3,7 @@ import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { drawdownScenarios, exposure } from "@/lib/exposure/exposure";
 import { formatPercent, formatToken } from "@/lib/format";
 import { collateralRatio } from "@/lib/trove/health";
-import { StatRow } from "./StatRow";
+import { Stat } from "@/components/ui/Stat";
 
 const DOUBLE_EXPOSURE =
   "Borrowing MUSD against BTC and adding it to the MUSD/BTC pool raises your BTC exposure: a BTC drop lowers your collateral ratio and your LP value at the same time.";
@@ -25,7 +25,7 @@ export function ExposurePanel({ snapshot, title = "BTC exposure" }: { snapshot: 
 
   if (!hasTrove && !hasLp && !hasSp) {
     return (
-      <section id="exposure" className="scroll-mt-4 rounded-2xl bg-white p-5 shadow-card">
+      <section id="exposure" className="scroll-mt-4 card">
         <h2 className="font-semibold">{title}</h2>
         <p className="mt-2 text-sm text-muted">No BTC exposure in a Trove, the LP, or the Stability Pool yet.</p>
       </section>
@@ -34,29 +34,29 @@ export function ExposurePanel({ snapshot, title = "BTC exposure" }: { snapshot: 
 
   const nowCr = snapshot.trove ? collateralRatio(snapshot.trove, snapshot.price) : null;
   return (
-    <section id="exposure" className="scroll-mt-4 rounded-2xl bg-white p-5 shadow-card">
+    <section id="exposure" className="scroll-mt-4 card">
       <h2 className="flex items-baseline justify-between gap-3 font-semibold">
         {title}
         <span className="text-xs font-normal text-muted">BTC {price(snapshot.price)} MUSD</span>
       </h2>
-      <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
-        {hasTrove && <StatRow label="Trove collateral">{btc(current.troveBtc)}</StatRow>}
+      <dl className="mt-3 stat-list">
+        {hasTrove && <Stat label="Trove collateral">{btc(current.troveBtc)}</Stat>}
         {hasLp && (
-          <StatRow
+          <Stat
             label="MUSD/BTC pool (your share)"
             sub={`+ ${musd(current.lpMusd)} MUSD · ≈ ${musd(current.lpValue)} MUSD`}
           >
             {btc(current.lpBtc)}
-          </StatRow>
+          </Stat>
         )}
         {hasSp && (
-          <StatRow label="Stability Pool BTC gain" sub={`deposit ${musd(current.spDeposit)} MUSD`}>
+          <Stat label="Stability Pool BTC gain" sub={`deposit ${musd(current.spDeposit)} MUSD`}>
             {btc(current.spBtcGain)}
-          </StatRow>
+          </Stat>
         )}
-        <StatRow label="Total BTC exposure" strong>
+        <Stat label="Total BTC exposure" strong>
           {btc(current.totalBtc)}
-        </StatRow>
+        </Stat>
       </dl>
       <p className="mt-3 rounded-lg bg-accent-soft px-3 py-2 text-xs text-accent">{DOUBLE_EXPOSURE}</p>
       <div className="mt-3 overflow-x-auto">

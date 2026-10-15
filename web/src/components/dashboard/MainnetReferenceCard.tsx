@@ -6,7 +6,7 @@ import { networks } from "@/lib/config/networks";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import { referenceFooter, referenceView } from "@/lib/reference/snapshot";
 import { useMainnetReference } from "@/lib/reference/useMainnetReference";
-import { StatRow } from "./StatRow";
+import { Stat } from "@/components/ui/Stat";
 
 const CARD = "rounded-2xl border border-dashed border-line bg-canvas p-5";
 
@@ -41,22 +41,22 @@ export function MainnetReferenceCard() {
         <div>
           <h3 className="text-sm font-medium">MUSD/BTC pool</h3>
           <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-sm">
-            <StatRow label="Reserves" sub={`+ ${formatToken(r.reserveBtc, 18, 4)} BTC`}>
+            <Stat label="Reserves" sub={`+ ${formatToken(r.reserveBtc, 18, 4)} BTC`}>
               {formatToken(r.reserveMusd, 18, 0)} MUSD
-            </StatRow>
-            <StatRow label="Value">≈ {formatToken(view.poolTvl, 18, 0)} MUSD</StatRow>
-            <StatRow label="Swap fee">{formatBps(r.feeBps)}</StatRow>
-            <StatRow label="LP fees, last 30 days">{backtests?.lp ? lpHistoryLine(backtests.lp) : "Unavailable"}</StatRow>
+            </Stat>
+            <Stat label="Value">≈ {formatToken(view.poolTvl, 18, 0)} MUSD</Stat>
+            <Stat label="Swap fee">{formatBps(r.feeBps)}</Stat>
+            <Stat label="LP fees, last 30 days">{backtests?.lp ? lpHistoryLine(backtests.lp) : "Unavailable"}</Stat>
           </dl>
         </div>
         <div>
           <h3 className="text-sm font-medium">Stability Pool</h3>
           <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-sm">
-            <StatRow label="Deposits">{formatToken(r.spDeposits, 18, 0)} MUSD</StatRow>
-            <StatRow label="Share of MUSD supply" sub={`of ${formatToken(r.musdSupply, 18, 0)} MUSD`}>
+            <Stat label="Deposits">{formatToken(r.spDeposits, 18, 0)} MUSD</Stat>
+            <Stat label="Share of MUSD supply" sub={`of ${formatToken(r.musdSupply, 18, 0)} MUSD`}>
               {formatPercent(view.spShare, 1)}
-            </StatRow>
-            <StatRow label="Last 30 days">{backtests ? spHistoryLine(backtests.sp) : "Unavailable"}</StatRow>
+            </Stat>
+            <Stat label="Last 30 days">{backtests ? spHistoryLine(backtests.sp) : "Unavailable"}</Stat>
           </dl>
         </div>
       </div>

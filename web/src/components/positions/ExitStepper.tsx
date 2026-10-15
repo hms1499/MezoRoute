@@ -38,7 +38,7 @@ export function ExitStepper({
   // A failed step, or a block on the pinned amount (e.g. the LP balance changed), needs a way back.
   const stuck = hasStarted(stepper) && (block !== null || stepper.steps.some((step) => step.status === "failed"));
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-card">
+    <section className="card">
       <h2 className="font-semibold">Confirm</h2>
       <ol className="mt-3 space-y-3">
         {stepper.steps.map((step, index) => (

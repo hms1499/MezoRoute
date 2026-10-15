@@ -43,7 +43,7 @@ export function ReadinessCard({
   ].filter((note): note is string => note !== null);
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-card">
+    <section className="card">
       <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${TAG_TONE[copy.tone]}`}>{copy.tag}</span>
       <p className="mt-3 text-lg font-semibold leading-snug">{copy.headline}</p>
       {copy.detail && <p className="mt-1 text-sm text-muted">{copy.detail}</p>}

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { Address } from "viem";
 import { useAccount, useSimulateContract } from "wagmi";
-import { StatRow } from "@/components/dashboard/StatRow";
+import { Stat } from "@/components/ui/Stat";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
@@ -86,7 +86,7 @@ function WithdrawView(props: {
   return (
     <>
       {chainId !== network.chainId && <WrongNetworkAlert />}
-      <section className="rounded-2xl bg-white p-5 shadow-card">
+      <section className="card">
         <h1 className="text-lg font-semibold">Withdraw from the Stability Pool</h1>
         <fieldset className="mt-4" disabled={busy}>
           <legend className="text-sm font-medium">Amount to withdraw</legend>
@@ -100,19 +100,19 @@ function WithdrawView(props: {
           <p className="mt-1 text-xs text-muted">Your deposit: {musd(props.data.snapshot.dashboard.sp.deposit)}</p>
         </fieldset>
       </section>
-      <section className="rounded-2xl bg-white p-5 shadow-card">
-        <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
-          <StatRow label="MUSD to withdraw (estimated)" strong>
+      <section className="card">
+        <dl className="stat-list">
+          <Stat label="MUSD to withdraw (estimated)" strong>
             {musd(preview.amount)}
-          </StatRow>
-          <StatRow label="Deposit after">{musd(preview.depositAfter)}</StatRow>
-          <StatRow label="BTC gain paid with it">{btc(preview.gainPaid)}</StatRow>
-          <StatRow label="MezoRoute fee">None</StatRow>
-          <StatRow label="Network fee (estimated)">{preview.gasCost === null ? "—" : btc(preview.gasCost)}</StatRow>
+          </Stat>
+          <Stat label="Deposit after">{musd(preview.depositAfter)}</Stat>
+          <Stat label="BTC gain paid with it">{btc(preview.gainPaid)}</Stat>
+          <Stat label="MezoRoute fee">None</Stat>
+          <Stat label="Network fee (estimated)">{preview.gasCost === null ? "—" : btc(preview.gasCost)}</Stat>
         </dl>
       </section>
       {paused ? (
-        <section role="status" className="rounded-2xl bg-white p-5 shadow-card">
+        <section role="status" className="card">
           <p className="text-sm text-danger">{SP_WITHDRAW_BLOCKED.message}</p>
           <p className="mt-1 text-xs text-muted">Claiming your BTC gain still works while withdrawals are paused.</p>
           <div className="mt-3 flex flex-wrap gap-3">

@@ -69,7 +69,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
   return (
     <>
       {chainId !== network.chainId && <WrongNetworkAlert />}
-      <section className="rounded-2xl bg-white p-5 shadow-card">
+      <section className="card">
         <h1 className="text-lg font-semibold">Earn swap fees in the MUSD/BTC pool</h1>
         <ModeToggle walletKind={walletKind} mode={intent.mode} onChange={(mode) => update({ ...intent, mode })} />
         <AmountForm

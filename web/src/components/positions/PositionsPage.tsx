@@ -58,7 +58,7 @@ function Positions({ account }: { account: Address }) {
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <h1 className="text-lg font-semibold">Your positions</h1>
       {view.empty && pool?.empty ? (
-        <section className="rounded-2xl bg-white p-5 shadow-card">
+        <section className="card">
           <p className="text-sm">You have no MUSD/BTC LP, no unclaimed pool fees, and no Stability Pool deposit on {network.name}.</p>
           <div className="mt-3 flex gap-4">
             <Link href="/route/lp/" className="text-xs font-semibold text-accent hover:underline">

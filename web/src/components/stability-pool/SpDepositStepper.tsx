@@ -22,7 +22,7 @@ const COPY: Record<SpStepKind, { title: string; detail: string; action: string }
 export function SpDepositStepper({ block, ...flow }: SpDepositFlowInput & { block: SpBlock | null }) {
   const { stepper, run } = useSpDepositFlow(flow);
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-card">
+    <section className="card">
       <h2 className="font-semibold">Confirm</h2>
       <ol className="mt-3 space-y-3">
         {stepper.steps.map((step, index) => (

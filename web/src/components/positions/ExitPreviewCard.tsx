@@ -1,4 +1,4 @@
-import { StatRow } from "@/components/dashboard/StatRow";
+import { Stat } from "@/components/ui/Stat";
 import { btc, lp, musd } from "@/components/lp/units";
 import { formatPercent } from "@/lib/format";
 import type { ExitMinimums, ExitQuote } from "@/lib/quote/exit";
@@ -16,20 +16,20 @@ export function ExitPreviewCard({
   blockNumber: bigint;
 }) {
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-card">
+    <section className="card">
       <h2 className="font-semibold">Estimated result</h2>
-      <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
-        <StatRow label="LP to exit">{lp(quote.liquidityIn)}</StatRow>
-        <StatRow label="MUSD from the pool">{musd(quote.musdRemoved)}</StatRow>
-        <StatRow label="BTC from the pool">{btc(quote.btcRemoved)}</StatRow>
-        <StatRow label="MUSD from selling the BTC">{musd(quote.musdFromSwap)}</StatRow>
-        <StatRow label="You receive (estimated)" strong>
+      <dl className="mt-3 stat-list">
+        <Stat label="LP to exit">{lp(quote.liquidityIn)}</Stat>
+        <Stat label="MUSD from the pool">{musd(quote.musdRemoved)}</Stat>
+        <Stat label="BTC from the pool">{btc(quote.btcRemoved)}</Stat>
+        <Stat label="MUSD from selling the BTC">{musd(quote.musdFromSwap)}</Stat>
+        <Stat label="You receive (estimated)" strong>
           {musd(quote.musdOut)}
-        </StatRow>
-        <StatRow label="Minimum you receive">{musd(minimums.minMusdOut)}</StatRow>
-        <StatRow label="Price impact">{formatPercent(quote.priceImpact, 2)}</StatRow>
-        <StatRow label="MezoRoute fee">None on exit</StatRow>
-        <StatRow label="Network fee (estimated)">{gasCost === null ? "—" : btc(gasCost)}</StatRow>
+        </Stat>
+        <Stat label="Minimum you receive">{musd(minimums.minMusdOut)}</Stat>
+        <Stat label="Price impact">{formatPercent(quote.priceImpact, 2)}</Stat>
+        <Stat label="MezoRoute fee">None on exit</Stat>
+        <Stat label="Network fee (estimated)">{gasCost === null ? "—" : btc(gasCost)}</Stat>
       </dl>
       <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted">
         <li>Unclaimed pool fees stay claimable after you exit.</li>
