@@ -34,8 +34,12 @@ describe("networks", () => {
     });
   });
 
-  it("has no mainnet executor before M1", () => {
-    expect(networks.mainnet.executor).toBeNull();
+  it("pins the deployed mainnet executor and its 10 bps fee (M1)", () => {
+    expect(networks.mainnet.executor).toEqual({
+      address: "0x046449b1229C863e278f369869BA10e12bd80d9E",
+      feeBps: 10n,
+      deployBlock: 12_524_142n,
+    });
   });
 
   it("offers a faucet on testnet only", () => {

@@ -13,7 +13,7 @@ describe("claimBlock", () => {
   });
 
   it("blocks in order: no executor (mainnet read-only), wrong network, nothing to claim, gas", () => {
-    expect(claimBlock({ network: networks.mainnet, walletChainId: 1, fees: { musd: 0n, btc: 0n }, lacksGas: true })?.reason).toBe("no-executor");
+    expect(claimBlock({ network: { ...networks.mainnet, executor: null }, walletChainId: 1, fees: { musd: 0n, btc: 0n }, lacksGas: true })?.reason).toBe("no-executor");
     expect(claimBlock({ network: testnet, walletChainId: 1, fees: { musd: 0n, btc: 0n }, lacksGas: true })?.reason).toBe("wrong-network");
     expect(claimBlock({ network: testnet, walletChainId: testnet.chainId, fees: { musd: 0n, btc: 0n }, lacksGas: true })).toMatchObject({
       reason: "nothing-to-claim",

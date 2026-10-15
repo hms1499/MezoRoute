@@ -13,7 +13,7 @@ describe("spDepositBlock", () => {
   });
 
   it.each([
-    [{ network: networks.mainnet, walletChainId: 31612 }, "no-executor"],
+    [{ network: { ...networks.mainnet, executor: null }, walletChainId: 31612 }, "no-executor"],
     [{ walletChainId: 1 }, "wrong-network"],
     [{ musdIn: null }, "zero"],
     [{ musdIn: 10n * ONE + 1n }, "insufficient-balance"],

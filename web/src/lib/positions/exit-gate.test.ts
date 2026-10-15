@@ -27,7 +27,7 @@ describe("exitBlock", () => {
   });
 
   it("blocks in order: no executor, wrong network, no LP, LP changed, too small, impact, gas, stale quote", () => {
-    expect(exitBlock(input({ network: networks.mainnet, walletChainId: 1, lpBalance: 0n }))?.reason).toBe("no-executor");
+    expect(exitBlock(input({ network: { ...networks.mainnet, executor: null }, walletChainId: 1, lpBalance: 0n }))?.reason).toBe("no-executor");
     expect(exitBlock(input({ walletChainId: 1, lpBalance: 0n }))?.reason).toBe("wrong-network");
     expect(exitBlock(input({ lpBalance: 0n, quote: null }))).toMatchObject({
       reason: "no-lp",

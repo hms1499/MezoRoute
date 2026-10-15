@@ -388,7 +388,7 @@ All dependencies are immutable constructor arguments; the executor accepts no us
 | PoolFactory | `0x4947243CC818b627A5D06d14C4eCe7398A23Ce1A` | `0x83FE469C636C4081b87bA5b3Ae9991c6Ed104248` |
 | MUSD/BTC pool (volatile) | `0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9` | `0x52e604c44417233b6CcEDDDc0d640A405Caacefb` |
 | BorrowerOperationsSignatures | `0xD757e3646AF370b15f32EB557F0F8380Df7D639e` | `0xB57ab578BF20b3e318f3EFAA587C51DBccE5df7a` |
-| **MezoRouteExecutor (deployed, verified)** | `0xB36B2E012003840951CFf00fA6b1E3237A110920` (cap 1,000,000 MUSD; deployed 2 Oct 2026) | Wave 1 (M1, cap 1,000 MUSD) |
+| **MezoRouteExecutor (deployed, verified)** | `0xB36B2E012003840951CFf00fA6b1E3237A110920` (cap 1,000,000 MUSD; deployed 2 Oct 2026) | `0x046449b1229C863e278f369869BA10e12bd80d9E` (cap 1,000 MUSD, fee 10 bps; block 12,524,142, 15 Oct 2026) |
 
 Frontend-only reads and direct calls:
 
@@ -768,6 +768,8 @@ F6 done 15 Oct 2026: Route comparison card on the dashboard: per-amount LP vs St
 
 F8 done 15 Oct 2026: mainnet reference card on the testnet dashboard (pool reserves and value, swap fee, 30-day LP fees, Stability Pool deposits and share of MUSD supply, 30-day liquidations), read through its own mainnet client, and `npm run quote-accuracy` checking every executor `Entered` event against the quote engine (14 of 14 checked on testnet, simulation exact, all within 1% slippage, maximum deviation 1 bps); design in `docs/superpowers/specs/2026-10-15-f8-reference-card-quote-accuracy-design.md`.
 
+M1 done 15 Oct 2026: `MezoRouteExecutor` on Mezo mainnet at `0x046449b1229C863e278f369869BA10e12bd80d9E` (cap 1,000 MUSD, fee 10 bps to `0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8`), source-verified, pinned in the frontend (mainnet writes open); real round trips through the UI with MetaMask: Stability Pool deposit → withdraw and LP enter → claim fees → exit (hashes in §20). Mainnet quote accuracy: 1 of 1 exact.
+
 ### Wave 1 — MVP backlog (in order)
 
 | ID | Task | Depends on |
@@ -873,6 +875,17 @@ Wave 2 work must not be included in the Wave 1 submission.
 - RPC: `https://mainnet.mezo.public.validationcloud.io` (also `https://rpc-http.mezo.boar.network`)
 - Explorer: `https://explorer.mezo.org`
 - Chain ID: `31612`
+- App RPC: `https://rpc-internal.mezo.org` (Passport's chain; viem's built-in `rpc.mezo.org` has no DNS record)
+- Funding: the native BTC bridge-in from Bitcoin closed on 13 Oct 2026. BTC arrives as tBTC from Ethereum through the Mezo app's Deposit (≈17 minutes on 15 Oct); MUSD can also come from Base or Ethereum through Wormhole NTT.
+
+### M1 mainnet round trip (15 Oct 2026, user's MetaMask `0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8`)
+
+- Executor deploy: `https://explorer.mezo.org/tx/0x8aa55418f1da98ea1700c9e950f01d8cadf94fc34633650f5e60f9e68aafb71d`
+- Stability Pool: approve `0xd05e967132a4ed72e026ac91ba674a3a65688465bf89271bacc5f0f5e048146d`, `provideToSP(10 MUSD)` `0x060d441ea7f4fd7b1162219c021c7fa14d1851ea58e9e0da3219b6ce2eb0b7fe`, `withdrawFromSP(10 MUSD)` `0xaf96787a5a56aa9843885c5fdcafd27ae50e07832206de8aca7a592387df2bb6`
+- LP enter (permit, 10 MUSD → 0.017446 LP): `0xb401267a1a3789c8e5b7d3ba3ace8c307d29adabccd08d665a1bd7c1497860fb`; quote-accuracy replays it exactly (0 bps)
+- LP claim fees: `0xde86d4c16f4a72f023f3ec25c81523e7fe6ed6255e55686e5f66793103623521`
+- LP exit (Max, permit → 9.9636 MUSD): `0x48c1cb0d720b319d8e82055e0d02a0425b24182308bd22123e248c5c6ef97147`
+- Net cost of the LP round trip: 0.0264 MUSD on 10 MUSD (both pool swap fees and impact; the 0.01 MUSD MezoRoute fee went to the fee recipient, the same wallet). The executor holds no MUSD, BTC, or LP afterwards.
 
 ### Research transactions
 
@@ -891,9 +904,8 @@ Wave 2 work must not be included in the Wave 1 submission.
 
 ## 21. Open questions (non-blocking)
 
-- Final execution fee value (proposed 10 bps) and fee recipient address.
 - Final price-impact hard limit after integration tests. The CR safety floor is set provisionally to 160% (F2, 5 Oct 2026): a borrow must leave the Trove able to survive a 30% BTC drop, and the dashboard shows a Trove as at risk when a 30% drop would put it below the MCR.
-- Mainnet fee recipient address; cap for `MezoRouteLeverage` (Wave 2).
+- Cap for `MezoRouteLeverage` (Wave 2).
 - Leverage execution fee (proposed: same 10 bps on the MUSD borrowed).
 - Whether Mezo announces MEZO utility for integrators during the event.
 

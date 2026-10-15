@@ -53,7 +53,8 @@ describe("positionsContracts", () => {
       return call && "args" in call ? call.args : undefined;
     };
     expect(allowance(networks.testnet)).toEqual([ACCOUNT, networks.testnet.executor!.address]);
-    expect(allowance(networks.mainnet)).toEqual([ACCOUNT, zeroAddress]);
+    expect(allowance(networks.mainnet)).toEqual([ACCOUNT, networks.mainnet.executor!.address]);
+    expect(allowance({ ...networks.mainnet, executor: null })).toEqual([ACCOUNT, zeroAddress]);
   });
 });
 
