@@ -196,6 +196,8 @@ The app never blocks use of wallet-held MUSD because of Trove health, but the wa
 | BTC price exposure | Yes — about half the position becomes BTC | Only after liquidations, as pending BTC gains |
 | Other risks | Impermanent loss, pool liquidity | Deposit shrinks when absorbing liquidated debt; withdrawals blocked while any Trove is under-collateralised |
 | MezoRoute fee | Execution fee (bps) | None (direct protocol call) |
+| Last 30 days | Swap fees as a share of the amount, and a simple yearly rate (fees only) | Liquidations absorbed: BTC gained and deposit absorbed; never annualised |
+| Your amount 30 days ago → today | Backtest from the pool fee indexes and reserves at both blocks, at the pool's price | Backtest with the pool's P/S (Liquity v1 maths) |
 | Exposure after deposit | From the exposure module | From the exposure module |
 
 3. User picks a route and continues to its detail screen.
@@ -293,7 +295,7 @@ Precondition: user has a Trove and uses an EOA wallet.
 | FR-16 | Borrow & Deploy | One executor transaction borrows and deposits into LP; borrowed MUSD only moves between the user and the executor |
 | FR-17 | Stability Pool route | Deposit, withdraw, compounded deposit, and pending BTC gain work against the live Stability Pool |
 | FR-18 | Execution fee | Entry fee is shown in bps and MUSD before signing, charged on-chain exactly as shown, emitted in `Entered`, and never charged on exit or on Stability Pool actions |
-| FR-19 | Route comparison | Both routes are compared for the entered amount with return source, risks, fee, and exposure effect |
+| FR-19 | Route comparison | Both routes are compared for the entered amount with return source, risks, fee, exposure effect, and the last 30 days' on-chain results (two-block state reads, not a forecast) |
 | FR-20 | Leverage (Wave 2) | One transaction adds flash-borrowed BTC to the user's Trove and borrows exactly enough MUSD to repay the pool; reverts if the resulting CR is below the user's minimum |
 | FR-22 | Mainnet cap | Entry above `maxMusdIn` is blocked in the UI and reverts on-chain; exit is never capped |
 | FR-23 | Wallet capabilities | EOAs get permits and Borrow & Deploy; smart accounts get exact approvals and a disabled Borrow & Deploy with an explanation |
@@ -761,6 +763,8 @@ F4 done 12 Oct 2026: Borrow & Deploy (borrow authorisation, Trove hints, 160% CR
 F7 done 12 Oct 2026: Positions (LP): underlying, exit value, cost basis from executor logs, claimable fees + Claim, and exit to MUSD (permit or approval); design in `docs/superpowers/specs/2026-10-12-f7-lp-positions-design.md`. The Stability Pool position and withdraw move to F5.
 
 F5 done 14 Oct 2026: Stability Pool deposit (exact approval → `provideToSP`), position with cost basis from the explorer API, BTC-gain claim (`withdrawFromSP(0)`, which the pool never pauses), and withdraw 25/50/75/Max with the paused-pool state; design in `docs/superpowers/specs/2026-10-14-f5-stability-pool-design.md`.
+
+F6 done 15 Oct 2026: Route comparison card on the dashboard: per-amount LP vs Stability Pool (fee, position, BTC exposure, −30%), plus 30-day results and a backtest of the amount from archive reads at two blocks; design in `docs/superpowers/specs/2026-10-15-f6-route-comparison-design.md`.
 
 ### Wave 1 — MVP backlog (in order)
 

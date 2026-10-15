@@ -16,7 +16,7 @@ On the dashboard, a user types an MUSD amount and sees the MUSD/BTC LP route and
 | 30-day source | State at two blocks: one multicall at the block ≈30 days ago, one at the head. Pool fee indexes, reserves, LP supply, swap fee, oracle price, and Stability Pool `P`/`S`/epoch/scale. Not an event scan: mainnet has more than 1,000 pool `Fees` events in 30 days (Blockscout's page size), and events only add counts. |
 | LP 30-day figure | Fees as a share of the amount over the actual window, plus a simple annualised rate ("≈Y% a year, fees only"). This matches the trailing-window APY other dashboards show (DefiLlama's "30d Avg APY"). |
 | SP 30-day figure | No annualised rate. SP returns arrive in bursts (Liquity once reported 751% for a single week), so a rate from one window misleads. Show what happened: "No liquidations reached the pool" or "BTC gains X% · deposit absorbed Y%". |
-| "Your amount 30 days ago" | Both routes are backtested with the typed amount (1,000 MUSD when the field is empty), valued today at the oracle price. Labelled "Past results, not a forecast". |
+| "Your amount 30 days ago" | Both routes are backtested with the typed amount (1,000 MUSD when the field is empty). LP values use today's pool mid price (what leaving would fetch; QA found testnet's oracle ≈3% above the pool, which made a fresh deposit look like a gain); the Stability Pool's BTC gain uses the oracle price. Labelled "Past results, not a forecast". |
 | LP fee | The executor fee comes from `network.executor.feeBps`. Mainnet has no executor until M1: the quote uses 0 and the fee row reads "Set at launch". The route CTAs stay enabled on mainnet, and the route pages show the read-only state. |
 | Pool swap fee | `PoolFactory.getFee(pool, false)` moves into the dashboard snapshot (`DashboardSnapshot.poolFeeBps`), so the comparison quotes from the same block as everything else. The LP route snapshot reuses it instead of reading it again. |
 
@@ -32,8 +32,8 @@ On the dashboard, a user types an MUSD amount and sees the MUSD/BTC LP route and
 
 ## 1. Pure modules (`src/lib/compare/`)
 
-- `window.ts`: `HISTORY_DAYS = 30`. `pastBlock(head, headTime, refTime, refSpan)` returns `head − floor(30 days × refSpan / (headTime − refTime))`, where `ref = head − 100,000`. The window is `[pastTime, headTime]`, using the real timestamp of the chosen block. `annualise(ratioWad, seconds)` is a simple rate, `ratio × 365 days / seconds`.
-- `lp-backtest.ts`: `lpBacktest({ past, now, amount, executorFeeBps })`. `past` and `now` carry reserves mapped by token address, `totalSupply`, the fee indexes mapped to MUSD/BTC, the swap fee, and the oracle price.
+- `window.ts`: `HISTORY_DAYS = 30`. `pastBlock(head, headTime, refTime, refSpan)` returns `head − floor(30 days × refSpan / (headTime − refTime))`, where `ref = head − 600,000` (about the window itself: over the last 100,000 blocks testnet ran fast enough that the estimate landed at 26.5 days). The window is `[pastTime, headTime]`, using the real timestamp of the chosen block. `annualise(ratioWad, seconds)` is a simple rate, `ratio × 365 days / seconds`.
+- `lp-backtest.ts`: `lpBacktest({ past, now, amount, executorFeeBps })`. `past` and `now` carry reserves mapped by token address, `totalSupply`, the fee indexes mapped to MUSD/BTC, and the swap fee. BTC is valued at `now`'s pool mid price.
   - Entry: `quoteEntry(pastPool, amount, executorFeeBps)` gives `liquidity` and `musdRefund`. A null quote returns null.
   - Fees: `liquidity × ΔindexMusd / 1e18` MUSD and `liquidity × ΔindexBtc / 1e18` BTC.
   - Position today: `liquidity × reserve / totalSupply` of each token at `now`.
@@ -46,7 +46,7 @@ On the dashboard, a user types an MUSD amount and sees the MUSD/BTC LP route and
 - `comparison.ts`: `compareRoutes({ snapshot, amount, executorFeeBps, network })`, the per-amount part:
   - LP: `quoteEntry` with the snapshot's pool and swap fee, then `afterEntry`, then `exposure` and `drawdownScenarios` (the −30% row).
   - SP: `afterSpDeposit(snapshot, amount)`, then the same exposure maths.
-  - The LP side returns `status: "ok"` with `fee`, `priceImpact`, `positionValue` (the new LP share's value at the oracle price), `btcBefore`, `btcAfter`, and `valueAfterDrop` (`lpValueAfterDrop(positionValue, 30)`, the exposure module's √-price rule, extracted from `drawdownScenarios`), or `status: "unavailable"` when `quoteEntry` returns null (an empty pool; it never rejects an amount for size). The SP side returns `positionValue` = `valueAfterDrop` = `amount` (a deposit does not move with the BTC price; new liquidations are not modelled), `btcBefore`, `btcAfter`. Both share `overBalance` (amount above wallet MUSD).
+  - The LP side returns `status: "ok"` with `fee`, `priceImpact`, `positionValue` (the new LP share's value at the pool's price after the entry), `btcBefore`, `btcAfter`, and `valueAfterDrop` (`lpValueAfterDrop(positionValue, 30)`, the exposure module's √-price rule, extracted from `drawdownScenarios`), or `status: "unavailable"` when `quoteEntry` returns null (an empty pool; it never rejects an amount for size). The SP side returns `positionValue` = `valueAfterDrop` = `amount` (a deposit does not move with the BTC price; new liquidations are not modelled), `btcBefore`, `btcAfter`. Both share `overBalance` (amount above wallet MUSD).
 - `src/lib/stability-pool/after-deposit.ts`: `afterSpDeposit(snapshot, musdIn)` is extracted from `spDepositPreview().after`, which then calls it. The behaviour is unchanged: deposit + amount, the gain is paid to the wallet, wallet MUSD − amount.
 - `src/lib/routes/copy.ts`: return sources and risk lines as constants (the risk arrays move here from `RisksCard` and `SpRisksCard`), taken from Flow B and F5's risk sentences, so the card and the route pages say the same thing.
 
@@ -54,7 +54,7 @@ On the dashboard, a user types an MUSD amount and sees the MUSD/BTC LP route and
 
 - **Dashboard snapshot** (`src/lib/dashboard/snapshot.ts`): add `PoolFactory.getFee(pool, false)` as the last dashboard read; `DashboardSnapshot` gains `poolFeeBps`. `DASHBOARD_READS` grows by one; `lpRouteContracts` drops its own `getFee` and `parseLpRouteSnapshot` takes `feeBps` from the dashboard part. The SP snapshot slices by `DASHBOARD_READS` and needs no other change.
 - **History** (`src/lib/compare/history.ts`, `useRouteHistory`): uses wagmi's public client for the selected `chainId`.
-  1. `getBlock("latest")`, then `getBlock(head − 100,000)`, then `pastBlock(...)`.
+  1. `getBlock("latest")`, then `getBlock(head − 600,000)`, then `pastBlock(...)`.
   2. In parallel: `getBlock(past)` (its timestamp) and the past-state multicall (`multicall({ blockNumber: past, allowFailure: false })`): pool `index0`, `index1`, `getReserves`, `totalSupply`, `PoolFactory.getFee`; SP `P`, `currentEpoch`, `currentScale`. Today's value uses today's price, so no past price is read.
   3. In parallel, since both need the past epoch and scale:
      - at `past`: SP `epochToScaleToSum(pastEpoch, pastScale)`.
@@ -120,6 +120,26 @@ On the dashboard, a user types an MUSD amount and sees the MUSD/BTC LP route and
 - `npm test && npm run build` pass, and agent QA passes on both networks.
 - `PRODUCT_SPEC.md`: Flow B table gains the "Last 30 days" and "Your amount 30 days ago" rows; FR-19 mentions the 30-day results; §16 records F6.
 - `CLAUDE.md` frontend notes cover the comparison card, the two-block history reads (archive `eth_call`, window from timestamps), and the SP no-annualisation rule.
+
+### QA result (15 Oct 2026): agent run passed
+
+Local export with a keyless mock wallet (Playwright):
+- **Testnet** (can-borrow account `0xe618…0D56`): the card sits between BTC exposure and Positions. The window was blocks 15,541,923 → 16,164,452 (Sep 15, 29.97 days; label "Last 30 days").
+  - `cast` at those blocks: `index0` +2.80e12 per LP and `P` unchanged. The card showed "Fees <0.01% (<0.1% a year, fees only)" and "No liquidations reached the pool".
+  - 20 MUSD showed: fee "0.1% (0.02 MUSD)"; position ≈19.976 MUSD; price impact 0.04%; BTC exposure 0.099499 → 0.099626 BTC; −30% ≈16.71 MUSD; SP 20 MUSD.
+  - `20,5` showed the amount error. `0` showed none. 99,999,999 showed the over-balance note and a 28.84% price impact, with no block.
+  - The CTAs opened `/route/lp/?amount=20&slippage=1` (the app's default slippage is 1%) and `/route/stability-pool/?amount=20`, both with 20 filled in.
+  - Aborting every historical `eth_call` showed "30-day results unavailable." after 2.3 s; the per-amount rows kept working, and Retry filled the rows.
+  - 360 px: no horizontal scroll, and the columns stack.
+- **Mainnet** (read-only; `0xDc88…6aD1`, whose Trove is now closed): blocks 11,856,432 → 12,519,503.
+  - "Fees 0.12% (≈1.5% a year, fees only)"; "No liquidations reached the pool"; LP fee "Set at launch".
+  - 20 MUSD showed a position of ≈19.971 MUSD with 0.3% price impact.
+  - "Choose LP" lands on "Mainnet actions open after launch. Reading only."
+- **Live history reads** (throwaway script): mainnet 29.95 days and testnet 29.97 days, 1.3–2.2 s each.
+- **Bugs fixed in QA:**
+  - The comparison valued LP BTC at the oracle price, so on testnet 20 MUSD in read 20.32 and a fee-less backtest read +1.59%. LP values now use the pool's own price.
+  - The window estimate used 100,000 blocks of block time (testnet 26.5 days); it now uses 600,000.
+  - Wording: no "≈" before a sub-0.1% rate, and a footnote that names the prices used.
 
 ## Out of scope
 
