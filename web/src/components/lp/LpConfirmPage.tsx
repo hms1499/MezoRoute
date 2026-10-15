@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadingCard } from "@/components/ui/Skeleton";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
@@ -48,13 +49,14 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
     return error ? (
       <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
     ) : (
-      <div aria-busy="true" aria-label="Loading the quote" className="h-48 animate-pulse rounded-2xl bg-white shadow-card" />
+      <LoadingCard label="Loading the quote" />
     );
   }
 
   const preview = entryPreview({ network, data, intent, walletKind, walletChainId: chainId, now });
   return (
     <>
+      <PageHeader back={{ href: `/route/lp/${entryQuery(intent)}`, label: "Change amount" }} step={2} />
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <ConfirmSummary
         preview={preview}
@@ -72,9 +74,6 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
         refresh={refresh}
         block={preview.block}
       />
-      <Link href={`/route/lp/${entryQuery(intent)}`} className="inline-block text-xs font-semibold text-accent hover:underline">
-        Change amount
-      </Link>
     </>
   );
 }

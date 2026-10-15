@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadingCard } from "@/components/ui/Skeleton";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
@@ -40,19 +41,17 @@ function SpConfirm({ account }: { account: Address }) {
     return error ? (
       <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
     ) : (
-      <div aria-busy="true" aria-label="Loading the Stability Pool" className="h-48 animate-pulse rounded-2xl bg-white shadow-card" />
+      <LoadingCard label="Loading the Stability Pool" />
     );
   }
 
   const preview = spDepositPreview({ network, data, musdIn, walletKind, walletChainId: chainId });
   return (
     <>
+      <PageHeader back={{ href: `/route/stability-pool/${spDepositQuery(amount)}`, label: "Change amount" }} step={2} />
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <SpDepositCard preview={preview} />
       <SpDepositStepper account={account} musdIn={musdIn} walletKind={walletKind} plan={preview.steps} refresh={refresh} block={preview.block} />
-      <Link href={`/route/stability-pool/${spDepositQuery(amount)}`} className="inline-block text-xs font-semibold text-accent hover:underline">
-        Change amount
-      </Link>
     </>
   );
 }
