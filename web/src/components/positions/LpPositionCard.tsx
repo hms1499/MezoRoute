@@ -1,4 +1,6 @@
-import Link from "next/link";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { Stat } from "@/components/ui/Stat";
 import { btc, lp as lpUnits, musd, signedMusd } from "@/components/lp/units";
 import { formatPercent } from "@/lib/format";
@@ -10,8 +12,7 @@ type History = { events: unknown; error: Error | null; retry: () => void };
 /** Flow F: what the LP holds, what it would return now, and what it cost (estimates, never "profit"). */
 export function LpPositionCard({ lp, history }: { lp: LpView; history: History }) {
   return (
-    <section className="card">
-      <h2 className="font-semibold">MUSD/BTC pool</h2>
+    <Card title="MUSD/BTC pool" aside={<span className="text-lg font-semibold">{musd(lp.value)}</span>}>
       <dl className="mt-3 stat-list">
         <Stat label="LP balance" sub={`${formatPercent(lp.share, 4)} of the pool`}>
           {lpUnits(lp.balance)}
@@ -30,13 +31,10 @@ export function LpPositionCard({ lp, history }: { lp: LpView; history: History }
           {lpUnits(lp.cost.unattributedLp)} was not deposited through MezoRoute and has no cost basis.
         </p>
       )}
-      <Link
-        href={`/positions/lp/exit/${exitQuery(DEFAULT_EXIT_INTENT)}`}
-        className="mt-4 inline-block rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent/90"
-      >
+      <ButtonLink href={`/positions/lp/exit/${exitQuery(DEFAULT_EXIT_INTENT)}`} className="mt-4">
         Exit to MUSD
-      </Link>
-    </section>
+      </ButtonLink>
+    </Card>
   );
 }
 
@@ -45,13 +43,13 @@ function CostRows({ lp, history }: { lp: LpView; history: History }) {
     return (
       <Stat label="Cost basis">
         Unavailable{" "}
-        <button type="button" onClick={history.retry} className="text-xs font-semibold text-accent hover:underline">
+        <Button size="sm" variant="ghost" onClick={history.retry}>
           Retry
-        </button>
+        </Button>
       </Stat>
     );
   }
-  if (!lp.cost) return <Stat label="Cost basis">Loading…</Stat>;
+  if (!lp.cost) return <Stat label="Cost basis"><Skeleton className="ml-auto h-4 w-24" /></Stat>;
   if (lp.cost.coveredLp === 0n) return <Stat label="Cost basis">No MezoRoute deposits</Stat>;
   return (
     <>

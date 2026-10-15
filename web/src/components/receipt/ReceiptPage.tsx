@@ -1,13 +1,15 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
+import { CircleCheck, CircleX, LoaderCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect } from "react";
 import type { Address, Hash, TransactionReceipt } from "viem";
 import { useAccount, useConfig } from "wagmi";
+import { ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Stat } from "@/components/ui/Stat";
-import { ExternalButton } from "@/components/ExternalButton";
 import { useNetwork } from "@/lib/config/network-context";
 import { explorerTxUrl } from "@/lib/config/networks";
 import { decodeError } from "@/lib/errors/decode";
@@ -19,6 +21,7 @@ import { spReceiptRows } from "@/lib/stability-pool/receipt";
 import { collateralRatio } from "@/lib/trove/health";
 import { receiptKind } from "@/lib/tx/receipt-kind";
 import { confirmCall, isTxHash } from "@/lib/tx/send";
+import { cx } from "@/lib/ui/cx";
 
 const RECEIPT_KEY = "entry-receipt";
 
@@ -29,7 +32,7 @@ export default function ReceiptPage() {
     return (
       <Card>
         <p className="text-sm">This link has no valid transaction hash.</p>
-        <BackLink />
+        <Actions />
       </Card>
     );
   }
@@ -56,21 +59,26 @@ function Receipt({ hash }: { hash: Hash }) {
   }, [receipt.isSuccess, queryClient]);
 
   const explorer = explorerTxUrl(network, receipt.data?.transactionHash ?? hash);
+  const state = receipt.isSuccess ? "confirmed" : receipt.isError ? "failed" : "pending";
   return (
-    <Card>
-      {receipt.isPending && (
-        <>
-          <h1 className="text-lg font-semibold">Confirming…</h1>
-          <p className="mt-1 text-sm text-muted">Transaction {shortAddress(hash)} is submitted. This usually takes a few seconds.</p>
-        </>
-      )}
-      {receipt.isError && <Failed error={receipt.error} />}
-      {receipt.isSuccess && <Confirmed receipt={receipt.data} />}
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <ExternalButton href={explorer}>View in explorer</ExternalButton>
-        <BackLink />
-      </div>
-    </Card>
+    <>
+      <PageHeader back={{ href: "/", label: "Dashboard" }} step={state === "confirmed" ? 3 : 2} labels={["Amount", "Confirm", "Done"]} />
+      <Card>
+        <StatusIcon state={state} />
+        <Timeline state={state} />
+        <div className="mt-4">
+          {receipt.isPending && (
+            <>
+              <h1 className="text-xl font-semibold">Confirming…</h1>
+              <p className="mt-1 text-sm text-muted">Transaction {shortAddress(hash)} is submitted. This usually takes a few seconds.</p>
+            </>
+          )}
+          {receipt.isError && <Failed error={receipt.error} />}
+          {receipt.isSuccess && <Confirmed receipt={receipt.data} />}
+        </div>
+        <Actions explorer={explorer} />
+      </Card>
+    </>
   );
 }
 
@@ -89,7 +97,7 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
   if (!result) {
     return (
       <>
-        <h1 className="text-lg font-semibold">Transaction confirmed</h1>
+        <h1 className="text-xl font-semibold">Transaction confirmed</h1>
         <p className="mt-2 text-sm text-muted">This transaction has no MezoRoute action.</p>
       </>
     );
@@ -105,7 +113,7 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
           : spReceiptRows(result.sp);
   return (
     <>
-      <h1 className="text-lg font-semibold">{borrowed ? "Borrow & deposit confirmed" : TITLES[result.kind]}</h1>
+      <h1 className="text-xl font-semibold">{borrowed ? "Borrow & deposit confirmed" : TITLES[result.kind]}</h1>
       <dl className="mt-3 stat-list">
         {rows.map((row) => (
           <Stat key={row.label} label={row.label}>
@@ -147,25 +155,49 @@ function Failed({ error }: { error: Error }) {
   const decoded = decodeError(error, network);
   return (
     <>
-      <h1 className="text-lg font-semibold">{decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Transaction failed"}</h1>
+      <h1 className="text-xl font-semibold">{decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Transaction failed"}</h1>
       <p className="mt-1 text-sm">{decoded.message}</p>
     </>
   );
 }
 
-function Card({ children }: { children: ReactNode }) {
-  return <section className="card">{children}</section>;
+function StatusIcon({ state }: { state: "pending" | "confirmed" | "failed" }) {
+  const shared = "h-12 w-12";
+  if (state === "confirmed") return <CircleCheck aria-hidden className={cx(shared, "text-accent")} />;
+  if (state === "failed") return <CircleX aria-hidden className={cx(shared, "text-danger")} />;
+  return <LoaderCircle aria-hidden className={cx(shared, "text-accent motion-safe:animate-spin")} />;
 }
 
-function BackLink() {
+/** Submitted → Confirming → Confirmed (U1 §6). */
+function Timeline({ state }: { state: "pending" | "confirmed" | "failed" }) {
+  const stages = [
+    { label: "Submitted", done: true },
+    { label: "Confirming", done: state !== "pending", current: state === "pending" },
+    { label: state === "failed" ? "Failed" : "Confirmed", done: state === "confirmed", failed: state === "failed" },
+  ];
   return (
-    <span className="flex gap-3">
-      <Link href="/positions/" className="text-xs font-semibold text-accent hover:underline">
-        View positions
-      </Link>
-      <Link href="/" className="text-xs font-semibold text-accent hover:underline">
-        Back to dashboard
-      </Link>
-    </span>
+    <ol aria-label="Transaction status" className="mt-4 flex flex-wrap items-center gap-2 text-xs font-medium">
+      {stages.map((stage, index) => (
+        <li key={stage.label} className="flex items-center gap-2">
+          {index > 0 && <span aria-hidden className={cx("h-px w-6", stage.done || stage.current ? "bg-accent" : "bg-line")} />}
+          <span className={cx(stage.failed ? "text-danger" : stage.done ? "text-accent" : stage.current ? "text-ink" : "text-muted")}>
+            {stage.label}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function Actions({ explorer }: { explorer?: string }) {
+  return (
+    <div className="mt-6 flex flex-wrap gap-2">
+      <ButtonLink href="/positions/">View positions</ButtonLink>
+      {explorer && (
+        <ButtonLink href={explorer} external variant="secondary">
+          View on explorer
+        </ButtonLink>
+      )}
+    </div>
   );
 }

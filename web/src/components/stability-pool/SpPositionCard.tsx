@@ -1,4 +1,6 @@
-import Link from "next/link";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { Stat } from "@/components/ui/Stat";
 import { BlockNotice } from "@/components/lp/BlockNotice";
 import { btc, musd, signedMusd } from "@/components/lp/units";
@@ -24,8 +26,7 @@ export function SpPositionCard({
   claiming: boolean;
 }) {
   return (
-    <section className="card">
-      <h2 className="font-semibold">Stability Pool</h2>
+    <Card title="Stability Pool" aside={<span className="text-lg font-semibold">{musd(view.value)}</span>}>
       <dl className="mt-3 stat-list">
         <Stat label="Deposit now" sub="After absorbed liquidations">
           {musd(view.deposit)}
@@ -39,23 +40,13 @@ export function SpPositionCard({
         <CostRows view={view} history={history} />
       </dl>
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Link
-          href={`/positions/stability-pool/withdraw/${spWithdrawQuery(100)}`}
-          className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent/90"
-        >
-          Withdraw
-        </Link>
-        <button
-          type="button"
-          disabled={claimBlock !== null || claiming}
-          onClick={onClaim}
-          className="rounded-full border border-accent px-5 py-2.5 text-sm font-semibold text-accent hover:bg-accent-soft disabled:opacity-50"
-        >
+        <ButtonLink href={`/positions/stability-pool/withdraw/${spWithdrawQuery(100)}`}>Withdraw</ButtonLink>
+        <Button variant="secondary" disabled={claimBlock !== null} loading={claiming} onClick={onClaim}>
           {claiming ? "Check your wallet…" : "Claim BTC gain"}
-        </button>
+        </Button>
         <BlockNotice block={claimBlock?.reason === "no-gain" ? null : claimBlock} />
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -64,14 +55,14 @@ function CostRows({ view, history }: { view: SpView; history: History }) {
     return (
       <Stat label="Cost basis">
         Unavailable{" "}
-        <button type="button" onClick={history.retry} className="text-xs font-semibold text-accent hover:underline">
+        <Button size="sm" variant="ghost" onClick={history.retry}>
           Retry
-        </button>
+        </Button>
       </Stat>
     );
   }
-  if (history.status === "updating") return <Stat label="Cost basis">Updating…</Stat>;
-  if (!view.cost) return <Stat label="Cost basis">Loading…</Stat>;
+  if (history.status === "updating") return <Stat label="Cost basis"><Skeleton className="ml-auto h-4 w-24" /></Stat>;
+  if (!view.cost) return <Stat label="Cost basis"><Skeleton className="ml-auto h-4 w-24" /></Stat>;
   return (
     <>
       <Stat label="Cost basis" sub="MUSD you put in, less what you took out">
