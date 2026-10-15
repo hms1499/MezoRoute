@@ -12,13 +12,14 @@ import { exposure } from "@/lib/exposure/exposure";
 import type { WalletKind } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { ExposurePanel } from "./ExposurePanel";
+import { MainnetReferenceCard } from "./MainnetReferenceCard";
 import { PositionsSummary } from "./PositionsSummary";
 import { ReadinessCard } from "./ReadinessCard";
 import { RouteComparison } from "./RouteComparison";
 import { TroveCard } from "./TroveCard";
 import { TroveWarning } from "./TroveWarning";
 
-/** The connected home page (spec §9 screen 1): warning, readiness, Trove, exposure, route comparison. */
+/** The connected home page (spec §9 screen 1): warning, readiness, Trove, exposure, route comparison, positions, mainnet reference (testnet only). */
 export function Dashboard({ account }: { account: Address }) {
   const { network } = useNetwork();
   const { chainId } = useAccount();
@@ -48,6 +49,7 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
       <ExposurePanel snapshot={snapshot} />
       <RouteComparison snapshot={snapshot} />
       <PositionsSummary account={account} spValue={exposure(snapshot).spValue} />
+      <MainnetReferenceCard />
     </>
   );
 }

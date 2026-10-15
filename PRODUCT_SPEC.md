@@ -766,6 +766,8 @@ F5 done 14 Oct 2026: Stability Pool deposit (exact approval → `provideToSP`), 
 
 F6 done 15 Oct 2026: Route comparison card on the dashboard: per-amount LP vs Stability Pool (fee, position, BTC exposure, −30%), plus 30-day results and a backtest of the amount from archive reads at two blocks; design in `docs/superpowers/specs/2026-10-15-f6-route-comparison-design.md`.
 
+F8 done 15 Oct 2026: mainnet reference card on the testnet dashboard (pool reserves and value, swap fee, 30-day LP fees, Stability Pool deposits and share of MUSD supply, 30-day liquidations), read through its own mainnet client, and `npm run quote-accuracy` checking every executor `Entered` event against the quote engine (14 of 14 checked on testnet, simulation exact, all within 1% slippage, maximum deviation 1 bps); design in `docs/superpowers/specs/2026-10-15-f8-reference-card-quote-accuracy-design.md`.
+
 ### Wave 1 — MVP backlog (in order)
 
 | ID | Task | Depends on |
