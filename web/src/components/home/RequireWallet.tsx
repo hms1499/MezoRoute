@@ -3,14 +3,13 @@
 import type { ReactNode } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
-import { ConnectHero } from "./ConnectHero";
+import { LoadingCard } from "@/components/ui/Skeleton";
+import { ConnectCard } from "./ConnectCard";
 
-/** Renders `children` for a connected account; otherwise the reconnecting note or the connect hero. */
-export function RequireWallet({ children }: { children: (account: Address) => ReactNode }) {
+/** Renders `children` for a connected account; otherwise a loading card while reconnecting, or `fallback` (default: ConnectCard). */
+export function RequireWallet({ children, fallback }: { children: (account: Address) => ReactNode; fallback?: ReactNode }) {
   const { status, address } = useAccount();
-  if (status === "connecting" || status === "reconnecting") {
-    return <p className="text-sm text-muted">Connecting wallet…</p>;
-  }
-  if (status !== "connected" || !address) return <ConnectHero />;
+  if (status === "connecting" || status === "reconnecting") return <LoadingCard label="Connecting wallet" lines={2} />;
+  if (status !== "connected" || !address) return <>{fallback ?? <ConnectCard />}</>;
   return <>{children(address)}</>;
 }

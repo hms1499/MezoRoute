@@ -1,13 +1,9 @@
 "use client";
 
 import { Dashboard } from "@/components/dashboard/Dashboard";
-import { Column } from "@/components/ui/Column";
+import { Landing } from "./Landing";
 import { RequireWallet } from "./RequireWallet";
 
 export default function Home() {
-  return (
-    <Column>
-      <RequireWallet>{(account) => <Dashboard account={account} />}</RequireWallet>
-    </Column>
-  );
+  return <RequireWallet fallback={<Landing />}>{(account) => <Dashboard account={account} />}</RequireWallet>;
 }

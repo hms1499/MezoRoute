@@ -4,6 +4,7 @@ import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
+import { Column } from "@/components/ui/Column";
 import { useNetwork } from "@/lib/config/network-context";
 import { readiness, troveWarning } from "@/lib/dashboard/readiness";
 import { useDashboardSnapshot, type DashboardData } from "@/lib/dashboard/useDashboardSnapshot";
@@ -28,12 +29,12 @@ export function Dashboard({ account }: { account: Address }) {
   const view = dashboardView({ hasData: data !== undefined, walletKindKnown: walletKind !== undefined, hasError: error !== null });
 
   return (
-    <>
+    <Column>
       {chainId !== network.chainId && <WrongNetworkAlert />}
       {view === "content" && data && walletKind && <DashboardBody data={data} walletKind={walletKind} account={account} />}
       {view === "error" && error && <LoadError error={error} onRetry={refresh} />}
       {view === "loading" && <DashboardSkeleton />}
-    </>
+    </Column>
   );
 }
 

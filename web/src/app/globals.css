@@ -7,6 +7,14 @@
     outline: 2px solid theme("colors.accent.DEFAULT");
     outline-offset: 2px;
   }
+  /* Figures align in columns; set per element because Inter's tabular set also widens hyphens in prose. */
+  dd,
+  td,
+  th,
+  input,
+  output {
+    font-variant-numeric: tabular-nums;
+  }
   summary {
     list-style: none;
   }

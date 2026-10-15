@@ -3,6 +3,7 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 import { cx } from "@/lib/ui/cx";
 import { isCurrentPath } from "@/lib/ui/nav";
@@ -41,12 +42,18 @@ export function Header() {
         })}
       </nav>
       <NetworkSwitch />
-      <ConnectButton
-        label="Connect"
-        chainStatus="none"
-        showBalance={false}
-        accountStatus={{ smallScreen: "avatar", largeScreen: "address" }}
-      />
+      {/* Disconnected, the app's small button: RainbowKit's wider one pushed the header past 360 px. */}
+      <ConnectButton.Custom>
+        {({ account, openConnectModal, mounted }) =>
+          account ? (
+            <ConnectButton chainStatus="none" showBalance={false} accountStatus={{ smallScreen: "avatar", largeScreen: "address" }} />
+          ) : (
+            <Button size="sm" disabled={!mounted} onClick={openConnectModal}>
+              Connect
+            </Button>
+          )
+        }
+      </ConnectButton.Custom>
     </header>
   );
 }
