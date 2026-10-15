@@ -30,6 +30,12 @@ describe("history lines", () => {
     expect(lpHistoryLine(lp)).toBe("Fees 0.12% (≈1.5% a year, fees only)");
   });
 
+  it("drops the ≈ before a rate too small to show (testnet's pool)", () => {
+    expect(lpHistoryLine({ feeReturn: 23_216_040_086n, feeRate: 282_743_801_264n } as LpBacktest)).toBe(
+      "Fees <0.01% (<0.1% a year, fees only)",
+    );
+  });
+
   it("never annualises the Stability Pool", () => {
     expect(spHistoryLine({ liquidated: false } as SpBacktest)).toBe("No liquidations reached the pool");
     expect(

@@ -17,7 +17,7 @@ import { entryQuery } from "@/lib/routes/musd-btc-lp/intent";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
 
 const FOOTNOTE =
-  "Past results, not a forecast. Values in MUSD at today's oracle price. LP gauge rewards are not included; the −30% row uses the constant-product approximation and does not model new liquidations.";
+  "Past results, not a forecast. LP values use the pool's own price (what leaving would fetch); Stability Pool BTC gains use the oracle price. LP gauge rewards are not included; the −30% row uses the constant-product approximation and does not model new liquidations.";
 const ENTER_AMOUNT = "Enter an amount";
 
 type Row = { label: string; title?: string; value: ReactNode; sub?: string };

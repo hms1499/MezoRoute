@@ -19,7 +19,8 @@ export function amountState(text: string): { amount: bigint | null; error: strin
 }
 
 export function lpHistoryLine(bt: LpBacktest): string {
-  return `Fees ${formatPercent(bt.feeReturn, 2)} (≈${formatPercent(bt.feeRate, 1)} a year, fees only)`;
+  const rate = formatPercent(bt.feeRate, 1);
+  return `Fees ${formatPercent(bt.feeReturn, 2)} (${rate.startsWith("<") ? "" : "≈"}${rate} a year, fees only)`;
 }
 
 /** Stability Pool returns arrive in bursts, so a yearly rate from one window would mislead (spec F6). */
