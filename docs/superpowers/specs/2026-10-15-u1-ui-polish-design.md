@@ -153,3 +153,16 @@ If time runs short, cut in this order: (1) mobile tabs in the comparison (keep s
 
 - Every screen in §9 of `PRODUCT_SPEC.md` uses the shared components and tokens, and passes the QA list above.
 - `PRODUCT_SPEC.md` §9 describes the design system (Inter, `btc` marker colour, two-column layouts, the mainnet Next step copy); `AGENTS.md` gains one frontend bullet on the design system; `docs/STATUS.md` marks U1 done.
+
+### QA result (15 Oct 2026): agent run passed
+
+- Unit tests: 678 Vitest pass, including every TDD item in §8 and the contrast test (15 text pairs ≥ 4.5:1). `npm run build` passes; First Load JS of `/` is 92 kB (budget 101.9 kB).
+- Widths: 9 screens × testnet (deployer) and mainnet (`0x375a…d6e8`) × 360/768/1024/1440 px; `scrollWidth ≤ innerWidth` on all 72 pages.
+- Accounts: testnet no-Trove, can-borrow, at-risk (warning, jump link, liquidatable cells), Unisat Safe (Borrow & Deploy disabled; Approve instead of permit), deployer (large balances fit at 360 px), and mainnet `0xd74f…2B49` (the swap copy for Next step).
+- States: delayed RPC shows skeletons; aborted RPC shows `LoadError` with Retry, and Retry recovers; a failed mainnet reference read hides the landing live card while the page stays complete; a failed 30-day history read keeps the per-amount rows; the paused Stability Pool shows Claim and Retry; quote expiry, with refetches blocked, shows Refresh quote and blocks signing.
+- Keyboard: the skip link is the first stop; every stop shows the focus ring (RainbowKit button, tabs, `<summary>`, chips); after the fix in `b677e85`, no focused element sits under the mobile action bar.
+- Reduced motion: no element animates.
+- Deviations from this design, recorded as rulings in the execution ledger:
+  - Disconnected, the header shows the app's own small Connect button.
+  - Tabular figures apply to data elements only, not to `body`.
+  - The drawdown table has one row per drop and one column per figure, so it fits the side column.

@@ -19,17 +19,15 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 | F7 LP positions | Done | |
 | F8 mainnet reference card + quote accuracy | Done (15 Oct) | `npm run quote-accuracy`: 14/14 testnet entries exact |
 | M1 mainnet deployment | Done (15 Oct) | Executor `0x046449b1229C863e278f369869BA10e12bd80d9E`; round trips and hashes in `PRODUCT_SPEC.md` §20 |
-| **U1 UI polish** | **Spec and plan approved/written; implementation not started** | Branch `feat/u1-ui-polish` (local): spec `docs/superpowers/specs/2026-10-15-u1-ui-polish-design.md`, plan `docs/superpowers/plans/2026-10-15-u1-ui-polish.md` (11 tasks) |
+| **U1 UI polish** | **Implemented and QA-passed (15 Oct); final branch review, then merge on the user's word** | Branch `feat/u1-ui-polish` (local, not pushed): spec `docs/superpowers/specs/2026-10-15-u1-ui-polish-design.md`, plan `docs/superpowers/plans/2026-10-15-u1-ui-polish.md` (11 tasks, all done) |
 | V1 Vercel production + QA on both wallet types | Not started | The current preview sits behind a Vercel login; judges need a public URL |
 | D1 README, deck, 2-minute video, submission form | Not started | Needs V1 and M1 |
 
-Tests at `main` (15 Oct): 635 Vitest and 75 Foundry. `npm run build` passes.
+Tests at `main` (15 Oct): 635 Vitest and 75 Foundry. On `feat/u1-ui-polish`: 678 Vitest; `npm run build` passes (First Load JS of `/` 92 kB).
 
-## Next: merge M1, then U1 → V1 → D1
+## Next: finish U1 → V1 → D1
 
-1. U1 UI polish on branch `feat/u1-ui-polish`. The user approved the design (upgrade Calm Finance; tokens + shared components first) and the spec; the plan is written. **Waiting on the user:** review the plan and choose the execution method (agent recommended Native: tasks share the Task 2 components and QA needs continuous context). Target: done by 19 Oct. Known inputs (all covered by the plan):
-   - At 360 px, short labels wrap (reference card, comparison card).
-   - On mainnet the dashboard's "No MUSD" card says to open a Trove, but the minimum net debt is 1,800 MUSD; swapping BTC for MUSD on mezo.org is the realistic path.
+1. U1: run the final whole-branch review on `feat/u1-ui-polish`, fix what it finds, then merge into `main` and push when the user asks. Still open from the U1 inputs (not in the U1 plan):
    - Mainnet gas: Mezo charged exactly half the gas limit on every round-trip transaction, and the limits came from wallet estimates far above the testnet-measured budgets (LP enter limit 1,437,360, exit 1,473,891; testnet exit ≈ 417k). Cost is tiny (≈0.000001 BTC each), but check why the estimate is so high on mainnet before tightening.
 2. V1: public Vercel production URL; QA on both wallet types. Bitcoin wallets on mainnet can no longer deposit BTC natively (bridge-in closed 13 Oct).
 3. D1: README, deck, video, submission form.
@@ -112,8 +110,9 @@ Optional prep that needs no funds:
 - `confirmCall` has no abort on unmount.
 - A smart account on a `?mode=borrow` link stays in borrow mode (blocked).
 
-**For U1:**
-- At 360 px, short labels wrap (reference card, comparison card).
+**U1 deferred:**
+- The mainnet reference card's labels ("LP fees, last 30 days", "Share of MUSD supply") wrap inside its two-column layout. This is wrapping, not overflow; the comparison card no longer wraps (it shows tabs below 640 px).
+- The confirm page refetches every 15 s, so the quote-expiry bar cycles between full and three-quarters while the RPC is healthy; it only empties when refetches fail.
 
 ## QA accounts and recipes
 
@@ -144,6 +143,7 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
+- **15 Oct 2026, night (Claude Code):** U1 implemented inline (executing-plans), 11 tasks plus one fix, each QA-checked with Playwright and the keyless mock wallet. The full matrix passed: 9 screens × 2 networks × 4 widths with no horizontal scroll, every keyboard stop has a focus ring, and nothing animates under reduced motion. Rulings: app Connect button when disconnected, tabular figures per element, `grid-cols-1` on responsive grids, transposed drawdown table. Next: final branch review, then merge on the user's word.
 - **15 Oct 2026, evening (Claude Code):** M1 merged and pushed. U1 brainstormed with `ui-ux-pro-max` research; design approved in four sections; spec and 11-task plan committed on `feat/u1-ui-polish` (not pushed). Next: user picks the execution method.
 - **15 Oct 2026, afternoon (Claude Code):** user bridged tBTC from Ethereum; mainnet executor deployed by the user from the keystore, verified by the agent, pinned in the app on `feat/m1-mainnet-executor`; read-only mainnet QA passed; the user ran the Stability Pool and LP round trips through the UI; mainnet quote accuracy 1/1 exact. M1 done.
 - **15 Oct 2026 (Claude Code):**
