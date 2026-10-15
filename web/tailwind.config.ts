@@ -7,7 +7,13 @@ const config: Config = {
   theme: {
     extend: {
       colors,
-      fontFamily: { sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"] },
+      fontFamily: {
+        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
+      },
+      backgroundImage: {
+        "night-glow": `radial-gradient(1100px 520px at 25% -5%, ${colors.night.glow} 0%, ${colors.night.bg} 62%)`,
+      },
       boxShadow: {
         card: "0 1px 3px rgba(15, 40, 40, 0.06)",
         raised: "0 8px 24px rgba(15, 40, 40, 0.10)",
