@@ -66,7 +66,8 @@ Two routes for your MUSD
   MUSD/BTC LP: Earn swap fees · return source · main risk
   Stability Pool: Back the system · return source · main risk
 
-How it works: ① Compare routes ② Preview the exact transaction ③ Sign, and exit any time
+How it works: ① Compare routes ② Preview the exact transaction ③ Sign, and exit to MUSD
+  (not "exit any time": Stability Pool withdrawals pause while a Trove is under-collateralised)
 
 Footer
 ```
