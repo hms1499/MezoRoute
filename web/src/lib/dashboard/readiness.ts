@@ -101,7 +101,11 @@ export function readinessCopy(
         tone: "neutral",
         tag: "No MUSD",
         headline: "You need MUSD to start.",
-        detail: "Open a Trove in the Mezo app to borrow MUSD against BTC.",
+        // Mainnet's minimum net debt is 1,800 MUSD (M1a, 15 Oct 2026), so a swap is the realistic start there.
+        detail:
+          network.id === "mainnet"
+            ? "Swap BTC for MUSD in the Mezo app. Opening a Trove needs at least 1,800 MUSD of debt."
+            : "Open a Trove in the Mezo app to borrow MUSD against BTC.",
         action: mezoApp,
       };
   }

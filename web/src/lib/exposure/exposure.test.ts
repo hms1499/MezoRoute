@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { atRiskTrove, deployerTrove, lpShare, snapshotWith, spPosition } from "@/lib/dashboard/test-fixtures";
-import { drawdownScenarios, exposure, lpValueAfterDrop } from "./exposure";
+import { drawdownScenarios, exposure, lpValueAfterDrop, showsDoubleExposure } from "./exposure";
 
 const full = snapshotWith({ trove: deployerTrove, lp: lpShare, sp: spPosition });
 
@@ -100,5 +100,14 @@ describe("lpValueAfterDrop", () => {
     // √0.7 = 0.836660026534075547…; 1,000 MUSD → 836.660026534075547 MUSD (rounded down).
     expect(lpValueAfterDrop(1_000n * 10n ** 18n, 30)).toBe(836_660_026_534_075_547_000n);
     expect(lpValueAfterDrop(0n, 30)).toBe(0n);
+  });
+});
+
+describe("showsDoubleExposure", () => {
+  it("is true only with both a Trove and an LP share", () => {
+    expect(showsDoubleExposure(exposure(snapshotWith({ trove: deployerTrove, lp: lpShare })))).toBe(true);
+    expect(showsDoubleExposure(exposure(snapshotWith({ lp: lpShare })))).toBe(false);
+    expect(showsDoubleExposure(exposure(snapshotWith({ trove: deployerTrove })))).toBe(false);
+    expect(showsDoubleExposure(exposure(snapshotWith({ trove: deployerTrove, sp: spPosition })))).toBe(false);
   });
 });

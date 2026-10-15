@@ -4,9 +4,10 @@ import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
-import { Column } from "@/components/ui/Column";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/lib/config/network-context";
 import { readiness, troveWarning } from "@/lib/dashboard/readiness";
+import { summaryItems } from "@/lib/dashboard/summary";
 import { useDashboardSnapshot, type DashboardData } from "@/lib/dashboard/useDashboardSnapshot";
 import { dashboardView } from "@/lib/dashboard/view";
 import { exposure } from "@/lib/exposure/exposure";
@@ -17,6 +18,7 @@ import { MainnetReferenceCard } from "./MainnetReferenceCard";
 import { PositionsSummary } from "./PositionsSummary";
 import { ReadinessCard } from "./ReadinessCard";
 import { RouteComparison } from "./RouteComparison";
+import { SummaryStrip } from "./SummaryStrip";
 import { TroveCard } from "./TroveCard";
 import { TroveWarning } from "./TroveWarning";
 
@@ -29,12 +31,12 @@ export function Dashboard({ account }: { account: Address }) {
   const view = dashboardView({ hasData: data !== undefined, walletKindKnown: walletKind !== undefined, hasError: error !== null });
 
   return (
-    <Column>
+    <div className="mx-auto w-full max-w-6xl space-y-4">
       {chainId !== network.chainId && <WrongNetworkAlert />}
       {view === "content" && data && walletKind && <DashboardBody data={data} walletKind={walletKind} account={account} />}
       {view === "error" && error && <LoadError error={error} onRetry={refresh} />}
       {view === "loading" && <DashboardSkeleton />}
-    </Column>
+    </div>
   );
 }
 
@@ -45,11 +47,18 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
   return (
     <>
       {warning && <TroveWarning warning={warning} />}
-      <ReadinessCard readiness={current} data={data} walletKind={walletKind} account={account} />
-      <TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} />
-      <ExposurePanel snapshot={snapshot} />
-      <RouteComparison snapshot={snapshot} />
-      <PositionsSummary account={account} spValue={exposure(snapshot).spValue} />
+      <SummaryStrip items={summaryItems(data)} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
+        <div className="space-y-4 lg:col-span-2">
+          <ReadinessCard readiness={current} data={data} walletKind={walletKind} account={account} />
+          <RouteComparison snapshot={snapshot} />
+        </div>
+        <div className="space-y-4">
+          <ExposurePanel snapshot={snapshot} />
+          <TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} />
+          <PositionsSummary account={account} spValue={exposure(snapshot).spValue} />
+        </div>
+      </div>
       <MainnetReferenceCard />
     </>
   );
@@ -57,10 +66,18 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
 
 function DashboardSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading your positions" className="space-y-4">
-      {[0, 1, 2].map((key) => (
-        <div key={key} className="h-32 animate-pulse rounded-2xl bg-white shadow-card" />
-      ))}
+    <div role="status" aria-busy="true" aria-label="Loading your positions" className="space-y-4">
+      <Skeleton className="h-20 w-full rounded-2xl" />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={6} />
+        </div>
+        <div className="space-y-4">
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={3} />
+        </div>
+      </div>
     </div>
   );
 }
