@@ -63,6 +63,15 @@ describe("compareRoutes", () => {
     expect(result.lp.positionValue).toBeGreaterThan(0n);
   });
 
+  it("values the new share at the pool's own price, so entering never looks like a gain", () => {
+    // Testnet's oracle sat ≈3% above the pool price (QA, 15 Oct 2026): valued at the oracle, 20 MUSD in read ≈20.32 MUSD.
+    const oracleAbovePool = { ...snapshot, price: (POOL_PRICE * 103n) / 100n };
+    const result = compareRoutes({ snapshot: oracleAbovePool, amount: 20n * ONE, executorFeeBps: 10n });
+    if (result.lp.status !== "ok") throw new Error("expected a quote");
+    expect(result.lp.positionValue).toBeLessThan(20n * ONE);
+    expect(result.lp.positionValue).toBeGreaterThan((20n * ONE * 99n) / 100n);
+  });
+
   it("marks the LP side unavailable for an empty pool", () => {
     const empty = snapshotWith({ lp: { balance: 0n, totalSupply: 0n, reserveMusd: 0n, reserveBtc: 0n } });
     expect(compareRoutes({ snapshot: empty, amount: 20n * ONE, executorFeeBps: 10n }).lp).toEqual({ status: "unavailable" });

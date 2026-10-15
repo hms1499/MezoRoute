@@ -12,27 +12,29 @@ export type LpBacktest = {
   liquidity: bigint; // LP the amount would have received at the past block
   feesMusd: bigint;
   feesBtc: bigint;
-  feesValue: bigint; // MUSD at today's price
-  valueNow: bigint; // MUSD: today's pool share + entry refunds + fees, BTC at today's price
+  feesValue: bigint; // MUSD, BTC at today's pool price
+  valueNow: bigint; // MUSD: today's pool share + entry refunds + fees, BTC at today's pool price
   feeReturn: bigint; // feesValue / amount, 1e18 = 100%
   feeRate: bigint; // feeReturn as a simple yearly rate
 };
 
 /**
  * What `amount` MUSD entered at `past` would be worth at `now` (spec F6 §1). An unstaked LP token
- * earns exactly the index growth, so the fees need no event scan. Null for an empty pool.
+ * earns exactly the index growth, so the fees need no event scan. BTC is valued at today's pool mid
+ * price, not the oracle: an exit sells it into this pool, and on testnet the two differ by ≈3%.
+ * Null for an empty pool.
  */
 export function lpBacktest(input: {
   past: PoolPoint;
   now: PoolPoint;
-  price: bigint;
   amount: bigint;
   executorFeeBps: bigint;
   seconds: bigint;
 }): LpBacktest | null {
-  const { past, now, price, amount } = input;
+  const { past, now, amount } = input;
   const quote = quoteEntry(past, amount, input.executorFeeBps);
-  if (quote === null || now.totalSupply === 0n) return null;
+  if (quote === null || now.totalSupply === 0n || now.reserveBtc === 0n) return null;
+  const price = (now.reserveMusd * WAD) / now.reserveBtc;
   const { liquidity } = quote;
   const feesMusd = (liquidity * (now.indexMusd - past.indexMusd)) / WAD;
   const feesBtc = (liquidity * (now.indexBtc - past.indexBtc)) / WAD;

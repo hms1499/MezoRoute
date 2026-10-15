@@ -15,7 +15,7 @@ export type RouteHistory = {
   pastTime: bigint;
   headBlock: bigint;
   headTime: bigint;
-  price: bigint; // oracle price at the head
+  price: bigint; // oracle price at the head (values the Stability Pool's BTC gain)
   pool: { past: PoolPoint; now: PoolPoint };
   sp: { past: SpPast; now: SpNow };
 };
@@ -147,7 +147,7 @@ export type RouteBacktests = {
 export function backtestRoutes(history: RouteHistory, amount: bigint, executorFeeBps: bigint): RouteBacktests {
   const seconds = history.headTime - history.pastTime;
   return {
-    lp: lpBacktest({ past: history.pool.past, now: history.pool.now, price: history.price, amount, executorFeeBps, seconds }),
+    lp: lpBacktest({ past: history.pool.past, now: history.pool.now, amount, executorFeeBps, seconds }),
     sp: spBacktest({ past: history.sp.past, now: history.sp.now, price: history.price, amount }),
     seconds,
     pastTime: history.pastTime,

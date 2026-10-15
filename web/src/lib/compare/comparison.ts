@@ -1,6 +1,5 @@
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { exposure, lpValueAfterDrop, type Drawdown } from "@/lib/exposure/exposure";
-import { WAD } from "@/lib/math";
 import { quoteEntry } from "@/lib/quote/entry";
 import { afterEntry } from "@/lib/routes/musd-btc-lp/after-entry";
 import { afterSpDeposit } from "@/lib/stability-pool/after-deposit";
@@ -13,7 +12,7 @@ export type LpComparison =
       status: "ok";
       fee: bigint; // MezoRoute's execution fee, MUSD
       priceImpact: bigint; // 1e18 = 100%
-      positionValue: bigint; // the new LP share at the oracle price, MUSD
+      positionValue: bigint; // the new LP share at the pool's price after the entry, MUSD
       btcBefore: bigint;
       btcAfter: bigint;
       valueAfterDrop: bigint;
@@ -43,7 +42,9 @@ export function compareRoutes(input: { snapshot: DashboardSnapshot; amount: bigi
     const { after, liquidity } = quote;
     const shareMusd = (liquidity * after.reserveMusd) / after.totalSupply;
     const shareBtc = (liquidity * after.reserveBtc) / after.totalSupply;
-    const positionValue = shareMusd + (shareBtc * snapshot.price) / WAD;
+    // The pool's own price, not the oracle: leaving sells the BTC into this pool, and on testnet the
+    // oracle sat ≈3% above it, which made a fresh deposit look like a gain (QA, 15 Oct 2026).
+    const positionValue = shareMusd + (shareBtc * after.reserveMusd) / after.reserveBtc;
     lp = {
       status: "ok",
       fee: quote.fee,
