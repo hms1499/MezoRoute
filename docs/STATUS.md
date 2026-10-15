@@ -2,7 +2,7 @@
 
 Living handover file for every agent (see `AGENTS.md` → Session protocol). Update it and commit at the end of each session or milestone. Scope and the backlog are in `PRODUCT_SPEC.md` §16; this file says where we are in it.
 
-**Last updated:** 15 Oct 2026 · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** clean, pushed; M1 (done) waits to merge from `feat/m1-mainnet-executor`.
+**Last updated:** 15 Oct 2026 · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** clean, pushed (M1 merged).
 
 ## Where we are
 
@@ -23,17 +23,16 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 | V1 Vercel production + QA on both wallet types | Not started | The current preview sits behind a Vercel login; judges need a public URL |
 | D1 README, deck, 2-minute video, submission form | Not started | Needs V1 and M1 |
 
-Tests on `feat/m1-mainnet-executor` (15 Oct): 635 Vitest and 75 Foundry. `npm run build` passes.
+Tests at `main` (15 Oct): 635 Vitest and 75 Foundry. `npm run build` passes.
 
 ## Next: merge M1, then U1 → V1 → D1
 
-1. Merge `feat/m1-mainnet-executor` into `main` and push (waits on the user's go-ahead).
-2. U1 UI polish (testnet and mainnet screens). Known inputs:
+1. U1 UI polish (testnet and mainnet screens). Known inputs:
    - At 360 px, short labels wrap (reference card, comparison card).
    - On mainnet the dashboard's "No MUSD" card says to open a Trove, but the minimum net debt is 1,800 MUSD; swapping BTC for MUSD on mezo.org is the realistic path.
    - Mainnet gas: Mezo charged exactly half the gas limit on every round-trip transaction, and the limits came from wallet estimates far above the testnet-measured budgets (LP enter limit 1,437,360, exit 1,473,891; testnet exit ≈ 417k). Cost is tiny (≈0.000001 BTC each), but check why the estimate is so high on mainnet before tightening.
-3. V1: public Vercel production URL; QA on both wallet types. Bitcoin wallets on mainnet can no longer deposit BTC natively (bridge-in closed 13 Oct).
-4. D1: README, deck, video, submission form.
+2. V1: public Vercel production URL; QA on both wallet types. Bitcoin wallets on mainnet can no longer deposit BTC natively (bridge-in closed 13 Oct).
+3. D1: README, deck, video, submission form.
 
 ## M1 record (15 Oct)
 
@@ -84,7 +83,6 @@ Optional prep that needs no funds:
 
 ## Waiting on the user
 
-- Go-ahead to merge `feat/m1-mainnet-executor` and push.
 - T0 research for the deck: 1–2 quotes from Mezo Discord users, and the step count for borrow → LP in the Mezo app.
 - Report to the Mezo team (Discord):
   - Passport/OrangeKit hard-code the dead relayer `test.mezo.org` (patched locally by `web/scripts/patch-relayer.mjs`).
