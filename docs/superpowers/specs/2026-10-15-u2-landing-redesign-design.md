@@ -210,3 +210,22 @@ The simulator, dark direction, and copy rules are never cut.
 - `PRODUCT_SPEC.md` §9 notes that the landing has a dark route-map design while the app stays light.
 - The `AGENTS.md` frontend design-system bullet notes the `night` tokens and the `SurfaceContext`.
 - `docs/STATUS.md` marks U2 done.
+
+### QA result (15 Oct 2026): agent run passed
+
+- **Tests and build:** 708 Vitest pass (Task 1 adds simulator, view, and load tests; Task 2 adds 9 night contrast pairs and motion helpers; U1's 5 `landingLive` tests were replaced). `npm run build` passes; First Load JS of `/` is 92 kB (unchanged).
+- **Widths:** `/` without a wallet on testnet and mainnet at 360 / 768 / 1024 / 1440 px: no horizontal scroll, header on one row.
+- **Simulator** (1,000 MUSD on 15 Oct):
+  - LP 30 days +24.09 MUSD (+2.4%), BTC exposure +0.0061 BTC, ≈ 832.54 MUSD at −30%, fee 0.1%;
+  - Stability Pool: no liquidations, 1,000 MUSD.
+  - Presets update and flash. 10,000 shows the cap note. "20,5" shows the error and dims the table. "0" shows no error. Testnet adds the testnet note.
+- **Failures:**
+  - Delayed mainnet RPC: skeletons.
+  - Aborted mainnet RPC: "Live data unavailable", no strip, page complete.
+  - Aborted history reads: "Last 30 days" and the strip's LP fees read "Unavailable"; everything else is unchanged.
+- **Reduced motion:** no element animates, travelling dots stay at opacity 0, reveal sections are visible, and figures change at once.
+- **Keyboard:** 20 tab stops in layout order, every one with the teal focus ring on the dark page.
+- **Leaving the landing:** connecting a wallet shows the light dashboard, header, and footer. The dashboard, route, and positions pages at 360 / 1440 px are unchanged (light, no overflow).
+- **Deviations** (recorded as rulings in the execution ledger):
+  - Outlined night buttons use an inset ring (the 360 px header has 1 px to spare).
+  - Below 640 px the simulator table stacks each row (label on top, LP | SP below).
