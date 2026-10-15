@@ -2,13 +2,13 @@
 
 import { lpHistoryLine, spHistoryLine } from "@/lib/compare/view";
 import { useNetwork } from "@/lib/config/network-context";
+import { networks } from "@/lib/config/networks";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
-import { referenceView } from "@/lib/reference/snapshot";
+import { referenceFooter, referenceView } from "@/lib/reference/snapshot";
 import { useMainnetReference } from "@/lib/reference/useMainnetReference";
 import { StatRow } from "./StatRow";
 
 const CARD = "rounded-2xl border border-dashed border-line bg-canvas p-5";
-const FOOTER = "Read from Mezo mainnet. MezoRoute executes on testnet until launch. Past results, not a forecast.";
 
 /** Spec §9 screen 1: mainnet's pool and Stability Pool today, kept apart from testnet execution data. */
 export function MainnetReferenceCard() {
@@ -60,7 +60,7 @@ export function MainnetReferenceCard() {
           </dl>
         </div>
       </div>
-      <p className="mt-3 text-[11px] leading-snug text-muted">{FOOTER}</p>
+      <p className="mt-3 text-[11px] leading-snug text-muted">{referenceFooter(networks.mainnet.executor)}</p>
     </section>
   );
 }

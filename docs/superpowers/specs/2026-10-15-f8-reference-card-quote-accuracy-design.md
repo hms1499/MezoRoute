@@ -16,7 +16,7 @@ The user approved this design on 15 Oct 2026.
 | Topic | Decision |
 |---|---|
 | Card placement | Last card of the connected dashboard, shown only when the selected network is testnet. On mainnet the dashboard already shows real data. |
-| Separation | A dashed border and a muted background, a "Mainnet · reference only" badge, and the footer "Read from Mezo mainnet. MezoRoute executes on testnet until launch." |
+| Separation | A dashed border and a muted background, a "Mainnet · reference only" badge, and a footer that says MezoRoute executes on testnet until launch while mainnet has no executor (UI §3). |
 | Card data | Its own viem public client for mainnet, independent of the wagmi config, which only knows the selected network: one head multicall for reserves, LP supply, swap fee, price, MUSD supply, and SP deposits. The 30-day rows reuse F6's `fetchRouteHistory` and `backtestRoutes` with that client and `REFERENCE_AMOUNT`, with no executor fee. |
 | RPC URL | `NetworkConfig` gains `rpcUrl`, matching Passport's chains: testnet `https://rpc.test.mezo.org`, mainnet `https://rpc-internal.mezo.org`. viem's own `mezo` chain points at `rpc.mezo.org`, which has no DNS record (checked 15 Oct 2026). |
 | Card caching | TanStack Query, `staleTime` 5 minutes, no interval refetch, a 15 s timeout. A failure shows "Mainnet data unavailable" with Retry and never affects the rest of the dashboard. |
@@ -48,7 +48,7 @@ The user approved this design on 15 Oct 2026.
     - `feeOk`: `event.fee === event.musdIn × feeBps / 10,000`.
     - `simulation`: `simulateEntry(pool, musdIn − fee, musdSwapped)` against the event, field by field: `btcFromSwap`, `musdAdded`, `btcAdded`, `liquidity` vs `liquidityOut`, `musdRefund`, `btcRefund`. It returns `{ ok, mismatches: string[] }`.
     - `quote`: `quoteEntry(pool, musdIn, feeBps)` gives `quotedLiquidity` and `deviationBps = (quoted − actual) × 10,000 / quoted` (signed). `withinSlippage` is `event.liquidityOut ≥ entryMinimums(quote, slippageBps).minLpOut`. `optimal` is `musdSwapped === quote.musdToSwap`.
-  - `summarise(results)` counts checked, skipped, simulation mismatches, fee mismatches, quotes outside slippage, and the maximum absolute deviation in bps. `passed` is true when there are no simulation or fee mismatches and every checked quote is within slippage.
+  - `summarise(results)` counts checked, skipped, simulation mismatches, fee mismatches, quotes outside slippage, and the maximum absolute deviation in bps. `passed` is true when at least one event was checked, there are no simulation or fee mismatches, and every checked quote is within slippage. An empty scan fails: the script only summarises when an executor exists, so no events means it proved nothing (final review).
 
 ## 2. Data
 
@@ -60,7 +60,7 @@ The user approved this design on 15 Oct 2026.
   - It builds a viem client from `network.rpcUrl` and reads `executor.feeBps` from the config, checking it against the chain's `feeBps()` once.
   - Events come from `getLogs` for the executor's `Entered` in 10,000-block chunks from `deployBlock`, clamped to the head (Mezo returns an empty list past the head), decoded with the executor ABI, and checked to be `eventName === "Entered"`.
   - For each event:
-    - It reads pool logs (`Swap`, `Mint`, `Burn`, `Sync`) in the same block. If any has a lower `logIndex` and a different `transactionHash`, the result is `skipped: "same-block pool activity"`.
+    - It reads the pool's `Sync` logs in the same block. `Sync` alone is enough: Tigris `mint`, `burn`, `swap`, and `sync` all go through `_update`, which always emits it, and `skim` changes no reserves. Mezo numbers `logIndex` across the whole block. If any has a lower `logIndex` and a different `transactionHash`, the result is `skipped: "same-block pool activity"`.
     - Otherwise it runs one multicall at `blockNumber − 1` (`getReserves`, `totalSupply`, `getFee`) and calls `checkEntry`.
   - It prints one row per event (block, short tx hash, `musdIn`, `optimal`, simulation ok or mismatches, `deviationBps`, within slippage), then the summary. The Vitest test fails when `passed` is false.
 
@@ -76,7 +76,7 @@ The user approved this design on 15 Oct 2026.
   - "Deposits": 14.17M MUSD, shown as a whole number with thousands separators.
   - "Share of MUSD supply": 47.4%.
   - "Last 30 days": F6's `spHistoryLine`.
-- **Footer:** "Read from Mezo mainnet. MezoRoute executes on testnet until launch. Past results, not a forecast."
+- **Footer:** follows `networks.mainnet.executor`, like every other read-only state. Without an executor it reads "Read from Mezo mainnet. MezoRoute executes on testnet until launch. Past results, not a forecast." Once M1 ships the executor, it reads "Read from Mezo mainnet for reference. Switch to Mainnet to use MezoRoute there. Past results, not a forecast." (`referenceFooter`, final review).
 - **States:** loading shows a skeleton of the same height. Failure shows "Mainnet data unavailable." with Retry. If the history part fails alone (`backtests` null), the 30-day rows read "Unavailable" while the head rows still show.
 
 ## 4. Errors and edge cases

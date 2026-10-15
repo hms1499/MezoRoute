@@ -82,7 +82,10 @@ export type AccuracySummary = {
   passed: boolean;
 };
 
-/** Passes with no mismatches, every quote within slippage, and at most half the events skipped. */
+/**
+ * Passes with no mismatches, every quote within slippage, at least one event checked, and at most half
+ * skipped. The script only summarises when an executor exists, so an empty scan is a failure, not a pass.
+ */
 export function summarise(results: readonly CheckResult[]): AccuracySummary {
   const checks = results.flatMap((result) => (result.status === "checked" ? [result.check] : []));
   const skipped = results.length - checks.length;
@@ -101,6 +104,11 @@ export function summarise(results: readonly CheckResult[]): AccuracySummary {
     feeMismatches,
     outsideSlippage,
     maxDeviationBps,
-    passed: simulationMismatches === 0 && feeMismatches === 0 && outsideSlippage === 0 && skipped * 2 <= results.length,
+    passed:
+      checks.length > 0 &&
+      simulationMismatches === 0 &&
+      feeMismatches === 0 &&
+      outsideSlippage === 0 &&
+      skipped * 2 <= results.length,
   };
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
 import { WAD } from "@/lib/math";
-import { parseReference, referenceContracts, referenceView, type ReferenceResults } from "./snapshot";
+import { parseReference, referenceContracts, referenceFooter, referenceView, type ReferenceResults } from "./snapshot";
 
 const ONE = WAD;
 const network = networks.mainnet;
@@ -61,5 +61,17 @@ describe("referenceView", () => {
 
   it("gives a zero share without MUSD supply", () => {
     expect(referenceView({ ...base, musdSupply: 0n }).spShare).toBe(0n);
+  });
+});
+
+describe("referenceFooter", () => {
+  it("says MezoRoute executes on testnet only while mainnet has no executor", () => {
+    expect(referenceFooter(null)).toBe("Read from Mezo mainnet. MezoRoute executes on testnet until launch. Past results, not a forecast.");
+  });
+
+  it("stops claiming mainnet is not live once the executor ships (M1)", () => {
+    const text = referenceFooter({ address: "0x0000000000000000000000000000000000000001", feeBps: 10n, deployBlock: 1n });
+    expect(text).toBe("Read from Mezo mainnet for reference. Switch to Mainnet to use MezoRoute there. Past results, not a forecast.");
+    expect(text).not.toContain("until launch");
   });
 });

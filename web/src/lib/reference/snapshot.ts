@@ -59,3 +59,10 @@ export function referenceView(reference: MainnetReference): { poolTvl: bigint; s
     spShare: reference.musdSupply === 0n ? 0n : (reference.spDeposits * WAD) / reference.musdSupply,
   };
 }
+
+/** The card's footer follows the mainnet executor, like every other read-only state (`writeBlocker`). */
+export function referenceFooter(mainnetExecutor: NetworkConfig["executor"]): string {
+  return mainnetExecutor === null
+    ? "Read from Mezo mainnet. MezoRoute executes on testnet until launch. Past results, not a forecast."
+    : "Read from Mezo mainnet for reference. Switch to Mainnet to use MezoRoute there. Past results, not a forecast.";
+}

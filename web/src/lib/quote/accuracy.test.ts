@@ -111,7 +111,7 @@ describe("summarise", () => {
     expect(summarise([checked(good), skipped]).passed).toBe(true);
   });
 
-  it("passes an empty run (nothing entered yet)", () => {
-    expect(summarise([]).passed).toBe(true);
+  it("fails an empty run: with an executor, no events means the scan proved nothing (review, 15 Oct 2026)", () => {
+    expect(summarise([]).passed).toBe(false);
   });
 });
