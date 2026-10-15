@@ -45,20 +45,24 @@ export function exposure(snapshot: DashboardSnapshot): Exposure {
   };
 }
 
+/** A constant-product LP's value after a BTC drop: it scales with √(price ratio). Rounds down. */
+export function lpValueAfterDrop(value: bigint, dropPercent: Drawdown): bigint {
+  const lpFactor = isqrt((BigInt(100 - dropPercent) * WAD * WAD) / 100n);
+  return (value * lpFactor) / WAD;
+}
+
 /** The dashboard's "what if BTC drops" table: one row per drawdown, all values rounded down. */
 export function drawdownScenarios(snapshot: DashboardSnapshot, current: Exposure): Scenario[] {
   return DRAWDOWNS.map((dropPercent) => {
     const keep = BigInt(100 - dropPercent);
     const price = (snapshot.price * keep) / 100n;
     const cr = snapshot.trove ? collateralRatio(snapshot.trove, price) : null;
-    // A constant-product LP's value scales with √(price ratio).
-    const lpFactor = isqrt((keep * WAD * WAD) / 100n);
     return {
       dropPercent,
       price,
       collateralRatio: cr,
       liquidatable: cr !== null && cr < snapshot.protocol.mcr,
-      lpValue: (current.lpValue * lpFactor) / WAD,
+      lpValue: lpValueAfterDrop(current.lpValue, dropPercent),
       spValue: current.spDeposit + (current.spBtcGain * price) / WAD,
     };
   });
