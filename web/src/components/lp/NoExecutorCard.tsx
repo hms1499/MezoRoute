@@ -1,17 +1,19 @@
 "use client";
 
-import Link from "next/link";
+import { ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
 import { useNetwork } from "@/lib/config/network-context";
 import { writeBlockerMessage } from "@/lib/config/write-gate";
 
 export function NoExecutorCard() {
   const { network } = useNetwork();
   return (
-    <section className="card">
-      <p className="text-sm">{writeBlockerMessage("no-executor", network)}</p>
-      <Link href="/" className="mt-3 inline-block text-xs font-semibold text-accent hover:underline">
+    <Card>
+      <Notice>{writeBlockerMessage("no-executor", network)}</Notice>
+      <ButtonLink href="/" variant="secondary" className="mt-4">
         Back to dashboard
-      </Link>
-    </section>
+      </ButtonLink>
+    </Card>
   );
 }

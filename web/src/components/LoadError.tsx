@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
+import { Notice } from "@/components/ui/Notice";
 import { useNetwork } from "@/lib/config/network-context";
 import { decodeError } from "@/lib/errors/decode";
 
@@ -7,15 +9,16 @@ import { decodeError } from "@/lib/errors/decode";
 export function LoadError({ error, onRetry }: { error: Error; onRetry: () => void }) {
   const { network } = useNetwork();
   return (
-    <section role="alert" className="card">
-      <p className="text-sm">{decodeError(error, network).message}</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="mt-3 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent/90"
-      >
-        Retry
-      </button>
-    </section>
+    <Notice
+      tone="danger"
+      role="alert"
+      action={
+        <Button size="sm" variant="secondary" onClick={onRetry}>
+          Retry
+        </Button>
+      }
+    >
+      {decodeError(error, network).message}
+    </Notice>
   );
 }

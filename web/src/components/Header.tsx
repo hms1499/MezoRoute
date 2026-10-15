@@ -2,20 +2,43 @@
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Logo } from "@/components/ui/Logo";
+import { cx } from "@/lib/ui/cx";
+import { isCurrentPath } from "@/lib/ui/nav";
 import { NetworkSwitch } from "./NetworkSwitch";
 
-/** Shared header (spec §9): logo, Testnet/Mainnet switch, Passport wallet button. */
+const NAV = [
+  { href: "/", label: "Dashboard", mobile: false },
+  { href: "/positions/", label: "Positions", mobile: true },
+];
+
+/** Shared header (spec §9): logo, nav with the current page marked, Testnet/Mainnet switch, wallet button. */
 export function Header() {
+  const pathname = usePathname();
   return (
-    <header className="flex items-center justify-between gap-3 py-4">
-      <Link href="/" aria-label="MezoRoute home" className="flex items-center gap-2 text-base font-bold">
-        <span aria-hidden className="h-5 w-5 rounded-md bg-accent" />
-        <span className="hidden sm:inline">MezoRoute</span>
+    <header className="flex items-center gap-2 py-4 sm:gap-4">
+      <Link href="/" aria-label="MezoRoute home" className="shrink-0 rounded-lg">
+        <Logo />
       </Link>
-      <nav className="mr-auto">
-        <Link href="/positions/" className="text-sm font-semibold text-muted hover:text-accent">
-          Positions
-        </Link>
+      <nav aria-label="Main" className="mr-auto flex items-center gap-1">
+        {NAV.map((item) => {
+          const current = isCurrentPath(pathname, item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={current ? "page" : undefined}
+              className={cx(
+                "min-h-9 items-center rounded-full px-2.5 text-sm font-medium transition-colors duration-150 sm:px-3",
+                item.mobile ? "inline-flex" : "hidden sm:inline-flex",
+                current ? "bg-white text-ink shadow-card" : "text-muted hover:text-ink",
+              )}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
       </nav>
       <NetworkSwitch />
       <ConnectButton
