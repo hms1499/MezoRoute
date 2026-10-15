@@ -140,10 +140,10 @@ From top to bottom; at 375 px the same order in one column:
 
 **Dark header and footer**
 - A small `SurfaceContext` provided by `AppShell`. The landing sets `"dark"` on mount and resets it on unmount.
-- `Header`, `Footer`, and `MainnetBanner` read it and switch their classes. The RainbowKit modal keeps its light theme.
+- `Header`, `NetworkSwitch`, and `Footer` read it and switch their classes. `MainnetBanner` keeps its amber warning style on both backgrounds, and the RainbowKit modal keeps its light theme.
 - The static loading shell stays light, so a brief light frame may show before the landing.
 
-**Route map SVG.** Inline and responsive (`viewBox`), with `aria-hidden` (the simulator carries the meaning). It highlights a route when the matching simulator column or route card is hovered or focused.
+**Route map SVG.** Inline and responsive (`viewBox`), with `aria-hidden` (the simulator carries the meaning). Hovering the matching simulator column or route card highlights that route. The cue is decorative, so it adds no tab stops.
 
 ## 5. Motion
 
@@ -153,7 +153,7 @@ All motion is CSS keyframes or transitions behind `motion-safe:`, plus the globa
 |---|---|---|
 | 1 | Entrance | Eyebrow → headline lines → subcopy → CTA → simulator. Fade plus 14 px rise, 600 ms, 80 ms stagger, done within 1 s. |
 | 2 | Route map | Lines draw in (stroke-dashoffset, LP at 350 ms, SP at 550 ms). Then a light dot travels each line, LP every 3.2 s and SP every 4.4 s (CSS `offset-path`). |
-| 3 | Simulator | When the amount changes, figures count to the new value (`useCountUp`, 450 ms, ease-out cubic) and the changed cell flashes once. Hovering or focusing a column highlights its route line. |
+| 3 | Simulator | When the amount changes, figures count to the new value (`useCountUp`, 450 ms, ease-out cubic) and the changed cell flashes once. Hovering a column highlights its route line. |
 | 4 | Live | The "live" dot pings. Strip figures count up once when data arrives (1.1 s). |
 | 5 | Scroll reveal | Sections below the hero fade and rise once when 30% visible (`useInView`, IntersectionObserver; without it they show at once). Route cards lift 3 px on hover and highlight their route line. |
 | 6 | Timeline | The 01 → 03 line fills over 1.4 s when it enters the viewport. |
