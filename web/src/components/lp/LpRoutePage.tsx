@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { Address } from "viem";
@@ -9,7 +8,14 @@ import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
+import { MobileBar, RouteLayout } from "@/components/route/RouteLayout";
+import { SummaryPanel, type SummaryRow } from "@/components/route/SummaryPanel";
+import { ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadingCard } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/lib/config/network-context";
+import { formatBps, formatPercent } from "@/lib/format";
 import { entryQuery, parseEntryIntent, type EntryIntent } from "@/lib/routes/musd-btc-lp/intent";
 import { entryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import { useLpRouteSnapshot } from "@/lib/routes/musd-btc-lp/useLpRouteSnapshot";
@@ -17,11 +23,11 @@ import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { AmountForm } from "./AmountForm";
 import { BlockNotice } from "./BlockNotice";
 import { EntryPreviewCard } from "./EntryPreviewCard";
-import { ExposureChange } from "./ExposureChange";
 import { ModeToggle } from "./ModeToggle";
 import { NoExecutorCard } from "./NoExecutorCard";
 import { RisksCard } from "./RisksCard";
 import { TroveChangeCard } from "./TroveChangeCard";
+import { btc, lp, musd } from "./units";
 
 /** Spec §9 screen 2a: amount, preview, exposure before/after, risks, Review. */
 export default function LpRoutePage() {
@@ -52,7 +58,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
     return error ? (
       <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
     ) : (
-      <div aria-busy="true" aria-label="Loading the pool" className="h-48 animate-pulse rounded-2xl bg-white shadow-card" />
+      <LoadingCard label="Loading the pool" />
     );
   }
 
@@ -66,11 +72,33 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
     now: data.fetchedAt,
   });
 
+  const quote = preview.quote;
+  const rows: SummaryRow[] =
+    quote && preview.minimums
+      ? [
+          { label: preview.borrow ? "You borrow and deposit" : "You deposit", value: musd(quote.musdIn), strong: true },
+          { label: "You receive", value: `≈ ${lp(quote.liquidity)}`, sub: `at least ${lp(preview.minimums.minLpOut)}`, strong: true },
+          { label: "Deposited to the pool", value: musd(quote.musdAdded), sub: `+ ${btc(quote.btcAdded)}` },
+          { label: "MezoRoute fee", value: musd(quote.fee), sub: formatBps(data.snapshot.executorFeeBps) },
+          { label: "Price impact", value: formatPercent(quote.priceImpact, 2), sub: "includes the pool's swap fee" },
+          { label: "Network fee", value: preview.gasCost === null ? "—" : btc(preview.gasCost) },
+        ]
+      : [];
+  const review = (className?: string) => (
+    <ButtonLink href={`/route/lp/confirm/${entryQuery(intent)}`} disabled={preview.block !== null} className={className}>
+      Review
+    </ButtonLink>
+  );
+  const notice = preview.block?.outcome ? <BlockNotice block={preview.block} /> : undefined;
+
   return (
-    <>
+    <RouteLayout
+      header={<PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title="Earn swap fees in the MUSD/BTC pool" />}
+      summary={<SummaryPanel rows={rows} notice={notice} action={review("w-full")} />}
+      mobileBar={<MobileBar figure={quote ? `≈ ${lp(quote.liquidity)}` : undefined} notice={notice} action={review()} />}
+    >
       {chainId !== network.chainId && <WrongNetworkAlert />}
-      <section className="card">
-        <h1 className="text-lg font-semibold">Earn swap fees in the MUSD/BTC pool</h1>
+      <Card>
         <ModeToggle walletKind={walletKind} mode={intent.mode} onChange={(mode) => update({ ...intent, mode })} />
         <AmountForm
           amount={intent.amount}
@@ -79,16 +107,8 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           maxLabel={preview.borrow ? "You can borrow" : "In your wallet"}
           onChange={(next) => update({ ...next, mode: intent.mode })}
         />
-      </section>
-      {preview.quote && preview.minimums && (
-        <EntryPreviewCard
-          quote={preview.quote}
-          minimums={preview.minimums}
-          feeBps={data.snapshot.executorFeeBps}
-          gasCost={preview.gasCost}
-          borrowFee={preview.borrow?.effect?.fee}
-        />
-      )}
+      </Card>
+      {quote && <EntryPreviewCard quote={quote} feeBps={data.snapshot.executorFeeBps} borrowFee={preview.borrow?.effect?.fee} />}
       {preview.borrow?.trove && preview.borrow.effect && (
         <TroveChangeCard
           trove={preview.borrow.trove}
@@ -97,24 +117,8 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           mcr={data.snapshot.dashboard.protocol.mcr}
         />
       )}
-      {preview.after && <ExposureChange before={data.snapshot.dashboard} after={preview.after} />}
-      {preview.after && <ExposurePanel snapshot={preview.after} title="BTC exposure after this deposit" />}
+      {preview.after && <ExposurePanel snapshot={preview.after} before={data.snapshot.dashboard} title="BTC exposure after this deposit" />}
       <RisksCard borrow={intent.mode === "borrow"} />
-      <div className="flex items-center justify-between gap-3">
-        <BlockNotice block={preview.block} />
-        {preview.block ? (
-          <span aria-disabled="true" className="ml-auto rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white opacity-50">
-            Review
-          </span>
-        ) : (
-          <Link
-            href={`/route/lp/confirm/${entryQuery(intent)}`}
-            className="ml-auto rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent/90"
-          >
-            Review
-          </Link>
-        )}
-      </div>
-    </>
+    </RouteLayout>
   );
 }

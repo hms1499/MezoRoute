@@ -23,8 +23,10 @@ import { useSpActions } from "@/lib/stability-pool/useSpActions";
 import { useSpSnapshot } from "@/lib/stability-pool/useSpSnapshot";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 
-const pill = (on: boolean) =>
-  on ? "rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white" : "rounded-full border border-line px-3 py-1 text-xs font-semibold text-muted";
+const chip = (on: boolean) =>
+  on
+    ? "min-h-9 rounded-full bg-accent px-3.5 text-sm font-semibold text-white"
+    : "min-h-9 rounded-full border border-line bg-white px-3.5 text-sm font-semibold text-muted hover:text-ink";
 
 /** Spec §9 screen 6b: share or Max, simulated first; a paused pool shows the blocked state with Claim BTC gain. */
 export default function SpWithdrawPage() {
@@ -92,7 +94,7 @@ function WithdrawView(props: {
           <legend className="text-sm font-medium">Amount to withdraw</legend>
           <div className="mt-1 flex flex-wrap gap-2">
             {EXIT_PERCENTS.map((value) => (
-              <button key={value} type="button" aria-pressed={value === props.percent} onClick={() => props.onPercent(value)} className={pill(value === props.percent)}>
+              <button key={value} type="button" aria-pressed={value === props.percent} onClick={() => props.onPercent(value)} className={chip(value === props.percent)}>
                 {value === 100 ? "Max" : `${value}%`}
               </button>
             ))}

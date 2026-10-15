@@ -8,7 +8,7 @@ const SpRoutePage = dynamic(() => import("@/components/stability-pool/SpRoutePag
 
 export default function Page() {
   return (
-    <Column>
+    <Column width="wide">
       <SpRoutePage />
     </Column>
   );

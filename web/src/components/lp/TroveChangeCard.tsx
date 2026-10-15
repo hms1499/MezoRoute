@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/Card";
 import { Stat } from "@/components/ui/Stat";
 import type { Trove } from "@/lib/dashboard/snapshot";
 import { formatPercent } from "@/lib/format";
@@ -11,8 +12,7 @@ export function TroveChangeCard({ trove, effect, price, mcr }: { trove: Trove; e
   const cr = collateralRatio(trove, price);
   const percent = (value: bigint | null) => (value === null ? "—" : formatPercent(value, 1));
   return (
-    <section className="card">
-      <h2 className="font-semibold">Your Trove after this borrow</h2>
+    <Card title="Your Trove after this borrow">
       <dl className="mt-3 stat-list">
         <Stat label="Debt" sub={`includes the ${musd(effect.fee)} borrowing fee`}>
           {musd(trove.debt)} → {musd(effect.newDebt)}
@@ -21,6 +21,6 @@ export function TroveChangeCard({ trove, effect, price, mcr }: { trove: Trove; e
           {percent(cr)} → {percent(effect.newCr)}
         </Stat>
       </dl>
-    </section>
+    </Card>
   );
 }

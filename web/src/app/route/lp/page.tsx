@@ -8,7 +8,7 @@ const LpRoutePage = dynamic(() => import("@/components/lp/LpRoutePage"), { ssr: 
 
 export default function Page() {
   return (
-    <Column>
+    <Column width="wide">
       <LpRoutePage />
     </Column>
   );

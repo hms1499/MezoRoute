@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/Card";
 import { LP_RISKS } from "@/lib/routes/copy";
 
 const BORROW_RISK = "Using borrowed MUSD does not reduce your debt, and an LP deposit adds BTC exposure.";
@@ -5,13 +6,12 @@ const BORROW_RISK = "Using borrowed MUSD does not reduce your debt, and an LP de
 export function RisksCard({ borrow = false }: { borrow?: boolean }) {
   const risks = borrow ? [BORROW_RISK, ...LP_RISKS] : LP_RISKS;
   return (
-    <section className="card">
-      <h2 className="font-semibold">Risks</h2>
-      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
+    <Card title="Risks">
+      <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-muted">
         {risks.map((risk) => (
           <li key={risk}>{risk}</li>
         ))}
       </ul>
-    </section>
+    </Card>
   );
 }
