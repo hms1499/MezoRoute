@@ -10,6 +10,7 @@
     "postbuild": "node scripts/check-relayer-bundle.mjs",
     "lint": "next lint",
     "test": "vitest run",
+    "quote-accuracy": "vitest run -c vitest.live.config.ts",
     "postinstall": "node scripts/patch-relayer.mjs",
     "sync-abi": "node scripts/sync-abi.mjs"
   },
