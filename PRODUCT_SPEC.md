@@ -781,7 +781,8 @@ F6 done 15 Oct 2026: Route comparison card on the dashboard: per-amount LP vs St
 | F7 | Positions (LP): underlying, cost basis, claimable fees + Claim, exit | F3 |
 | F8 | Mainnet reference card; quote-accuracy script | F3 |
 | M1 | Mainnet deployment (cap 1,000 MUSD) + verification; mainnet config in frontend; real round trip | C1, F7 |
-| V1 | Vercel production deploy; QA checklist on both wallet types | all F |
+| U1 | UI polish: one pass over every screen for visual consistency, hierarchy, loading/empty/error states, the first impression before a wallet connects, and micro-interactions, within the §9 Calm Finance direction; no new features | all F, M1 |
+| V1 | Vercel production deploy; QA checklist on both wallet types | all F, U1 |
 | D1 | README, deck, 2-minute video, submission form | V1, M1 |
 | E1 (Could) | Playwright live-testnet end-to-end | V1 |
 
