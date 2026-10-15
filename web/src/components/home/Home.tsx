@@ -1,7 +1,7 @@
 "use client";
 
 import { Dashboard } from "@/components/dashboard/Dashboard";
-import { Landing } from "./Landing";
+import { Landing } from "@/components/landing/Landing";
 import { RequireWallet } from "./RequireWallet";
 
 export default function Home() {

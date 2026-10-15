@@ -15,7 +15,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
   danger: "bg-danger text-white hover:bg-danger/90",
   // U2 landing (dark): solid teal, outlined teal, and quiet text.
   night: "bg-night-lp text-night-onLp hover:bg-night-lp/90",
-  nightOutline: "border border-night-lp text-night-lp hover:bg-night-lp/10",
+  // An inset ring, not a border: the 360 px header has no room for the 2 px a border adds.
+  nightOutline: "text-night-lp ring-1 ring-inset ring-night-lp hover:bg-night-lp/10",
   nightGhost: "text-night-muted hover:text-night-ink",
 };
 const SIZES: Record<Size, string> = { md: "min-h-11 px-5 text-sm", sm: "min-h-9 px-3.5 text-xs" };
