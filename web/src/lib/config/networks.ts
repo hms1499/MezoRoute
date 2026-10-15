@@ -76,8 +76,8 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     explorerApiUrl: "https://api.explorer.mezo.org",
     faucetUrl: null,
     mezoAppUrl: "https://mezo.org",
-    // Deployed in M1 with a 1,000 MUSD cap; until then mainnet is read-only.
-    executor: null,
+    // M1, 15 Oct 2026: 1,000 MUSD cap per entry, source-verified on the explorer.
+    executor: { address: "0x046449b1229C863e278f369869BA10e12bd80d9E", feeBps: 10n, deployBlock: 12_524_142n },
     addresses: {
       musd: "0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186",
       btc: "0x7b7C000000000000000000000000000000000000",

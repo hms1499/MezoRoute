@@ -30,7 +30,7 @@ describe("entryBlock", () => {
   });
 
   it("blocks a network without an executor first", () => {
-    expect(entryBlock(input({ network: networks.mainnet, walletChainId: 1 }))).toMatchObject({
+    expect(entryBlock(input({ network: { ...networks.mainnet, executor: null }, walletChainId: 1 }))).toMatchObject({
       reason: "no-executor",
       outcome: { message: "Mainnet actions open after launch. Reading only." },
     });

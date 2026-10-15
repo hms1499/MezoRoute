@@ -11,9 +11,14 @@ describe("writeBlocker (spec FR-01)", () => {
     expect(writeBlocker(networks.testnet, chainId)).toBe("wrong-network");
   });
 
+  it("allows writes on mainnet now that its executor is deployed", () => {
+    expect(writeBlocker(networks.mainnet, 31612)).toBeNull();
+  });
+
   it("reports the missing executor before the chain", () => {
-    expect(writeBlocker(networks.mainnet, 31612)).toBe("no-executor");
-    expect(writeBlocker(networks.mainnet, 1)).toBe("no-executor");
+    const preLaunch = { ...networks.mainnet, executor: null };
+    expect(writeBlocker(preLaunch, 31612)).toBe("no-executor");
+    expect(writeBlocker(preLaunch, 1)).toBe("no-executor");
   });
 });
 
