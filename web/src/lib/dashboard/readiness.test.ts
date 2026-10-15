@@ -129,6 +129,16 @@ describe("readinessCopy", () => {
       action: { label: "Open Mezo app", href: "https://testnet.mezo.org" },
     });
   });
+
+  it("points mainnet users without MUSD or a Trove to a swap: a Trove needs 1,800 MUSD of debt", () => {
+    expect(readinessCopy(state("no-trove"), { ...context, network: mainnet })).toEqual({
+      tone: "neutral",
+      tag: "No MUSD",
+      headline: "You need MUSD to start.",
+      detail: "Swap BTC for MUSD in the Mezo app. Opening a Trove needs at least 1,800 MUSD of debt.",
+      action: { label: "Open Mezo app", href: "https://mezo.org" },
+    });
+  });
 });
 
 describe("troveWarning", () => {

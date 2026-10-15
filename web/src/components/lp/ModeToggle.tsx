@@ -21,24 +21,24 @@ export function ModeToggle({
       onClick={() => onChange(value)}
       className={
         mode === value
-          ? "rounded-full bg-white px-3 py-1.5 shadow-sm"
-          : "rounded-full px-3 py-1.5 text-muted disabled:opacity-60"
+          ? "min-h-9 rounded-full bg-white px-3.5 text-ink shadow-card"
+          : "min-h-9 rounded-full px-3.5 text-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
       }
     >
       {label}
     </button>
   );
   return (
-    <div className="mt-4">
-      <div role="radiogroup" aria-label="Funding" className="inline-flex rounded-full bg-line p-1 text-xs font-semibold">
+    <div>
+      <div role="radiogroup" aria-label="Funding" className="inline-flex rounded-full bg-line p-1 text-sm font-semibold">
         {option("deposit", "Deposit MUSD")}
         {option("borrow", "Borrow & Deploy", !canBorrow)}
       </div>
       {walletKind === "smart-account" && (
-        <p className="mt-1 text-xs text-muted">Borrow & Deploy needs a standard wallet signature.</p>
+        <p className="mt-1 text-sm text-muted">Borrow & Deploy needs a standard wallet signature.</p>
       )}
       {mode === "borrow" && (
-        <p className="mt-1 text-xs text-muted">Borrow MUSD against your Trove and deposit it in one transaction.</p>
+        <p className="mt-1 text-sm text-muted">Borrow MUSD against your Trove and deposit it in one transaction.</p>
       )}
     </div>
   );

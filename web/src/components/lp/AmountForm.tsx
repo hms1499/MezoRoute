@@ -1,6 +1,12 @@
+import { Notice } from "@/components/ui/Notice";
 import { formatBps } from "@/lib/format";
 import { SLIPPAGE_PRESETS, type SlippageBps } from "@/lib/quote/entry";
 import { AmountInput } from "./AmountInput";
+
+const chip = (on: boolean) =>
+  on
+    ? "min-h-9 rounded-full bg-accent px-3.5 text-sm font-semibold text-white"
+    : "min-h-9 rounded-full border border-line bg-white px-3.5 text-sm font-semibold text-muted hover:text-ink";
 
 type Inputs = { amount: string; slippageBps: SlippageBps };
 
@@ -23,20 +29,16 @@ export function AmountForm({
               type="button"
               aria-pressed={bps === slippageBps}
               onClick={() => onChange({ amount, slippageBps: bps })}
-              className={
-                bps === slippageBps
-                  ? "rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white"
-                  : "rounded-full border border-line px-3 py-1 text-xs font-semibold text-muted"
-              }
+              className={chip(bps === slippageBps)}
             >
               {formatBps(bps, 1)}
             </button>
           ))}
         </div>
         {slippageBps === 200n && (
-          <p className="mt-2 rounded-lg bg-warning-bg px-3 py-2 text-xs text-warning-ink">
+          <Notice tone="warning" className="mt-2">
             2% slippage lets this deposit fill up to 2% below the quote. Use it only if lower settings keep failing.
-          </p>
+          </Notice>
         )}
       </fieldset>
     </div>

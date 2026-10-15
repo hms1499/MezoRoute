@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { Address } from "viem";
@@ -9,16 +8,21 @@ import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
+import { MobileBar, RouteLayout } from "@/components/route/RouteLayout";
+import { SummaryPanel, type SummaryRow } from "@/components/route/SummaryPanel";
+import { ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadingCard } from "@/components/ui/Skeleton";
 import { AmountInput } from "@/components/lp/AmountInput";
 import { BlockNotice } from "@/components/lp/BlockNotice";
-import { ExposureChange } from "@/components/lp/ExposureChange";
+import { btc, musd } from "@/components/lp/units";
 import { useNetwork } from "@/lib/config/network-context";
 import { parseMusdAmount } from "@/lib/quote/amount";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
 import { spDepositPreview } from "@/lib/stability-pool/preview";
 import { useSpSnapshot } from "@/lib/stability-pool/useSpSnapshot";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
-import { SpDepositCard } from "./SpDepositCard";
 import { SpRisksCard } from "./SpRisksCard";
 
 /** Spec §9 screen 2b: amount, current deposit and pending BTC gain, exposure before/after, risks, Review. */
@@ -38,21 +42,39 @@ function SpRoute({ account }: { account: Address }) {
     return error ? (
       <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
     ) : (
-      <div aria-busy="true" aria-label="Loading the Stability Pool" className="h-48 animate-pulse rounded-2xl bg-white shadow-card" />
+      <LoadingCard label="Loading the Stability Pool" />
     );
   }
 
   const musdIn = parseMusdAmount(amount);
   const preview = spDepositPreview({ network, data, musdIn, walletKind: walletKind ?? "unknown", walletChainId: chainId });
   const dashboard = data.snapshot.dashboard;
+  const rows: SummaryRow[] =
+    musdIn === null
+      ? []
+      : [
+          { label: "You deposit", value: musd(musdIn), strong: true },
+          ...(preview.depositAfter !== null ? [{ label: "Deposit after (estimated)", value: musd(preview.depositAfter), strong: true }] : []),
+          { label: "Your deposit now", value: musd(preview.depositNow) },
+          { label: "Pending BTC gain", value: btc(preview.gainPaid), sub: "Paid to your wallet with this deposit" },
+          { label: "MezoRoute fee", value: "None (direct protocol call)" },
+          { label: "Network fee (estimated)", value: preview.gasCost === null ? "—" : btc(preview.gasCost) },
+        ];
+  const review = (className?: string) => (
+    <ButtonLink href={`/route/stability-pool/confirm/${spDepositQuery(amount)}`} disabled={preview.block !== null} className={className}>
+      Review
+    </ButtonLink>
+  );
+  const notice = preview.block?.outcome ? <BlockNotice block={preview.block} /> : undefined;
+
   return (
-    <>
+    <RouteLayout
+      header={<PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title="Back the system in the Stability Pool" />}
+      summary={<SummaryPanel rows={rows} notice={notice} action={review("w-full")} />}
+      mobileBar={<MobileBar figure={musdIn === null ? undefined : musd(musdIn)} notice={notice} action={review()} />}
+    >
       {chainId !== network.chainId && <WrongNetworkAlert />}
-      <section className="rounded-2xl bg-white p-5 shadow-card">
-        <h1 className="text-lg font-semibold">Back the system in the Stability Pool</h1>
-        <p className="mt-1 text-sm text-muted">
-          Your MUSD repays liquidated debt; in return you receive the liquidated BTC collateral.
-        </p>
+      <Card subtitle="Your MUSD repays liquidated debt; in return you receive the liquidated BTC collateral.">
         <div className="mt-4">
           <AmountInput
             amount={amount}
@@ -64,26 +86,9 @@ function SpRoute({ account }: { account: Address }) {
             }}
           />
         </div>
-      </section>
-      <SpDepositCard preview={preview} />
-      {preview.after && <ExposureChange before={dashboard} after={preview.after} />}
-      {preview.after && <ExposurePanel snapshot={preview.after} title="BTC exposure after this deposit" />}
+      </Card>
+      {preview.after && <ExposurePanel snapshot={preview.after} before={dashboard} title="BTC exposure after this deposit" />}
       <SpRisksCard />
-      <div className="flex items-center justify-between gap-3">
-        <BlockNotice block={preview.block} />
-        {preview.block ? (
-          <span aria-disabled="true" className="ml-auto rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white opacity-50">
-            Review
-          </span>
-        ) : (
-          <Link
-            href={`/route/stability-pool/confirm/${spDepositQuery(amount)}`}
-            className="ml-auto rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent/90"
-          >
-            Review
-          </Link>
-        )}
-      </div>
-    </>
+    </RouteLayout>
   );
 }

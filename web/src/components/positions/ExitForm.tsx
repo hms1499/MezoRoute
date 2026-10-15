@@ -1,10 +1,13 @@
 import { lp } from "@/components/lp/units";
+import { Notice } from "@/components/ui/Notice";
 import { formatBps } from "@/lib/format";
 import { EXIT_PERCENTS, type ExitIntent } from "@/lib/positions/exit-intent";
 import { SLIPPAGE_PRESETS } from "@/lib/quote/entry";
 
-const pill = (on: boolean) =>
-  on ? "rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white" : "rounded-full border border-line px-3 py-1 text-xs font-semibold text-muted";
+const chip = (on: boolean) =>
+  on
+    ? "min-h-9 rounded-full bg-accent px-3.5 text-sm font-semibold text-white"
+    : "min-h-9 rounded-full border border-line bg-white px-3.5 text-sm font-semibold text-muted hover:text-ink";
 
 /** Share of the LP (locked once the first step pins it; "Start over" unlocks it) and slippage (read again at send). */
 export function ExitForm({
@@ -19,7 +22,7 @@ export function ExitForm({
   onChange: (next: ExitIntent) => void;
 }) {
   return (
-    <div className="mt-4 space-y-3">
+    <div className="space-y-4">
       <fieldset disabled={amountLocked}>
         <legend className="text-sm font-medium">Amount to exit</legend>
         <div className="mt-1 flex flex-wrap gap-2">
@@ -29,7 +32,7 @@ export function ExitForm({
               type="button"
               aria-pressed={percent === intent.percent}
               onClick={() => onChange({ ...intent, percent })}
-              className={pill(percent === intent.percent)}
+              className={chip(percent === intent.percent)}
             >
               {percent === 100 ? "Max" : `${percent}%`}
             </button>
@@ -46,16 +49,16 @@ export function ExitForm({
               type="button"
               aria-pressed={bps === intent.slippageBps}
               onClick={() => onChange({ ...intent, slippageBps: bps })}
-              className={pill(bps === intent.slippageBps)}
+              className={chip(bps === intent.slippageBps)}
             >
               {formatBps(bps, 1)}
             </button>
           ))}
         </div>
         {intent.slippageBps === 200n && (
-          <p className="mt-2 rounded-lg bg-warning-bg px-3 py-2 text-xs text-warning-ink">
+          <Notice tone="warning" className="mt-2">
             2% slippage lets this exit fill up to 2% below the quote. Use it only if lower settings keep failing.
-          </p>
+          </Notice>
         )}
       </fieldset>
     </div>

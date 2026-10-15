@@ -1,10 +1,12 @@
 "use client";
 
 import { useBitcoinAccount } from "@mezo-org/passport";
-import Link from "next/link";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
-import { ExternalButton } from "@/components/ExternalButton";
+import { Badge } from "@/components/ui/Badge";
+import { ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
 import { useNetwork } from "@/lib/config/network-context";
 import { writeBlocker, writeBlockerMessage } from "@/lib/config/write-gate";
 import { readinessCopy, type Readiness, type ReadinessCopy } from "@/lib/dashboard/readiness";
@@ -13,10 +15,10 @@ import { formatToken, shortAddress } from "@/lib/format";
 import { isOrangeKitConnector, type WalletKind } from "@/lib/wallet/capabilities";
 import { walletKindLabel, walletKindNote } from "@/lib/wallet/labels";
 
-const TAG_TONE: Record<ReadinessCopy["tone"], string> = {
-  positive: "bg-accent-soft text-accent",
-  attention: "bg-warning-bg text-warning-ink",
-  neutral: "bg-line text-muted",
+const BADGE_TONE: Record<ReadinessCopy["tone"], "accent" | "warning" | "neutral"> = {
+  positive: "accent",
+  attention: "warning",
+  neutral: "neutral",
 };
 
 /** What the user can do now, plus the connected wallet in one line (replaces F1's wallet card). */
@@ -43,41 +45,25 @@ export function ReadinessCard({
   ].filter((note): note is string => note !== null);
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-card">
-      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${TAG_TONE[copy.tone]}`}>{copy.tag}</span>
+    <Card title="Next step" aside={<Badge tone={BADGE_TONE[copy.tone]}>{copy.tag}</Badge>}>
       <p className="mt-3 text-lg font-semibold leading-snug">{copy.headline}</p>
       {copy.detail && <p className="mt-1 text-sm text-muted">{copy.detail}</p>}
-      {copy.action && (
-        <div className="mt-4">
-          <ExternalButton href={copy.action.href}>{copy.action.label}</ExternalButton>
-        </div>
-      )}
-      {readiness.state === "ready" && network.executor && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href="/route/lp/"
-            className="inline-block rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent/90"
-          >
-            Deposit into LP
-          </Link>
-          <Link
-            href="/route/stability-pool/"
-            className="inline-block rounded-full border border-accent px-4 py-2 text-xs font-semibold text-accent hover:bg-accent-soft"
-          >
-            Back the system
-          </Link>
-        </div>
-      )}
-      {readiness.state === "can-borrow" && network.executor && (
-        <div className="mt-4">
-          <Link
-            href="/route/lp/?mode=borrow"
-            className="inline-block rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white hover:bg-accent/90"
-          >
-            Borrow & Deploy
-          </Link>
-        </div>
-      )}
+      <div className="mt-4 flex flex-wrap gap-2 empty:hidden">
+        {copy.action && (
+          <ButtonLink href={copy.action.href} external variant="secondary">
+            {copy.action.label}
+          </ButtonLink>
+        )}
+        {readiness.state === "ready" && network.executor && (
+          <>
+            <ButtonLink href="/route/lp/">Deposit into LP</ButtonLink>
+            <ButtonLink href="/route/stability-pool/" variant="secondary">
+              Back the system
+            </ButtonLink>
+          </>
+        )}
+        {readiness.state === "can-borrow" && network.executor && <ButtonLink href="/route/lp/?mode=borrow">Borrow & Deploy</ButtonLink>}
+      </div>
       <p className="mt-4 flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-line pt-3 text-xs text-muted">
         <span title={btcAddress ?? account}>
           {connector?.name ?? "Wallet"} · {walletKindLabel(walletKind, bitcoinWallet)} · {shortAddress(account)}
@@ -85,10 +71,10 @@ export function ReadinessCard({
         <span>BTC for gas {formatToken(data.gasBalance)}</span>
       </p>
       {notes.map((note) => (
-        <p key={note} className="mt-3 rounded-lg bg-accent-soft px-3 py-2 text-xs text-accent">
+        <Notice key={note} className="mt-3">
           {note}
-        </p>
+        </Notice>
       ))}
-    </section>
+    </Card>
   );
 }

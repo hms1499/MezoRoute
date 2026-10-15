@@ -2,6 +2,8 @@
 
 import { useSwitchChain } from "wagmi";
 import { useErrorToast } from "@/components/ErrorToast";
+import { Button } from "@/components/ui/Button";
+import { Notice } from "@/components/ui/Notice";
 import { useNetwork } from "@/lib/config/network-context";
 import { writeBlockerMessage } from "@/lib/config/write-gate";
 
@@ -11,16 +13,20 @@ export function WrongNetworkAlert() {
   const { switchChain, isPending } = useSwitchChain();
   const { showError } = useErrorToast();
   return (
-    <div role="alert" className="flex items-center justify-between gap-3 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
-      <span>{writeBlockerMessage("wrong-network", network)}</span>
-      <button
-        type="button"
-        disabled={isPending}
-        onClick={() => switchChain({ chainId: network.chainId }, { onError: (error) => showError(error) })}
-        className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-      >
-        Switch network
-      </button>
-    </div>
+    <Notice
+      tone="danger"
+      role="alert"
+      action={
+        <Button
+          size="sm"
+          loading={isPending}
+          onClick={() => switchChain({ chainId: network.chainId }, { onError: (error) => showError(error) })}
+        >
+          Switch network
+        </Button>
+      }
+    >
+      {writeBlockerMessage("wrong-network", network)}
+    </Notice>
   );
 }

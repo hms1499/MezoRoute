@@ -1,7 +1,7 @@
 import { mezoMainnet, mezoTestnet } from "@mezo-org/orangekit";
 import { getAddress, isAddress } from "viem";
 import { describe, expect, it } from "vitest";
-import { explorerTxUrl, networks } from "./networks";
+import { explorerAddressUrl, explorerTxUrl, networks } from "./networks";
 
 describe("networks", () => {
   // Passport re-exports these from OrangeKit; importing Passport itself needs `window`.
@@ -50,5 +50,14 @@ describe("networks", () => {
   it("builds explorer transaction links per network", () => {
     expect(explorerTxUrl(networks.testnet, "0xabc")).toBe("https://explorer.test.mezo.org/tx/0xabc");
     expect(explorerTxUrl(networks.mainnet, "0xabc")).toBe("https://explorer.mezo.org/tx/0xabc");
+  });
+
+  it("links an address on each network's explorer", () => {
+    expect(explorerAddressUrl(networks.mainnet, "0x046449b1229C863e278f369869BA10e12bd80d9E")).toBe(
+      "https://explorer.mezo.org/address/0x046449b1229C863e278f369869BA10e12bd80d9E",
+    );
+    expect(explorerAddressUrl(networks.testnet, "0xB36B2E012003840951CFf00fA6b1E3237A110920")).toBe(
+      "https://explorer.test.mezo.org/address/0xB36B2E012003840951CFf00fA6b1E3237A110920",
+    );
   });
 });

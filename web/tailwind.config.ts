@@ -1,20 +1,25 @@
 import type { Config } from "tailwindcss";
+import { colors } from "./src/lib/ui/tokens";
 
-// "Calm teal" (F1 design): light canvas, one accent, amber reserved for warnings.
+// "Calm teal" (F1, refined in U1): light canvas, one accent, amber for warnings, orange only to mark BTC exposure.
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
-      colors: {
-        canvas: "#F6F8F7",
-        ink: "#1F2A2E",
-        muted: "#4B5B5F",
-        line: "#E4ECEA",
-        accent: { DEFAULT: "#0F766E", soft: "#ECF5F3" },
-        warning: { bg: "#FEF3C7", ink: "#92400E" },
-        danger: { DEFAULT: "#B42318", soft: "#FEECEB" },
+      colors,
+      fontFamily: { sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"] },
+      boxShadow: {
+        card: "0 1px 3px rgba(15, 40, 40, 0.06)",
+        raised: "0 8px 24px rgba(15, 40, 40, 0.10)",
       },
-      boxShadow: { card: "0 1px 3px rgba(15, 40, 40, 0.06)" },
+      keyframes: {
+        shimmer: { "0%": { backgroundPosition: "200% 0" }, "100%": { backgroundPosition: "-200% 0" } },
+        "toast-in": { "0%": { opacity: "0", transform: "translateY(8px)" }, "100%": { opacity: "1", transform: "translateY(0)" } },
+      },
+      animation: {
+        shimmer: "shimmer 1.6s linear infinite",
+        "toast-in": "toast-in 200ms ease-out",
+      },
     },
   },
   plugins: [],

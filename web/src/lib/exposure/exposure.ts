@@ -67,3 +67,8 @@ export function drawdownScenarios(snapshot: DashboardSnapshot, current: Exposure
     };
   });
 }
+
+/** The double-exposure warning applies only when BTC backs a Trove and also sits in the LP (U1 copy rule). */
+export function showsDoubleExposure(current: Exposure): boolean {
+  return current.troveBtc > 0n && (current.lpBtc > 0n || current.lpMusd > 0n);
+}

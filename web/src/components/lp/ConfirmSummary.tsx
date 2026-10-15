@@ -1,8 +1,14 @@
-import { StatRow } from "@/components/dashboard/StatRow";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
+import { Stat } from "@/components/ui/Stat";
 import { formatBps, formatPercent } from "@/lib/format";
 import { QUOTE_TTL_MS } from "@/lib/routes/musd-btc-lp/gate";
 import type { EntryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import type { LpRouteData } from "@/lib/routes/musd-btc-lp/snapshot";
+import { QUOTE_REFRESH_MS } from "@/lib/routes/musd-btc-lp/useLpRouteSnapshot";
+import { cx } from "@/lib/ui/cx";
+import { quoteTimer } from "@/lib/ui/countdown";
 import { btc, lp, musd } from "./units";
 
 /** Exact amounts, minimums, deadline, and the quote's age (spec §9 screen 3a). */
@@ -20,58 +26,69 @@ export function ConfirmSummary({
   onRefresh: () => void;
 }) {
   const { quote, minimums } = preview;
-  const age = Math.max(0, Math.floor((now - data.fetchedAt) / 1000));
-  const expired = now - data.fetchedAt > QUOTE_TTL_MS;
+  const timer = quoteTimer(now, data.fetchedAt, QUOTE_REFRESH_MS, QUOTE_TTL_MS);
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-card">
-      <h1 className="text-lg font-semibold">{preview.borrow ? "Review your borrow and deposit" : "Review your deposit"}</h1>
+    <Card title={preview.borrow ? "Review your borrow and deposit" : "Review your deposit"} headingLevel={1}>
       {quote && minimums && (
-        <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
-          <StatRow label={preview.borrow ? "You borrow and deposit" : "You deposit"} strong>
+        <dl className="mt-3 stat-list">
+          <Stat label={preview.borrow ? "You borrow and deposit" : "You deposit"} strong>
             {musd(quote.musdIn)}
-          </StatRow>
-          <StatRow label="MezoRoute fee" sub={formatBps(data.snapshot.executorFeeBps)}>
+          </Stat>
+          <Stat label="MezoRoute fee" sub={formatBps(data.snapshot.executorFeeBps)}>
             {musd(quote.fee)}
-          </StatRow>
+          </Stat>
           {preview.borrow?.effect && (
             <>
-              <StatRow label="Borrowing fee" sub="added to your Trove debt">
+              <Stat label="Borrowing fee" sub="added to your Trove debt">
                 {musd(preview.borrow.effect.fee)}
-              </StatRow>
-              <StatRow label="Trove debt after">{musd(preview.borrow.effect.newDebt)}</StatRow>
-              <StatRow label="Collateral ratio after" strong>
+              </Stat>
+              <Stat label="Trove debt after">{musd(preview.borrow.effect.newDebt)}</Stat>
+              <Stat label="Collateral ratio after" strong>
                 {preview.borrow.effect.newCr === null ? "—" : formatPercent(preview.borrow.effect.newCr, 1)}
-              </StatRow>
+              </Stat>
             </>
           )}
-          <StatRow label="Swapped to BTC" sub={`at least ${btc(minimums.minBtcFromSwap)}`}>
+          <Stat label="Swapped to BTC" sub={`at least ${btc(minimums.minBtcFromSwap)}`}>
             {musd(quote.musdToSwap)}
-          </StatRow>
-          <StatRow label="Deposited to the pool" sub={`at least ${musd(minimums.minMusdAdded)} + ${btc(minimums.minBtcAdded)}`}>
+          </Stat>
+          <Stat label="Deposited to the pool" sub={`at least ${musd(minimums.minMusdAdded)} + ${btc(minimums.minBtcAdded)}`}>
             {musd(quote.musdAdded)} + {btc(quote.btcAdded)}
-          </StatRow>
-          <StatRow label="LP tokens" sub={`at least ${lp(minimums.minLpOut)}`}>
+          </Stat>
+          <Stat label="LP tokens" sub={`at least ${lp(minimums.minLpOut)}`}>
             {lp(quote.liquidity)}
-          </StatRow>
-          <StatRow label="Slippage">{formatBps(slippageBps, 1)}</StatRow>
-          <StatRow label="Deadline" sub="10 minutes after this quote's block">
+          </Stat>
+          <Stat label="Slippage">{formatBps(slippageBps, 1)}</Stat>
+          <Stat label="Deadline" sub="10 minutes after this quote's block">
             {new Date(Number(preview.deadline) * 1000).toLocaleTimeString()}
-          </StatRow>
+          </Stat>
         </dl>
       )}
-      <p className="mt-3 flex items-center justify-between gap-3 text-xs text-muted">
-        <span>
-          Quote from block {data.snapshot.blockNumber.toString()} · {age}s ago
-        </span>
-        {expired && (
-          <button type="button" onClick={onRefresh} className="font-semibold text-accent hover:underline">
-            Refresh quote
-          </button>
-        )}
-      </p>
-      <p className="mt-3 rounded-lg bg-accent-soft px-3 py-2 text-xs text-accent">
-        MezoRoute never holds your funds between transactions.
-      </p>
-    </section>
+      <div className="mt-4">
+        <div className="flex items-center justify-between gap-3 text-xs text-muted">
+          <span>Quote from block {data.snapshot.blockNumber.toString()}</span>
+          {timer.phase === "expired" ? (
+            <Button size="sm" variant="secondary" onClick={onRefresh}>
+              Refresh quote
+            </Button>
+          ) : (
+            <span className={cx(timer.phase === "expiring" && "font-medium text-warning-ink")}>
+              {timer.phase === "fresh" && `Refreshes in ${timer.secondsLeft}s`}
+              {timer.phase === "refreshing" && "Refreshing…"}
+              {timer.phase === "expiring" && `Not refreshed · expires in ${timer.secondsLeft}s`}
+            </span>
+          )}
+        </div>
+        <div aria-hidden className="mt-2 h-1 overflow-hidden rounded-full bg-line">
+          <div
+            className={cx(
+              "h-full origin-left transition-transform duration-1000 ease-linear",
+              timer.phase === "expiring" ? "bg-warning-ink" : "bg-accent",
+            )}
+            style={{ transform: `scaleX(${timer.remaining})` }}
+          />
+        </div>
+      </div>
+      <Notice className="mt-4">MezoRoute never holds your funds between transactions.</Notice>
+    </Card>
   );
 }

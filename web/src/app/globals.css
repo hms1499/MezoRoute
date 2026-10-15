@@ -1,3 +1,51 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid theme("colors.accent.DEFAULT");
+    outline-offset: 2px;
+  }
+  /* Figures align in columns; set per element because Inter's tabular set also widens hyphens in prose. */
+  dd,
+  td,
+  th,
+  input,
+  output {
+    font-variant-numeric: tabular-nums;
+  }
+  summary {
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-white p-5 shadow-card;
+  }
+  .stat-list {
+    @apply grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 text-sm;
+  }
+}
+
+/* Below 1024 px route pages pin an action bar to the bottom; keyboard focus scrolls clear of it. */
+@media (max-width: 1023px) {
+  html {
+    scroll-padding-bottom: 6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

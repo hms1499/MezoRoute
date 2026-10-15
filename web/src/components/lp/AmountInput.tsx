@@ -18,26 +18,27 @@ export function AmountInput({
       <label htmlFor="amount" className="block text-sm font-medium">
         Amount
       </label>
-      <div className="flex items-center gap-2 rounded-xl border border-line px-3 py-2 focus-within:border-accent">
+      <div className="flex min-h-12 items-center gap-2 rounded-xl border border-line bg-white px-3 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20">
         <input
           id="amount"
           inputMode="decimal"
           autoComplete="off"
           placeholder="0.0"
           value={amount}
+          aria-describedby="amount-help"
           onChange={(event) => onAmount(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-lg outline-none"
+          className="min-w-0 flex-1 bg-transparent py-2 text-xl font-semibold outline-none placeholder:text-muted/60"
         />
         <span className="text-sm text-muted">MUSD</span>
         <button
           type="button"
           onClick={() => onAmount(formatUnits(max, 18))}
-          className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent"
+          className="min-h-9 rounded-full bg-accent-soft px-3 text-xs font-semibold text-accent hover:bg-accent/10"
         >
           Max
         </button>
       </div>
-      <p className="text-xs text-muted">
+      <p id="amount-help" className="text-xs text-muted">
         {maxLabel}: {formatToken(max, 18, 2)} MUSD
       </p>
     </div>

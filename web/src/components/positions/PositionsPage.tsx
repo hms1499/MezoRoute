@@ -1,17 +1,22 @@
 "use client";
 
-import Link from "next/link";
+import { Inbox } from "lucide-react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
+import { btc, musd } from "@/components/lp/units";
 import { SpPositionCard } from "@/components/stability-pool/SpPositionCard";
+import { ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { LoadingCard } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/lib/config/network-context";
 import { lacksGas } from "@/lib/dashboard/readiness";
 import { claimBlock } from "@/lib/positions/claim";
 import { usePositionsHistory } from "@/lib/positions/usePositionsHistory";
 import { usePositionsSnapshot } from "@/lib/positions/usePositionsSnapshot";
+import { positionTotals } from "@/lib/positions/totals";
 import { positionView } from "@/lib/positions/view";
 import { spView } from "@/lib/stability-pool/position";
 import { spClaimPreview } from "@/lib/stability-pool/preview";
@@ -41,7 +46,7 @@ function Positions({ account }: { account: Address }) {
     return error ? (
       <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
     ) : (
-      <div aria-busy="true" aria-label="Loading your positions" className="h-48 animate-pulse rounded-2xl bg-white shadow-card" />
+      <LoadingCard label="Loading your positions" lines={5} />
     );
   }
 
@@ -53,22 +58,36 @@ function Positions({ account }: { account: Address }) {
     fees: data.snapshot.fees,
     lacksGas: lacksGas(data.gasBalance, data.gasPrice),
   });
+  const totals = positionTotals(view, pool);
   return (
     <>
       {chainId !== network.chainId && <WrongNetworkAlert />}
-      <h1 className="text-lg font-semibold">Your positions</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Your positions</h1>
+        {totals && !(view.empty && pool?.empty) && (
+          <dl className="flex gap-6 text-right">
+            <div>
+              <dt className="text-xs text-muted">Value (estimated)</dt>
+              <dd className="text-lg font-semibold">{musd(totals.value)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted">BTC exposure</dt>
+              <dd className="text-lg font-semibold text-btc">{btc(totals.btc)}</dd>
+            </div>
+          </dl>
+        )}
+      </div>
       {view.empty && pool?.empty ? (
-        <section className="rounded-2xl bg-white p-5 shadow-card">
-          <p className="text-sm">You have no MUSD/BTC LP, no unclaimed pool fees, and no Stability Pool deposit on {network.name}.</p>
-          <div className="mt-3 flex gap-4">
-            <Link href="/route/lp/" className="text-xs font-semibold text-accent hover:underline">
-              Deposit MUSD into the pool
-            </Link>
-            <Link href="/route/stability-pool/" className="text-xs font-semibold text-accent hover:underline">
-              Back the system in the Stability Pool
-            </Link>
+        <Card className="text-center">
+          <Inbox aria-hidden className="mx-auto h-10 w-10 text-muted" />
+          <p className="mt-3 text-sm">You have no MUSD/BTC LP, no unclaimed pool fees, and no Stability Pool deposit on {network.name}.</p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <ButtonLink href="/route/lp/">Deposit MUSD into the pool</ButtonLink>
+            <ButtonLink href="/route/stability-pool/" variant="secondary">
+              Back the system
+            </ButtonLink>
           </div>
-        </section>
+        </Card>
       ) : (
         <>
           {view.lp.balance > 0n && <LpPositionCard lp={view.lp} history={history} />}

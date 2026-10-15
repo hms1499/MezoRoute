@@ -100,3 +100,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
 export function explorerTxUrl(network: NetworkConfig, hash: string): string {
   return `${network.explorerUrl}/tx/${hash}`;
 }
+
+export function explorerAddressUrl(network: NetworkConfig, address: string): string {
+  return `${network.explorerUrl}/address/${address}`;
+}

@@ -304,13 +304,13 @@ Precondition: user has a Trove and uses an EOA wallet.
 
 ## 9. UX and screen specification
 
-**Visual direction: Calm Finance** — light background, rounded cards, generous whitespace, plain-language labels ("Earn swap fees", "Back the system"), one accent colour; responsive down to phone width.
+**Visual direction: Calm Finance** — light background, rounded cards, generous whitespace, plain-language labels ("Earn swap fees", "Back the system"), one accent colour; responsive down to phone width. U1 (Oct 2026): Inter with tabular figures in data (`dd`, table cells, inputs); tokens in `web/src/lib/ui/tokens.ts` (teal accent, amber warnings, orange `btc` only to mark BTC-exposure figures); shared components in `web/src/components/ui/`; two-column dashboard and route pages from 1024 px with a sticky summary and a mobile action bar; landing page with live mainnet figures before a wallet connects. On mainnet, a wallet with no MUSD and no Trove is pointed to a swap in the Mezo app (a Trove needs at least 1,800 MUSD of debt).
 
 **Navigation: one page per step.** Every page shares a header (logo, Testnet/Mainnet switch, Passport wallet button). On mainnet a persistent banner reads "Unaudited · max 1,000 MUSD per transaction". Every error toast carries a recovery action (Section 13).
 
 | # | Page | Route | Content | Primary CTA |
 |---|---|---|---|---|
-| 1 | Dashboard | `/` | Readiness state; Trove card (collateral, debt, CR); exposure panel (Trove BTC, LP BTC, SP pending BTC; BTC −10/20/30%); amount input + LP vs Stability Pool comparison; positions summary; testnet-only mainnet reference card | Choose route |
+| 1 | Dashboard | `/` | Summary strip (wallet MUSD, gas, BTC exposure, Trove CR); readiness state; Trove card (collateral, debt, CR); exposure panel (Trove BTC, LP BTC, SP pending BTC; BTC −10/20/30%); amount input + LP vs Stability Pool comparison; positions summary; testnet-only mainnet reference card | Choose route |
 | 2a | LP route | `/route/lp` | Deposit MUSD / Borrow & Deploy toggle (disabled for smart accounts); "what happens"; expected outcome; fee, slippage, price impact; resulting CR when borrowing; exposure before/after; risks; 60 s quote expiry | Review |
 | 3a | LP confirm | `/route/lp/confirm` | Exact amounts, minimums, deadline; stepper: sign permit (smart account: approve) → sign borrow (if any) → send; no-custody statement | Sign / Send |
 | 2b | Stability Pool | `/route/stability-pool` | Current deposit and pending BTC gain; exposure before/after; risks | Review |
@@ -769,6 +769,8 @@ F6 done 15 Oct 2026: Route comparison card on the dashboard: per-amount LP vs St
 F8 done 15 Oct 2026: mainnet reference card on the testnet dashboard (pool reserves and value, swap fee, 30-day LP fees, Stability Pool deposits and share of MUSD supply, 30-day liquidations), read through its own mainnet client, and `npm run quote-accuracy` checking every executor `Entered` event against the quote engine (14 of 14 checked on testnet, simulation exact, all within 1% slippage, maximum deviation 1 bps); design in `docs/superpowers/specs/2026-10-15-f8-reference-card-quote-accuracy-design.md`.
 
 M1 done 15 Oct 2026: `MezoRouteExecutor` on Mezo mainnet at `0x046449b1229C863e278f369869BA10e12bd80d9E` (cap 1,000 MUSD, fee 10 bps to `0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8`), source-verified, pinned in the frontend (mainnet writes open); real round trips through the UI with MetaMask: Stability Pool deposit → withdraw and LP enter → claim fees → exit (hashes in §20). Mainnet quote accuracy: 1 of 1 exact.
+
+U1 done 15 Oct 2026: design system (tokens, Inter, lucide icons, shared components), landing page with live mainnet figures, two-column dashboard with summary strip, aligned route comparison with mobile tabs, route-page frame with sticky summary and mobile action bar, visual stepper with quote countdown, receipt timeline, positions totals; design in docs/superpowers/specs/2026-10-15-u1-ui-polish-design.md.
 
 ### Wave 1 — MVP backlog (in order)
 
