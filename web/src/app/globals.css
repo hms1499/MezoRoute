@@ -32,6 +32,13 @@
   }
 }
 
+/* Below 1024 px route pages pin an action bar to the bottom; keyboard focus scrolls clear of it. */
+@media (max-width: 1023px) {
+  html {
+    scroll-padding-bottom: 6rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
