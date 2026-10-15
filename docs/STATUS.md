@@ -2,7 +2,7 @@
 
 Living handover file for every agent (see `AGENTS.md` → Session protocol). Update it and commit at the end of each session or milestone. Scope and the backlog are in `PRODUCT_SPEC.md` §16; this file says where we are in it.
 
-**Last updated:** 15 Oct 2026 · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** clean, pushed (M1 merged).
+**Last updated:** 15 Oct 2026 · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** clean, pushed (U1 merged).
 
 ## Where we are
 
@@ -19,15 +19,15 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 | F7 LP positions | Done | |
 | F8 mainnet reference card + quote accuracy | Done (15 Oct) | `npm run quote-accuracy`: 14/14 testnet entries exact |
 | M1 mainnet deployment | Done (15 Oct) | Executor `0x046449b1229C863e278f369869BA10e12bd80d9E`; round trips and hashes in `PRODUCT_SPEC.md` §20 |
-| **U1 UI polish** | **Implemented and QA-passed (15 Oct); final branch review, then merge on the user's word** | Branch `feat/u1-ui-polish` (local, not pushed): spec `docs/superpowers/specs/2026-10-15-u1-ui-polish-design.md`, plan `docs/superpowers/plans/2026-10-15-u1-ui-polish.md` (11 tasks, all done) |
+| U1 UI polish | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u1-ui-polish-design.md`, plan `docs/superpowers/plans/2026-10-15-u1-ui-polish.md` (11 tasks, all done) |
 | V1 Vercel production + QA on both wallet types | Not started | The current preview sits behind a Vercel login; judges need a public URL |
 | D1 README, deck, 2-minute video, submission form | Not started | Needs V1 and M1 |
 
-Tests at `main` (15 Oct): 635 Vitest and 75 Foundry. On `feat/u1-ui-polish`: 678 Vitest; `npm run build` passes (First Load JS of `/` 92 kB).
+Tests at `main` (15 Oct): 682 Vitest and 75 Foundry. `npm run build` passes (First Load JS of `/` 92 kB).
 
-## Next: finish U1 → V1 → D1
+## Next: V1 → D1
 
-1. U1: final whole-branch review done (no Critical; 3 Important fixed in `a5c02bb`). **Waiting on the user:** merge `feat/u1-ui-polish` into `main` and push.
+1. U1 is merged. The mainnet gas question from its inputs is answered (see AGENTS.md → Gas limits); deferred minors are listed under "U1 deferred".
 2. V1: public Vercel production URL; QA on both wallet types. Bitcoin wallets on mainnet can no longer deposit BTC natively (bridge-in closed 13 Oct).
 3. D1: README, deck, video, submission form.
 
@@ -151,6 +151,7 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
+- **15 Oct 2026, late night (Claude Code):** after a local preview at the user's request, `feat/u1-ui-polish` merged into `main` and pushed. Next: V1.
 - **15 Oct 2026, late night (Claude Code):**
   - Final U1 review (fresh reviewer): ready "with fixes". Three Important findings fixed with tests, plus two minors regraded to Important (stepper contrast, landing copy).
   - The quote timer now follows the 15 s refresh.
