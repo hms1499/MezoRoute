@@ -21,7 +21,7 @@ const STEPS = [
   },
   {
     title: "Sign, and exit to MUSD",
-    detail: "One transaction to enter and one to exit. Stability Pool withdrawals pause while any Trove is under-collateralised.",
+    detail: "One transaction each way, after an approval where your wallet needs one. Stability Pool withdrawals pause while any Trove is under-collateralised.",
   },
 ];
 

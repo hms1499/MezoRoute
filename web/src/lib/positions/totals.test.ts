@@ -19,8 +19,11 @@ describe("positionTotals", () => {
     });
   });
 
-  it("ignores an empty or missing Stability Pool position", () => {
-    expect(positionTotals(view, null)).toEqual({ value: 10n * ONE + ONE / 50n, btc: 60_001_000_000_000n });
-    expect(positionTotals(view, { ...pool, empty: true })).toEqual(positionTotals(view, null));
+  it("ignores an empty Stability Pool position", () => {
+    expect(positionTotals(view, { ...pool, empty: true })).toEqual({ value: 10n * ONE + ONE / 50n, btc: 60_001_000_000_000n });
+  });
+
+  it("has no total while the Stability Pool read failed, rather than a total that leaves it out", () => {
+    expect(positionTotals(view, null)).toBeNull();
   });
 });

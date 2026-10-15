@@ -40,8 +40,9 @@ export function StepList<K extends string>({
               <span aria-hidden className={cx("absolute bottom-0 left-4 top-9 w-px", visual === "done" ? "bg-accent" : "bg-line")} />
             )}
             <StepNode visual={visual} number={index + 1} />
-            <div className={cx("min-w-0 flex-1 pt-1", visual === "upcoming" && "opacity-60")}>
-              <p className="text-sm font-semibold">{copy[step.kind].title}</p>
+            {/* Upcoming steps read muted, not faded: faded text would fall below 4.5:1. */}
+            <div className="min-w-0 flex-1 pt-1">
+              <p className={cx("text-sm font-semibold", visual === "upcoming" && "text-muted")}>{copy[step.kind].title}</p>
               <p className="mt-0.5 text-sm text-muted">{copy[step.kind].detail}</p>
               {visual === "failed" && step.error && <p className="mt-2 text-sm text-danger">{step.error.message}</p>}
               <div aria-live="polite" className="mt-3 empty:hidden">

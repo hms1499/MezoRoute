@@ -46,7 +46,10 @@ export function ErrorToastProvider({ children }: { children: ReactNode }) {
   return (
     <ErrorToastContext.Provider value={api}>
       {children}
-      {toast && <ErrorToast decoded={toast.decoded} handlers={toast.handlers} onDismiss={dismiss} />}
+      {/* Always mounted: a polite live region inserted with its message already inside is often not announced. */}
+      <div role="status" aria-live="polite" className="fixed inset-x-4 bottom-24 z-50 sm:left-auto sm:right-6 sm:w-[26rem] lg:bottom-6">
+        {toast && <ErrorToast decoded={toast.decoded} handlers={toast.handlers} onDismiss={dismiss} />}
+      </div>
     </ErrorToastContext.Provider>
   );
 }
@@ -105,25 +108,23 @@ function ErrorToast({
   });
 
   return (
-    <div role="status" aria-live="polite" className="fixed inset-x-4 bottom-24 z-50 sm:left-auto sm:right-6 sm:w-[26rem] lg:bottom-6">
-      <div className="flex items-start gap-3 rounded-2xl bg-ink px-4 py-3 text-sm text-white shadow-raised motion-safe:animate-toast-in">
-        <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
-        <div className="min-w-0 flex-1">
-          <p>{decoded.message}</p>
-          {buttons.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-              {buttons.map(({ recovery, run }) => (
-                <button key={recovery} type="button" onClick={run} className="min-h-9 font-semibold text-teal-300 hover:underline">
-                  {LABELS[recovery]}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <button type="button" aria-label="Dismiss" onClick={onDismiss} className="-m-1 rounded-full p-1.5 text-white/70 hover:text-white">
-          <X aria-hidden className="h-4 w-4" />
-        </button>
+    <div className="flex items-start gap-3 rounded-2xl bg-ink px-4 py-3 text-sm text-white shadow-raised motion-safe:animate-toast-in">
+      <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+      <div className="min-w-0 flex-1">
+        <p>{decoded.message}</p>
+        {buttons.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            {buttons.map(({ recovery, run }) => (
+              <button key={recovery} type="button" onClick={run} className="min-h-9 font-semibold text-teal-300 hover:underline">
+                {LABELS[recovery]}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+      <button type="button" aria-label="Dismiss" onClick={onDismiss} className="-m-1 rounded-full p-1.5 text-white/70 hover:text-white">
+        <X aria-hidden className="h-4 w-4" />
+      </button>
     </div>
   );
 }

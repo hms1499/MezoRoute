@@ -58,20 +58,21 @@ function Positions({ account }: { account: Address }) {
     fees: data.snapshot.fees,
     lacksGas: lacksGas(data.gasBalance, data.gasPrice),
   });
+  const totals = positionTotals(view, pool);
   return (
     <>
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Your positions</h1>
-        {!(view.empty && pool?.empty) && (
+        {totals && !(view.empty && pool?.empty) && (
           <dl className="flex gap-6 text-right">
             <div>
               <dt className="text-xs text-muted">Value (estimated)</dt>
-              <dd className="text-lg font-semibold">{musd(positionTotals(view, pool).value)}</dd>
+              <dd className="text-lg font-semibold">{musd(totals.value)}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted">BTC exposure</dt>
-              <dd className="text-lg font-semibold text-btc">{btc(positionTotals(view, pool).btc)}</dd>
+              <dd className="text-lg font-semibold text-btc">{btc(totals.btc)}</dd>
             </div>
           </dl>
         )}
