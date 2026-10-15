@@ -17,3 +17,16 @@ export function countUpAt(from: bigint, to: bigint, elapsedMs: number, durationM
   if (durationMs <= 0) return to;
   return interpolateBigint(from, to, easeOutCubic(elapsedMs / durationMs));
 }
+
+/**
+ * Whether a scroll-reveal section should show: `threshold` of it is visible, or, for a section taller
+ * than the viewport, it fills `threshold` of the viewport. A ratio alone never reaches 0.3 for a
+ * section over 3.3 viewports tall (400% zoom, short landscape screens), so it would stay hidden.
+ */
+export function isRevealed(
+  entry: { isIntersecting: boolean; ratio: number; visibleHeight: number; rootHeight: number },
+  threshold: number,
+): boolean {
+  if (!entry.isIntersecting) return false;
+  return entry.ratio >= threshold || entry.visibleHeight >= threshold * entry.rootHeight;
+}

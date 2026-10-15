@@ -10,7 +10,10 @@ import type { LandingSimulation } from "./simulate";
 export type LiveStrip =
   | { kind: "loading" }
   | { kind: "hidden" }
-  | { kind: "data"; poolValue: bigint; lpFees: { value: string; sub: string } | null; spDeposits: bigint; spShare: string };
+  | { kind: "data"; caption: string; poolValue: bigint; lpFees: { value: string; sub: string } | null; spDeposits: bigint; spShare: string };
+
+/** Shown above the strip: its figures are mainnet on both networks and describe the past (§9). */
+export const STRIP_CAPTION = "Mezo mainnet · live · past results, not a forecast";
 
 /** The landing's live strip: skeletons while loading, nothing on error (the page stays complete). */
 export function liveStrip(data: MainnetReferenceData | undefined, error: Error | null): LiveStrip {
@@ -20,6 +23,7 @@ export function liveStrip(data: MainnetReferenceData | undefined, error: Error |
     const rate = lp ? formatPercent(lp.feeRate, 1) : "";
     return {
       kind: "data",
+      caption: STRIP_CAPTION,
       poolValue: view.poolTvl,
       lpFees: lp ? { value: formatPercent(lp.feeReturn, 2), sub: `${rate.startsWith("<") ? "" : "≈"}${rate} a year, fees only` } : null,
       spDeposits: data.reference.spDeposits,
@@ -54,7 +58,7 @@ export function simulatorRows(sim: LandingSimulation): SimRow[] {
     },
     {
       label: "BTC exposure",
-      lp: sim.lp.status === "ok" ? figure(sim.lp.btcAdded, (v) => `+${formatToken(v)} BTC`) : quoteMissing,
+      lp: sim.lp.status === "ok" ? figure(sim.lp.btcAdded, (v) => `≈ +${formatToken(v)} BTC`) : quoteMissing,
       sp: text("0 BTC"),
       lpTone: "btc",
     },

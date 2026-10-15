@@ -91,7 +91,7 @@ export function Simulator({
 
       {sim ? (
         <>
-          <table className={cx("mt-4 w-full font-mono text-xs", amount === null && "opacity-70")}>
+          <table className={cx("mt-4 w-full font-mono text-xs", amount === null && "opacity-80")}>
             <caption className="sr-only">Both routes for {formatToken(shown, 18, 2)} MUSD, estimated</caption>
             {/* Below 640 px each row stacks: its label on top, the two routes side by side underneath. */}
             <thead>
@@ -130,17 +130,19 @@ export function Simulator({
           </ul>
         </>
       ) : error ? (
-        <div role="status" className="mt-4 rounded-xl border border-night-line p-4 text-sm">
+        <div role="status" className="mt-4 flex min-h-[16rem] flex-col justify-center rounded-xl border border-night-line p-4 text-sm">
           <p className="font-semibold text-night-ink">Live data unavailable</p>
           <p id="simulator-notes" className="mt-1 text-night-muted">
             Mezo mainnet could not be read just now. Connect a wallet to compare the routes on your network.
           </p>
         </div>
       ) : (
-        <div role="status" aria-busy="true" aria-label="Loading mainnet figures" className="mt-4 space-y-3">
+        <div role="status" aria-busy="true" aria-label="Loading mainnet figures" className="mt-4 min-h-[16rem] space-y-3">
+          {/* Same height as the loaded table and notes, so nothing below moves when the data arrives. */}
           {[0, 1, 2, 3, 4].map((key) => (
-            <Skeleton key={key} tone="night" className="h-5 w-full" />
+            <Skeleton key={key} tone="night" className="h-7 w-full" />
           ))}
+          <Skeleton tone="night" className="h-8 w-3/4" />
           <span id="simulator-notes" className="sr-only">
             Loading Mezo mainnet figures
           </span>

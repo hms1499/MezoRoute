@@ -13,7 +13,11 @@ const executor = networks.mainnet.executor;
 export function LiveStrip({ live }: { live: Strip }) {
   if (live.kind === "hidden") return null;
   return (
-    <section aria-label="Mezo mainnet today" className="grid grid-cols-2 border-y border-night-line font-mono sm:grid-cols-4">
+    <section aria-labelledby="strip-caption" className="border-y border-night-line font-mono">
+      <p id="strip-caption" className="pt-4 text-xs text-night-lp">
+        {`// ${live.kind === "data" ? live.caption : "Mezo mainnet · live"}`}
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-4">
       {live.kind === "loading" ? (
         [0, 1, 2, 3].map((key) => (
           <div key={key} role={key === 0 ? "status" : undefined} aria-label={key === 0 ? "Loading mainnet figures" : undefined} className="py-4 pr-4">
@@ -48,6 +52,7 @@ export function LiveStrip({ live }: { live: Strip }) {
           </Item>
         </>
       )}
+      </div>
     </section>
   );
 }

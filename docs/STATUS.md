@@ -105,6 +105,16 @@ Optional prep that needs no funds:
 - Retry shows no feedback.
 - Load tests lack the success and hang paths.
 
+**U2 deferred (final review minors):**
+- The simulator table reflows slightly while figures count, because trailing zeros are trimmed.
+- No `@supports` fallback for `offset-path` on the travelling dots.
+- The Stability Pool glow is clipped by its reveal mask.
+- The stacked mobile table may lose table semantics in VoiceOver.
+- The "// trust" eyebrow is the section's only heading.
+- The first landing frame and the overscroll bands are light.
+- `Simulator` writes a ref during render.
+- Hover state re-renders the whole landing.
+
 **Older deferred items:**
 - The receipt explorer link uses the original hash for a replaced transaction.
 - `confirmCall` has no abort on unmount.

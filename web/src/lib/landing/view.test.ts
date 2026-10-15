@@ -17,6 +17,7 @@ describe("liveStrip", () => {
   it("gives the pool value and Stability Pool deposits as numbers to count up", () => {
     expect(liveStrip({ reference, backtests: null, history: null }, null)).toEqual({
       kind: "data",
+      caption: "Mezo mainnet · live · past results, not a forecast",
       poolValue: 201_720n * ONE, // 101,720 + 1.25 × 80,000
       lpFees: null,
       spDeposits: 14_172_031n * ONE,
@@ -53,7 +54,7 @@ describe("simulatorRows", () => {
     const [, , btc, drop, fee] = simulatorRows(sim);
     expect(btc.lpTone).toBe("btc");
     expect(btc.lp).toMatchObject({ kind: "figure", value: sim.lp.btcAdded });
-    expect(btc.lp.kind === "figure" && btc.lp.format(btc.lp.value)).toBe(`+${formatToken(sim.lp.btcAdded)} BTC`);
+    expect(btc.lp.kind === "figure" && btc.lp.format(btc.lp.value)).toBe(`≈ +${formatToken(sim.lp.btcAdded)} BTC`);
     expect(drop.lp.kind === "figure" && drop.lp.format(drop.lp.value)).toBe(`≈ ${formatToken(sim.lp.valueAfterDrop, 18, 2)} MUSD`);
     expect(drop.sp.kind === "figure" && drop.sp.format(drop.sp.value)).toBe("1,000 MUSD");
     expect(fee.lp).toEqual({ kind: "text", text: "0.1%" });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countUpAt, easeOutCubic, interpolateBigint } from "./motion";
+import { countUpAt, easeOutCubic, interpolateBigint, isRevealed } from "./motion";
 
 describe("easeOutCubic", () => {
   it("runs from 0 to 1, fast first, and clamps outside the range", () => {
@@ -30,5 +30,21 @@ describe("countUpAt", () => {
 
   it("shows the target at once with no duration (reduced motion)", () => {
     expect(countUpAt(0n, 1_000n, 0, 0)).toBe(1_000n);
+  });
+});
+
+describe("isRevealed", () => {
+  const root = 640;
+  it("reveals once 30% of the section is visible", () => {
+    expect(isRevealed({ isIntersecting: true, ratio: 0.3, visibleHeight: 120, rootHeight: root }, 0.3)).toBe(true);
+    expect(isRevealed({ isIntersecting: true, ratio: 0.1, visibleHeight: 40, rootHeight: root }, 0.3)).toBe(false);
+  });
+
+  it("reveals a section taller than the viewport once it fills 30% of the viewport (400% zoom, short screens)", () => {
+    expect(isRevealed({ isIntersecting: true, ratio: 0.08, visibleHeight: 200, rootHeight: root }, 0.3)).toBe(true);
+  });
+
+  it("never reveals what is not on screen", () => {
+    expect(isRevealed({ isIntersecting: false, ratio: 0, visibleHeight: 0, rootHeight: root }, 0.3)).toBe(false);
   });
 });

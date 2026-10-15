@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { countUpAt } from "@/lib/ui/motion";
+import { countUpAt, isRevealed } from "@/lib/ui/motion";
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
 
@@ -46,7 +46,7 @@ export function useCountUp(target: bigint, durationMs: number, initial?: bigint)
   return reduced ? target : shown;
 }
 
-/** True once the element has been `threshold` visible; true at once without IntersectionObserver. */
+/** True once `threshold` of the element (or of the viewport, for a tall element) is visible; true at once without IntersectionObserver. */
 export function useInView<T extends Element>(threshold = 0.3): [RefObject<T>, boolean] {
   const ref = useRef<T>(null);
   const [seen, setSeen] = useState(false);
@@ -57,14 +57,26 @@ export function useInView<T extends Element>(threshold = 0.3): [RefObject<T>, bo
       setSeen(true);
       return;
     }
+    // Two thresholds: 0 catches a section taller than the viewport, whose ratio never reaches `threshold`.
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
+        const shown = entries.some((entry) =>
+          isRevealed(
+            {
+              isIntersecting: entry.isIntersecting,
+              ratio: entry.intersectionRatio,
+              visibleHeight: entry.intersectionRect.height,
+              rootHeight: entry.rootBounds?.height ?? window.innerHeight,
+            },
+            threshold,
+          ),
+        );
+        if (shown) {
           setSeen(true);
           observer.disconnect();
         }
       },
-      { threshold },
+      { threshold: [0, 0.1, 0.2, threshold] },
     );
     observer.observe(element);
     return () => observer.disconnect();

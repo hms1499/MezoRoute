@@ -229,3 +229,10 @@ The simulator, dark direction, and copy rules are never cut.
 - **Deviations** (recorded as rulings in the execution ledger):
   - Outlined night buttons use an inset ring (the 360 px header has 1 px to spare).
   - Below 640 px the simulator table stacks each row (label on top, LP | SP below).
+- **Final-review fixes** (each pinned by a test that failed first):
+  - Sections taller than about 3.3 viewports now reveal (`isRevealed`; at 400% zoom, 320×256 px, all four sections show).
+  - The strip has a visible caption, "Mezo mainnet · live · past results, not a forecast".
+  - The dimmed table uses 80% opacity (contrast pairs added).
+  - The simulator panel keeps its 520 px height while loading.
+  - LP BTC exposure reads "≈ +… BTC".
+  - The landing stays behind the wallet modal while connecting (`requireWalletView`), so cancelling keeps the typed amount.

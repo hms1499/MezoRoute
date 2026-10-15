@@ -1,3 +1,5 @@
+import { mix } from "./contrast";
+
 /** Colour tokens (U1): the one source for tailwind.config.ts and the contrast test. */
 export const colors = {
   canvas: "#F6F8F7",
@@ -26,6 +28,9 @@ export const colors = {
 
 const WHITE = "#FFFFFF";
 
+/** The simulator dims its table while the typed amount is invalid (`opacity-80`); its text must still pass. */
+export const NIGHT_DIM_OPACITY = 0.8;
+
 /** Every text-on-surface pair the UI uses; each must reach WCAG AA (4.5:1). */
 export const TEXT_PAIRS: [name: string, foreground: string, background: string][] = [
   ["ink on canvas", colors.ink, colors.canvas],
@@ -52,4 +57,7 @@ export const TEXT_PAIRS: [name: string, foreground: string, background: string][
   ["night sp on night bg", colors.night.sp, colors.night.bg],
   ["night sp on night panel", colors.night.sp, colors.night.panel],
   ["night on-lp on lp (CTA)", colors.night.onLp, colors.night.lp],
+  ["night muted dimmed on panel", mix(colors.night.muted, colors.night.panel, NIGHT_DIM_OPACITY), colors.night.panel],
+  ["night sp dimmed on panel", mix(colors.night.sp, colors.night.panel, NIGHT_DIM_OPACITY), colors.night.panel],
+  ["night ink dimmed on panel", mix(colors.night.ink, colors.night.panel, NIGHT_DIM_OPACITY), colors.night.panel],
 ];
