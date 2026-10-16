@@ -7,7 +7,7 @@ const SpConfirmPage = dynamic(() => import("@/components/stability-pool/SpConfir
 
 export default function Page() {
   return (
-    <Column>
+    <Column width="wide">
       <SpConfirmPage />
     </Column>
   );

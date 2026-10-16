@@ -40,7 +40,7 @@ export function ExitStepper({
   // A failed step, or a block on the pinned amount (e.g. the LP balance changed), needs a way back.
   const stuck = hasStarted(stepper) && (block !== null || stepper.steps.some((step) => step.status === "failed"));
   return (
-    <Card title="Confirm" className="lg:shadow-raised">
+    <Card title="Confirm">
       <StepList steps={stepper.steps} active={stepper.active} copy={COPY} blocked={block !== null} onRun={run} />
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 empty:hidden">
         <BlockNotice block={block} />

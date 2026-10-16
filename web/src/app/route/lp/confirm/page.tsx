@@ -7,7 +7,7 @@ const LpConfirmPage = dynamic(() => import("@/components/lp/LpConfirmPage"), { s
 
 export default function Page() {
   return (
-    <Column>
+    <Column width="wide">
       <LpConfirmPage />
     </Column>
   );

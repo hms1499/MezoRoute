@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import type { Address, Hash, TransactionReceipt } from "viem";
 import { useAccount, useConfig } from "wagmi";
+import { RouteLayout } from "@/components/route/RouteLayout";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -23,6 +24,7 @@ import { receiptKind } from "@/lib/tx/receipt-kind";
 import { receiptState, type ReceiptState } from "@/lib/tx/receipt-state";
 import { confirmCall, isTxHash } from "@/lib/tx/send";
 import { cx } from "@/lib/ui/cx";
+import { receiptHeader } from "@/lib/ui/step-visual";
 
 const RECEIPT_KEY = "entry-receipt";
 
@@ -62,24 +64,29 @@ function Receipt({ hash }: { hash: Hash }) {
   const explorer = explorerTxUrl(network, receipt.data?.transactionHash ?? hash);
   const state = receiptState({ isSuccess: receipt.isSuccess, errorKind: receipt.error ? decodeError(receipt.error, network).kind : null });
   return (
-    <>
-      <PageHeader back={{ href: "/", label: "Dashboard" }} step={state === "confirmed" ? 3 : 2} labels={["Amount", "Confirm", "Done"]} />
+    // The same columns as the flow's other pages (U3 §5.3): status and details left, what to do next right.
+    <RouteLayout
+      header={<PageHeader back={{ href: "/", label: "Dashboard" }} {...receiptHeader(state)} labels={["Amount", "Confirm", "Done"]} />}
+      summary={
+        <Card title="What next">
+          <Actions explorer={explorer} />
+        </Card>
+      }
+    >
       <Card>
         <StatusIcon state={state} />
-        <Timeline state={state} />
         <div className="mt-4">
           {receipt.isPending && (
             <>
-              <h1 className="text-xl font-semibold">Confirming…</h1>
+              <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight">Confirming…</h1>
               <p className="mt-1 text-sm text-muted">Transaction {shortAddress(hash)} is submitted. This usually takes a few seconds.</p>
             </>
           )}
           {receipt.isError && <Failed error={receipt.error} />}
           {receipt.isSuccess && <Confirmed receipt={receipt.data} />}
         </div>
-        <Actions explorer={explorer} />
       </Card>
-    </>
+    </RouteLayout>
   );
 }
 
@@ -98,7 +105,7 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
   if (!result) {
     return (
       <>
-        <h1 className="text-xl font-semibold">Transaction confirmed</h1>
+        <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight">Transaction confirmed</h1>
         <p className="mt-2 text-sm text-muted">This transaction has no MezoRoute action.</p>
       </>
     );
@@ -114,7 +121,7 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
           : spReceiptRows(result.sp);
   return (
     <>
-      <h1 className="text-xl font-semibold">{borrowed ? "Borrow & deposit confirmed" : TITLES[result.kind]}</h1>
+      <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight">{borrowed ? "Borrow & deposit confirmed" : TITLES[result.kind]}</h1>
       <dl className="mt-3 stat-list">
         {rows.map((row) => (
           <Stat key={row.label} label={row.label}>
@@ -156,7 +163,7 @@ function Failed({ error }: { error: Error }) {
   const decoded = decodeError(error, network);
   return (
     <>
-      <h1 className="text-xl font-semibold">{decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Transaction failed"}</h1>
+      <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight">{decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Transaction failed"}</h1>
       <p className="mt-1 text-sm">{decoded.message}</p>
     </>
   );
@@ -170,47 +177,18 @@ function StatusIcon({ state }: { state: ReceiptState }) {
   return <LoaderCircle aria-hidden className={cx(shared, "text-accent motion-safe:animate-spin")} />;
 }
 
-const LAST_STAGE: Record<ReceiptState, string> = {
-  pending: "Confirmed",
-  confirmed: "Confirmed",
-  failed: "Failed",
-  unconfirmed: "Not confirmed yet",
-};
-
-/** Submitted → Confirming → Confirmed (U1 §6); an unconfirmed transaction ends in amber, never "Failed". */
-function Timeline({ state }: { state: ReceiptState }) {
-  const stages = [
-    { label: "Submitted", done: true },
-    { label: "Confirming", done: state !== "pending", current: state === "pending" },
-    { label: LAST_STAGE[state], done: state === "confirmed", failed: state === "failed", unknown: state === "unconfirmed" },
-  ];
-  return (
-    <ol aria-label="Transaction status" className="mt-4 flex flex-wrap items-center gap-2 text-xs font-medium">
-      {stages.map((stage, index) => (
-        <li key={stage.label} className="flex items-center gap-2">
-          {index > 0 && <span aria-hidden className={cx("h-px w-6", stage.done || stage.current ? "bg-accent" : "bg-line")} />}
-          <span
-            className={cx(
-              stage.failed ? "text-danger" : stage.unknown ? "text-warning-ink" : stage.done ? "text-accent" : stage.current ? "text-ink" : "text-muted",
-            )}
-          >
-            {stage.label}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 function Actions({ explorer }: { explorer?: string }) {
   return (
-    <div className="mt-6 flex flex-wrap gap-2">
+    <div className="mt-4 flex flex-wrap gap-2">
       <ButtonLink href="/positions/">View positions</ButtonLink>
       {explorer && (
         <ButtonLink href={explorer} external variant="secondary">
           View on explorer
         </ButtonLink>
       )}
+      <ButtonLink href="/" variant="ghost">
+        Back to dashboard
+      </ButtonLink>
     </div>
   );
 }

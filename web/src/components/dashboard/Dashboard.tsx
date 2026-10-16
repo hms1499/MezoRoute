@@ -4,10 +4,9 @@ import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
-import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/lib/config/network-context";
 import { readiness, troveWarning } from "@/lib/dashboard/readiness";
-import { summaryItems } from "@/lib/dashboard/summary";
 import { useDashboardSnapshot, type DashboardData } from "@/lib/dashboard/useDashboardSnapshot";
 import { dashboardView } from "@/lib/dashboard/view";
 import { exposure } from "@/lib/exposure/exposure";
@@ -18,7 +17,6 @@ import { MainnetReferenceCard } from "./MainnetReferenceCard";
 import { PositionsSummary } from "./PositionsSummary";
 import { ReadinessCard } from "./ReadinessCard";
 import { RouteComparison } from "./RouteComparison";
-import { SummaryStrip } from "./SummaryStrip";
 import { TroveCard } from "./TroveCard";
 import { TroveWarning } from "./TroveWarning";
 
@@ -47,16 +45,20 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
   return (
     <>
       {warning && <TroveWarning warning={warning} />}
-      <SummaryStrip items={summaryItems(data)} />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
-        <div className="space-y-4 lg:col-span-2">
+      {/* DOM order is the mobile order (the user's own Trove before the comparison), so keyboard order
+          follows what is on screen. From 1024 px the side column spans both rows; its 1fr row keeps the
+          extra height out of the Next step row. */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:items-start">
+        <div className="lg:col-span-2">
           <ReadinessCard readiness={current} data={data} walletKind={walletKind} account={account} />
-          <RouteComparison snapshot={snapshot} />
         </div>
-        <div className="space-y-4">
+        <div className="space-y-4 lg:col-start-3 lg:row-span-2 lg:row-start-1">
           <ExposurePanel snapshot={snapshot} />
           <TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} />
           <PositionsSummary account={account} spValue={exposure(snapshot).spValue} />
+        </div>
+        <div className="lg:col-span-2 lg:row-start-2">
+          <RouteComparison snapshot={snapshot} />
         </div>
       </div>
       <MainnetReferenceCard />
@@ -67,7 +69,6 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
 function DashboardSkeleton() {
   return (
     <div role="status" aria-busy="true" aria-label="Loading your positions" className="space-y-4">
-      <Skeleton className="h-20 w-full rounded-2xl" />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <SkeletonCard lines={2} />

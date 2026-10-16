@@ -19,7 +19,7 @@ export function SummaryPanel({
   action: ReactNode;
 }) {
   return (
-    <Card title={title} className="lg:shadow-raised">
+    <Card title={title}>
       {rows.length === 0 ? (
         <p className="mt-3 text-sm text-muted">{empty}</p>
       ) : (

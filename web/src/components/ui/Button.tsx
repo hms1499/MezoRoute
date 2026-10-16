@@ -9,15 +9,15 @@ type Size = "md" | "sm";
 const BASE =
   "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-accent text-white hover:bg-accent/90 active:bg-accent/80",
-  secondary: "border border-line bg-white text-accent hover:bg-accent-soft",
+  primary: "bg-accent text-onAccent hover:bg-accent/90 active:bg-accent/80",
+  // Inset rings, not borders: the 360 px header has no room for the 2 px a border adds.
+  secondary: "text-accent ring-1 ring-inset ring-line hover:bg-accent-soft",
   ghost: "text-accent hover:bg-accent-soft",
-  danger: "bg-danger text-white hover:bg-danger/90",
-  // U2 landing (dark): solid teal, outlined teal, and quiet text.
-  night: "bg-night-lp text-night-onLp hover:bg-night-lp/90",
-  // An inset ring, not a border: the 360 px header has no room for the 2 px a border adds.
-  nightOutline: "text-night-lp ring-1 ring-inset ring-night-lp hover:bg-night-lp/10",
-  nightGhost: "text-night-muted hover:text-night-ink",
+  danger: "bg-danger text-canvas hover:bg-danger/90",
+  // U2 landing names, now the same look as the app's (U3: one palette).
+  night: "bg-accent text-onAccent hover:bg-accent/90 active:bg-accent/80",
+  nightOutline: "text-accent ring-1 ring-inset ring-accent hover:bg-accent/10",
+  nightGhost: "text-muted hover:text-ink",
 };
 const SIZES: Record<Size, string> = { md: "min-h-11 px-5 text-sm", sm: "min-h-9 px-3.5 text-xs" };
 

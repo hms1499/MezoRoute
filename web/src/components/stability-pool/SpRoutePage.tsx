@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import type { Address } from "viem";
+import { formatUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { RequireWallet } from "@/components/home/RequireWallet";
@@ -15,13 +15,14 @@ import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
 import { AmountInput } from "@/components/lp/AmountInput";
-import { BlockNotice } from "@/components/lp/BlockNotice";
+import { balanceNoticeActions, BlockNotice } from "@/components/lp/BlockNotice";
 import { btc, musd } from "@/components/lp/units";
 import { useNetwork } from "@/lib/config/network-context";
 import { parseMusdAmount } from "@/lib/quote/amount";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
 import { spDepositPreview } from "@/lib/stability-pool/preview";
 import { useSpSnapshot } from "@/lib/stability-pool/useSpSnapshot";
+import { balanceRecoveries } from "@/lib/routes/balance-recovery";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { SpRisksCard } from "./SpRisksCard";
 
@@ -65,7 +66,22 @@ function SpRoute({ account }: { account: Address }) {
       Review
     </ButtonLink>
   );
-  const notice = preview.block?.outcome ? <BlockNotice block={preview.block} /> : undefined;
+  const recoveries =
+    preview.block?.reason === "insufficient-balance" && musdIn !== null
+      ? balanceNoticeActions(
+          balanceRecoveries({
+            route: "sp",
+            amount: musdIn,
+            walletMusd: dashboard.musd,
+            canBorrowAndDeploy: false,
+            borrowLimit: 0n,
+            recoveryMode: false,
+            mezoAppUrl: network.mezoAppUrl,
+          }),
+          { onUseBalance: (balance) => setAmount(formatUnits(balance, 18)) },
+        )
+      : [];
+  const notice = preview.block?.outcome ? <BlockNotice block={preview.block} actions={recoveries} /> : undefined;
 
   return (
     <RouteLayout

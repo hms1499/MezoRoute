@@ -39,7 +39,7 @@ export function StepList<K extends string>({
             {index < steps.length - 1 && (
               <span aria-hidden className={cx("absolute bottom-0 left-4 top-9 w-px", visual === "done" ? "bg-accent" : "bg-line")} />
             )}
-            <StepNode visual={visual} number={index + 1} />
+            <StepNode visual={visual} />
             {/* Upcoming steps read muted, not faded: faded text would fall below 4.5:1. */}
             <div className="min-w-0 flex-1 pt-1">
               <p className={cx("text-sm font-semibold", visual === "upcoming" && "text-muted")}>{copy[step.kind].title}</p>
@@ -61,19 +61,20 @@ export function StepList<K extends string>({
   );
 }
 
-function StepNode({ visual, number }: { visual: StepVisual; number: number }) {
+/** Status glyphs only: the page header's Amount → Confirm → Done is the one numbered sequence (U3 §5.5). */
+function StepNode({ visual }: { visual: StepVisual }) {
   const base = "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold";
-  const ring = "border-2 border-accent bg-white text-accent";
+  const ring = "border-2 border-accent bg-surface text-accent";
   switch (visual) {
     case "done":
       return (
-        <span className={cx(base, "bg-accent text-white")}>
+        <span className={cx(base, "bg-accent text-onAccent")}>
           <Check aria-hidden className="h-4 w-4" />
         </span>
       );
     case "failed":
       return (
-        <span className={cx(base, "bg-danger text-white")}>
+        <span className={cx(base, "bg-danger text-canvas")}>
           <X aria-hidden className="h-4 w-4" />
         </span>
       );
@@ -90,8 +91,12 @@ function StepNode({ visual, number }: { visual: StepVisual; number: number }) {
         </span>
       );
     case "current":
-      return <span className={cx(base, ring)}>{number}</span>;
+      return (
+        <span className={cx(base, ring)}>
+          <span className="h-2.5 w-2.5 rounded-full bg-accent" />
+        </span>
+      );
     case "upcoming":
-      return <span className={cx(base, "border border-line bg-white text-muted")}>{number}</span>;
+      return <span className={cx(base, "border border-muted/60 bg-surface")} />;
   }
 }

@@ -14,7 +14,7 @@ export function EntryPreviewCard({ quote, feeBps, borrowFee }: { quote: EntryQuo
     "Both are added to the pool and you receive LP tokens. Anything left over returns to your wallet in the same transaction.",
   ];
   return (
-    <Card title="What happens">
+    <Card level="section" title="What happens">
       <ol className="mt-3 space-y-3">
         {steps.map((step, index) => (
           <li key={step} className="flex gap-3 text-sm">

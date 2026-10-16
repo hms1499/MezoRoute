@@ -9,6 +9,7 @@ import { Notice } from "@/components/ui/Notice";
 import { RiskList } from "@/components/ui/RiskList";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { compareRoutes } from "@/lib/compare/comparison";
+import { defaultCompareAmount } from "@/lib/compare/default-amount";
 import { backtestRoutes, type RouteBacktests } from "@/lib/compare/history";
 import { useRouteHistory } from "@/lib/compare/useRouteHistory";
 import { amountState, lpHistoryLine, REFERENCE_AMOUNT, signedChange, spHistoryLine, windowDate, windowDays } from "@/lib/compare/view";
@@ -32,7 +33,10 @@ type Route = { id: RouteId; title: string; tagline: string; rows: Row[]; risks: 
 /** Flow B / FR-19: both routes for the typed amount, aligned row by row, with what each paid over the last 30 days. */
 export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
   const { network } = useNetwork();
-  const [text, setText] = useState("");
+  // Starts filled, so both routes show on arrival (U3 §5.2); an empty wallet gets a 1,000 MUSD example.
+  const [initial] = useState(() => defaultCompareAmount(snapshot.musd, network.entryCap));
+  const [text, setText] = useState(initial.text);
+  const showsExample = initial.example && text === initial.text;
   const [tab, setTab] = useState<RouteId>("lp");
   const { amount, error: amountError } = amountState(text);
   const executorFeeBps = network.executor?.feeBps ?? null;
@@ -102,7 +106,8 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
             {amountError}
           </p>
         )}
-        {compared?.overBalance && (
+        {showsExample && <p className="mt-1 text-sm text-muted">Example amount.</p>}
+        {compared?.overBalance && !showsExample && (
           <p className="mt-2 text-sm text-muted">More than your wallet holds; the route page will ask for a smaller amount.</p>
         )}
       </div>
@@ -167,7 +172,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
 
       {/* Below 640 px: one route at a time. */}
       <div className="mt-4 sm:hidden">
-        <div role="tablist" aria-label="Routes" className="flex rounded-full bg-line p-1 text-sm font-medium">
+        <div role="tablist" aria-label="Routes" className="flex rounded-full bg-well p-1 text-sm font-medium">
           {routes.map((route) => (
             <button
               key={route.id}
@@ -177,7 +182,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
               aria-selected={tab === route.id}
               aria-controls={`panel-${route.id}`}
               onClick={() => setTab(route.id)}
-              className={cx("min-h-10 flex-1 rounded-full px-3 transition-colors duration-150", tab === route.id ? "bg-white text-ink shadow-card" : "text-muted")}
+              className={cx("min-h-10 flex-1 rounded-full px-3 transition-colors duration-150", tab === route.id ? "bg-line text-ink" : "text-muted")}
             >
               {route.title}
             </button>

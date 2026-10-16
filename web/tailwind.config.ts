@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 import { colors } from "./src/lib/ui/tokens";
 
-// "Calm teal" (F1, refined in U1): light canvas, one accent, amber for warnings, orange only to mark BTC exposure.
+// One dark palette (U3): teal for actions and the LP route, lavender for the Stability Pool, orange only for BTC exposure.
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
@@ -13,10 +13,6 @@ const config: Config = {
       },
       backgroundImage: {
         "night-glow": `radial-gradient(1100px 520px at 25% -5%, ${colors.night.glow} 0%, ${colors.night.bg} 62%)`,
-      },
-      boxShadow: {
-        card: "0 1px 3px rgba(15, 40, 40, 0.06)",
-        raised: "0 8px 24px rgba(15, 40, 40, 0.10)",
       },
       keyframes: {
         shimmer: { "0%": { backgroundPosition: "200% 0" }, "100%": { backgroundPosition: "-200% 0" } },

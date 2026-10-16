@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import type { Address } from "viem";
+import { formatUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { RequireWallet } from "@/components/home/RequireWallet";
@@ -19,9 +19,12 @@ import { formatBps, formatPercent } from "@/lib/format";
 import { entryQuery, parseEntryIntent, type EntryIntent } from "@/lib/routes/musd-btc-lp/intent";
 import { entryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import { useLpRouteSnapshot } from "@/lib/routes/musd-btc-lp/useLpRouteSnapshot";
+import { balanceRecoveries } from "@/lib/routes/balance-recovery";
+import { borrowLimit, isRecoveryMode } from "@/lib/trove/borrow";
+import { walletCapabilities } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { AmountForm } from "./AmountForm";
-import { BlockNotice } from "./BlockNotice";
+import { balanceNoticeActions, BlockNotice } from "./BlockNotice";
 import { EntryPreviewCard } from "./EntryPreviewCard";
 import { ModeToggle } from "./ModeToggle";
 import { NoExecutorCard } from "./NoExecutorCard";
@@ -89,7 +92,28 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
       Review
     </ButtonLink>
   );
-  const notice = preview.block?.outcome ? <BlockNotice block={preview.block} /> : undefined;
+  const { dashboard } = data.snapshot;
+  // A shortfall offers Borrow & Deploy (same checks as F4's gate), the wallet's balance, or the Mezo app.
+  const recoveries =
+    preview.block?.reason === "insufficient-balance" && intent.musdIn !== null
+      ? balanceNoticeActions(
+          balanceRecoveries({
+            route: "lp",
+            amount: intent.musdIn,
+            walletMusd: dashboard.musd,
+            canBorrowAndDeploy: walletCapabilities(walletKind ?? "unknown").borrowAndDeploy,
+            borrowLimit: borrowLimit(dashboard.trove, dashboard.price, dashboard.protocol, data.snapshot.maxMusdIn),
+            recoveryMode: isRecoveryMode(data.snapshot.system, dashboard.price),
+            mezoAppUrl: network.mezoAppUrl,
+            cap: data.snapshot.maxMusdIn,
+          }),
+          {
+            onBorrow: (amount) => update({ ...intent, mode: "borrow", amount: formatUnits(amount, 18) }),
+            onUseBalance: (amount) => update({ ...intent, amount: formatUnits(amount, 18) }),
+          },
+        )
+      : [];
+  const notice = preview.block?.outcome ? <BlockNotice block={preview.block} actions={recoveries} /> : undefined;
 
   return (
     <RouteLayout

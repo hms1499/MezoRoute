@@ -16,6 +16,7 @@ export function PositionsSummary({ account, spValue }: { account: Address; spVal
   if (view.empty && spValue === 0n) return null;
   return (
     <Card
+      level="section"
       title="Your positions"
       aside={
         <ButtonLink href="/positions/" variant="ghost" size="sm">
