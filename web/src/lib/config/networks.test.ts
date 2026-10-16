@@ -26,6 +26,11 @@ describe("networks", () => {
     expect(getAddress(address)).toBe(address);
   });
 
+  it("pins the executor's per-transaction entry cap per network (Deploy.s.sol maxMusdInFor)", () => {
+    expect(networks.testnet.entryCap).toBe(1_000_000n * 10n ** 18n);
+    expect(networks.mainnet.entryCap).toBe(1_000n * 10n ** 18n);
+  });
+
   it("pins the deployed testnet executor and its 10 bps fee (spec 11.1)", () => {
     expect(networks.testnet.executor).toEqual({
       address: "0xB36B2E012003840951CFf00fA6b1E3237A110920",

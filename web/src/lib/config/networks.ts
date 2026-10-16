@@ -35,6 +35,8 @@ export type NetworkConfig = {
    * block (F7 scans its events from there); null until deployed.
    */
   executor: { address: Address; feeBps: bigint; deployBlock: bigint } | null;
+  /** The executor's per-transaction MUSD cap (`contracts/script/Deploy.s.sol` `maxMusdInFor`); the route pages read it from chain. */
+  entryCap: bigint;
   addresses: NetworkAddresses;
 };
 
@@ -50,6 +52,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     faucetUrl: "https://faucet.test.mezo.org",
     mezoAppUrl: "https://testnet.mezo.org",
     executor: { address: "0xB36B2E012003840951CFf00fA6b1E3237A110920", feeBps: 10n, deployBlock: 15_903_010n },
+    entryCap: 1_000_000n * 10n ** 18n,
     addresses: {
       musd: "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503",
       btc: "0x7b7C000000000000000000000000000000000000",
@@ -78,6 +81,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     mezoAppUrl: "https://mezo.org",
     // M1, 15 Oct 2026: 1,000 MUSD cap per entry, source-verified on the explorer.
     executor: { address: "0x046449b1229C863e278f369869BA10e12bd80d9E", feeBps: 10n, deployBlock: 12_524_142n },
+    entryCap: 1_000n * 10n ** 18n,
     addresses: {
       musd: "0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186",
       btc: "0x7b7C000000000000000000000000000000000000",
