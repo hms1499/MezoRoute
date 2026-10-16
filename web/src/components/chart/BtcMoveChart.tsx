@@ -75,7 +75,11 @@ function Plot({ plot, width, height, highlight, drawIn }: { plot: MovePlot; widt
   const today = g.x(0);
   return (
     <figure className="m-0">
-      <figcaption className="text-xs text-muted">{plot.title}</figcaption>
+      {/* The crossing's label sits in the caption row: inside the plot it collides with the Today labels. */}
+      <figcaption className="flex flex-wrap items-baseline justify-between gap-x-3 text-xs text-muted">
+        <span>{plot.title}</span>
+        {plot.crossing && <span className="font-medium text-danger">{plot.crossing.label}</span>}
+      </figcaption>
       <svg aria-hidden viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="mt-1 block max-w-full overflow-visible">
         {g.ticks.map((tick) => (
           <line key={tick} x1={g.plot.left} x2={g.plot.right} y1={g.y(tick)} y2={g.y(tick)} stroke={colors.line} strokeWidth={1} />
@@ -108,20 +112,7 @@ function Plot({ plot, width, height, highlight, drawIn }: { plot: MovePlot; widt
             />
           );
         })}
-        {plot.crossing && (
-          <g>
-            <circle cx={g.x(plot.crossing.move)} cy={g.y(plot.crossing.value)} r={4} fill={colors.danger.DEFAULT} />
-            <text
-              x={g.x(plot.crossing.move) + (plot.crossing.move < 0 ? 8 : -8)}
-              y={g.y(plot.crossing.value) - 8}
-              textAnchor={plot.crossing.move < 0 ? "start" : "end"}
-              fontSize={11}
-              fill={colors.danger.DEFAULT}
-            >
-              {plot.crossing.label}
-            </text>
-          </g>
-        )}
+        {plot.crossing && <circle cx={g.x(plot.crossing.move)} cy={g.y(plot.crossing.value)} r={4} fill={colors.danger.DEFAULT} stroke={colors.surface} strokeWidth={2} />}
         {labels.map((label) => (
           <text
             key={`${label.id}-${label.side}`}
