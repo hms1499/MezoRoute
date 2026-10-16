@@ -21,11 +21,11 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 | M1 mainnet deployment | Done (15 Oct) | Executor `0x046449b1229C863e278f369869BA10e12bd80d9E`; round trips and hashes in `PRODUCT_SPEC.md` §20 |
 | U1 UI polish | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u1-ui-polish-design.md`, plan `docs/superpowers/plans/2026-10-15-u1-ui-polish.md` (11 tasks, all done) |
 | U2 landing redesign | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u2-landing-redesign-design.md`, plan `docs/superpowers/plans/2026-10-15-u2-landing-redesign.md` |
-| U3 one identity, landing to app | Spec approved, plan written (16 Oct); awaiting execution choice | Spec `docs/superpowers/specs/2026-10-16-u3-app-identity-design.md`, plan `docs/superpowers/plans/2026-10-16-u3-app-identity.md` (13 tasks); branch `feat/u3-app-identity`. Fixes the 10 findings of the 16 Oct design review |
+| U3 one identity, landing to app | Implemented (16 Oct) on `feat/u3-app-identity`, 13/13 tasks, QA passed; final review next | Spec `docs/superpowers/specs/2026-10-16-u3-app-identity-design.md`, plan `docs/superpowers/plans/2026-10-16-u3-app-identity.md` (13 tasks); branch `feat/u3-app-identity`. Fixes the 10 findings of the 16 Oct design review |
 | V1 Vercel production + QA on both wallet types | Not started | The current preview sits behind a Vercel login; judges need a public URL |
 | D1 README, deck, 2-minute video, submission form | Not started | Needs V1 and M1 |
 
-Tests at `main` (15 Oct): 718 Vitest and 75 Foundry. `npm run build` passes (First Load JS of `/` 92 kB).
+Tests at `main` (15 Oct): 718 Vitest and 75 Foundry. On `feat/u3-app-identity` (16 Oct): 765 Vitest. `npm run build` passes (First Load JS of `/` 92 kB).
 
 ## Next: V1 → D1
 
@@ -108,12 +108,7 @@ Optional prep that needs no funds:
 
 **U2 deferred (final review minors):**
 - The simulator table reflows slightly while figures count, because trailing zeros are trimmed.
-- No `@supports` fallback for `offset-path` on the travelling dots.
-- The Stability Pool glow is clipped by its reveal mask.
 - The stacked mobile table may lose table semantics in VoiceOver.
-- The "// trust" eyebrow is the section's only heading.
-- The first landing frame and the overscroll bands are light.
-- `Simulator` writes a ref during render.
 - Hover state re-renders the whole landing.
 
 **Older deferred items:**
@@ -125,10 +120,9 @@ Optional prep that needs no funds:
 - The mainnet reference card's labels ("LP fees, last 30 days", "Share of MUSD supply") wrap inside its two-column layout. This is wrapping, not overflow; the comparison card no longer wraps (it shows tabs below 640 px).
 - Final-review minors (deferred):
   - The SP route page shows the current deposit and pending gain only after an amount is typed.
-  - Cost-basis skeletons and comparison skeletons have no screen-reader text; a step's failure message sits outside its live region.
+  - Comparison skeletons have no screen-reader text; a step's failure message sits outside its live region.
   - The invalid-hash receipt has no back link (at 360 px only the logo leads home).
   - The paused withdraw page hides the deposit/gain summary.
-  - "BTC exposure" means total exposure (with Trove) on the dashboard but positions-only on /positions.
   - The amount input's focus indicator is a 1 px border plus a faint ring, not the 2 px ring.
   - The mobile comparison tabs lack arrow-key support.
   - The summary strip truncates values above ≈10,000,000.
@@ -163,6 +157,7 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
+- **16 Oct 2026 (Claude Code):** U3 implemented inline (executing-plans), 13 tasks: one dark palette (SP lavender, orange = BTC only), the "If BTC moves" chart in the hero and every exposure section, panel/section levels, no summary strip, Compare starts filled, one column per flow, one numbered sequence per page, balance-shortfall recovery, positions labels, app-owned account button. QA: 76 page loads (4 widths × all screens × both networks) with no horizontal scroll, keyboard rings on every stop, reduced motion, dark wallet modal. Rulings in the ledger (`.superpowers/`, git-ignored) are listed in the final message. Next: final whole-branch review, then merge on the user's word, then V1.
 - **16 Oct 2026 (Claude Code):** design review of landing + app (Playwright, mock wallet): 10 findings, the main one is the split identity between the dark landing and the light app. The user asked to fix all ten and delegated the design calls; U3 spec written on `feat/u3-app-identity` (dark app on the night palette, Stability Pool turns lavender so orange means BTC only, an "If BTC moves" chart in the hero and the app, one column per flow). Next: user reviews the spec, then the plan.
 - **15 Oct 2026, overnight (Claude Code):** U2 final review: 2 Important and 4 regraded minors fixed with tests; `feat/u2-landing-redesign` merged into `main` and pushed at the user's request. Next: V1.
 - **15 Oct 2026, overnight (Claude Code):**
