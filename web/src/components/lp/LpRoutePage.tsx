@@ -105,6 +105,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
             borrowLimit: borrowLimit(dashboard.trove, dashboard.price, dashboard.protocol, data.snapshot.maxMusdIn),
             recoveryMode: isRecoveryMode(data.snapshot.system, dashboard.price),
             mezoAppUrl: network.mezoAppUrl,
+            cap: data.snapshot.maxMusdIn,
           }),
           {
             onBorrow: (amount) => update({ ...intent, mode: "borrow", amount: formatUnits(amount, 18) }),

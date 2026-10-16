@@ -44,7 +44,12 @@ export function balanceNoticeActions(
       case "borrow-instead":
         return handlers.onBorrow ? [{ label: "Borrow & Deploy instead", onClick: () => handlers.onBorrow?.(action.amount) }] : [];
       case "use-balance":
-        return [{ label: `Use my balance (${formatToken(action.amount, 18, 2)} MUSD)`, onClick: () => handlers.onUseBalance(action.amount) }];
+        return [
+          {
+            label: action.capped ? `Use the ${formatToken(action.amount, 18, 0)} MUSD cap` : `Use my balance (${formatToken(action.amount, 18, 2)} MUSD)`,
+            onClick: () => handlers.onUseBalance(action.amount),
+          },
+        ];
       case "get-musd":
         return [{ label: "Get MUSD in the Mezo app", href: action.href }];
     }

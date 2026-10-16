@@ -73,7 +73,6 @@ export const TEXT_PAIRS: [name: string, foreground: string, background: string][
   ["danger on danger-soft", colors.danger.DEFAULT, colors.danger.soft],
   ["warning ink on warning bg", colors.warning.ink, colors.warning.bg],
   ["muted on line (badge)", colors.muted, colors.line],
-  ["canvas on ink (toast)", colors.canvas, colors.ink],
   ["muted dimmed on surface", mix(colors.muted, colors.surface, NIGHT_DIM_OPACITY), colors.surface],
   ["sp dimmed on surface", mix(colors.sp.DEFAULT, colors.surface, NIGHT_DIM_OPACITY), colors.surface],
   ["ink dimmed on surface", mix(colors.ink, colors.surface, NIGHT_DIM_OPACITY), colors.surface],

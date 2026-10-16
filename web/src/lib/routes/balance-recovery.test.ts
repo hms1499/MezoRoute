@@ -11,6 +11,7 @@ const base = {
   borrowLimit: ROOM,
   recoveryMode: false,
   mezoAppUrl: "https://testnet.mezo.org",
+  cap: 1_000_000n * WAD,
 };
 
 describe("balanceRecoveries", () => {
@@ -41,5 +42,10 @@ describe("balanceRecoveries", () => {
 
   it("offers the wallet balance alone when borrowing is out", () => {
     expect(balanceRecoveries({ ...base, route: "sp", walletMusd: 5n * WAD })).toEqual([{ kind: "use-balance", amount: 5n * WAD }]);
+  });
+
+  it("caps the wallet balance at the entry cap, so the offered amount is never blocked next", () => {
+    const mainnet = { ...base, route: "lp" as const, canBorrowAndDeploy: false, amount: 5_000n * WAD, walletMusd: 3_000n * WAD, cap: 1_000n * WAD };
+    expect(balanceRecoveries(mainnet)).toEqual([{ kind: "use-balance", amount: 1_000n * WAD, capped: true }]);
   });
 });

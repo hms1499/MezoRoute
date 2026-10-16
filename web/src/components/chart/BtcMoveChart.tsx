@@ -35,6 +35,7 @@ export function BtcMoveChart({
   ariaLabel,
   highlight = null,
   drawIn = false,
+  well = false,
   className,
   children,
 }: {
@@ -43,6 +44,8 @@ export function BtcMoveChart({
   highlight?: SeriesId | null;
   /** The landing's one-time line draw (CSS only runs without reduced motion). */
   drawIn?: boolean;
+  /** Draw the plots in an inset well (U3 §3.3), for charts inside the app's sections and panels. */
+  well?: boolean;
   className?: string;
   children?: ReactNode;
 }) {
@@ -59,7 +62,7 @@ export function BtcMoveChart({
 
   return (
     <div ref={ref} className={cx("w-full", className)}>
-      <div role="img" aria-label={ariaLabel} className="space-y-3">
+      <div role="img" aria-label={ariaLabel} className={cx("space-y-3", well && "rounded-xl bg-well p-3")}>
         {plots.map((plot) => (
           <Plot key={plot.title} plot={plot} width={width} height={height} highlight={highlight} drawIn={drawIn} />
         ))}
@@ -108,6 +111,7 @@ function Plot({ plot, width, height, highlight, drawIn }: { plot: MovePlot; widt
               strokeWidth={highlight === s.id ? 4 : 2.5}
               strokeLinecap="round"
               strokeLinejoin="round"
+              pathLength={drawIn && !before ? 1 : undefined}
               className={cx(drawIn && !before && "landing-draw", "transition-[stroke-width] duration-200")}
             />
           );

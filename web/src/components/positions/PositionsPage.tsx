@@ -107,6 +107,7 @@ function Positions({ account }: { account: Address }) {
             </dl>
             {series && (
               <BtcMoveChart
+                well
                 className="mt-5"
                 plots={[{ title: "Value in MUSD if BTC moves", series, format: (v) => v.toLocaleString("en-US", { maximumFractionDigits: 2 }) }]}
                 ariaLabel="Chart of your positions' value in MUSD if BTC moves 30% either way."

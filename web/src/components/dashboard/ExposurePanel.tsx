@@ -37,7 +37,7 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure" }: { sn
 
   if (!hasTrove && !hasLp && !hasSp) {
     return (
-      <Card id="exposure" title={title}>
+      <Card id="exposure" level="section" title={title}>
         <p className="mt-2 text-sm text-muted">No BTC exposure in a Trove, the LP, or the Stability Pool yet.</p>
       </Card>
     );
@@ -63,7 +63,7 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure" }: { sn
     })),
   ];
   return (
-    <Card id="exposure" title={title} aside={<span className="text-xs text-muted">BTC {price(snapshot.price)} MUSD</span>}>
+    <Card id="exposure" level="section" title={title} aside={<span className="text-xs text-muted">BTC {price(snapshot.price)} MUSD</span>}>
       <p className="figure mt-3 text-btc [overflow-wrap:anywhere]">{change((e) => e.totalBtc)}</p>
       <p className="text-xs text-muted">Total BTC exposure</p>
       {showBreakdown && (
@@ -82,7 +82,7 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure" }: { sn
         </dl>
       )}
       {showsDoubleExposure(current) && <Notice className="mt-4">{DOUBLE_EXPOSURE}</Notice>}
-      <BtcMoveChart plots={chart} ariaLabel={describeDrop(scenarios[scenarios.length - 1], { hasTrove, hasLp, hasSp })} className="mt-5">
+      <BtcMoveChart well plots={chart} ariaLabel={describeDrop(scenarios[scenarios.length - 1], { hasTrove, hasLp, hasSp })} className="mt-5">
         <details className="mt-3 text-sm">
           <summary className="inline-flex min-h-9 cursor-pointer items-center rounded-full font-medium text-accent hover:underline">Show figures</summary>
           <div className="mt-2 overflow-x-auto">

@@ -111,6 +111,16 @@ Optional prep that needs no funds:
 - The stacked mobile table may lose table semantics in VoiceOver.
 - Hover state re-renders the whole landing.
 
+**U3 deferred (final review minors):**
+- The empty hero chart (before mainnet data loads) computes NaN tick coordinates; the browser drops them.
+- The Positions chart's screen-reader label has no figures; the crossing label sits inside `role="img"` and is not read.
+- `RouteLayout`'s aside is always labelled "Summary" (also on Confirm, What next, Totals), and is an empty landmark on Positions without totals.
+- With two recovery buttons the 360 px mobile bar may cover part of the footer (estimated, not measured).
+- "Show figures" has no open/closed marker.
+- The chart's height jumps once on first measure (320 px fallback).
+- The header account button's `text-ink` override depends on CSS order.
+- A balance under 0.005 MUSD shows "Use my balance (0.00 MUSD)".
+
 **Older deferred items:**
 - The receipt explorer link uses the original hash for a replaced transaction.
 - `confirmCall` has no abort on unmount.
@@ -125,7 +135,6 @@ Optional prep that needs no funds:
   - The paused withdraw page hides the deposit/gain summary.
   - The amount input's focus indicator is a 1 px border plus a faint ring, not the 2 px ring.
   - The mobile comparison tabs lack arrow-key support.
-  - The summary strip truncates values above ≈10,000,000.
   - The exit page has no quote timer (only its gate).
 
 ## QA accounts and recipes
