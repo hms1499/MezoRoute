@@ -11,9 +11,9 @@ export function TrustRow() {
   const [ref, seen] = useInView<HTMLElement>();
   return (
     <section ref={ref} data-seen={seen} aria-labelledby="trust-heading" className="landing-reveal border-t border-night-line py-14">
-      <p id="trust-heading" className="font-mono text-xs text-night-lp">
-        {"// trust"}
-      </p>
+      <h2 id="trust-heading" className="text-2xl font-semibold tracking-tight text-ink">
+        Before you connect
+      </h2>
       <ul className="mt-6 grid grid-cols-1 gap-6 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <Item icon={Lock} title="Non-custodial">
           Funds never sit in MezoRoute between transactions.

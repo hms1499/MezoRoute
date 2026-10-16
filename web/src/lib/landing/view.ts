@@ -13,7 +13,7 @@ export type LiveStrip =
   | { kind: "data"; caption: string; poolValue: bigint; lpFees: { value: string; sub: string } | null; spDeposits: bigint; spShare: string };
 
 /** Shown above the strip: its figures are mainnet on both networks and describe the past (§9). */
-export const STRIP_CAPTION = "Mezo mainnet · live · past results, not a forecast";
+export const STRIP_CAPTION = "Live from Mezo mainnet. Past results, not a forecast.";
 
 /** The landing's live strip: skeletons while loading, nothing on error (the page stays complete). */
 export function liveStrip(data: MainnetReferenceData | undefined, error: Error | null): LiveStrip {

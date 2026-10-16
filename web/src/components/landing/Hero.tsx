@@ -1,14 +1,21 @@
 "use client";
 
 import { ArrowDown } from "lucide-react";
+import { useState } from "react";
 import { ConnectCta } from "@/components/home/ConnectCta";
 import { buttonClass } from "@/components/ui/Button";
+import { amountState } from "@/lib/compare/view";
+import { networks } from "@/lib/config/networks";
+import { simulateRoutes } from "@/lib/landing/simulate";
+import { WAD } from "@/lib/math";
 import type { MainnetReferenceData } from "@/lib/reference/load";
+import { HeroChart } from "./HeroChart";
 import type { Highlight } from "./Landing";
-import { RouteMap } from "./RouteMap";
 import { Simulator } from "./Simulator";
 
 const delay = (ms: number) => ({ animationDelay: `${ms}ms` });
+const DEFAULT_AMOUNT = 1_000n * WAD;
+const EXECUTOR_FEE_BPS = networks.mainnet.executor?.feeBps ?? 0n;
 
 export function Hero({
   data,
@@ -21,11 +28,22 @@ export function Hero({
   highlight: Highlight;
   onHighlight: (highlight: Highlight) => void;
 }) {
+  // The hero owns the amount, so the simulator's table and the chart always show the same figures.
+  const [text, setText] = useState("1000");
+  const [lastValid, setLastValid] = useState(DEFAULT_AMOUNT);
+  const { amount, error: amountError } = amountState(text);
+  const shown = amount ?? lastValid;
+  const sim = data ? simulateRoutes({ reference: data.reference, history: data.history, amount: shown, executorFeeBps: EXECUTOR_FEE_BPS }) : null;
+  function onText(next: string) {
+    setText(next);
+    const parsed = amountState(next).amount;
+    if (parsed !== null) setLastValid(parsed);
+  }
+
   return (
     <section className="grid grid-cols-1 items-start gap-10 py-8 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:py-14">
       <div>
-        <p className="landing-rise font-mono text-xs text-night-lp">{"// route planner for MUSD on Mezo"}</p>
-        <h1 className="mt-3 text-4xl font-bold leading-[1.04] tracking-tight text-night-ink sm:text-5xl">
+        <h1 className="text-[40px] font-bold leading-[48px] tracking-tight text-ink sm:text-[48px] sm:leading-[52px]">
           <span className="landing-rise block" style={delay(80)}>
             Pick a route.
           </span>
@@ -44,12 +62,12 @@ export function Hero({
             <ArrowDown aria-hidden className="h-4 w-4" />
           </a>
         </div>
-        <RouteMap highlight={highlight} className="mt-8 hidden lg:block" />
+        <HeroChart sim={sim} highlight={highlight} className="mt-10 hidden lg:block" />
       </div>
       <div className="landing-rise" style={delay(450)}>
-        <Simulator data={data} error={error} onHighlight={onHighlight} />
+        <Simulator text={text} onText={onText} amount={amount} amountError={amountError} sim={sim} error={error} onHighlight={onHighlight} />
       </div>
-      <RouteMap highlight={highlight} className="lg:hidden" />
+      <HeroChart sim={sim} highlight={highlight} className="lg:hidden" />
     </section>
   );
 }

@@ -1,48 +1,48 @@
 "use client";
 
-import { useRef, useState } from "react";
 import { ConnectCta } from "@/components/home/ConnectCta";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { amountState } from "@/lib/compare/view";
 import { useNetwork } from "@/lib/config/network-context";
-import { networks } from "@/lib/config/networks";
 import { formatToken } from "@/lib/format";
-import { simulateRoutes } from "@/lib/landing/simulate";
+import type { LandingSimulation } from "@/lib/landing/simulate";
 import { simulatorNotes, simulatorRows, type SimCell } from "@/lib/landing/view";
 import { WAD } from "@/lib/math";
-import type { MainnetReferenceData } from "@/lib/reference/load";
 import { cx } from "@/lib/ui/cx";
 import { useCountUp } from "./hooks";
 import type { Highlight } from "./Landing";
 
 const PRESETS = [100n, 500n, 1_000n];
-const DEFAULT_AMOUNT = 1_000n * WAD;
-const EXECUTOR_FEE_BPS = networks.mainnet.executor?.feeBps ?? 0n;
 
-/** U2 hero: both routes for a typed amount on live Mezo mainnet data, no wallet needed. */
+/** U2 hero: both routes for a typed amount on live Mezo mainnet data, no wallet needed. `Hero` owns the amount (U3). */
 export function Simulator({
-  data,
+  text,
+  onText,
+  amount,
+  amountError,
+  sim,
   error,
   onHighlight,
 }: {
-  data: MainnetReferenceData | undefined;
+  text: string;
+  onText: (text: string) => void;
+  /** The typed amount, or null while the field is empty or invalid. */
+  amount: bigint | null;
+  amountError: string | null;
+  /** The routes for the last valid amount; null until the mainnet figures load. */
+  sim: LandingSimulation | null;
   error: Error | null;
   onHighlight: (highlight: Highlight) => void;
 }) {
   const { network } = useNetwork();
-  const [text, setText] = useState("1000");
-  const lastValid = useRef(DEFAULT_AMOUNT);
-  const { amount, error: amountError } = amountState(text);
-  if (amount !== null) lastValid.current = amount;
-  const shown = amount ?? lastValid.current;
-  const sim = data ? simulateRoutes({ reference: data.reference, history: data.history, amount: shown, executorFeeBps: EXECUTOR_FEE_BPS }) : null;
   const column = (route: "lp" | "sp") => ({ onMouseEnter: () => onHighlight(route), onMouseLeave: () => onHighlight(null) });
 
   return (
-    <section aria-labelledby="simulator-heading" className="rounded-2xl border border-night-line bg-night-panel p-5 shadow-[0_30px_60px_rgba(0,0,0,0.35)]">
-      <div className="flex items-center justify-between gap-3 font-mono text-xs text-night-muted">
-        <h2 id="simulator-heading">simulate · no wallet needed</h2>
-        <span className="inline-flex items-center gap-2 text-night-lp">
+    <section aria-labelledby="simulator-heading" className="rounded-2xl border border-line bg-surface p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="simulator-heading" className="text-base font-semibold text-ink">
+          Try an amount
+        </h2>
+        <span className="inline-flex items-center gap-2 text-xs text-accent">
           <span aria-hidden className="landing-ping h-2 w-2 rounded-full bg-night-lp" />
           Mezo mainnet
         </span>
@@ -57,7 +57,7 @@ export function Simulator({
           inputMode="decimal"
           autoComplete="off"
           value={text}
-          onChange={(event) => setText(event.target.value)}
+          onChange={(event) => onText(event.target.value)}
           aria-describedby="simulator-notes"
           aria-invalid={amountError ? true : undefined}
           className="min-w-0 flex-1 bg-transparent py-2 font-mono text-2xl font-semibold text-night-ink outline-none"
@@ -77,7 +77,7 @@ export function Simulator({
               key={preset.toString()}
               type="button"
               aria-pressed={on}
-              onClick={() => setText(preset.toString())}
+              onClick={() => onText(preset.toString())}
               className={cx(
                 "min-h-9 rounded-full border px-3.5 font-mono text-xs transition-colors duration-150",
                 on ? "border-night-lp text-night-lp" : "border-night-line text-night-muted hover:text-night-ink",
@@ -92,7 +92,7 @@ export function Simulator({
       {sim ? (
         <>
           <table className={cx("mt-4 w-full font-mono text-xs", amount === null && "opacity-80")}>
-            <caption className="sr-only">Both routes for {formatToken(shown, 18, 2)} MUSD, estimated</caption>
+            <caption className="sr-only">Both routes for {formatToken(sim.amount, 18, 2)} MUSD, estimated</caption>
             {/* Below 640 px each row stacks: its label on top, the two routes side by side underneath. */}
             <thead>
               <tr className="max-sm:grid max-sm:grid-cols-2">

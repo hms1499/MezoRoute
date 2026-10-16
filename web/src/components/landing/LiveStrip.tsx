@@ -13,9 +13,9 @@ const executor = networks.mainnet.executor;
 export function LiveStrip({ live }: { live: Strip }) {
   if (live.kind === "hidden") return null;
   return (
-    <section aria-labelledby="strip-caption" className="border-y border-night-line font-mono">
-      <p id="strip-caption" className="pt-4 text-xs text-night-lp">
-        {`// ${live.kind === "data" ? live.caption : "Mezo mainnet · live"}`}
+    <section aria-labelledby="strip-caption" className="border-y border-night-line">
+      <p id="strip-caption" className="pt-4 text-xs text-muted">
+        {live.kind === "data" ? live.caption : "Live from Mezo mainnet."}
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4">
       {live.kind === "loading" ? (
@@ -27,16 +27,16 @@ export function LiveStrip({ live }: { live: Strip }) {
         ))
       ) : (
         <>
-          <Item label="pool value">
+          <Item label="Pool value">
             <CountFromZero value={live.poolValue} format={(v) => `${formatToken(v, 18, 0)} MUSD`} />
           </Item>
-          <Item label="LP fees · 30d" sub={live.lpFees?.sub}>
+          <Item label="LP fees, last 30 days" sub={live.lpFees?.sub}>
             {live.lpFees?.value ?? "Unavailable"}
           </Item>
-          <Item label="stability pool" sub={`${live.spShare} of MUSD supply`}>
+          <Item label="Stability Pool" sub={`${live.spShare} of MUSD supply`}>
             <CountFromZero value={live.spDeposits} format={compactMusd} />
           </Item>
-          <Item label="executor">
+          <Item label="Executor">
             {executor ? (
               <a
                 href={explorerAddressUrl(networks.mainnet, executor.address)}
@@ -44,7 +44,7 @@ export function LiveStrip({ live }: { live: Strip }) {
                 rel="noreferrer"
                 className="text-night-lp underline-offset-4 hover:underline"
               >
-                verified ✓
+                Verified
               </a>
             ) : (
               "not deployed"
@@ -61,7 +61,7 @@ function Item({ label, sub, children }: { label: string; sub?: string; children:
   return (
     <div className="py-4 pr-4">
       <p className="text-xs text-night-muted">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-night-ink sm:text-xl">{children}</p>
+      <p className="mt-1 font-mono text-lg font-medium text-night-ink sm:text-xl">{children}</p>
       {sub && <p className="text-xs text-night-muted">{sub}</p>}
     </div>
   );

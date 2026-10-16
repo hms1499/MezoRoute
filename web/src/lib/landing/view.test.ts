@@ -17,7 +17,7 @@ describe("liveStrip", () => {
   it("gives the pool value and Stability Pool deposits as numbers to count up", () => {
     expect(liveStrip({ reference, backtests: null, history: null }, null)).toEqual({
       kind: "data",
-      caption: "Mezo mainnet · live · past results, not a forecast",
+      caption: "Live from Mezo mainnet. Past results, not a forecast.",
       poolValue: 201_720n * ONE, // 101,720 + 1.25 × 80,000
       lpFees: null,
       spDeposits: 14_172_031n * ONE,

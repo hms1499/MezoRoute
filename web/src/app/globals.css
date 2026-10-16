@@ -48,10 +48,7 @@
 
 
 /* U2 landing motion. Without the media query every element shows its final state, so reduced
-   motion needs no override; travelling dots stay hidden (they only exist while animating). */
-.landing-travel {
-  opacity: 0;
-}
+   motion needs no override. */
 
 @media (prefers-reduced-motion: no-preference) {
   .landing-rise {
@@ -60,9 +57,6 @@
   .landing-draw {
     stroke-dasharray: 640;
     animation: landing-draw 1.2s ease-out both;
-  }
-  .landing-travel {
-    animation: landing-travel 3.2s linear infinite both;
   }
   .landing-ping {
     animation: landing-ping 1.8s ease-out infinite;
@@ -102,20 +96,6 @@
   }
   to {
     stroke-dashoffset: 0;
-  }
-}
-@keyframes landing-travel {
-  0% {
-    offset-distance: 0%;
-    opacity: 0;
-  }
-  8%,
-  92% {
-    opacity: 1;
-  }
-  100% {
-    offset-distance: 100%;
-    opacity: 0;
   }
 }
 @keyframes landing-ping {
