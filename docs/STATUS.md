@@ -2,7 +2,7 @@
 
 Living handover file for every agent (see `AGENTS.md` → Session protocol). Update it and commit at the end of each session or milestone. Scope and the backlog are in `PRODUCT_SPEC.md` §16; this file says where we are in it.
 
-**Last updated:** 15 Oct 2026 · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** clean, pushed (U2 merged).
+**Last updated:** 16 Oct 2026 · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** clean, pushed (U2 merged).
 
 ## Where we are
 
@@ -21,6 +21,7 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 | M1 mainnet deployment | Done (15 Oct) | Executor `0x046449b1229C863e278f369869BA10e12bd80d9E`; round trips and hashes in `PRODUCT_SPEC.md` §20 |
 | U1 UI polish | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u1-ui-polish-design.md`, plan `docs/superpowers/plans/2026-10-15-u1-ui-polish.md` (11 tasks, all done) |
 | U2 landing redesign | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u2-landing-redesign-design.md`, plan `docs/superpowers/plans/2026-10-15-u2-landing-redesign.md` |
+| U3 one identity, landing to app | Spec written (16 Oct), awaiting user review | Spec `docs/superpowers/specs/2026-10-16-u3-app-identity-design.md`; branch `feat/u3-app-identity`. Fixes the 10 findings of the 16 Oct design review |
 | V1 Vercel production + QA on both wallet types | Not started | The current preview sits behind a Vercel login; judges need a public URL |
 | D1 README, deck, 2-minute video, submission form | Not started | Needs V1 and M1 |
 
@@ -162,6 +163,7 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
+- **16 Oct 2026 (Claude Code):** design review of landing + app (Playwright, mock wallet): 10 findings, the main one is the split identity between the dark landing and the light app. The user asked to fix all ten and delegated the design calls; U3 spec written on `feat/u3-app-identity` (dark app on the night palette, Stability Pool turns lavender so orange means BTC only, an "If BTC moves" chart in the hero and the app, one column per flow). Next: user reviews the spec, then the plan.
 - **15 Oct 2026, overnight (Claude Code):** U2 final review: 2 Important and 4 regraded minors fixed with tests; `feat/u2-landing-redesign` merged into `main` and pushed at the user's request. Next: V1.
 - **15 Oct 2026, overnight (Claude Code):**
   - The user found the U1 landing generic. Ten DeFi landings were researched (DeFi Saver, Liquity v2, Ethena, Pendle, Euler, Sky, Mezo…), and a direction was chosen with browser mockups: "B · route map, dark", the landing only.
