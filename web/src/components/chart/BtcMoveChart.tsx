@@ -71,7 +71,7 @@ export function BtcMoveChart({
 
 function Plot({ plot, width, height, highlight, drawIn }: { plot: MovePlot; width: number; height: number; highlight: SeriesId | null; drawIn: boolean }) {
   const g = chartGeometry({ series: plot.series, bands: plot.bands, width, height });
-  const labels = placeLabels(chartLabels({ series: plot.series, width }), g.y);
+  const labels = placeLabels(chartLabels({ series: plot.series, width }), g.y, g.plot);
   const today = g.x(0);
   return (
     <figure className="m-0">
@@ -142,11 +142,16 @@ function Plot({ plot, width, height, highlight, drawIn }: { plot: MovePlot; widt
   );
 }
 
-/** Labels sit above their point; where two meet at the same move, the lower value goes below its point. */
-function placeLabels(labels: ChartLabel[], y: (value: number) => number): (ChartLabel & { y: number })[] {
+/**
+ * Labels sit above their point; where two would touch at the same move, the lower value goes below its point.
+ * Both stay inside the plot, clear of the axis labels underneath (a low −30% value reached them at 360 px).
+ */
+function placeLabels(labels: ChartLabel[], y: (value: number) => number, plot: { top: number; bottom: number }): (ChartLabel & { y: number })[] {
   return labels.map((label) => {
     const twin = labels.find((other) => other !== label && other.side === label.side);
-    const below = twin !== undefined && (label.value < twin.value || (label.value === twin.value && label.id > twin.id));
-    return { ...label, y: below ? y(label.value) + 14 : y(label.value) - 6 };
+    const close = twin !== undefined && Math.abs(y(label.value) - y(twin.value)) < 14;
+    const below = close && (label.value < twin.value || (label.value === twin.value && label.id > twin.id));
+    const at = below ? y(label.value) + 14 : y(label.value) - 6;
+    return { ...label, y: Math.min(plot.bottom - 3, Math.max(plot.top + 9, at)) };
   });
 }

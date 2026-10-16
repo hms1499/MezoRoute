@@ -1,6 +1,7 @@
 "use client";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -42,11 +43,16 @@ export function Header() {
         })}
       </nav>
       <NetworkSwitch />
-      {/* Disconnected, the app's small button: RainbowKit's wider one pushed the header past 360 px. */}
+      {/* The app's own small buttons: RainbowKit's wider one pushed the header past 360 px, and its emoji
+          avatar did not fit the product (U3 §6). The account button opens RainbowKit's account modal. */}
       <ConnectButton.Custom>
-        {({ account, openConnectModal, mounted }) =>
+        {({ account, openAccountModal, openConnectModal, mounted }) =>
           account ? (
-            <ConnectButton chainStatus="none" showBalance={false} accountStatus={{ smallScreen: "avatar", largeScreen: "address" }} />
+            <Button size="sm" variant="secondary" onClick={openAccountModal} className="text-ink">
+              <Wallet aria-hidden className="hidden h-3.5 w-3.5 text-accent sm:block" />
+              <span className="sm:hidden">{`${account.address.slice(0, 4)}…${account.address.slice(-2)}`}</span>
+              <span className="hidden sm:inline">{account.displayName}</span>
+            </Button>
           ) : (
             <Button size="sm" variant="nightOutline" disabled={!mounted} onClick={openConnectModal}>
               Connect

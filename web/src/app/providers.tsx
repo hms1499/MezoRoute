@@ -1,8 +1,9 @@
 "use client";
 
 import "@rainbow-me/rainbowkit/styles.css";
-import { darkTheme, RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import { darkTheme, RainbowKitProvider, type AvatarComponent } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Wallet } from "lucide-react";
 import { createContext, memo, useContext, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
 import { AppShell } from "@/components/AppShell";
@@ -15,6 +16,16 @@ import { createWagmiConfig, walletConnectProjectId } from "@/lib/wallet/passport
 
 // The wallet button and modal match the app's buttons (U3 dark): theme options only, no CSS into the library.
 const baseTheme = darkTheme({ accentColor: colors.accent.DEFAULT, accentColorForeground: colors.onAccent, borderRadius: "large" });
+// A plain wallet glyph instead of RainbowKit's emoji avatar, so the account modal matches the header (U3 §6).
+const WalletAvatar: AvatarComponent = ({ size }) => (
+  <span
+    aria-hidden
+    style={{ width: size, height: size, background: colors.accent.soft, color: colors.accent.DEFAULT }}
+    className="flex items-center justify-center rounded-full"
+  >
+    <Wallet style={{ width: size / 2, height: size / 2 }} />
+  </span>
+);
 const theme = { ...baseTheme, fonts: { body: "var(--font-inter), ui-sans-serif, system-ui, sans-serif" } };
 
 // Built once per page load (switching networks stores the choice and reloads the page), and outside
@@ -38,7 +49,7 @@ const WalletTree = memo(function WalletTree() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={theme}>
+        <RainbowKitProvider theme={theme} avatar={WalletAvatar}>
           <ErrorToastProvider>
             <AppShell>
               <Page />
