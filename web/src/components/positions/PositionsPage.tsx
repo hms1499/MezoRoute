@@ -98,10 +98,10 @@ function Positions({ account }: { account: Address }) {
         totals && (
           <Card title="Totals">
             <dl className="stat-list mt-3">
-              <Stat label="Value (estimated)" strong>
+              <Stat label="Value at the BTC price" sub="Oracle price, before exit costs" strong>
                 {musd(totals.value)}
               </Stat>
-              <Stat label="BTC exposure" tone="btc">
+              <Stat label="BTC exposure in these positions" tone="btc">
                 {btc(totals.btc)}
               </Stat>
             </dl>

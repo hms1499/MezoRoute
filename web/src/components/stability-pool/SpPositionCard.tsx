@@ -61,8 +61,16 @@ function CostRows({ view, history }: { view: SpView; history: History }) {
       </Stat>
     );
   }
-  if (history.status === "updating") return <Stat label="Cost basis"><Skeleton className="ml-auto h-4 w-24" /></Stat>;
-  if (!view.cost) return <Stat label="Cost basis"><Skeleton className="ml-auto h-4 w-24" /></Stat>;
+  if (history.status === "updating" || !view.cost) {
+    return (
+      <Stat label="Cost basis">
+        <span role="status" className="inline-flex items-center gap-2 text-xs text-muted">
+          Reading your history…
+          <Skeleton className="h-4 w-16" />
+        </span>
+      </Stat>
+    );
+  }
   return (
     <>
       <Stat label="Cost basis" sub="MUSD you put in, less what you took out">
