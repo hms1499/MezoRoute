@@ -52,7 +52,7 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure" }: { sn
   ];
   return (
     <Card id="exposure" title={title} aside={<span className="text-xs text-muted">BTC {price(snapshot.price)} MUSD</span>}>
-      <p className="mt-3 text-2xl font-semibold tracking-tight text-btc [overflow-wrap:anywhere]">{change((e) => e.totalBtc)}</p>
+      <p className="figure mt-3 text-btc [overflow-wrap:anywhere]">{change((e) => e.totalBtc)}</p>
       <p className="text-xs text-muted">Total BTC exposure</p>
       <dl className="stat-list mt-4">
         {hasTrove && <Stat label="Trove collateral">{change((e) => e.troveBtc)}</Stat>}

@@ -63,7 +63,7 @@ function Positions({ account }: { account: Address }) {
     <>
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Your positions</h1>
+        <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight">Your positions</h1>
         {totals && !(view.empty && pool?.empty) && (
           <dl className="flex gap-6 text-right">
             <div>

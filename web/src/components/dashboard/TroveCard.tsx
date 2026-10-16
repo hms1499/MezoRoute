@@ -32,7 +32,7 @@ export function TroveCard({
 
   if (!trove) {
     return (
-      <Card title="Your Trove">
+      <Card level="section" title="Your Trove">
         <p className="mt-2 text-sm text-muted">No open Trove.</p>
         <ButtonLink href={network.mezoAppUrl} external variant="secondary" size="sm" className="mt-4">
           Open Mezo app
@@ -45,7 +45,7 @@ export function TroveCard({
   const liquidation = liquidationPrice(trove, protocol.mcr);
   const tag = health ? HEALTH_TAG[health] : null;
   return (
-    <Card title="Your Trove" aside={tag && <Badge tone={tag.tone}>{tag.label}</Badge>}>
+    <Card level="section" title="Your Trove" aside={tag && <Badge tone={tag.tone}>{tag.label}</Badge>}>
       <dl className="mt-3 stat-list">
         <Stat label="Collateral" sub={`≈ ${formatToken((trove.collateral * price) / WAD, 18, 2)} MUSD`}>
           {formatToken(trove.collateral)} BTC

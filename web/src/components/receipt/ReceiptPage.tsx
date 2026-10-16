@@ -70,7 +70,7 @@ function Receipt({ hash }: { hash: Hash }) {
         <div className="mt-4">
           {receipt.isPending && (
             <>
-              <h1 className="text-xl font-semibold">Confirming…</h1>
+              <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight">Confirming…</h1>
               <p className="mt-1 text-sm text-muted">Transaction {shortAddress(hash)} is submitted. This usually takes a few seconds.</p>
             </>
           )}
@@ -98,7 +98,7 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
   if (!result) {
     return (
       <>
-        <h1 className="text-xl font-semibold">Transaction confirmed</h1>
+        <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight">Transaction confirmed</h1>
         <p className="mt-2 text-sm text-muted">This transaction has no MezoRoute action.</p>
       </>
     );
@@ -114,7 +114,7 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
           : spReceiptRows(result.sp);
   return (
     <>
-      <h1 className="text-xl font-semibold">{borrowed ? "Borrow & deposit confirmed" : TITLES[result.kind]}</h1>
+      <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight">{borrowed ? "Borrow & deposit confirmed" : TITLES[result.kind]}</h1>
       <dl className="mt-3 stat-list">
         {rows.map((row) => (
           <Stat key={row.label} label={row.label}>
@@ -156,7 +156,7 @@ function Failed({ error }: { error: Error }) {
   const decoded = decodeError(error, network);
   return (
     <>
-      <h1 className="text-xl font-semibold">{decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Transaction failed"}</h1>
+      <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight">{decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Transaction failed"}</h1>
       <p className="mt-1 text-sm">{decoded.message}</p>
     </>
   );
