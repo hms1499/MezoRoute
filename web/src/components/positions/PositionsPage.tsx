@@ -12,7 +12,6 @@ import { RouteLayout } from "@/components/route/RouteLayout";
 import { SpPositionCard } from "@/components/stability-pool/SpPositionCard";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Column } from "@/components/ui/Column";
 import { Stat } from "@/components/ui/Stat";
 import { LoadingCard } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/lib/config/network-context";
@@ -71,8 +70,9 @@ function Positions({ account }: { account: Address }) {
     </>
   );
   if (view.empty && pool?.empty) {
+    // Full width like every other tab's cards; the column starts at the same left edge.
     return (
-      <Column>
+      <>
         {header}
         <Card className="text-center">
           <Inbox aria-hidden className="mx-auto h-10 w-10 text-muted" />
@@ -84,7 +84,7 @@ function Positions({ account }: { account: Address }) {
             </ButtonLink>
           </div>
         </Card>
-      </Column>
+      </>
     );
   }
 

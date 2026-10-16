@@ -209,7 +209,7 @@ Every page of a flow uses `RouteLayout`'s wide grid: a two-thirds content column
 | Exit, SP withdraw | form and estimated result (unchanged) | Confirm (unchanged) |
 | Positions (`/positions/`) | one panel per position, fees | totals (5.6) and the chart for positions |
 
-Below 1024 px all of these stack in the order above, and the `MobileBar` keeps the primary action where it exists today. `Column width="narrow"` remains only for pages outside flows (the invalid-hash receipt and the connect card).
+Below 1024 px all of these stack in the order above, and the `MobileBar` keeps the primary action where it exists today. `Column width="narrow"` remains only for the connect card; the empty Positions state and the invalid-hash receipt use the full wide column like every other tab (changed after user review, 16 Oct).
 
 ### 5.4 Blocked states offer the way out (finding 8)
 

@@ -9,7 +9,6 @@ import { useAccount, useConfig } from "wagmi";
 import { RouteLayout } from "@/components/route/RouteLayout";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Column } from "@/components/ui/Column";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Stat } from "@/components/ui/Stat";
 import { useNetwork } from "@/lib/config/network-context";
@@ -34,12 +33,10 @@ export default function ReceiptPage() {
   const hash = useSearchParams().get("hash");
   if (!isTxHash(hash)) {
     return (
-      <Column>
-        <Card>
-          <p className="text-sm">This link has no valid transaction hash.</p>
-          <Actions />
-        </Card>
-      </Column>
+      <Card>
+        <p className="text-sm">This link has no valid transaction hash.</p>
+        <Actions />
+      </Card>
     );
   }
   return <Receipt hash={hash} />;
