@@ -21,7 +21,7 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 | M1 mainnet deployment | Done (15 Oct) | Executor `0x046449b1229C863e278f369869BA10e12bd80d9E`; round trips and hashes in `PRODUCT_SPEC.md` §20 |
 | U1 UI polish | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u1-ui-polish-design.md`, plan `docs/superpowers/plans/2026-10-15-u1-ui-polish.md` (11 tasks, all done) |
 | U2 landing redesign | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u2-landing-redesign-design.md`, plan `docs/superpowers/plans/2026-10-15-u2-landing-redesign.md` |
-| U3 one identity, landing to app | Spec written (16 Oct), awaiting user review | Spec `docs/superpowers/specs/2026-10-16-u3-app-identity-design.md`; branch `feat/u3-app-identity`. Fixes the 10 findings of the 16 Oct design review |
+| U3 one identity, landing to app | Spec approved, plan written (16 Oct); awaiting execution choice | Spec `docs/superpowers/specs/2026-10-16-u3-app-identity-design.md`, plan `docs/superpowers/plans/2026-10-16-u3-app-identity.md` (13 tasks); branch `feat/u3-app-identity`. Fixes the 10 findings of the 16 Oct design review |
 | V1 Vercel production + QA on both wallet types | Not started | The current preview sits behind a Vercel login; judges need a public URL |
 | D1 README, deck, 2-minute video, submission form | Not started | Needs V1 and M1 |
 
