@@ -25,6 +25,7 @@ import { receiptKind } from "@/lib/tx/receipt-kind";
 import { receiptState, type ReceiptState } from "@/lib/tx/receipt-state";
 import { confirmCall, isTxHash } from "@/lib/tx/send";
 import { cx } from "@/lib/ui/cx";
+import { receiptHeader } from "@/lib/ui/step-visual";
 
 const RECEIPT_KEY = "entry-receipt";
 
@@ -68,7 +69,7 @@ function Receipt({ hash }: { hash: Hash }) {
   return (
     // The same columns as the flow's other pages (U3 §5.3): status and details left, what to do next right.
     <RouteLayout
-      header={<PageHeader back={{ href: "/", label: "Dashboard" }} step={state === "confirmed" ? 3 : 2} labels={["Amount", "Confirm", "Done"]} />}
+      header={<PageHeader back={{ href: "/", label: "Dashboard" }} {...receiptHeader(state)} labels={["Amount", "Confirm", "Done"]} />}
       summary={
         <Card title="What next">
           <Actions explorer={explorer} />
@@ -77,7 +78,6 @@ function Receipt({ hash }: { hash: Hash }) {
     >
       <Card>
         <StatusIcon state={state} />
-        <Timeline state={state} />
         <div className="mt-4">
           {receipt.isPending && (
             <>
@@ -178,38 +178,6 @@ function StatusIcon({ state }: { state: ReceiptState }) {
   if (state === "confirmed") return <CircleCheck aria-hidden className={cx(shared, "text-accent")} />;
   if (state === "failed") return <CircleX aria-hidden className={cx(shared, "text-danger")} />;
   return <LoaderCircle aria-hidden className={cx(shared, "text-accent motion-safe:animate-spin")} />;
-}
-
-const LAST_STAGE: Record<ReceiptState, string> = {
-  pending: "Confirmed",
-  confirmed: "Confirmed",
-  failed: "Failed",
-  unconfirmed: "Not confirmed yet",
-};
-
-/** Submitted → Confirming → Confirmed (U1 §6); an unconfirmed transaction ends in amber, never "Failed". */
-function Timeline({ state }: { state: ReceiptState }) {
-  const stages = [
-    { label: "Submitted", done: true },
-    { label: "Confirming", done: state !== "pending", current: state === "pending" },
-    { label: LAST_STAGE[state], done: state === "confirmed", failed: state === "failed", unknown: state === "unconfirmed" },
-  ];
-  return (
-    <ol aria-label="Transaction status" className="mt-4 flex flex-wrap items-center gap-2 text-xs font-medium">
-      {stages.map((stage, index) => (
-        <li key={stage.label} className="flex items-center gap-2">
-          {index > 0 && <span aria-hidden className={cx("h-px w-6", stage.done || stage.current ? "bg-accent" : "bg-line")} />}
-          <span
-            className={cx(
-              stage.failed ? "text-danger" : stage.unknown ? "text-warning-ink" : stage.done ? "text-accent" : stage.current ? "text-ink" : "text-muted",
-            )}
-          >
-            {stage.label}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
 }
 
 function Actions({ explorer }: { explorer?: string }) {
