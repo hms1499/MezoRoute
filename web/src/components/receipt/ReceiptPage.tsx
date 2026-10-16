@@ -6,8 +6,10 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import type { Address, Hash, TransactionReceipt } from "viem";
 import { useAccount, useConfig } from "wagmi";
+import { RouteLayout } from "@/components/route/RouteLayout";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Column } from "@/components/ui/Column";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Stat } from "@/components/ui/Stat";
 import { useNetwork } from "@/lib/config/network-context";
@@ -31,10 +33,12 @@ export default function ReceiptPage() {
   const hash = useSearchParams().get("hash");
   if (!isTxHash(hash)) {
     return (
-      <Card>
-        <p className="text-sm">This link has no valid transaction hash.</p>
-        <Actions />
-      </Card>
+      <Column>
+        <Card>
+          <p className="text-sm">This link has no valid transaction hash.</p>
+          <Actions />
+        </Card>
+      </Column>
     );
   }
   return <Receipt hash={hash} />;
@@ -62,8 +66,15 @@ function Receipt({ hash }: { hash: Hash }) {
   const explorer = explorerTxUrl(network, receipt.data?.transactionHash ?? hash);
   const state = receiptState({ isSuccess: receipt.isSuccess, errorKind: receipt.error ? decodeError(receipt.error, network).kind : null });
   return (
-    <>
-      <PageHeader back={{ href: "/", label: "Dashboard" }} step={state === "confirmed" ? 3 : 2} labels={["Amount", "Confirm", "Done"]} />
+    // The same columns as the flow's other pages (U3 §5.3): status and details left, what to do next right.
+    <RouteLayout
+      header={<PageHeader back={{ href: "/", label: "Dashboard" }} step={state === "confirmed" ? 3 : 2} labels={["Amount", "Confirm", "Done"]} />}
+      summary={
+        <Card title="What next">
+          <Actions explorer={explorer} />
+        </Card>
+      }
+    >
       <Card>
         <StatusIcon state={state} />
         <Timeline state={state} />
@@ -77,9 +88,8 @@ function Receipt({ hash }: { hash: Hash }) {
           {receipt.isError && <Failed error={receipt.error} />}
           {receipt.isSuccess && <Confirmed receipt={receipt.data} />}
         </div>
-        <Actions explorer={explorer} />
       </Card>
-    </>
+    </RouteLayout>
   );
 }
 
@@ -204,13 +214,16 @@ function Timeline({ state }: { state: ReceiptState }) {
 
 function Actions({ explorer }: { explorer?: string }) {
   return (
-    <div className="mt-6 flex flex-wrap gap-2">
+    <div className="mt-4 flex flex-wrap gap-2">
       <ButtonLink href="/positions/">View positions</ButtonLink>
       {explorer && (
         <ButtonLink href={explorer} external variant="secondary">
           View on explorer
         </ButtonLink>
       )}
+      <ButtonLink href="/" variant="ghost">
+        Back to dashboard
+      </ButtonLink>
     </div>
   );
 }

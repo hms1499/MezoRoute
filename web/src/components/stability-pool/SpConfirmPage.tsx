@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
+import { RouteLayout } from "@/components/route/RouteLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
 import { RequireWallet } from "@/components/home/RequireWallet";
@@ -47,11 +48,17 @@ function SpConfirm({ account }: { account: Address }) {
 
   const preview = spDepositPreview({ network, data, musdIn, walletKind, walletChainId: chainId });
   return (
-    <>
-      <PageHeader back={{ href: `/route/stability-pool/${spDepositQuery(amount)}`, label: "Change amount" }} step={2} />
-      {chainId !== network.chainId && <WrongNetworkAlert />}
+    // The same columns as the amount page (U3 §5.3): the review on the left, the steps where the summary was.
+    <RouteLayout
+      header={
+        <>
+          <PageHeader back={{ href: `/route/stability-pool/${spDepositQuery(amount)}`, label: "Change amount" }} step={2} />
+          {chainId !== network.chainId && <WrongNetworkAlert />}
+        </>
+      }
+      summary={<SpDepositStepper account={account} musdIn={musdIn} walletKind={walletKind} plan={preview.steps} refresh={refresh} block={preview.block} />}
+    >
       <SpDepositCard preview={preview} />
-      <SpDepositStepper account={account} musdIn={musdIn} walletKind={walletKind} plan={preview.steps} refresh={refresh} block={preview.block} />
-    </>
+    </RouteLayout>
   );
 }

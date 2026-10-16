@@ -8,7 +8,7 @@ const PositionsPage = dynamic(() => import("@/components/positions/PositionsPage
 
 export default function Page() {
   return (
-    <Column>
+    <Column width="wide">
       <PositionsPage />
     </Column>
   );

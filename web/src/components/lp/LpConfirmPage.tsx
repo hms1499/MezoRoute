@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
+import { RouteLayout } from "@/components/route/RouteLayout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
 import { RequireWallet } from "@/components/home/RequireWallet";
@@ -55,9 +56,26 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
 
   const preview = entryPreview({ network, data, intent, walletKind, walletChainId: chainId, now });
   return (
-    <>
-      <PageHeader back={{ href: `/route/lp/${entryQuery(intent)}`, label: "Change amount" }} step={2} />
-      {chainId !== network.chainId && <WrongNetworkAlert />}
+    // The same columns as the amount page (U3 §5.3): the review on the left, the steps where the summary was.
+    <RouteLayout
+      header={
+        <>
+          <PageHeader back={{ href: `/route/lp/${entryQuery(intent)}`, label: "Change amount" }} step={2} />
+          {chainId !== network.chainId && <WrongNetworkAlert />}
+        </>
+      }
+      summary={
+        <EntryStepper
+          account={account}
+          executor={executor}
+          intent={intent}
+          walletKind={walletKind}
+          plan={preview.steps}
+          refresh={refresh}
+          block={preview.block}
+        />
+      }
+    >
       <ConfirmSummary
         preview={preview}
         data={data}
@@ -65,15 +83,6 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
         now={now}
         onRefresh={() => void refresh().catch(() => undefined)}
       />
-      <EntryStepper
-        account={account}
-        executor={executor}
-        intent={intent}
-        walletKind={walletKind}
-        plan={preview.steps}
-        refresh={refresh}
-        block={preview.block}
-      />
-    </>
+    </RouteLayout>
   );
 }

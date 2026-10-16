@@ -8,7 +8,7 @@ const ReceiptPage = dynamic(() => import("@/components/receipt/ReceiptPage"), { 
 
 export default function Page() {
   return (
-    <Column>
+    <Column width="wide">
       <ReceiptPage />
     </Column>
   );
