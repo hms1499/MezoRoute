@@ -21,8 +21,8 @@ export function LiveStrip({ live }: { live: Strip }) {
       {live.kind === "loading" ? (
         [0, 1, 2, 3].map((key) => (
           <div key={key} role={key === 0 ? "status" : undefined} aria-label={key === 0 ? "Loading mainnet figures" : undefined} className="py-4 pr-4">
-            <Skeleton tone="night" className="h-3 w-20" />
-            <Skeleton tone="night" className="mt-2 h-6 w-28" />
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="mt-2 h-6 w-28" />
           </div>
         ))
       ) : (

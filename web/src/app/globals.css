@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    color-scheme: dark;
+  }
   :focus-visible {
     outline: 2px solid theme("colors.accent.DEFAULT");
     outline-offset: 2px;
@@ -25,7 +28,11 @@
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-line bg-white p-5 shadow-card;
+    @apply rounded-2xl border border-line bg-surface p-5;
+  }
+  /* A panel's key figure (U3 §3.2): the only place outside the landing that uses the mono face. */
+  .figure {
+    @apply font-mono text-[28px] font-medium leading-8 tracking-tight;
   }
   .stat-list {
     @apply grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 text-sm;
@@ -39,12 +46,6 @@
   }
 }
 
-/* U2 landing: focus rings use the landing's teal so they stay visible on the dark page. */
-@layer base {
-  .landing-dark :focus-visible {
-    outline-color: theme("colors.night.lp");
-  }
-}
 
 /* U2 landing motion. Without the media query every element shows its final state, so reduced
    motion needs no override; travelling dots stay hidden (they only exist while animating). */

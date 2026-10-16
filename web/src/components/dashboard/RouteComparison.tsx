@@ -167,7 +167,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
 
       {/* Below 640 px: one route at a time. */}
       <div className="mt-4 sm:hidden">
-        <div role="tablist" aria-label="Routes" className="flex rounded-full bg-line p-1 text-sm font-medium">
+        <div role="tablist" aria-label="Routes" className="flex rounded-full bg-well p-1 text-sm font-medium">
           {routes.map((route) => (
             <button
               key={route.id}
@@ -177,7 +177,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
               aria-selected={tab === route.id}
               aria-controls={`panel-${route.id}`}
               onClick={() => setTab(route.id)}
-              className={cx("min-h-10 flex-1 rounded-full px-3 transition-colors duration-150", tab === route.id ? "bg-white text-ink shadow-card" : "text-muted")}
+              className={cx("min-h-10 flex-1 rounded-full px-3 transition-colors duration-150", tab === route.id ? "bg-line text-ink" : "text-muted")}
             >
               {route.title}
             </button>

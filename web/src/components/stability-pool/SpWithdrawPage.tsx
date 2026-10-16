@@ -30,8 +30,8 @@ import { useWalletKind } from "@/lib/wallet/useWalletKind";
 
 const chip = (on: boolean) =>
   on
-    ? "min-h-9 rounded-full bg-accent px-3.5 text-sm font-semibold text-white"
-    : "min-h-9 rounded-full border border-line bg-white px-3.5 text-sm font-semibold text-muted hover:text-ink";
+    ? "min-h-9 rounded-full bg-accent px-3.5 text-sm font-semibold text-onAccent"
+    : "min-h-9 rounded-full border border-line px-3.5 text-sm font-semibold text-muted hover:text-ink";
 
 /** Spec §9 screen 6b: share or Max, simulated first; a paused pool shows the blocked state with Claim BTC gain. */
 export default function SpWithdrawPage() {

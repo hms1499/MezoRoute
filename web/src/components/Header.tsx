@@ -8,7 +8,6 @@ import { Logo } from "@/components/ui/Logo";
 import { cx } from "@/lib/ui/cx";
 import { isCurrentPath } from "@/lib/ui/nav";
 import { NetworkSwitch } from "./NetworkSwitch";
-import { useSurface } from "./surface";
 
 const NAV = [
   { href: "/", label: "Dashboard", mobile: false },
@@ -18,7 +17,6 @@ const NAV = [
 /** Shared header (spec §9): logo, nav with the current page marked, Testnet/Mainnet switch, wallet button. */
 export function Header() {
   const pathname = usePathname();
-  const dark = useSurface() === "dark";
   return (
     <header className="flex items-center gap-2 py-4 sm:gap-4">
       <Link href="/" aria-label="MezoRoute home" className="shrink-0 rounded-lg">
@@ -35,13 +33,7 @@ export function Header() {
               className={cx(
                 "min-h-9 items-center rounded-full px-2.5 text-sm font-medium transition-colors duration-150 sm:px-3",
                 item.mobile ? "inline-flex" : "hidden sm:inline-flex",
-                current
-                  ? dark
-                    ? "bg-night-panel text-night-ink"
-                    : "bg-white text-ink shadow-card"
-                  : dark
-                    ? "text-night-muted hover:text-night-ink"
-                    : "text-muted hover:text-ink",
+                current ? "bg-surface text-ink" : "text-muted hover:text-ink",
               )}
             >
               {item.label}
@@ -56,7 +48,7 @@ export function Header() {
           account ? (
             <ConnectButton chainStatus="none" showBalance={false} accountStatus={{ smallScreen: "avatar", largeScreen: "address" }} />
           ) : (
-            <Button size="sm" variant={dark ? "nightOutline" : "primary"} disabled={!mounted} onClick={openConnectModal}>
+            <Button size="sm" variant="nightOutline" disabled={!mounted} onClick={openConnectModal}>
               Connect
             </Button>
           )

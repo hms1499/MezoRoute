@@ -42,7 +42,7 @@ function FlowProgress({ step, labels }: { step: 1 | 2 | 3; labels: Labels }) {
             <span
               className={cx(
                 "flex h-6 w-6 items-center justify-center rounded-full",
-                done && "bg-accent text-white",
+                done && "bg-accent text-onAccent",
                 current && "border-2 border-accent text-accent",
                 !done && !current && "border border-line text-muted",
               )}

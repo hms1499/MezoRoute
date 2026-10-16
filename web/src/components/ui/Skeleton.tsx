@@ -1,13 +1,13 @@
 import { cx } from "@/lib/ui/cx";
 
-/** A shimmering placeholder (static under reduced motion); `night` for the dark landing. */
-export function Skeleton({ className, tone = "light" }: { className?: string; tone?: "light" | "night" }) {
+/** A shimmering placeholder (static under reduced motion). */
+export function Skeleton({ className }: { className?: string }) {
   return (
     <span
       aria-hidden
       className={cx(
         "block rounded-lg bg-[length:200%_100%] motion-safe:animate-shimmer",
-        tone === "night" ? "bg-gradient-to-r from-night-line via-night-panel to-night-line" : "bg-gradient-to-r from-line/70 via-white to-line/70",
+        "bg-gradient-to-r from-line via-surface to-line",
         className,
       )}
     />

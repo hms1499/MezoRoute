@@ -1,63 +1,80 @@
 import { mix } from "./contrast";
 
-/** Colour tokens (U1): the one source for tailwind.config.ts and the contrast test. */
+// U3: one dark palette for the landing and the app (spec 2026-10-16 §3.1). Orange marks BTC exposure
+// only; the Stability Pool is lavender; teal is both the action colour and the LP route.
+const CANVAS = "#0A1416";
+const SURFACE = "#162022";
+const INK = "#E8F1EF";
+const MUTED = "#9FB3AF";
+const LINE = "#222B2D";
+const ACCENT = "#2DD4BF";
+const ON_ACCENT = "#062221";
+const SP = "#A5B4FC";
+const BTC = "#FB923C";
+const DANGER = "#F87171";
+const WARNING = "#FCD34D";
+
+/** A colour at 12% over the panel surface, flattened to a solid hex so the contrast test can check text on it. */
+const soft = (hex: string) => mix(hex, SURFACE, 0.12);
+
+/** Colour tokens: the one source for tailwind.config.ts and the contrast test. */
 export const colors = {
-  canvas: "#F6F8F7",
-  ink: "#1F2A2E",
-  muted: "#4B5B5F",
-  line: "#E4ECEA",
-  accent: { DEFAULT: "#0F766E", soft: "#ECF5F3" },
-  warning: { bg: "#FEF3C7", ink: "#92400E" },
-  danger: { DEFAULT: "#B42318", soft: "#FEECEB" },
+  canvas: CANVAS,
+  surface: SURFACE,
+  well: "#0F1A1C",
+  ink: INK,
+  muted: MUTED,
+  line: LINE,
+  accent: { DEFAULT: ACCENT, soft: soft(ACCENT) },
+  onAccent: ON_ACCENT,
+  sp: { DEFAULT: SP, soft: soft(SP) },
+  warning: { bg: soft(WARNING), ink: WARNING },
+  danger: { DEFAULT: DANGER, soft: soft(DANGER) },
   // Marks BTC-exposure figures and badges only; never a button colour.
-  btc: { DEFAULT: "#C2410C", soft: "#FFF4EC" },
-  // U2 landing only: a deep teal-black page with the two route colours (LP teal, Stability Pool orange).
-  // panel and line are white 5% / 10% over bg, flattened to solid colours so the contrast test can check them.
+  btc: { DEFAULT: BTC, soft: soft(BTC) },
+  // U2 landing names, kept as aliases of the same values.
   night: {
-    bg: "#0A1416",
+    bg: CANVAS,
     glow: "#123B3A",
-    panel: "#162022",
-    line: "#222B2D",
-    ink: "#E8F1EF",
-    muted: "#9FB3AF",
-    lp: "#2DD4BF",
-    sp: "#FB923C",
-    onLp: "#062221",
+    panel: SURFACE,
+    line: LINE,
+    ink: INK,
+    muted: MUTED,
+    lp: ACCENT,
+    sp: SP,
+    onLp: ON_ACCENT,
   },
 };
-
-const WHITE = "#FFFFFF";
 
 /** The simulator dims its table while the typed amount is invalid (`opacity-80`); its text must still pass. */
 export const NIGHT_DIM_OPACITY = 0.8;
 
 /** Every text-on-surface pair the UI uses; each must reach WCAG AA (4.5:1). */
+const SURFACES = { canvas: colors.canvas, surface: colors.surface, well: colors.well } as Record<string, string>;
+const FOREGROUNDS = {
+  ink: colors.ink,
+  muted: colors.muted,
+  accent: colors.accent.DEFAULT,
+  sp: colors.sp.DEFAULT,
+  btc: colors.btc.DEFAULT,
+  danger: colors.danger.DEFAULT,
+  warning: colors.warning.ink,
+} as Record<string, string>;
+
 export const TEXT_PAIRS: [name: string, foreground: string, background: string][] = [
-  ["ink on canvas", colors.ink, colors.canvas],
-  ["ink on white", colors.ink, WHITE],
-  ["muted on white", colors.muted, WHITE],
-  ["muted on canvas", colors.muted, colors.canvas],
-  ["muted on line (badge)", colors.muted, colors.line],
-  ["accent on white", colors.accent.DEFAULT, WHITE],
-  ["white on accent", WHITE, colors.accent.DEFAULT],
+  ...Object.entries(FOREGROUNDS).flatMap(([fg, fgHex]) =>
+    Object.entries(SURFACES).map(([bg, bgHex]): [string, string, string] => [`${fg} on ${bg}`, fgHex, bgHex]),
+  ),
+  ["onAccent on accent (button)", colors.onAccent, colors.accent.DEFAULT],
+  ["canvas on danger (button)", colors.canvas, colors.danger.DEFAULT],
   ["accent on accent-soft", colors.accent.DEFAULT, colors.accent.soft],
-  ["warning ink on warning bg", colors.warning.ink, colors.warning.bg],
-  ["danger on white", colors.danger.DEFAULT, WHITE],
-  ["danger on danger-soft", colors.danger.DEFAULT, colors.danger.soft],
-  ["white on danger", WHITE, colors.danger.DEFAULT],
-  ["btc on white", colors.btc.DEFAULT, WHITE],
+  ["sp on sp-soft", colors.sp.DEFAULT, colors.sp.soft],
   ["btc on btc-soft", colors.btc.DEFAULT, colors.btc.soft],
-  ["white on ink (toast)", WHITE, colors.ink],
-  ["night ink on night bg", colors.night.ink, colors.night.bg],
-  ["night muted on night bg", colors.night.muted, colors.night.bg],
-  ["night ink on night panel", colors.night.ink, colors.night.panel],
-  ["night muted on night panel", colors.night.muted, colors.night.panel],
-  ["night lp on night bg", colors.night.lp, colors.night.bg],
-  ["night lp on night panel", colors.night.lp, colors.night.panel],
-  ["night sp on night bg", colors.night.sp, colors.night.bg],
-  ["night sp on night panel", colors.night.sp, colors.night.panel],
-  ["night on-lp on lp (CTA)", colors.night.onLp, colors.night.lp],
-  ["night muted dimmed on panel", mix(colors.night.muted, colors.night.panel, NIGHT_DIM_OPACITY), colors.night.panel],
-  ["night sp dimmed on panel", mix(colors.night.sp, colors.night.panel, NIGHT_DIM_OPACITY), colors.night.panel],
-  ["night ink dimmed on panel", mix(colors.night.ink, colors.night.panel, NIGHT_DIM_OPACITY), colors.night.panel],
+  ["danger on danger-soft", colors.danger.DEFAULT, colors.danger.soft],
+  ["warning ink on warning bg", colors.warning.ink, colors.warning.bg],
+  ["muted on line (badge)", colors.muted, colors.line],
+  ["canvas on ink (toast)", colors.canvas, colors.ink],
+  ["muted dimmed on surface", mix(colors.muted, colors.surface, NIGHT_DIM_OPACITY), colors.surface],
+  ["sp dimmed on surface", mix(colors.sp.DEFAULT, colors.surface, NIGHT_DIM_OPACITY), colors.surface],
+  ["ink dimmed on surface", mix(colors.ink, colors.surface, NIGHT_DIM_OPACITY), colors.surface],
 ];

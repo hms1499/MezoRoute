@@ -6,8 +6,8 @@ import { SLIPPAGE_PRESETS } from "@/lib/quote/entry";
 
 const chip = (on: boolean) =>
   on
-    ? "min-h-9 rounded-full bg-accent px-3.5 text-sm font-semibold text-white"
-    : "min-h-9 rounded-full border border-line bg-white px-3.5 text-sm font-semibold text-muted hover:text-ink";
+    ? "min-h-9 rounded-full bg-accent px-3.5 text-sm font-semibold text-onAccent"
+    : "min-h-9 rounded-full border border-line px-3.5 text-sm font-semibold text-muted hover:text-ink";
 
 /** Share of the LP (locked once the first step pins it; "Start over" unlocks it) and slippage (read again at send). */
 export function ExitForm({

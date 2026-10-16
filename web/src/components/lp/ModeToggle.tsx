@@ -21,7 +21,7 @@ export function ModeToggle({
       onClick={() => onChange(value)}
       className={
         mode === value
-          ? "min-h-9 rounded-full bg-white px-3.5 text-ink shadow-card"
+          ? "min-h-9 rounded-full bg-line px-3.5 text-ink"
           : "min-h-9 rounded-full px-3.5 text-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
       }
     >
@@ -30,7 +30,7 @@ export function ModeToggle({
   );
   return (
     <div>
-      <div role="radiogroup" aria-label="Funding" className="inline-flex rounded-full bg-line p-1 text-sm font-semibold">
+      <div role="radiogroup" aria-label="Funding" className="inline-flex rounded-full bg-well p-1 text-sm font-semibold">
         {option("deposit", "Deposit MUSD")}
         {option("borrow", "Borrow & Deploy", !canBorrow)}
       </div>

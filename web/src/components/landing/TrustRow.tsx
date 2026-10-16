@@ -42,7 +42,7 @@ export function TrustRow() {
 function Item({ icon: Icon, title, warn = false, children }: { icon: LucideIcon; title: string; warn?: boolean; children: ReactNode }) {
   return (
     <li>
-      <p className={warn ? "inline-flex items-center gap-2 font-semibold text-night-sp" : "inline-flex items-center gap-2 font-semibold text-night-ink"}>
+      <p className={warn ? "inline-flex items-center gap-2 font-semibold text-warning-ink" : "inline-flex items-center gap-2 font-semibold text-night-ink"}>
         <Icon aria-hidden className="h-4 w-4" />
         {title}
       </p>

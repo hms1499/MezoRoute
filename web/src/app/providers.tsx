@@ -1,7 +1,7 @@
 "use client";
 
 import "@rainbow-me/rainbowkit/styles.css";
-import { lightTheme, RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import { darkTheme, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, memo, useContext, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
@@ -13,8 +13,8 @@ import { networks } from "@/lib/config/networks";
 import { colors } from "@/lib/ui/tokens";
 import { createWagmiConfig, walletConnectProjectId } from "@/lib/wallet/passport";
 
-// The wallet button and modal match the app's buttons (U1): theme options only, no CSS into the library.
-const baseTheme = lightTheme({ accentColor: colors.accent.DEFAULT, accentColorForeground: "white", borderRadius: "large" });
+// The wallet button and modal match the app's buttons (U3 dark): theme options only, no CSS into the library.
+const baseTheme = darkTheme({ accentColor: colors.accent.DEFAULT, accentColorForeground: colors.onAccent, borderRadius: "large" });
 const theme = { ...baseTheme, fonts: { body: "var(--font-inter), ui-sans-serif, system-ui, sans-serif" } };
 
 // Built once per page load (switching networks stores the choice and reloads the page), and outside

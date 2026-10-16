@@ -65,7 +65,7 @@ export function Simulator({
         <span className="font-mono text-xs text-night-muted">MUSD</span>
       </div>
       {amountError && (
-        <p role="alert" className="mt-2 text-sm text-night-sp">
+        <p role="alert" className="mt-2 text-sm text-danger">
           {amountError}
         </p>
       )}
@@ -113,7 +113,7 @@ export function Simulator({
                   <th scope="row" className="py-2.5 pr-2 text-left font-normal text-night-muted max-sm:col-span-2 max-sm:pb-0">
                     {row.label}
                   </th>
-                  <td className={cx("py-2.5 pl-2 text-right break-words max-sm:pl-0 max-sm:text-left max-sm:pt-1", row.lpTone === "btc" ? "text-night-sp" : "text-night-ink")} {...column("lp")}>
+                  <td className={cx("py-2.5 pl-2 text-right break-words max-sm:pl-0 max-sm:text-left max-sm:pt-1", row.lpTone === "btc" ? "text-btc" : "text-night-ink")} {...column("lp")}>
                     <Cell cell={row.lp} />
                   </td>
                   <td className="py-2.5 pl-2 text-right text-night-ink break-words max-sm:pt-1" {...column("sp")}>
@@ -140,9 +140,9 @@ export function Simulator({
         <div role="status" aria-busy="true" aria-label="Loading mainnet figures" className="mt-4 min-h-[16rem] space-y-3">
           {/* Same height as the loaded table and notes, so nothing below moves when the data arrives. */}
           {[0, 1, 2, 3, 4].map((key) => (
-            <Skeleton key={key} tone="night" className="h-7 w-full" />
+            <Skeleton key={key} className="h-7 w-full" />
           ))}
-          <Skeleton tone="night" className="h-8 w-3/4" />
+          <Skeleton className="h-8 w-3/4" />
           <span id="simulator-notes" className="sr-only">
             Loading Mezo mainnet figures
           </span>

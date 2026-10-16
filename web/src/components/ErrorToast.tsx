@@ -108,7 +108,7 @@ function ErrorToast({
   });
 
   return (
-    <div className="flex items-start gap-3 rounded-2xl bg-ink px-4 py-3 text-sm text-white shadow-raised motion-safe:animate-toast-in">
+    <div className="flex items-start gap-3 rounded-2xl bg-ink px-4 py-3 text-sm text-canvas motion-safe:animate-toast-in">
       <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
       <div className="min-w-0 flex-1">
         <p>{decoded.message}</p>
@@ -122,7 +122,7 @@ function ErrorToast({
           </div>
         )}
       </div>
-      <button type="button" aria-label="Dismiss" onClick={onDismiss} className="-m-1 rounded-full p-1.5 text-white/70 hover:text-white">
+      <button type="button" aria-label="Dismiss" onClick={onDismiss} className="-m-1 rounded-full p-1.5 text-canvas/70 hover:text-canvas">
         <X aria-hidden className="h-4 w-4" />
       </button>
     </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useDarkSurface } from "@/components/surface";
 import { liveStrip } from "@/lib/landing/view";
 import { useMainnetReference } from "@/lib/reference/useMainnetReference";
 import { FinalCta } from "./FinalCta";
@@ -15,11 +14,12 @@ export type Highlight = "lp" | "sp" | null;
 
 /** The first screen before a wallet connects (U2): dark route map, live simulator, and the story below it. */
 export function Landing() {
-  useDarkSurface();
   const { data, error } = useMainnetReference(true);
   const [highlight, setHighlight] = useState<Highlight>(null);
   return (
     <div className="mx-auto w-full max-w-6xl">
+      {/* The U2 glow, full-bleed behind the top of the page; it scrolls away with the hero. */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[900px] bg-night-glow" />
       <Hero data={data} error={error} highlight={highlight} onHighlight={setHighlight} />
       <LiveStrip live={liveStrip(data, error)} />
       <RouteLanes onHighlight={setHighlight} />

@@ -18,7 +18,7 @@ export function AmountInput({
       <label htmlFor="amount" className="block text-sm font-medium">
         Amount
       </label>
-      <div className="flex min-h-12 items-center gap-2 rounded-xl border border-line bg-white px-3 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20">
+      <div className="flex min-h-12 items-center gap-2 rounded-xl border border-line bg-well px-3 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20">
         <input
           id="amount"
           inputMode="decimal"
