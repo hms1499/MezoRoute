@@ -68,7 +68,10 @@ export function ReadinessCard({
         <span title={btcAddress ?? account}>
           {connector?.name ?? "Wallet"} · {walletKindLabel(walletKind, bitcoinWallet)} · {shortAddress(account)}
         </span>
-        <span>BTC for gas {formatToken(data.gasBalance)}</span>
+        <span className="flex flex-wrap gap-x-4">
+          <span>MUSD in wallet {formatToken(data.snapshot.musd, 18, 2)}</span>
+          <span>BTC for gas {formatToken(data.gasBalance)}</span>
+        </span>
       </p>
       {notes.map((note) => (
         <Notice key={note} className="mt-3">
