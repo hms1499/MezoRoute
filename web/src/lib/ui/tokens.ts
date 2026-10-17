@@ -46,6 +46,29 @@ export const colors = {
   },
 };
 
+// U6: the one type scale (spec 2026-10-17-u6-type-scale-design.md). Tailwind knows only these sizes, and
+// `typography.test.ts` fails on any other size, line height, or weight in the source.
+type TypeMeta = { lineHeight: string; fontWeight?: string; letterSpacing?: string };
+const TIGHT = "-0.025em";
+
+export type FontSizeKey = "xs" | "sm" | "base" | "xl" | "headline" | "title" | "figure" | "display" | "display-lg";
+
+/** Size and line height per step; role tokens also fix weight and tracking. Weight 700 only in `display*`. */
+export const fontSize: Record<FontSizeKey, [size: string, meta: TypeMeta]> = {
+  xs: ["12px", { lineHeight: "16px" }],
+  sm: ["14px", { lineHeight: "20px" }],
+  base: ["16px", { lineHeight: "24px" }],
+  xl: ["20px", { lineHeight: "28px" }],
+  headline: ["24px", { lineHeight: "32px", fontWeight: "600", letterSpacing: TIGHT }],
+  title: ["28px", { lineHeight: "34px", fontWeight: "600", letterSpacing: TIGHT }],
+  figure: ["28px", { lineHeight: "32px", fontWeight: "500", letterSpacing: TIGHT }],
+  display: ["40px", { lineHeight: "48px", fontWeight: "700", letterSpacing: TIGHT }],
+  "display-lg": ["48px", { lineHeight: "52px", fontWeight: "700", letterSpacing: TIGHT }],
+};
+
+/** SVG chart text (axis, values, bands): the scale's floor. */
+export const CHART_FONT_PX = 12;
+
 /** The simulator dims its table while the typed amount is invalid (`opacity-80`); its text must still pass. */
 export const NIGHT_DIM_OPACITY = 0.8;
 
