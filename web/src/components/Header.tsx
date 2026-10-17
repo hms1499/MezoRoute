@@ -23,7 +23,7 @@ export function Header() {
       <Link href="/" aria-label="MezoRoute home" className="shrink-0 rounded-lg">
         <Logo />
       </Link>
-      <nav aria-label="Main" className="mr-auto flex items-center gap-1">
+      <nav aria-label="Main" className="flex flex-1 items-center justify-center gap-1">
         {NAV.map((item) => {
           const current = isCurrentPath(pathname, item.href);
           return (
