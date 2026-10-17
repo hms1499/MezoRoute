@@ -17,7 +17,7 @@ function main() {
   loadEnvConfig(webRoot);
   const missing = missingEnv(process.env);
   if (missing.length > 0) {
-    throw new Error(`check-env: missing ${missing.join(", ")} (see web/.env.example; on Vercel, set it in the project env)`);
+    throw new Error(`check-env: missing ${missing.join(", ")} (see frontend/.env.example; on Vercel, set it in the project env)`);
   }
   console.log("check-env: ok");
 }

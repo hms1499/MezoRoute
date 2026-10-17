@@ -7,7 +7,7 @@ import { musdIsToken0 } from "@/lib/dashboard/snapshot";
 import { checkEntry, earlierPoolActivity, summarise, type CheckResult, type EnteredEvent } from "@/lib/quote/accuracy";
 import { DEFAULT_SLIPPAGE, type PoolState } from "@/lib/quote/entry";
 
-// Spec F8 §2: every executor Entered event against the quote engine. Run from web/:
+// Spec F8 §2: every executor Entered event against the quote engine. Run from frontend/:
 //   npm run quote-accuracy                          (testnet)
 //   QUOTE_NETWORK=mainnet npm run quote-accuracy    (after M1)
 
