@@ -9,7 +9,7 @@ export function RouteLanes({ onHighlight }: { onHighlight: (highlight: Highlight
   const [ref, seen] = useInView<HTMLElement>();
   return (
     <section ref={ref} data-seen={seen} aria-labelledby="routes-heading" className="landing-section landing-reveal">
-      <h2 id="routes-heading" className="landing-section-title text-2xl tracking-tight">
+      <h2 id="routes-heading" className="text-headline text-ink">
         Where your MUSD goes, and what it does to your BTC
       </h2>
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -59,7 +59,7 @@ function Lane(props: {
         <span aria-hidden className={cx("h-2 w-2 rounded-full", lp ? "bg-accent" : "bg-sp")} />
         {props.label}
       </p>
-      <h3 className="mt-1.5 text-lg font-semibold text-night-ink">{props.title}</h3>
+      <h3 className="mt-1.5 text-base font-semibold text-night-ink">{props.title}</h3>
       <dl className="mt-4 space-y-3 text-sm">
         <div>
           <dt className="text-xs text-night-muted">Return source</dt>

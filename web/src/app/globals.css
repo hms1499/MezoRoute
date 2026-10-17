@@ -87,10 +87,7 @@
     border-radius: var(--landing-radius-pill);
   }
   .landing-section-title {
-    color: theme("colors.ink");
-    font-size: 1rem;
-    font-weight: 600;
-    line-height: 1.5rem;
+    @apply text-base font-semibold text-ink;
   }
   .landing-chart-surface {
     border: 1px solid theme("colors.line");

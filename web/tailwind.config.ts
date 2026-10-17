@@ -5,10 +5,10 @@ import { colors, fontSize } from "./src/lib/ui/tokens";
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
+    // U6: replaces Tailwind's sizes, so an off-scale class such as `text-lg` does not exist (typography.test.ts names it).
+    fontSize,
     extend: {
       colors,
-      // U6: added beside Tailwind's defaults for now (xs/sm/base/xl are identical); replaces them once nothing off-scale is left.
-      fontSize,
       fontFamily: {
         sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],

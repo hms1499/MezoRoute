@@ -43,7 +43,7 @@ export function Hero({
   return (
     <section className="grid grid-cols-1 items-start gap-10 py-8 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:py-14">
       <div>
-        <h1 className="text-[40px] font-bold leading-[48px] tracking-tight text-ink sm:text-[48px] sm:leading-[52px]">
+        <h1 className="text-display text-ink sm:text-display-lg">
           <span className="landing-rise block" style={delay(80)}>
             Pick a route.
           </span>

@@ -1,5 +1,7 @@
 /** Pure SVG geometry for the "If BTC moves" chart (U3 §4.1); `BtcMoveChart` only draws what this returns. */
 
+import { CHART_FONT_PX } from "@/lib/ui/tokens";
+
 export type SeriesId = "lp" | "sp" | "cr" | "lp-before" | "sp-before";
 export type Series = { id: SeriesId; points: { move: number; value: number }[] };
 export type Band = { from: number; to: number; tone: "danger" | "warning"; label: string };
@@ -67,4 +69,21 @@ export function chartLabels(input: { series: Series[]; width: number }): ChartLa
         return point ? [{ id: s.id, side, move, value: point.value }] : [];
       }),
     );
+}
+
+/** A band shows its label only when the 12 px text fits inside it with a pixel to spare on each side. */
+export const BAND_LABEL_MIN_HEIGHT = CHART_FONT_PX + 2;
+
+/**
+ * Labels sit above their point; where two would touch at the same move, the lower value goes below its point.
+ * Both stay inside the plot, clear of the axis labels underneath (a low −30% value reached them at 360 px).
+ */
+export function placeLabels(labels: ChartLabel[], y: (value: number) => number, plot: { top: number; bottom: number }): (ChartLabel & { y: number })[] {
+  return labels.map((label) => {
+    const twin = labels.find((other) => other !== label && other.side === label.side);
+    const close = twin !== undefined && Math.abs(y(label.value) - y(twin.value)) < 14;
+    const below = close && (label.value < twin.value || (label.value === twin.value && label.id > twin.id));
+    const at = below ? y(label.value) + 14 : y(label.value) - 6;
+    return { ...label, y: Math.min(plot.bottom - 3, Math.max(plot.top + 9, at)) };
+  });
 }
