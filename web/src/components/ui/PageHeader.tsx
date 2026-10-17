@@ -28,7 +28,7 @@ export function PageHeader({
         {back.label}
       </Link>
       {step && <FlowProgress step={step} status={stepStatus} labels={labels} />}
-      {title && <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight [text-wrap:balance]">{title}</h1>}
+      {title && <h1 className="text-title [text-wrap:balance]">{title}</h1>}
     </div>
   );
 }

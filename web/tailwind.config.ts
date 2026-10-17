@@ -1,10 +1,12 @@
 import type { Config } from "tailwindcss";
-import { colors } from "./src/lib/ui/tokens";
+import { colors, fontSize } from "./src/lib/ui/tokens";
 
 // One dark palette (U3): teal for actions and the LP route, lavender for the Stability Pool, orange only for BTC exposure.
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
+    // U6: replaces Tailwind's sizes, so an off-scale class such as `text-lg` does not exist (typography.test.ts names it).
+    fontSize,
     extend: {
       colors,
       fontFamily: {

@@ -41,7 +41,7 @@ export function Card({
         <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
           <div className="min-w-0">
             {title && (
-              <Heading className={cx("font-semibold tracking-tight", headingLevel === 1 ? "text-[28px] leading-[34px]" : "text-base leading-6")}>{title}</Heading>
+              <Heading className={headingLevel === 1 ? "text-title" : "text-base font-semibold"}>{title}</Heading>
             )}
             {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
           </div>

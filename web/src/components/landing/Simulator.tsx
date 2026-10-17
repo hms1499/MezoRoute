@@ -60,7 +60,7 @@ export function Simulator({
           onChange={(event) => onText(event.target.value)}
           aria-describedby="simulator-notes"
           aria-invalid={amountError ? true : undefined}
-          className="min-w-0 flex-1 bg-transparent py-2 font-mono text-2xl font-semibold text-night-ink outline-none"
+          className="min-w-0 flex-1 bg-transparent py-2 font-mono text-headline text-night-ink outline-none"
         />
         <span className="font-mono text-xs text-night-muted">MUSD</span>
       </div>
@@ -165,7 +165,7 @@ export function Simulator({
 }
 
 function Cell({ cell }: { cell: SimCell }) {
-  if (cell.kind === "text") return cell.figure ? <span className="font-mono text-[13px]">{cell.text}</span> : <>{cell.text}</>;
+  if (cell.kind === "text") return cell.figure ? <span className="font-mono text-sm">{cell.text}</span> : <>{cell.text}</>;
   return <CountingFigure value={cell.value} format={cell.format} />;
 }
 
@@ -173,7 +173,7 @@ function Cell({ cell }: { cell: SimCell }) {
 function CountingFigure({ value, format }: { value: bigint; format: (value: bigint) => string }) {
   const shown = useCountUp(value);
   return (
-    <span key={value.toString()} className="landing-flash rounded px-0.5 font-mono text-[13px]">
+    <span key={value.toString()} className="landing-flash rounded px-0.5 font-mono text-sm">
       {format(shown)}
     </span>
   );

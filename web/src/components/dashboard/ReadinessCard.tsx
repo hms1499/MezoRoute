@@ -46,7 +46,7 @@ export function ReadinessCard({
 
   return (
     <Card title="Next step" aside={<Badge tone={BADGE_TONE[copy.tone]}>{copy.tag}</Badge>}>
-      <p className="mt-3 text-lg font-semibold leading-snug">{copy.headline}</p>
+      <p className="mt-3 text-xl font-semibold">{copy.headline}</p>
       {copy.detail && <p className="mt-1 text-sm text-muted">{copy.detail}</p>}
       <div className="mt-4 flex flex-wrap gap-2 empty:hidden">
         {copy.action && (

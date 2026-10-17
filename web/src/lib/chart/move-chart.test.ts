@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartGeometry, chartLabels, type Series } from "./move-chart";
+import { BAND_LABEL_MIN_HEIGHT, chartGeometry, chartLabels, placeLabels, type Series } from "./move-chart";
 
 const MOVES = [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30];
 const lp: Series = { id: "lp", points: MOVES.map((move) => ({ move, value: 1000 * Math.sqrt(1 + move / 100) })) };
@@ -75,5 +75,26 @@ describe("chartLabels", () => {
     const wide = chartLabels({ series: [lp], width: 400 });
     expect(wide.map((l) => l.side)).toEqual(["left", "today", "right"]);
     expect(wide[2]).toMatchObject({ move: 30, value: lp.points[12].value });
+  });
+});
+
+describe("placeLabels (12 px chart text, U6)", () => {
+  const y = (value: number) => 100 - value;
+  const plot = { top: 0, bottom: 200 };
+
+  it("keeps two labels on the same side at least 14 px apart", () => {
+    const [a, b] = placeLabels(
+      [
+        { id: "lp", side: "today", move: 0, value: 50 },
+        { id: "sp", side: "today", move: 0, value: 54 },
+      ],
+      y,
+      plot,
+    );
+    expect(Math.abs(a.y - b.y)).toBeGreaterThanOrEqual(14);
+  });
+
+  it("shows a band label only from 14 px of band height", () => {
+    expect(BAND_LABEL_MIN_HEIGHT).toBe(14);
   });
 });

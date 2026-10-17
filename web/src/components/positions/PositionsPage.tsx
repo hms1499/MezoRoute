@@ -66,7 +66,7 @@ function Positions({ account }: { account: Address }) {
   const header = (
     <>
       {chainId !== network.chainId && <WrongNetworkAlert />}
-      <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight">Your positions</h1>
+      <h1 className="text-title">Your positions</h1>
     </>
   );
   if (view.empty && pool?.empty) {

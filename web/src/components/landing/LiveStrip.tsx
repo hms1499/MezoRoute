@@ -66,7 +66,7 @@ function Item({ label, sub, prose = false, children }: { label: string; sub?: st
   return (
     <div className="min-w-0 py-5">
       <p className="text-xs text-night-muted">{label}</p>
-      <p className={cx("mt-1 text-lg font-medium text-night-ink sm:text-xl", !prose && "font-mono")}>{children}</p>
+      <p className={cx("mt-1 text-xl font-medium text-night-ink", !prose && "font-mono")}>{children}</p>
       {sub && <p className="text-xs text-night-muted">{sub}</p>}
     </div>
   );

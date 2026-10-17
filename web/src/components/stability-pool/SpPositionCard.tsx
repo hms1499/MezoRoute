@@ -26,7 +26,7 @@ export function SpPositionCard({
   claiming: boolean;
 }) {
   return (
-    <Card title="Stability Pool" aside={<span className="text-lg font-semibold">{musd(view.value)}</span>}>
+    <Card title="Stability Pool" aside={<span className="font-mono text-xl font-medium">{musd(view.value)}</span>}>
       <dl className="mt-3 stat-list">
         <Stat label="Deposit now" sub="After absorbed liquidations">
           {musd(view.deposit)}

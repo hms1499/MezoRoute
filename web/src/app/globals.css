@@ -47,7 +47,7 @@
   }
   /* A panel's key figure (U3 §3.2): the only place outside the landing that uses the mono face. */
   .figure {
-    @apply font-mono text-[28px] font-medium leading-8 tracking-tight;
+    @apply font-mono text-figure;
   }
   .stat-list {
     @apply grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 text-sm;
@@ -87,10 +87,7 @@
     border-radius: var(--landing-radius-pill);
   }
   .landing-section-title {
-    color: theme("colors.ink");
-    font-size: 1rem;
-    font-weight: 600;
-    line-height: 1.5rem;
+    @apply text-base font-semibold text-ink;
   }
   .landing-chart-surface {
     border: 1px solid theme("colors.line");

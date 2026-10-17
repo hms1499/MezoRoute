@@ -11,7 +11,7 @@ export function TrustRow() {
   const [ref, seen] = useInView<HTMLElement>();
   return (
     <section ref={ref} data-seen={seen} aria-labelledby="trust-heading" className="landing-section landing-reveal">
-      <h2 id="trust-heading" className="landing-section-title text-2xl tracking-tight">
+      <h2 id="trust-heading" className="text-headline text-ink">
         Before you connect
       </h2>
       <ul className="mt-6 grid grid-cols-1 gap-6 text-sm sm:grid-cols-2 lg:grid-cols-4">

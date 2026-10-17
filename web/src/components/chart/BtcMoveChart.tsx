@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { chartGeometry, chartLabels, type Band, type ChartLabel, type Series, type SeriesId } from "@/lib/chart/move-chart";
-import { colors } from "@/lib/ui/tokens";
+import { BAND_LABEL_MIN_HEIGHT, chartGeometry, chartLabels, placeLabels, type Band, type Series, type SeriesId } from "@/lib/chart/move-chart";
+import { CHART_FONT_PX, colors } from "@/lib/ui/tokens";
 import { cx } from "@/lib/ui/cx";
 
 export type MovePlot = {
@@ -105,8 +105,8 @@ function Plot({
         {g.bandRects.map((band) => (
           <g key={band.label}>
             <rect x={g.plot.left} y={band.y} width={g.plot.right - g.plot.left} height={Math.max(0, band.height)} fill={BAND_FILL[band.tone]} />
-            {band.height >= 12 && (
-              <text x={g.plot.right - 4} y={band.y + 11} textAnchor="end" fontSize={10} fill={BAND_TEXT[band.tone]}>
+            {band.height >= BAND_LABEL_MIN_HEIGHT && (
+              <text x={g.plot.right - 4} y={band.y + CHART_FONT_PX} textAnchor="end" fontSize={CHART_FONT_PX} fill={BAND_TEXT[band.tone]}>
                 {band.label}
               </text>
             )}
@@ -138,7 +138,7 @@ function Plot({
             x={label.side === "left" ? g.plot.left + 2 : label.side === "right" ? g.plot.right - 2 : today + 4}
             y={label.y}
             textAnchor={label.side === "right" ? "end" : "start"}
-            fontSize={11}
+            fontSize={CHART_FONT_PX}
             fontFamily="var(--font-mono)"
             fill={STROKE[label.id]}
             stroke={halo}
@@ -149,7 +149,7 @@ function Plot({
             {plot.format(label.value)}
           </text>
         ))}
-        <g fontSize={10} fontFamily="var(--font-mono)" fill={colors.muted}>
+        <g fontSize={CHART_FONT_PX} fontFamily="var(--font-mono)" fill={colors.muted}>
           <text x={g.plot.left} y={height - 4}>
             −30%
           </text>
@@ -163,18 +163,4 @@ function Plot({
       </svg>
     </figure>
   );
-}
-
-/**
- * Labels sit above their point; where two would touch at the same move, the lower value goes below its point.
- * Both stay inside the plot, clear of the axis labels underneath (a low −30% value reached them at 360 px).
- */
-function placeLabels(labels: ChartLabel[], y: (value: number) => number, plot: { top: number; bottom: number }): (ChartLabel & { y: number })[] {
-  return labels.map((label) => {
-    const twin = labels.find((other) => other !== label && other.side === label.side);
-    const close = twin !== undefined && Math.abs(y(label.value) - y(twin.value)) < 14;
-    const below = close && (label.value < twin.value || (label.value === twin.value && label.id > twin.id));
-    const at = below ? y(label.value) + 14 : y(label.value) - 6;
-    return { ...label, y: Math.min(plot.bottom - 3, Math.max(plot.top + 9, at)) };
-  });
 }

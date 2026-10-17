@@ -18,7 +18,7 @@ export function LpPositionCard({ lp, history }: { lp: LpView; history: History }
       aside={
         <div className="text-right">
           <p className="text-xs text-muted">Value at the BTC price</p>
-          <p className="font-mono text-lg font-medium">{musd(lp.value)}</p>
+          <p className="font-mono text-xl font-medium">{musd(lp.value)}</p>
         </div>
       }
     >
