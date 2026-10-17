@@ -1,12 +1,13 @@
 "use client";
 
 import { Check, LoaderCircle, Wallet, X } from "lucide-react";
+import type { ReactNode } from "react";
 import type { Step } from "@/lib/tx/stepper";
 import { cx } from "@/lib/ui/cx";
 import { stepVisual, type StepVisual } from "@/lib/ui/step-visual";
 import { Button } from "./Button";
 
-export type StepCopy = { title: string; detail: string; action: string };
+export type StepCopy = { title: ReactNode; detail: string; action: string };
 
 const STATUS_TEXT: Partial<Record<StepVisual, string>> = {
   wallet: "Check your wallet…",

@@ -1,4 +1,5 @@
 import { ArrowLeft, Check, Clock, LoaderCircle, X } from "lucide-react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { cx } from "@/lib/ui/cx";
 import type { StepStatus } from "@/lib/ui/step-visual";
@@ -15,7 +16,7 @@ export function PageHeader({
   labels = DEFAULT_LABELS,
 }: {
   back: { href: string; label: string };
-  title?: string;
+  title?: ReactNode;
   step?: 1 | 2 | 3;
   /** The current step's state, when it is a transaction (the receipt's Done step). */
   stepStatus?: StepStatus;

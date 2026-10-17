@@ -2,6 +2,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Stat } from "@/components/ui/Stat";
+import { Term } from "@/components/ui/Term";
 import { BlockNotice } from "@/components/lp/BlockNotice";
 import { btc, musd, signedMusd } from "@/components/lp/units";
 import type { HistoryStatus } from "@/lib/stability-pool/cost-basis";
@@ -26,12 +27,19 @@ export function SpPositionCard({
   claiming: boolean;
 }) {
   return (
-    <Card title="Stability Pool" aside={<span className="font-mono text-xl font-medium">{musd(view.value)}</span>}>
+    <Card title={<Term id="stabilityPool">Stability Pool</Term>} aside={<span className="font-mono text-xl font-medium">{musd(view.value)}</span>}>
       <dl className="mt-3 stat-list">
         <Stat label="Deposit now" sub="After absorbed liquidations">
           {musd(view.deposit)}
         </Stat>
-        <Stat label="Pending BTC gain" sub={`≈ ${musd(view.gainValue)}`}>
+        <Stat
+          label={
+            <>
+              Pending <Term id="btcGain">BTC gain</Term>
+            </>
+          }
+          sub={`≈ ${musd(view.gainValue)}`}
+        >
           {btc(view.gain)}
         </Stat>
         <Stat label="Value now (estimated)" strong>

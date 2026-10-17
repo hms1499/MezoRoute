@@ -1,15 +1,20 @@
 "use client";
 
 import { Card } from "@/components/ui/Card";
-import { StepList } from "@/components/ui/StepList";
+import { StepList, type StepCopy } from "@/components/ui/StepList";
+import { Term } from "@/components/ui/Term";
 import type { EntryBlock } from "@/lib/routes/musd-btc-lp/gate";
 import type { StepKind } from "@/lib/routes/musd-btc-lp/steps";
 import { useEntryFlow, type EntryFlowInput } from "@/lib/routes/musd-btc-lp/useEntryFlow";
 import { BlockNotice } from "./BlockNotice";
 
-const COPY: Record<StepKind, { title: string; detail: string; action: string }> = {
+const COPY: Record<StepKind, StepCopy> = {
   permit: {
-    title: "Sign a MUSD permit",
+    title: (
+      <>
+        Sign a MUSD <Term id="permit">permit</Term>
+      </>
+    ),
     detail: "Lets MezoRoute take exactly this amount in the next step. Signing costs no gas.",
     action: "Sign",
   },

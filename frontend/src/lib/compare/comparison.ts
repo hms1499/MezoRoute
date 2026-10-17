@@ -1,6 +1,6 @@
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { exposure, lpValueAfterDrop, type Drawdown } from "@/lib/exposure/exposure";
-import { quoteEntry } from "@/lib/quote/entry";
+import { entryValue, quoteEntry } from "@/lib/quote/entry";
 import { afterEntry } from "@/lib/routes/musd-btc-lp/after-entry";
 import { afterSpDeposit } from "@/lib/stability-pool/after-deposit";
 
@@ -39,14 +39,7 @@ export function compareRoutes(input: { snapshot: DashboardSnapshot; amount: bigi
   const quote = quoteEntry(pool, amount, input.executorFeeBps ?? 0n);
   let lp: LpComparison = { status: "unavailable" };
   if (quote) {
-    const { after, liquidity } = quote;
-    const shareMusd = (liquidity * after.reserveMusd) / after.totalSupply;
-    const shareBtc = (liquidity * after.reserveBtc) / after.totalSupply;
-    // The pool's price before the trade: the oracle sat ≈3% above the testnet pool (QA), and the
-    // post-trade price includes the user's own swap, which pushed the price up; either one made a fresh
-    // deposit look like a gain (review, 15 Oct 2026). The swap fills below this price, so the value never
-    // exceeds the amount.
-    const positionValue = shareMusd + (shareBtc * pool.reserveMusd) / pool.reserveBtc;
+    const positionValue = entryValue(pool, quote);
     lp = {
       status: "ok",
       fee: quote.fee,

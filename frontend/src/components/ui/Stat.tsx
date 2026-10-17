@@ -9,8 +9,8 @@ export function Stat({
   tone,
   children,
 }: {
-  label: string;
-  sub?: string;
+  label: ReactNode;
+  sub?: ReactNode;
   strong?: boolean;
   tone?: "btc";
   children: ReactNode;

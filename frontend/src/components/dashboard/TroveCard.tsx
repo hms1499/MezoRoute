@@ -10,6 +10,7 @@ import { WAD } from "@/lib/math";
 import { CR_SAFETY_FLOOR } from "@/lib/trove/constants";
 import { collateralRatio, liquidationPrice, type TroveHealth } from "@/lib/trove/health";
 import { Stat } from "@/components/ui/Stat";
+import { Term } from "@/components/ui/Term";
 
 const HEALTH_TAG: Record<TroveHealth, { label: string; tone: "accent" | "warning" | "danger" }> = {
   healthy: { label: "Healthy", tone: "accent" },
@@ -32,7 +33,11 @@ export function TroveCard({
 
   if (!trove) {
     return (
-      <Card level="section" title="Your Trove">
+      <Card level="section" title={
+          <>
+            Your <Term id="trove">Trove</Term>
+          </>
+        }>
         <p className="mt-2 text-sm text-muted">No open Trove.</p>
         <ButtonLink href={network.mezoAppUrl} external variant="secondary" size="sm" className="mt-4">
           Open Mezo app
@@ -45,7 +50,11 @@ export function TroveCard({
   const liquidation = liquidationPrice(trove, protocol.mcr);
   const tag = health ? HEALTH_TAG[health] : null;
   return (
-    <Card level="section" title="Your Trove" aside={tag && <Badge tone={tag.tone}>{tag.label}</Badge>}>
+    <Card level="section" title={
+          <>
+            Your <Term id="trove">Trove</Term>
+          </>
+        } aside={tag && <Badge tone={tag.tone}>{tag.label}</Badge>}>
       <dl className="mt-3 stat-list">
         <Stat label="Collateral" sub={`≈ ${formatToken((trove.collateral * price) / WAD, 18, 2)} MUSD`}>
           {formatToken(trove.collateral)} BTC
@@ -53,11 +62,15 @@ export function TroveCard({
         <Stat label="Debt" sub={`includes ${formatToken(trove.interest, 18, 2, "up")} MUSD interest`}>
           {formatToken(trove.debt, 18, 2, "up")} MUSD
         </Stat>
-        <Stat label="Collateral ratio">{cr === null ? "—" : formatPercent(cr)}</Stat>
-        <Stat label="Liquidation price">
+        <Stat label={<Term id="collateralRatio">Collateral ratio</Term>}>{cr === null ? "—" : formatPercent(cr)}</Stat>
+        <Stat label={<Term id="liquidationPrice">Liquidation price</Term>}>
           {liquidation === null ? "—" : `${formatToken(liquidation, 18, 0, "up")} MUSD / BTC`}
         </Stat>
-        <Stat label="Borrowing room" sub={`keeps CR ≥ ${formatPercent(CR_SAFETY_FLOOR, 0)}`}>
+        <Stat label="Borrowing room" sub={
+            <>
+              keeps CR ≥ <Term id="safetyFloor">{formatPercent(CR_SAFETY_FLOOR, 0)}</Term>
+            </>
+          }>
           {formatToken(borrowable, 18, 2)} MUSD
         </Stat>
       </dl>

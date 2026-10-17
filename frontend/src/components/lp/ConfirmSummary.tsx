@@ -2,7 +2,9 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { Stat } from "@/components/ui/Stat";
+import { Term } from "@/components/ui/Term";
 import { formatBps, formatPercent } from "@/lib/format";
+import { entryValue } from "@/lib/quote/entry";
 import { QUOTE_TTL_MS } from "@/lib/routes/musd-btc-lp/gate";
 import type { EntryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import type { LpRouteData } from "@/lib/routes/musd-btc-lp/snapshot";
@@ -42,8 +44,21 @@ export function ConfirmSummary({
               <Stat label="Borrowing fee" sub="added to your Trove debt">
                 {musd(preview.borrow.effect.fee)}
               </Stat>
-              <Stat label="Trove debt after">{musd(preview.borrow.effect.newDebt)}</Stat>
-              <Stat label="Collateral ratio after" strong>
+              <Stat
+                label={
+                  <>
+                    <Term id="trove">Trove</Term> debt after
+                  </>
+                }
+              >{musd(preview.borrow.effect.newDebt)}</Stat>
+              <Stat
+                label={
+                  <>
+                    <Term id="collateralRatio">Collateral ratio</Term> after
+                  </>
+                }
+                strong
+              >
                 {preview.borrow.effect.newCr === null ? "—" : formatPercent(preview.borrow.effect.newCr, 1)}
               </Stat>
             </>
@@ -54,7 +69,7 @@ export function ConfirmSummary({
           <Stat label="Deposited to the pool" sub={`at least ${musd(minimums.minMusdAdded)} + ${btc(minimums.minBtcAdded)}`}>
             {musd(quote.musdAdded)} + {btc(quote.btcAdded)}
           </Stat>
-          <Stat label="LP tokens" sub={`at least ${lp(minimums.minLpOut)}`}>
+          <Stat label="LP tokens" sub={`≈ ${musd(entryValue(data.snapshot.pool, quote))} at the pool price · at least ${lp(minimums.minLpOut)}`}>
             {lp(quote.liquidity)}
           </Stat>
           <Stat label="Slippage">{formatBps(slippageBps, 1)}</Stat>

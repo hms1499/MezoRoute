@@ -7,12 +7,12 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 import { cx } from "@/lib/ui/cx";
-import { isCurrentPath } from "@/lib/ui/nav";
+import { isCurrentPath, onMobile } from "@/lib/ui/nav";
 import { NetworkSwitch } from "./NetworkSwitch";
 
 const NAV = [
-  { href: "/", label: "Dashboard", mobile: false },
-  { href: "/positions/", label: "Positions", mobile: true },
+  { href: "/", label: "Dashboard" },
+  { href: "/positions/", label: "Positions" },
 ];
 
 /** Shared header (spec §9): logo, nav with the current page marked, Testnet/Mainnet switch, wallet button. */
@@ -33,7 +33,7 @@ export function Header() {
               aria-current={current ? "page" : undefined}
               className={cx(
                 "min-h-9 items-center rounded-full px-2 text-sm font-medium transition-colors duration-150 sm:px-3",
-                item.mobile ? "inline-flex" : "hidden sm:inline-flex",
+                onMobile(item.href, pathname) ? "inline-flex" : "hidden sm:inline-flex",
                 current ? "bg-surface text-ink" : "text-muted hover:text-ink",
               )}
             >
