@@ -1,6 +1,6 @@
 // Copies the MezoRouteExecutor ABI and the Tigris Router/Pool custom errors from the Foundry build
 // into typed modules. Re-run after any contract change: `cd contracts && forge build`, then
-// `npm run sync-abi` in web/.
+// `npm run sync-abi` in frontend/.
 import { readFileSync, writeFileSync } from "node:fs";
 
 function readAbi(contract) {

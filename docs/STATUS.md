@@ -56,7 +56,7 @@ The user chose to have **their own MetaMask account deploy the executor and run 
 4. **User runs the broadcast** (it prompts for the keystore password): add `--account mezo-mainnet --broadcast` to the dry-run command. Deploying is irreversible, so confirm first.
 5. **Agent:**
    - verify with `forge verify-contract … --chain 31612 --verifier blockscout --verifier-url https://api.explorer.mezo.org/api`;
-   - set `networks.mainnet.executor = { address, feeBps: 10n, deployBlock }` in `web/src/lib/config/networks.ts` and update the "no mainnet executor before M1" test;
+   - set `networks.mainnet.executor = { address, feeBps: 10n, deployBlock }` in `frontend/src/lib/config/networks.ts` and update the "no mainnet executor before M1" test;
    - rebuild and QA locally.
 6. **Round trips through the UI** (Wave 1 gate). Do them with the user's MetaMask:
    - Stability Pool deposit → withdraw, **first**: withdrawals pause if any Trove falls below MCR, and the lowest mainnet Trove was at 116% ICR against 110% on 15 Oct.
@@ -86,7 +86,7 @@ Optional prep that needs no funds:
 
 - T0 research for the deck: 1–2 quotes from Mezo Discord users, and the step count for borrow → LP in the Mezo app.
 - Report to the Mezo team (Discord):
-  - Passport/OrangeKit hard-code the dead relayer `test.mezo.org` (patched locally by `web/scripts/patch-relayer.mjs`).
+  - Passport/OrangeKit hard-code the dead relayer `test.mezo.org` (patched locally by `frontend/scripts/patch-relayer.mjs`).
   - A testnet RPC backend returns intrinsic-only gas estimates and null receipts for mined transactions.
 - Unconfirmed: spec §16 says "product code starts on 16 Oct"; we don't know whether this is a hackathon rule.
 
@@ -151,7 +151,7 @@ Optional prep that needs no funds:
   - user's Unisat Safe `0x4543ba6E0D1cC63B9eDA1D1E61853A59Cf2ae22D`
   - deployer `0xd74f…2B49`, about 1,840 MUSD; its key is in `contracts/.env` (testnet only)
 - **Local QA:**
-  - Run `cd web && npm run build`, then serve `web/out` with `python3 -m http.server <port> --bind 127.0.0.1`. Restart the server after every rebuild, because `next build` recreates `out/`.
+  - Run `cd frontend && npm run build`, then serve `frontend/out` with `python3 -m http.server <port> --bind 127.0.0.1`. Restart the server after every rebuild, because `next build` recreates `out/`.
   - Drive the app with Playwright. Use a keyless mock EIP-1193 wallet injected with `context.addInitScript`: it answers `eth_accounts`/`eth_chainId` (`0x7b7b` testnet, `0x7b7c` mainnet), forwards other calls to the RPC, announces itself through EIP-6963 as MetaMask, and sets `localStorage["mezoroute.network"]`.
   - For live signing, use a local signer process. Never put a key in a transcript.
 - **Tooling quirks:**
