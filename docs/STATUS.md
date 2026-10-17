@@ -22,15 +22,15 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 | U1 UI polish | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u1-ui-polish-design.md`, plan `docs/superpowers/plans/2026-10-15-u1-ui-polish.md` (11 tasks, all done) |
 | U2 landing redesign | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u2-landing-redesign-design.md`, plan `docs/superpowers/plans/2026-10-15-u2-landing-redesign.md` |
 | U3 one identity, landing to app | Done (16 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-16-u3-app-identity-design.md`, plan `docs/superpowers/plans/2026-10-16-u3-app-identity.md` (13 tasks); branch `feat/u3-app-identity`. Fixes the 10 findings of the 16 Oct design review |
-| U4 homepage visual system refinement | Spec written (17 Oct), awaiting user review | `docs/superpowers/specs/2026-10-17-homepage-visual-system-design.md`; no implementation started |
+| U4 homepage visual system refinement | Spec approved; plan written (17 Oct), awaiting user review | `docs/superpowers/specs/2026-10-17-homepage-visual-system-design.md`, `docs/superpowers/plans/2026-10-17-homepage-visual-system.md`; no implementation started |
 | V1 Vercel production + QA on both wallet types | Not started | The current preview sits behind a Vercel login; judges need a public URL |
 | D1 README, deck, 2-minute video, submission form | Not started | Needs V1 and M1 |
 
 Tests at `main` (16 Oct): 766 Vitest and 75 Foundry. `npm run build` passes (First Load JS of `/` 92 kB).
 
-## Next: U4 review → plan → implementation, then V1 → D1
+## Next: U4 plan review → implementation, then V1 → D1
 
-1. U4: user reviews the homepage visual-system spec; after approval, write and review the plan, then select an execution method.
+1. U4: user reviews the implementation plan and selects an execution method before code changes.
 2. V1: public Vercel production URL; QA on both wallet types. Bitcoin wallets on mainnet can no longer deposit BTC natively (bridge-in closed 13 Oct).
 3. D1: README, deck, video, submission form.
 
@@ -167,7 +167,7 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
-- **17 Oct 2026 (Codex):** U4 homepage visual-system direction approved in chat. Wrote the spec on `codex/homepage-visual-system`; implementation has not started. Next: user reviews the spec, then a separate implementation plan.
+- **17 Oct 2026 (Codex):** U4 homepage visual-system direction and spec approved by the user. Wrote the implementation plan on `codex/homepage-visual-system`; implementation has not started. Next: user reviews the plan and selects an execution method.
 - **16 Oct 2026 (Claude Code):** U3 final review (fresh reviewer): 1 Critical and 2 Important fixed with failing-first checks (toast contrast with a palette guard test, entry-cap balance action, hero line draw), plus BTC exposure as a section; minors deferred above. After user review the empty Positions state and the invalid-link receipt went full width. `feat/u3-app-identity` merged into `main` and pushed at the user's request. Next: V1.
 - **16 Oct 2026 (Claude Code):** U3 implemented inline (executing-plans), 13 tasks: one dark palette (SP lavender, orange = BTC only), the "If BTC moves" chart in the hero and every exposure section, panel/section levels, no summary strip, Compare starts filled, one column per flow, one numbered sequence per page, balance-shortfall recovery, positions labels, app-owned account button. QA: 76 page loads (4 widths × all screens × both networks) with no horizontal scroll, keyboard rings on every stop, reduced motion, dark wallet modal. Rulings in the ledger (`.superpowers/`, git-ignored) are listed in the final message. Next: final whole-branch review, then merge on the user's word, then V1.
 - **16 Oct 2026 (Claude Code):** design review of landing + app (Playwright, mock wallet): 10 findings, the main one is the split identity between the dark landing and the light app. The user asked to fix all ten and delegated the design calls; U3 spec written on `feat/u3-app-identity` (dark app on the night palette, Stability Pool turns lavender so orange means BTC only, an "If BTC moves" chart in the hero and the app, one column per flow). Next: user reviews the spec, then the plan.
