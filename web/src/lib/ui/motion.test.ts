@@ -1,5 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { countUpAt, easeOutCubic, interpolateBigint, isRevealed } from "./motion";
+import { countUpAt, easeOutCubic, interpolateBigint, isRevealed, LANDING_MOTION_MS } from "./motion";
+
+describe("landing motion timings", () => {
+  it("keeps interaction, reveal, chart, and value motion on one timing scale", () => {
+    expect(LANDING_MOTION_MS).toEqual({
+      control: 150,
+      card: 200,
+      reveal: 600,
+      chartDraw: 1200,
+      timeline: 1400,
+      livePulse: 1800,
+      valueFlash: 700,
+      simulatorCount: 450,
+      liveCount: 1100,
+    });
+  });
+});
 
 describe("easeOutCubic", () => {
   it("runs from 0 to 1, fast first, and clamps outside the range", () => {

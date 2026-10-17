@@ -46,16 +46,17 @@
 - Modify: `web/src/lib/ui/motion.ts`
 - Modify: `web/src/lib/ui/motion.test.ts`
 - Modify: `web/src/components/landing/hooks.ts`
+- Modify: `web/src/components/landing/Simulator.tsx`
 - Modify: `web/src/components/landing/LiveStrip.tsx`
 - Modify: `web/src/app/globals.css`
 
 **Interfaces:**
-- Produce `LANDING_MOTION_MS` in `motion.ts` with exact values: `control: 150`, `reveal: 600`, `chartDraw: 1200`, `simulatorCount: 450`, `liveCount: 1100`.
-- CSS uses matching custom properties `--landing-motion-control`, `--landing-motion-reveal`, and `--landing-motion-chart` for transition and keyframe durations.
+- Produce `LANDING_MOTION_MS` in `motion.ts` with exact values: `control: 150`, `card: 200`, `reveal: 600`, `chartDraw: 1200`, `timeline: 1400`, `livePulse: 1800`, `valueFlash: 700`, `simulatorCount: 450`, `liveCount: 1100`.
+- CSS uses matching custom properties `--landing-motion-control`, `--landing-motion-card`, `--landing-motion-reveal`, `--landing-motion-chart`, `--landing-motion-timeline`, `--landing-motion-live-pulse`, and `--landing-motion-value-flash`.
 - Existing `countUpAt(from, to, elapsedMs, durationMs)` behavior stays unchanged; hooks and live strip consume the named TS values.
 
 - [ ] **Step 1: Write failing motion-token tests.**
-  - Add `LANDING_MOTION_MS` assertions for all five exact values.
+  - Add `LANDING_MOTION_MS` assertions for all nine exact values.
   - Keep the existing zero-duration assertion proving reduced motion returns the target immediately.
 
 - [ ] **Step 2: Run the targeted test and confirm it fails.**
@@ -64,8 +65,8 @@
 
 - [ ] **Step 3: Implement named values and wire callers.**
   - Export the constant from `motion.ts`.
-  - Replace the literal `450` in the landing simulator count-up and `1_100` in `LiveStrip` with the named values.
-  - Define the matching CSS custom properties and use them for control transitions, section reveal, and chart draw. Keep the live ping as the only repeating animation.
+  - Replace the literal `450` in `Simulator` and `1_100` in `LiveStrip` with the named values.
+  - Define the matching CSS custom properties and use them for control/card transitions, section reveal, chart draw, timeline fill, live ping, and value flash. Keep the live ping as the only repeating animation.
 
 - [ ] **Step 4: Verify the motion tests.**
   - Run: `cd web && npm test -- src/lib/ui/motion.test.ts`

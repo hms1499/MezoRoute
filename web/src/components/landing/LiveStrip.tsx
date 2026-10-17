@@ -6,6 +6,7 @@ import { explorerAddressUrl, networks } from "@/lib/config/networks";
 import { formatToken } from "@/lib/format";
 import { compactMusd, type LiveStrip as Strip } from "@/lib/landing/view";
 import { useCountUp } from "./hooks";
+import { LANDING_MOTION_MS } from "@/lib/ui/motion";
 
 const executor = networks.mainnet.executor;
 
@@ -68,5 +69,5 @@ function Item({ label, sub, children }: { label: string; sub?: string; children:
 }
 
 function CountFromZero({ value, format }: { value: bigint; format: (value: bigint) => string }) {
-  return <>{format(useCountUp(value, 1_100, 0n))}</>;
+  return <>{format(useCountUp(value, LANDING_MOTION_MS.liveCount, 0n))}</>;
 }

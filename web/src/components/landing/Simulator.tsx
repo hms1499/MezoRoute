@@ -161,7 +161,7 @@ function Cell({ cell }: { cell: SimCell }) {
 
 /** Counts to a new value and flashes once (the key remounts the span to replay the flash). */
 function CountingFigure({ value, format }: { value: bigint; format: (value: bigint) => string }) {
-  const shown = useCountUp(value, 450);
+  const shown = useCountUp(value);
   return (
     <span key={value.toString()} className="landing-flash rounded px-0.5">
       {format(shown)}
