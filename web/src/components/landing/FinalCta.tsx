@@ -11,7 +11,7 @@ export function FinalCta() {
         Bitcoin wallet or EVM wallet, same routes.
       </h2>
       <div className="mt-6 flex justify-center">
-        <ConnectCta variant="night" />
+        <ConnectCta variant="primary" />
       </div>
     </section>
   );
