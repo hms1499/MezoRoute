@@ -38,10 +38,12 @@ export function compactMusd(value: bigint): string {
   return value >= 1_000_000n * WAD ? `${formatToken(value, 24, 2)}M MUSD` : `${formatToken(value, 18, 0)} MUSD`;
 }
 
-export type SimCell = { kind: "text"; text: string } | { kind: "figure"; value: bigint; format: (value: bigint) => string };
+/** A text cell; `figure` marks a number written as text, which the simulator sets in mono like the counting figures. */
+export type SimCell = { kind: "text"; text: string; figure?: true } | { kind: "figure"; value: bigint; format: (value: bigint) => string };
 export type SimRow = { label: string; lp: SimCell; sp: SimCell; lpTone?: "btc" };
 
 const text = (value: string): SimCell => ({ kind: "text", text: value });
+const figureText = (value: string): SimCell => ({ kind: "text", text: value, figure: true });
 const figure = (value: bigint, format: (value: bigint) => string): SimCell => ({ kind: "figure", value, format });
 const musd = (value: bigint) => `${formatToken(value, 18, 2)} MUSD`;
 
@@ -53,13 +55,13 @@ export function simulatorRows(sim: LandingSimulation): SimRow[] {
     { label: "Return source", lp: text("Swap fees"), sp: text("Liquidation BTC") },
     {
       label: "Last 30 days",
-      lp: text(bt?.lp ? signedChange(bt.lp.valueNow, sim.amount) : "Unavailable"),
-      sp: text(!bt ? "Unavailable" : bt.sp.liquidated ? signedChange(bt.sp.valueNow, sim.amount) : "No liquidations"),
+      lp: bt?.lp ? figureText(signedChange(bt.lp.valueNow, sim.amount)) : text("Unavailable"),
+      sp: !bt ? text("Unavailable") : bt.sp.liquidated ? figureText(signedChange(bt.sp.valueNow, sim.amount)) : text("No liquidations"),
     },
     {
       label: "BTC exposure",
       lp: sim.lp.status === "ok" ? figure(sim.lp.btcAdded, (v) => `≈ +${formatToken(v)} BTC`) : quoteMissing,
-      sp: text("0 BTC"),
+      sp: figureText("0 BTC"),
       lpTone: "btc",
     },
     {
@@ -67,7 +69,7 @@ export function simulatorRows(sim: LandingSimulation): SimRow[] {
       lp: sim.lp.status === "ok" ? figure(sim.lp.valueAfterDrop, (v) => `≈ ${musd(v)}`) : quoteMissing,
       sp: figure(sim.sp.valueAfterDrop, musd),
     },
-    { label: "MezoRoute fee", lp: text(formatBps(sim.executorFeeBps)), sp: text("None") },
+    { label: "MezoRoute fee", lp: figureText(formatBps(sim.executorFeeBps)), sp: text("None") },
   ];
 }
 
