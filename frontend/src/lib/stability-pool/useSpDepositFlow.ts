@@ -8,7 +8,7 @@ import { getAccount, simulateContract } from "wagmi/actions";
 import { useErrorToast } from "@/components/ErrorToast";
 import { stabilityPoolAbi } from "@/lib/abi/musd";
 import { useNetwork } from "@/lib/config/network-context";
-import { decodeError } from "@/lib/errors/decode";
+import { decodeError, toastsInStepper } from "@/lib/errors/decode";
 import { ALLOWANCE, AMOUNT_TOO_SMALL } from "@/lib/errors/outcomes";
 import { APPROVE_GAS, SP_DEPOSIT_GAS } from "@/lib/quote/gas";
 import { BlockedError } from "@/lib/tx/errors";
@@ -37,7 +37,7 @@ export function useSpDepositFlow(input: SpDepositFlowInput): { stepper: Stepper<
   const config = useConfig();
   const { network } = useNetwork();
   const router = useRouter();
-  const { showError } = useErrorToast();
+  const { showError, dismiss } = useErrorToast();
   const [stepper, dispatch] = useReducer(stepperReducer<SpStepKind>, input.plan, createStepper<SpStepKind>);
   const stepperRef = useRef(stepper);
   stepperRef.current = stepper;
@@ -92,8 +92,10 @@ export function useSpDepositFlow(input: SpDepositFlowInput): { stepper: Stepper<
       if (step.kind === "approve") await approve(sendPin);
       else await deposit(sendPin);
     } catch (error) {
-      dispatch({ type: "failed", error: decodeError(error, network) });
-      showError(error, { retry: () => void runActive() });
+      const decoded = decodeError(error, network);
+      dispatch({ type: "failed", error: decoded });
+      if (toastsInStepper(decoded)) showError(error, { retry: () => void runActive() });
+      else dismiss();
     }
   }
 

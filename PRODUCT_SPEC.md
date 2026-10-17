@@ -658,7 +658,7 @@ The exposure module is pure TypeScript with unit tests; it is reused by the Wave
 | Smart-account wallet needs an approval | "Your Bitcoin wallet approves the exact amount in a separate transaction." | Approve |
 | Quote expired | "Pool state changed; refresh your quote." | Refresh quote |
 | Price impact too high | "This trade would lose too much value at current liquidity." | Reduce amount |
-| User rejected signature | "Transaction was not signed." | Try again |
+| User rejected signature | "You cancelled this in your wallet." (neutral; a stepper shows it on the step, no toast — U7) | Try again |
 | Slippage revert | "Output fell below your minimum." | Refresh quote |
 | RPC unavailable | "Mezo testnet is temporarily unavailable." | Retry |
 | BTC price feed stale | "The BTC price feed is temporarily unavailable." | Retry |

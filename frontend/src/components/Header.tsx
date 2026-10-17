@@ -19,7 +19,7 @@ const NAV = [
 export function Header() {
   const pathname = usePathname();
   return (
-    <header className="flex items-center gap-2 py-4 sm:gap-4">
+    <header className="flex items-center gap-1.5 py-4 sm:gap-4">
       <Link href="/" aria-label="MezoRoute home" className="shrink-0 rounded-lg">
         <Logo />
       </Link>
@@ -32,7 +32,7 @@ export function Header() {
               href={item.href}
               aria-current={current ? "page" : undefined}
               className={cx(
-                "min-h-9 items-center rounded-full px-2.5 text-sm font-medium transition-colors duration-150 sm:px-3",
+                "min-h-9 items-center rounded-full px-2 text-sm font-medium transition-colors duration-150 sm:px-3",
                 item.mobile ? "inline-flex" : "hidden sm:inline-flex",
                 current ? "bg-surface text-ink" : "text-muted hover:text-ink",
               )}
@@ -48,7 +48,9 @@ export function Header() {
       <ConnectButton.Custom>
         {({ account, openAccountModal, openConnectModal, mounted }) =>
           account ? (
-            <Button size="sm" variant="secondary" onClick={openAccountModal} className="text-ink">
+            // One line at 360 px: the header squeezed the label onto two (U7); tighter padding below 640 px
+            // (here and in the nav and network switch) keeps that line inside the page.
+            <Button size="sm" variant="secondary" onClick={openAccountModal} className="shrink-0 whitespace-nowrap text-ink max-sm:px-2.5">
               <Wallet aria-hidden className="hidden h-3.5 w-3.5 text-accent sm:block" />
               <span className="sm:hidden">{`${account.address.slice(0, 4)}…${account.address.slice(-2)}`}</span>
               <span className="hidden sm:inline">{account.displayName}</span>

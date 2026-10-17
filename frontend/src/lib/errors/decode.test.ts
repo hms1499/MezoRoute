@@ -27,7 +27,7 @@ import {
   TransactionReplacedError,
   TransactionRevertedError,
 } from "@/lib/tx/errors";
-import { decodeError, MAX_DETAILS } from "./decode";
+import { decodeError, MAX_DETAILS, toastsInStepper } from "./decode";
 import { PRICE_IMPACT } from "./outcomes";
 
 const testnet = networks.testnet;
@@ -75,9 +75,14 @@ describe("decodeError: wallet, relayer, and connection errors", () => {
   ])("maps %s to a rejection (spec 13)", (_name, error) => {
     expect(decodeError(error, testnet)).toEqual({
       kind: "rejected",
-      message: "Transaction was not signed.",
+      message: "You cancelled this in your wallet.",
       recovery: ["retry"],
     });
+  });
+
+  it("leaves a cancellation to the stepper's inline note and toasts every other error", () => {
+    expect(toastsInStepper(decodeError({ code: 4001, message: "Denied" }, testnet))).toBe(false);
+    expect(toastsInStepper(decodeError(new RelayError("no hash"), testnet))).toBe(true);
   });
 
   it("maps relay failures", () => {

@@ -33,7 +33,7 @@ export function StepList<K extends string>({
       {steps.map((step, index) => {
         const visual = stepVisual(step, index, active);
         const text = STATUS_TEXT[visual];
-        const canAct = index === active && (visual === "current" || visual === "failed");
+        const canAct = index === active && (visual === "current" || visual === "failed" || visual === "cancelled");
         return (
           <li key={step.kind} className="relative flex gap-4 pb-6 last:pb-0">
             {index < steps.length - 1 && (
@@ -45,6 +45,7 @@ export function StepList<K extends string>({
               <p className={cx("text-sm font-semibold", visual === "upcoming" && "text-muted")}>{copy[step.kind].title}</p>
               <p className="mt-0.5 text-sm text-muted">{copy[step.kind].detail}</p>
               {visual === "failed" && step.error && <p className="mt-2 text-sm text-danger">{step.error.message}</p>}
+              {visual === "cancelled" && step.error && <p className="mt-2 text-sm text-muted">{step.error.message}</p>}
               <div aria-live="polite" className="mt-3 empty:hidden">
                 {text && <span className="text-sm font-medium text-muted">{text}</span>}
                 {canAct && (
@@ -91,6 +92,7 @@ function StepNode({ visual }: { visual: StepVisual }) {
         </span>
       );
     case "current":
+    case "cancelled":
       return (
         <span className={cx(base, ring)}>
           <span className="h-2.5 w-2.5 rounded-full bg-accent" />

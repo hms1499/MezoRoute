@@ -40,6 +40,11 @@ const RPC_DOWN_TEXT = /failed to fetch|networkerror|load failed/i;
 /** "Copy details" stays short enough to paste into a chat. */
 export const MAX_DETAILS = 300;
 
+/** A stepper shows a cancellation as a neutral note on the step (U7), so only other errors get a toast. */
+export function toastsInStepper(decoded: DecodedError): boolean {
+  return decoded.kind !== "rejected";
+}
+
 /**
  * Maps any wallet, relayer, RPC, or revert error to a fixed message and recovery actions
  * (PRODUCT_SPEC.md §13). The first matching rule wins; the order is the F1 design's rule table.

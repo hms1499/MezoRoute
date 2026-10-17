@@ -24,8 +24,8 @@ export function NetworkSwitch() {
             onClick={() => switchNetwork(option.id)}
             className={
               active
-                ? "rounded-full bg-line px-2.5 py-1.5 font-semibold text-accent sm:px-3"
-                : "rounded-full px-2.5 py-1.5 text-muted hover:text-ink sm:px-3"
+                ? "rounded-full bg-line px-2 py-1.5 font-semibold text-accent sm:px-3"
+                : "rounded-full px-2 py-1.5 text-muted hover:text-ink sm:px-3"
             }
           >
             {option.label}

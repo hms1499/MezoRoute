@@ -82,12 +82,11 @@ describe("readinessCopy", () => {
       tone: "attention",
       tag: "Needs gas",
       headline: "You need BTC on Mezo to pay for transactions.",
-      action: { label: "Get test BTC", href: "https://faucet.test.mezo.org" },
+      actions: [{ label: "Get test BTC", href: "https://faucet.test.mezo.org" }],
     });
-    expect(readinessCopy(state("needs-gas"), { ...context, network: mainnet }).action).toEqual({
-      label: "Open Mezo app",
-      href: "https://mezo.org",
-    });
+    expect(readinessCopy(state("needs-gas"), { ...context, network: mainnet }).actions).toEqual([
+      { label: "Open Mezo app", href: "https://mezo.org" },
+    ]);
   });
 
   it("offers borrowing next to ready MUSD only to a standard wallet with room", () => {
@@ -112,21 +111,24 @@ describe("readinessCopy", () => {
       tag: "Can borrow",
       headline: "Your Trove can borrow up to 242.2 MUSD.",
       detail: "Borrow it in the Mezo app first; Borrow & Deploy needs a standard wallet signature.",
-      action: { label: "Open Mezo app", href: "https://testnet.mezo.org" },
+      actions: [{ label: "Open Mezo app", href: "https://testnet.mezo.org" }],
     });
     expect(readinessCopy(state("no-room"), context)).toEqual({
       tone: "neutral",
       tag: "No MUSD",
       headline: "Your Trove has no room to borrow above a 160% collateral ratio.",
       detail: "Add collateral in the Mezo app.",
-      action: { label: "Open Mezo app", href: "https://testnet.mezo.org" },
+      actions: [{ label: "Open Mezo app", href: "https://testnet.mezo.org" }],
     });
     expect(readinessCopy(state("no-trove"), context)).toEqual({
       tone: "neutral",
       tag: "No MUSD",
       headline: "You need MUSD to start.",
-      detail: "Open a Trove in the Mezo app to borrow MUSD against BTC.",
-      action: { label: "Open Mezo app", href: "https://testnet.mezo.org" },
+      detail: "Get free test BTC from the faucet, then borrow MUSD against it in the Mezo app. A Trove needs at least 1,800 MUSD of debt.",
+      actions: [
+        { label: "Get test BTC", href: "https://faucet.test.mezo.org" },
+        { label: "Open Mezo app", href: "https://testnet.mezo.org" },
+      ],
     });
   });
 
@@ -136,7 +138,7 @@ describe("readinessCopy", () => {
       tag: "No MUSD",
       headline: "You need MUSD to start.",
       detail: "Swap BTC for MUSD in the Mezo app. Opening a Trove needs at least 1,800 MUSD of debt.",
-      action: { label: "Open Mezo app", href: "https://mezo.org" },
+      actions: [{ label: "Open Mezo app", href: "https://mezo.org" }],
     });
   });
 });

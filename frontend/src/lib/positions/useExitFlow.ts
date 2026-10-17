@@ -8,7 +8,7 @@ import { getAccount, signTypedData, simulateContract } from "wagmi/actions";
 import { useErrorToast } from "@/components/ErrorToast";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { useNetwork } from "@/lib/config/network-context";
-import { decodeError } from "@/lib/errors/decode";
+import { decodeError, toastsInStepper } from "@/lib/errors/decode";
 import { AMOUNT_TOO_SMALL, PERMIT_EXPIRED } from "@/lib/errors/outcomes";
 import { APPROVE_GAS, EXIT_GAS } from "@/lib/quote/gas";
 import { DEADLINE_SECONDS, encodeApproveCall, NO_PERMIT } from "@/lib/routes/musd-btc-lp/params";
@@ -51,7 +51,7 @@ export function useExitFlow(input: ExitFlowInput): {
   const config = useConfig();
   const { network } = useNetwork();
   const router = useRouter();
-  const { showError } = useErrorToast();
+  const { showError, dismiss } = useErrorToast();
   const [stepper, dispatch] = useReducer(stepperReducer<ExitStepKind>, input.plan, createStepper<ExitStepKind>);
   const stepperRef = useRef(stepper);
   stepperRef.current = stepper;
@@ -144,7 +144,12 @@ export function useExitFlow(input: ExitFlowInput): {
       else if (step.kind === "approve") await approve(sendPin);
       else await exit(sendPin);
     } catch (error) {
-      dispatch({ type: "failed", error: decodeError(error, network) });
+      const decoded = decodeError(error, network);
+      dispatch({ type: "failed", error: decoded });
+      if (!toastsInStepper(decoded)) {
+        dismiss();
+        return;
+      }
       showError(error, {
         retry: () => void runActive(),
         refreshQuote: () => void input.refresh().catch(() => undefined),

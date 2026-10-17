@@ -45,7 +45,8 @@ export type ReadinessCopy = {
   tag: string;
   headline: string;
   detail?: string;
-  action?: { label: string; href: string };
+  /** External links, in order. */
+  actions?: { label: string; href: string }[];
 };
 
 const musdAmount = (value: bigint) => `${formatToken(value, 18, 2)} MUSD`;
@@ -56,6 +57,7 @@ export function readinessCopy(
 ): ReadinessCopy {
   const { musd, walletKind, network } = context;
   const mezoApp = { label: "Open Mezo app", href: network.mezoAppUrl };
+  const faucet = network.faucetUrl ? { label: "Get test BTC", href: network.faucetUrl } : null;
   const room = musdAmount(readiness.borrowable);
   switch (readiness.state) {
     case "needs-gas":
@@ -63,7 +65,7 @@ export function readinessCopy(
         tone: "attention",
         tag: "Needs gas",
         headline: "You need BTC on Mezo to pay for transactions.",
-        action: network.faucetUrl ? { label: "Get test BTC", href: network.faucetUrl } : mezoApp,
+        actions: [faucet ?? mezoApp],
       };
     case "ready":
       return {
@@ -86,7 +88,7 @@ export function readinessCopy(
         tag: "Can borrow",
         headline: `Your Trove can borrow up to ${room}.`,
         detail: "Borrow it in the Mezo app first; Borrow & Deploy needs a standard wallet signature.",
-        action: mezoApp,
+        actions: [mezoApp],
       };
     case "no-room":
       return {
@@ -94,19 +96,19 @@ export function readinessCopy(
         tag: "No MUSD",
         headline: `Your Trove has no room to borrow above a ${formatPercent(CR_SAFETY_FLOOR, 0)} collateral ratio.`,
         detail: "Add collateral in the Mezo app.",
-        action: mezoApp,
+        actions: [mezoApp],
       };
     case "no-trove":
       return {
         tone: "neutral",
         tag: "No MUSD",
         headline: "You need MUSD to start.",
-        // Mainnet's minimum net debt is 1,800 MUSD (M1a, 15 Oct 2026), so a swap is the realistic start there.
-        detail:
-          network.id === "mainnet"
-            ? "Swap BTC for MUSD in the Mezo app. Opening a Trove needs at least 1,800 MUSD of debt."
-            : "Open a Trove in the Mezo app to borrow MUSD against BTC.",
-        action: mezoApp,
+        // Both networks' minimum net debt is 1,800 MUSD (mainnet M1a, 15 Oct; testnet read 17 Oct 2026), so a
+        // swap is the realistic start on mainnet; on testnet a new wallet first needs test BTC (U7).
+        detail: faucet
+          ? "Get free test BTC from the faucet, then borrow MUSD against it in the Mezo app. A Trove needs at least 1,800 MUSD of debt."
+          : "Swap BTC for MUSD in the Mezo app. Opening a Trove needs at least 1,800 MUSD of debt.",
+        actions: faucet ? [faucet, mezoApp] : [mezoApp],
       };
   }
 }

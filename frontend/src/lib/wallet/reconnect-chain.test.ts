@@ -55,6 +55,40 @@ describe("withReconnectChain", () => {
   });
 });
 
+describe("withReconnectChain: the wallet modal", () => {
+  /** What RainbowKit hands createConnector: the wallet's list entry, from `connectorsForWallets`. */
+  const rkDetails = {
+    id: "orangekit-unisat",
+    name: "OrangeKit Unisat",
+    iconUrl: "https://www.svgrepo.com/show/74027/orange.svg",
+    installed: false,
+    groupName: "Bitcoin",
+    groupIndex: 1,
+    isRainbowKitConnector: true,
+  };
+
+  function modalConnector() {
+    const createWallet = (() => ({
+      ...rkDetails,
+      createConnector: () => (() => ({ id: "orangekit-unisat", uid: "orangekit-unisat", name: "Unisat", icon: "data:image/svg+xml,unisat" })) as unknown as CreateConnectorFn,
+    })) as unknown as CreateWalletFn;
+    const create = withReconnectChain(createWallet, 31611)().createConnector({ rkDetails } as never) as unknown as (config: unknown) => {
+      rkDetails?: Record<string, unknown>;
+    };
+    return create({});
+  }
+
+  it("keeps RainbowKit's details, so Bitcoin wallets list under Bitcoin, not as Installed EIP-6963 wallets", () => {
+    expect(modalConnector().rkDetails).toMatchObject({ groupName: "Bitcoin", groupIndex: 1, isRainbowKitConnector: true });
+  });
+
+  it("shows the connector's own name and icon, and keeps every Bitcoin wallet clickable as before", () => {
+    const details = modalConnector().rkDetails;
+    expect(details).toMatchObject({ name: "Unisat", iconUrl: "data:image/svg+xml,unisat" });
+    expect(details?.installed).toBeUndefined();
+  });
+});
+
 describe("withReconnectChain: a wallet extension that injects after the config was built", () => {
   type Injected = { getAccounts(): Promise<string[]> };
 
