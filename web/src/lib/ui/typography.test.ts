@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CHART_FONT_PX, fontSize } from "./tokens";
 
@@ -31,5 +33,74 @@ describe("type tokens", () => {
       if (weight === undefined) continue;
       expect(DISPLAY.has(key) ? ["700"] : ["400", "500", "600"]).toContain(weight);
     }
+  });
+});
+
+// The source scan: every size, line height, and weight must come from the scale.
+const SRC = join(__dirname, "../..");
+const RULES: [name: string, pattern: RegExp, cssOnly?: boolean][] = [
+  ["arbitrary size", /\btext-\[\d/],
+  ["removed size", /\btext-(lg|[2-9]xl)\b/],
+  ["line height", /\bleading-(?!relaxed\b)[\w[]/],
+  ["weight", /\bfont-(thin|extralight|light|bold|extrabold|black)\b/],
+  ["css size", /^\s*(font-size|line-height)\s*:/, true],
+  ["svg size", /fontSize=\{\d/],
+];
+
+/** Files still on the old sizes; Task 3 of the U6 plan migrates them and deletes this set. */
+const PENDING: ReadonlySet<string> = new Set([
+  "app/globals.css",
+  "components/landing/Hero.tsx",
+  "components/landing/HowItWorks.tsx",
+  "components/landing/TrustRow.tsx",
+  "components/landing/RouteLanes.tsx",
+  "components/landing/FinalCta.tsx",
+  "components/landing/LiveStrip.tsx",
+  "components/landing/Simulator.tsx",
+  "components/chart/BtcMoveChart.tsx",
+]);
+
+function sourceFiles(dir = SRC): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return sourceFiles(path);
+    return /\.(ts|tsx|css)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name) ? [relative(SRC, path)] : [];
+  });
+}
+
+/** The rules a line breaks, by name. */
+function offences(line: string, css: boolean): string[] {
+  return RULES.filter(([, pattern, cssOnly]) => (!cssOnly || css) && pattern.test(line)).map(([name]) => name);
+}
+
+describe("type usage in source", () => {
+  const files = sourceFiles();
+
+  it("scans .ts files too", () => {
+    expect(files).toContain("lib/ui/tokens.ts");
+    expect(files).not.toContain("lib/ui/typography.test.ts");
+  });
+
+  it("catches each rule", () => {
+    expect(offences('className="text-[13px]"', false)).toEqual(["arbitrary size"]);
+    expect(offences("text-3xl", false)).toEqual(["removed size"]);
+    expect(offences("text-lg", false)).toEqual(["removed size"]);
+    expect(offences("leading-snug", false)).toEqual(["line height"]);
+    expect(offences("leading-[34px]", false)).toEqual(["line height"]);
+    expect(offences("font-bold", false)).toEqual(["weight"]);
+    expect(offences("  font-size: 1rem;", true)).toEqual(["css size"]);
+    expect(offences("fontSize={10}", false)).toEqual(["svg size"]);
+    expect(offences("leading-relaxed text-sm text-xl font-semibold text-headline", false)).toEqual([]);
+  });
+
+  it("finds no off-scale type outside PENDING", () => {
+    const hits = files
+      .filter((file) => !PENDING.has(file))
+      .flatMap((file) =>
+        readFileSync(join(SRC, file), "utf8")
+          .split("\n")
+          .flatMap((line, i) => offences(line, file.endsWith(".css")).map((rule) => `${file}:${i + 1} ${rule}`)),
+      );
+    expect(hits).toEqual([]);
   });
 });
