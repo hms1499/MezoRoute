@@ -1,3 +1,16 @@
+/** Shared timing scale for the landing's controls, reveals, chart, and live figures. */
+export const LANDING_MOTION_MS = {
+  control: 150,
+  card: 200,
+  reveal: 600,
+  chartDraw: 1200,
+  timeline: 1400,
+  livePulse: 1800,
+  valueFlash: 700,
+  simulatorCount: 450,
+  liveCount: 1100,
+} as const;
+
 /** Ease-out cubic on 0–1, clamped. */
 export function easeOutCubic(t: number): number {
   const k = Math.min(1, Math.max(0, t));

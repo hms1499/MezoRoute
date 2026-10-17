@@ -56,8 +56,8 @@ export function Hero({
           back to MUSD. Non-custodial.
         </p>
         <div className="landing-rise mt-6 flex flex-wrap items-center gap-3" style={delay(320)}>
-          <ConnectCta variant="night" />
-          <a href="#how-it-works" className={buttonClass("nightGhost")}>
+          <ConnectCta variant="primary" />
+          <a href="#how-it-works" className={buttonClass("ghost")}>
             How it works
             <ArrowDown aria-hidden className="h-4 w-4" />
           </a>

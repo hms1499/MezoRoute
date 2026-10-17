@@ -14,12 +14,14 @@ export function HeroChart({ sim, highlight, className }: { sim: LandingSimulatio
   const series = heroSeries(sim);
   return (
     <div className={className}>
-      <BtcMoveChart
-        plots={[{ title: "Value in MUSD if BTC moves", series, format: musd }]}
-        ariaLabel={describe(sim)}
-        highlight={highlight}
-        drawIn
-      />
+      <div className="landing-chart-surface">
+        <BtcMoveChart
+          plots={[{ title: "Value in MUSD if BTC moves", series, format: musd }]}
+          ariaLabel={describe(sim)}
+          highlight={highlight}
+          drawIn
+        />
+      </div>
       <ul className="mt-3 space-y-1 text-sm text-muted">
         <Caption route="lp" on={highlight === "lp"}>
           LP: about half in BTC, so it moves with the price.

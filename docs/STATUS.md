@@ -2,7 +2,7 @@
 
 Living handover file for every agent (see `AGENTS.md` → Session protocol). Update it and commit at the end of each session or milestone. Scope and the backlog are in `PRODUCT_SPEC.md` §16; this file says where we are in it.
 
-**Last updated:** 16 Oct 2026 · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** clean, pushed (U3 merged).
+**Last updated:** 17 Oct 2026 · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** U3 merged and pushed; U4 is complete on `codex/homepage-visual-system`, not merged.
 
 ## Where we are
 
@@ -22,6 +22,7 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 | U1 UI polish | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u1-ui-polish-design.md`, plan `docs/superpowers/plans/2026-10-15-u1-ui-polish.md` (11 tasks, all done) |
 | U2 landing redesign | Done (15 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-15-u2-landing-redesign-design.md`, plan `docs/superpowers/plans/2026-10-15-u2-landing-redesign.md` |
 | U3 one identity, landing to app | Done (16 Oct), merged and pushed | Spec `docs/superpowers/specs/2026-10-16-u3-app-identity-design.md`, plan `docs/superpowers/plans/2026-10-16-u3-app-identity.md` (13 tasks); branch `feat/u3-app-identity`. Fixes the 10 findings of the 16 Oct design review |
+| U4 homepage visual system refinement | Done on `codex/homepage-visual-system` (17 Oct), not merged | Spec and plan in `docs/superpowers/`; 771 Vitest pass, static build pass at 92 kB, Playwright QA pass at 360/768/1024/1440 px, reduced motion, keyboard, network switching, and keyless EVM connection. Navbar follow-up centers Dashboard/Positions in the available header space and keeps the full-width header sticky while scrolling; footer divider now spans the viewport while its content stays aligned to the page column. |
 | V1 Vercel production + QA on both wallet types | Not started | The current preview sits behind a Vercel login; judges need a public URL |
 | D1 README, deck, 2-minute video, submission form | Not started | Needs V1 and M1 |
 
@@ -29,9 +30,8 @@ Tests at `main` (16 Oct): 766 Vitest and 75 Foundry. `npm run build` passes (Fir
 
 ## Next: V1 → D1
 
-1. U1 is merged. The mainnet gas question from its inputs is answered (see AGENTS.md → Gas limits); deferred minors are listed under "U1 deferred".
-2. V1: public Vercel production URL; QA on both wallet types. Bitcoin wallets on mainnet can no longer deposit BTC natively (bridge-in closed 13 Oct).
-3. D1: README, deck, video, submission form.
+1. V1: public Vercel production URL; QA on both wallet types. Bitcoin wallets on mainnet can no longer deposit BTC natively (bridge-in closed 13 Oct).
+2. D1: README, deck, video, submission form.
 
 ## M1 record (15 Oct)
 
@@ -166,6 +166,10 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
+- **17 Oct 2026 (Codex):** Footer divider extended full-width to match the navbar, with footer content kept inside the 6xl page column and mobile bottom clearance preserved. Verification: `npm test` (95 files, 771 tests), `npm run build`, and Playwright at 360/768/1024/1440 px; no horizontal overflow, 1 px divider spans the viewport, header remains sticky, and mobile bottom space remains 96 px. `.DS_Store` remains untouched. Next: final U4 review/merge when requested, then V1.
+- **17 Oct 2026 (Codex):** Follow-up navbar polish on `codex/homepage-visual-system`: Dashboard/Positions centered in the space between brand and wallet controls; full-width sticky header with canvas backdrop and bottom hairline. QA: `npm test` (95 files, 771 tests), `npm run build`, and Playwright at 360/768/1024/1440 px; no horizontal overflow, mobile nav remains compact, header stays at top after scrolling. The pre-existing `.DS_Store` change remains untouched. Next: final U4 review/merge when requested, then V1.
+- **17 Oct 2026 (Codex):** U4 homepage visual-system refinement implemented and independently reviewed on `codex/homepage-visual-system`. Shared motion tokens, semantic landing button roles, hero/simulator surfaces, and consistent section recipes are in place; the review's 2 px focus-ring offset finding was fixed. Verification: `npm test` (95 files, 771 tests), `npm run build` (static export, homepage 92 kB), Playwright at 360/768/1024/1440 px with no overflow, keyboard focus, reduced motion, network switching, and keyless MetaMask connection. Next: V1. The pre-existing `.DS_Store` change remains uncommitted.
+- **17 Oct 2026 (Codex):** U4 homepage visual-system direction and spec approved by the user. Wrote the implementation plan on `codex/homepage-visual-system`; implementation has not started. Next: user reviews the plan and selects an execution method.
 - **16 Oct 2026 (Claude Code):** U3 final review (fresh reviewer): 1 Critical and 2 Important fixed with failing-first checks (toast contrast with a palette guard test, entry-cap balance action, hero line draw), plus BTC exposure as a section; minors deferred above. After user review the empty Positions state and the invalid-link receipt went full width. `feat/u3-app-identity` merged into `main` and pushed at the user's request. Next: V1.
 - **16 Oct 2026 (Claude Code):** U3 implemented inline (executing-plans), 13 tasks: one dark palette (SP lavender, orange = BTC only), the "If BTC moves" chart in the hero and every exposure section, panel/section levels, no summary strip, Compare starts filled, one column per flow, one numbered sequence per page, balance-shortfall recovery, positions labels, app-owned account button. QA: 76 page loads (4 widths × all screens × both networks) with no horizontal scroll, keyboard rings on every stop, reduced motion, dark wallet modal. Rulings in the ledger (`.superpowers/`, git-ignored) are listed in the final message. Next: final whole-branch review, then merge on the user's word, then V1.
 - **16 Oct 2026 (Claude Code):** design review of landing + app (Playwright, mock wallet): 10 findings, the main one is the split identity between the dark landing and the light app. The user asked to fix all ten and delegated the design calls; U3 spec written on `feat/u3-app-identity` (dark app on the night palette, Stability Pool turns lavender so orange means BTC only, an "If BTC moves" chart in the hero and the app, one column per flow). Next: user reviews the spec, then the plan.

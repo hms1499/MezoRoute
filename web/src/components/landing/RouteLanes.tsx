@@ -8,8 +8,8 @@ import type { Highlight } from "./Landing";
 export function RouteLanes({ onHighlight }: { onHighlight: (highlight: Highlight) => void }) {
   const [ref, seen] = useInView<HTMLElement>();
   return (
-    <section ref={ref} data-seen={seen} aria-labelledby="routes-heading" className="landing-reveal border-t border-night-line py-14">
-      <h2 id="routes-heading" className="text-2xl font-semibold tracking-tight text-night-ink">
+    <section ref={ref} data-seen={seen} aria-labelledby="routes-heading" className="landing-section landing-reveal">
+      <h2 id="routes-heading" className="landing-section-title text-2xl tracking-tight">
         Where your MUSD goes, and what it does to your BTC
       </h2>
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -51,7 +51,7 @@ function Lane(props: {
       onMouseEnter={() => props.onHighlight(props.route)}
       onMouseLeave={() => props.onHighlight(null)}
       className={cx(
-        "rounded-2xl border border-line bg-surface p-5 transition-colors duration-200",
+        "landing-panel landing-route-lane",
         lp ? "hover:border-accent" : "hover:border-sp",
       )}
     >

@@ -37,9 +37,9 @@ export function Simulator({
   const column = (route: "lp" | "sp") => ({ onMouseEnter: () => onHighlight(route), onMouseLeave: () => onHighlight(null) });
 
   return (
-    <section aria-labelledby="simulator-heading" className="rounded-2xl border border-line bg-surface p-5">
+    <section aria-labelledby="simulator-heading" className="landing-panel">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="simulator-heading" className="text-base font-semibold text-ink">
+        <h2 id="simulator-heading" className="landing-section-title">
           Try an amount
         </h2>
         <span className="inline-flex items-center gap-2 text-xs text-accent">
@@ -51,7 +51,7 @@ export function Simulator({
       <label htmlFor="simulator-amount" className="sr-only">
         Amount in MUSD
       </label>
-      <div className="mt-3 flex min-h-12 items-center gap-2 rounded-xl border border-night-line bg-night-bg px-3 focus-within:ring-2 focus-within:ring-night-lp">
+      <div className="landing-control landing-control--input mt-3 flex items-center gap-2 bg-well px-3">
         <input
           id="simulator-amount"
           inputMode="decimal"
@@ -79,7 +79,7 @@ export function Simulator({
               aria-pressed={on}
               onClick={() => onText(preset.toString())}
               className={cx(
-                "min-h-9 rounded-full border px-3.5 font-mono text-xs transition-colors duration-150",
+                "landing-control landing-control--compact landing-control--pill px-3.5 font-mono text-xs",
                 on ? "border-night-lp text-night-lp" : "border-night-line text-night-muted hover:text-night-ink",
               )}
             >
@@ -161,7 +161,7 @@ function Cell({ cell }: { cell: SimCell }) {
 
 /** Counts to a new value and flashes once (the key remounts the span to replay the flash). */
 function CountingFigure({ value, format }: { value: bigint; format: (value: bigint) => string }) {
-  const shown = useCountUp(value, 450);
+  const shown = useCountUp(value);
   return (
     <span key={value.toString()} className="landing-flash rounded px-0.5">
       {format(shown)}
