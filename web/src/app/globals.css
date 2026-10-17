@@ -4,6 +4,11 @@
 
 @layer base {
   :root {
+    --landing-space-section: 3.5rem;
+    --landing-space-content: 1.5rem;
+    --landing-radius-panel: 1rem;
+    --landing-radius-control: 0.75rem;
+    --landing-radius-pill: 9999px;
     --landing-motion-control: 150ms;
     --landing-motion-card: 200ms;
     --landing-motion-reveal: 600ms;
@@ -52,6 +57,43 @@
   }
   .landing-motion-card {
     transition-duration: var(--landing-motion-card);
+  }
+  .landing-panel {
+    border: 1px solid theme("colors.line");
+    border-radius: var(--landing-radius-panel);
+    background-color: theme("colors.surface");
+    padding: var(--landing-space-content);
+  }
+  .landing-control {
+    min-height: 3rem;
+    border: 1px solid theme("colors.line");
+    border-radius: var(--landing-radius-control);
+    transition:
+      border-color var(--landing-motion-control) ease,
+      color var(--landing-motion-control) ease,
+      background-color var(--landing-motion-control) ease;
+  }
+  .landing-control:focus-within {
+    border-color: theme("colors.accent.DEFAULT");
+    box-shadow: 0 0 0 2px theme("colors.accent.DEFAULT");
+  }
+  .landing-control--compact {
+    min-height: 2.25rem;
+  }
+  .landing-control--pill {
+    border-radius: var(--landing-radius-pill);
+  }
+  .landing-section-title {
+    color: theme("colors.ink");
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.5rem;
+  }
+  .landing-chart-surface {
+    border: 1px solid theme("colors.line");
+    border-radius: var(--landing-radius-panel);
+    background-color: color-mix(in srgb, theme("colors.surface") 68%, transparent);
+    padding: 1rem;
   }
 }
 
