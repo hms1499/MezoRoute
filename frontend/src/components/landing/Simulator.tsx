@@ -2,6 +2,7 @@
 
 import { ConnectCta } from "@/components/home/ConnectCta";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Term } from "@/components/ui/Term";
 import { useNetwork } from "@/lib/config/network-context";
 import { formatToken } from "@/lib/format";
 import type { LandingSimulation } from "@/lib/landing/simulate";
@@ -103,7 +104,7 @@ export function Simulator({
                   MUSD/BTC LP
                 </th>
                 <th scope="col" className="py-2 pl-2 text-right font-semibold text-night-sp" {...column("sp")}>
-                  Stability Pool
+                  <Term id="stabilityPool">Stability Pool</Term>
                 </th>
               </tr>
             </thead>

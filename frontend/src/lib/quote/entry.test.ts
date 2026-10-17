@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   entryMinimums,
+  entryValue,
   optimalSwap,
   priceImpact,
   quoteEntry,
@@ -147,6 +148,21 @@ describe("quoteEntry", () => {
     expect(quoteEntry(TESTNET, 0n, 10n)).toBeNull();
     expect(quoteEntry({ ...TESTNET, totalSupply: 0n }, ONE, 10n)).toBeNull();
     expect(quoteEntry({ ...TESTNET, reserveBtc: 0n }, ONE, 10n)).toBeNull();
+  });
+});
+
+describe("entryValue", () => {
+  it("values the new LP share in MUSD at the pool's price before the entry (U8)", () => {
+    const quote = quoteEntry(TESTNET, 100n * ONE, 10n)!;
+    const shareMusd = (quote.liquidity * quote.after.reserveMusd) / quote.after.totalSupply;
+    const shareBtc = (quote.liquidity * quote.after.reserveBtc) / quote.after.totalSupply;
+    expect(entryValue(TESTNET, quote)).toBe(shareMusd + (shareBtc * TESTNET.reserveMusd) / TESTNET.reserveBtc);
+  });
+
+  it("stays below the amount: the fee and the swap's price impact come off", () => {
+    const quote = quoteEntry(TESTNET, 100n * ONE, 10n)!;
+    expect(entryValue(TESTNET, quote)).toBeLessThan(quote.net);
+    expect(entryValue(TESTNET, quote)).toBeGreaterThan((quote.net * 999n) / 1000n);
   });
 });
 

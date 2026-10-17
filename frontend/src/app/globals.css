@@ -20,6 +20,8 @@
 
   html {
     color-scheme: dark;
+    /* In-page links (Next step → Compare routes, Review exposure) land below the sticky header (U8). */
+    scroll-padding-top: 5rem;
   }
   :focus-visible {
     outline: 2px solid theme("colors.accent.DEFAULT");

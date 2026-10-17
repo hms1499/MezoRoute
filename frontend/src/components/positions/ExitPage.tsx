@@ -98,7 +98,6 @@ function ExitFlowView(props: {
         <PageHeader
           back={{ href: "/positions/", label: "Positions" }}
           step={hasStarted(stepper) ? 2 : 1}
-          labels={["Amount", "Sign", "Done"]}
           title="Exit the MUSD/BTC pool to MUSD"
         />
       }

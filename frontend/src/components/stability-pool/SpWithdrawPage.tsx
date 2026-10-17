@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
+import { Term } from "@/components/ui/Term";
 import { stabilityPoolAbi } from "@/lib/abi/musd";
 import { useNetwork } from "@/lib/config/network-context";
 import { decodeError } from "@/lib/errors/decode";
@@ -112,7 +113,13 @@ function WithdrawView(props: {
 
   return (
     <RouteLayout
-      header={<PageHeader back={{ href: "/positions/", label: "Positions" }} title="Withdraw from the Stability Pool" />}
+      header={<PageHeader back={{ href: "/positions/", label: "Positions" }} title={
+            <>
+              Withdraw from the <Term id="stabilityPool">Stability Pool</Term>
+            </>
+          }
+        />
+      }
       summary={
         paused ? (
           <Card title="Withdrawals are paused">

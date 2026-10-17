@@ -3,14 +3,19 @@
 import { BlockNotice } from "@/components/lp/BlockNotice";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { StepList } from "@/components/ui/StepList";
+import { StepList, type StepCopy } from "@/components/ui/StepList";
+import { Term } from "@/components/ui/Term";
 import type { ExitBlock } from "@/lib/positions/exit-gate";
 import type { ExitStepKind } from "@/lib/positions/exit-steps";
 import { hasStarted, type Stepper } from "@/lib/tx/stepper";
 
-const COPY: Record<ExitStepKind, { title: string; detail: string; action: string }> = {
+const COPY: Record<ExitStepKind, StepCopy> = {
   permit: {
-    title: "Sign an LP permit",
+    title: (
+      <>
+        Sign an LP <Term id="permit">permit</Term>
+      </>
+    ),
     detail: "Lets MezoRoute take exactly this LP in the next step. Signing costs no gas.",
     action: "Sign",
   },

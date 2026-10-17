@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/Card";
 import { Stat } from "@/components/ui/Stat";
+import { Term } from "@/components/ui/Term";
 import { btc, musd } from "@/components/lp/units";
 import type { SpDepositPreview } from "@/lib/stability-pool/preview";
 
@@ -9,7 +10,14 @@ export function SpDepositCard({ preview }: { preview: SpDepositPreview }) {
     <Card title="Review your deposit" headingLevel={1}>
       <dl className="mt-3 stat-list">
         <Stat label="Your deposit now">{musd(preview.depositNow)}</Stat>
-        <Stat label="Pending BTC gain" sub="Paid to your wallet with this deposit">
+        <Stat
+          label={
+            <>
+              Pending <Term id="btcGain">BTC gain</Term>
+            </>
+          }
+          sub="Paid to your wallet with this deposit"
+        >
           {btc(preview.gainPaid)}
         </Stat>
         {preview.depositAfter !== null && (

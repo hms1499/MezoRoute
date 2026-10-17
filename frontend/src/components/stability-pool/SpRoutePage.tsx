@@ -14,6 +14,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
+import { Term } from "@/components/ui/Term";
 import { AmountInput } from "@/components/lp/AmountInput";
 import { balanceNoticeActions, BlockNotice } from "@/components/lp/BlockNotice";
 import { btc, musd } from "@/components/lp/units";
@@ -85,7 +86,13 @@ function SpRoute({ account }: { account: Address }) {
 
   return (
     <RouteLayout
-      header={<PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title="Back the system in the Stability Pool" />}
+      header={<PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title={
+            <>
+              Back the system in the <Term id="stabilityPool">Stability Pool</Term>
+            </>
+          }
+        />
+      }
       summary={<SummaryPanel rows={rows} notice={notice} action={review("w-full")} />}
       mobileBar={<MobileBar figure={musdIn === null ? undefined : musd(musdIn)} notice={notice} action={review()} />}
     >

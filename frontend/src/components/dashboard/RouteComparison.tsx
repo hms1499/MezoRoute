@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { RiskList } from "@/components/ui/RiskList";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Term } from "@/components/ui/Term";
 import { compareRoutes } from "@/lib/compare/comparison";
 import { defaultCompareAmount } from "@/lib/compare/default-amount";
 import { backtestRoutes, type RouteBacktests } from "@/lib/compare/history";
@@ -16,6 +17,7 @@ import { amountState, lpHistoryLine, REFERENCE_AMOUNT, signedChange, spHistoryLi
 import { useNetwork } from "@/lib/config/network-context";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { formatToken } from "@/lib/format";
+import type { TermId } from "@/lib/glossary";
 import { DEFAULT_SLIPPAGE } from "@/lib/quote/entry";
 import { LP_RETURN_SOURCE, LP_RISKS, SP_RETURN_SOURCE, SP_RISKS } from "@/lib/routes/copy";
 import { entryQuery } from "@/lib/routes/musd-btc-lp/intent";
@@ -28,7 +30,7 @@ const FOOTNOTE =
 const GRID = "grid grid-cols-[minmax(7rem,0.7fr)_1fr_1fr] gap-x-6";
 
 type RouteId = "lp" | "sp";
-type Route = { id: RouteId; title: string; tagline: string; rows: Row[]; risks: string[]; href: string; cta: string };
+type Route = { id: RouteId; title: string; term?: TermId; tagline: string; rows: Row[]; risks: string[]; href: string; cta: string };
 
 /** Flow B / FR-19: both routes for the typed amount, aligned row by row, with what each paid over the last 30 days. */
 export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
@@ -82,6 +84,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
     {
       id: "sp",
       title: "Stability Pool",
+      term: "stabilityPool",
       tagline: "Back the system",
       rows: [
         { label: "Return source", value: SP_RETURN_SOURCE },
@@ -136,7 +139,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
           </span>
           {routes.map((route) => (
             <div key={route.id} role="columnheader">
-              <p className="font-semibold">{route.title}</p>
+              <p className="font-semibold">{route.term ? <Term id={route.term}>{route.title}</Term> : route.title}</p>
               <p className="text-sm font-normal text-muted">{route.tagline}</p>
             </div>
           ))}
@@ -190,7 +193,15 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
         </div>
         {routes.map((route) => (
           <div key={route.id} role="tabpanel" id={`panel-${route.id}`} aria-labelledby={`tab-${route.id}`} hidden={tab !== route.id} className="mt-4">
-            <p className="text-sm text-muted">{route.tagline}</p>
+            <p className="text-sm text-muted">
+              {/* The tab is a button, so the term's definition sits on the panel's first line (U8). */}
+              {route.term && (
+                <>
+                  <Term id={route.term}>{route.title}</Term>:{" "}
+                </>
+              )}
+              {route.tagline}
+            </p>
             <dl className="mt-3 space-y-3 text-sm">
               {route.rows.map((row) => (
                 <div key={row.label}>

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
+import { Term } from "@/components/ui/Term";
 import { useNetwork } from "@/lib/config/network-context";
 import { writeBlocker, writeBlockerMessage } from "@/lib/config/write-gate";
 import { readinessCopy, type Readiness, type ReadinessCopy } from "@/lib/dashboard/readiness";
@@ -54,14 +55,8 @@ export function ReadinessCard({
             {action.label}
           </ButtonLink>
         ))}
-        {readiness.state === "ready" && network.executor && (
-          <>
-            <ButtonLink href="/route/lp/">Deposit to LP</ButtonLink>
-            <ButtonLink href="/route/stability-pool/" variant="secondary">
-              Deposit to Stability Pool
-            </ButtonLink>
-          </>
-        )}
+        {/* One place to pick a route (U8): Compare routes below starts filled with the wallet's MUSD. */}
+        {readiness.state === "ready" && <ButtonLink href="#compare">Compare routes</ButtonLink>}
         {readiness.state === "can-borrow" && network.executor && <ButtonLink href="/route/lp/?mode=borrow">Borrow & Deploy</ButtonLink>}
       </div>
       <p className="mt-4 flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-line pt-3 text-xs text-muted">
@@ -69,7 +64,9 @@ export function ReadinessCard({
           {connector?.name ?? "Wallet"} · {walletKindLabel(walletKind, bitcoinWallet)} · {shortAddress(account)}
         </span>
         <span className="flex flex-wrap gap-x-4">
-          <span>MUSD in wallet {formatToken(data.snapshot.musd, 18, 2)}</span>
+          <span>
+            <Term id="musd">MUSD</Term> in wallet {formatToken(data.snapshot.musd, 18, 2)}
+          </span>
           <span>BTC for gas {formatToken(data.gasBalance)}</span>
         </span>
       </p>

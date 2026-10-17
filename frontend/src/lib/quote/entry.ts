@@ -116,3 +116,16 @@ export function entryMinimums(simulation: EntrySimulation, slippageBps: bigint):
     minLpOut: floor(simulation.liquidity),
   };
 }
+
+/**
+ * The new LP share in MUSD at the pool's price before the entry (Compare routes' "Position after", the
+ * review page's LP value). The oracle sat ≈3% above the testnet pool (QA), and the post-trade price
+ * includes the user's own swap, which pushed the price up; either one made a fresh deposit look like a
+ * gain (review, 15 Oct 2026). The swap fills below this price, so the value never exceeds the amount.
+ */
+export function entryValue(pool: PoolState, quote: EntryQuote): bigint {
+  const { after, liquidity } = quote;
+  const shareMusd = (liquidity * after.reserveMusd) / after.totalSupply;
+  const shareBtc = (liquidity * after.reserveBtc) / after.totalSupply;
+  return shareMusd + (shareBtc * pool.reserveMusd) / pool.reserveBtc;
+}
