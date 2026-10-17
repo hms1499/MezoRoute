@@ -2,7 +2,7 @@
 
 Living handover file for every agent (see `AGENTS.md` → Session protocol). Update it and commit at the end of each session or milestone. Scope and the backlog are in `PRODUCT_SPEC.md` §16; this file says where we are in it.
 
-**Last updated:** 17 Oct 2026 · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** U4, U5, and U6 merged and pushed (17 Oct).
+**Last updated:** 17 Oct 2026 (session end, Claude Code) · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** U4, U5, and U6 merged and pushed (17 Oct).
 
 ## Where we are
 
@@ -34,6 +34,7 @@ Tests at `main` (17 Oct): 800 Vitest and 75 Foundry. `npm run build` passes (Fir
 
 ## Next: V1 → D1
 
+0. **Before any push to `main`:** the user sets the Vercel project's Root Directory to `frontend` (Settings → Build & Deployment; their choice on 17 Oct over disabling Git deploys). Then push the local commits (`main` is ahead of `origin/main`), check that the Git-triggered production build serves the app (not a 404), and update `AGENTS.md` with the CLI deploy command that works with the new Root Directory.
 1. V1: production is live at https://mezoroute.vercel.app; left: real-wallet QA on both wallet types. Bitcoin wallets on mainnet can no longer deposit BTC natively (bridge-in closed 13 Oct).
 2. D1: README, deck, video, submission form.
 
@@ -170,7 +171,9 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
-- **17 Oct 2026 (Claude Code):** Incident: pushing `main` (562ae0a) triggered a Git-sourced Vercel production build from the repo root (project Root Directory `.`, framework Other), which produced an empty output and took https://mezoroute.vercel.app to 404 for a few minutes. The user's CLI deploy from `frontend/` (dpl_3TBaqmcZfXSFzwUrti3hFagEtPDM) restored it with U7 + U8; agent QA on the URL passed (360/1440 px, mock wallet, terms, Compare routes, review LP value, no horizontal scroll, 0 console errors, live relayer chunk). **Do not push `main` until Git deploys are fixed** (decision pending: root `vercel.json` with `git.deploymentEnabled: false`, or Root Directory `frontend` in the Vercel project).
+- **17 Oct 2026 (Claude Code), session end:** U7 and U8 live on production. `main` has local commits not pushed on purpose (Git deploys still build from the repo root). Next: Next step 0 (Vercel Root Directory), then V1 real-wallet QA (including the SP withdraw page and Positions SP card with a real SP deposit), then D1.
+
+- **17 Oct 2026 (Claude Code):** Incident: pushing `main` (562ae0a) triggered a Git-sourced Vercel production build from the repo root (project Root Directory `.`, framework Other), which produced an empty output and took https://mezoroute.vercel.app to 404 for a few minutes. The user's CLI deploy from `frontend/` (dpl_3TBaqmcZfXSFzwUrti3hFagEtPDM) restored it with U7 + U8; agent QA on the URL passed (360/1440 px, mock wallet, terms, Compare routes, review LP value, no horizontal scroll, 0 console errors, live relayer chunk). **Do not push `main` until Git deploys are fixed** (the user chose Root Directory `frontend` in the Vercel project; see Next, step 0).
 
 - **17 Oct 2026 (Claude Code):** U8 brainstormed with the user (readers know basic DeFi; goal "simple and easy to use"; picked dotted-underline terms and Next step → Compare routes in the visual companion) and built on `feat/u8-explain-terms` with failing-first tests (800 Vitest, build, Playwright QA); merged into `main` (800 Vitest and build pass on `main`) and pushed. Next: production redeploy by the user, then V1/D1.
 
