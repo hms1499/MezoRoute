@@ -4,6 +4,7 @@ import type { CreateConnectorFn } from "wagmi";
 type ConnectParameters = { chainId?: number; isReconnecting?: boolean } | undefined;
 type BitcoinProvider = { isInstalled(): boolean; setProvider(provider: unknown): void };
 type Connector = ReturnType<CreateConnectorFn> & {
+  icon?: string;
   connect(parameters?: ConnectParameters): Promise<unknown>;
   isAuthorized(): Promise<boolean>;
   getBitcoinProvider?(): BitcoinProvider;
@@ -36,6 +37,10 @@ async function waitForInjected(connectorId: string): Promise<unknown> {
  * - OrangeKit keeps the extension's provider from when the config was built, and `isAuthorized`
  *   (unlike `connect`) never looks again, so an extension that injects late was skipped; for the
  *   wallet used last it now waits briefly for the provider and hands it to the connector.
+ * - OrangeKit's connector drops the `rkDetails` RainbowKit passes in, and its data-URI icon makes
+ *   RainbowKit take it for an EIP-6963 wallet, listed under "Installed" whether or not the extension
+ *   is there (U7). The details are put back with the connector's own name and icon; `installed` is
+ *   left out, so every Bitcoin wallet stays clickable as before (RainbowKit hides one it thinks is absent).
  */
 export function withReconnectChain(createWallet: CreateWalletFn, chainId: number): CreateWalletFn {
   return () => {
@@ -43,12 +48,16 @@ export function withReconnectChain(createWallet: CreateWalletFn, chainId: number
     return {
       ...wallet,
       createConnector: (details: Parameters<ReturnType<CreateWalletFn>["createConnector"]>[0]) => {
+        const rkDetails = (details as { rkDetails?: Record<string, unknown> }).rkDetails;
         const createConnector = wallet.createConnector(details) as unknown as (config: unknown) => Connector;
         return ((config: { storage?: { getItem(key: string): unknown } | null }) => {
           const connector = createConnector(config);
           const { connect, isAuthorized } = connector;
           return {
             ...connector,
+            ...(rkDetails && {
+              rkDetails: { ...rkDetails, name: connector.name, iconUrl: connector.icon ?? rkDetails.iconUrl, installed: undefined },
+            }),
             // Methods, not arrows: wagmi calls them on its own copy of the connector.
             connect(this: Connector, connectParameters?: ConnectParameters) {
               return connect.call(this, { ...connectParameters, chainId: connectParameters?.chainId ?? chainId });

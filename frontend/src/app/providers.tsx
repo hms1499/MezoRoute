@@ -1,7 +1,7 @@
 "use client";
 
 import "@rainbow-me/rainbowkit/styles.css";
-import { darkTheme, RainbowKitProvider, type AvatarComponent } from "@rainbow-me/rainbowkit";
+import { darkTheme, RainbowKitProvider, type AvatarComponent, type DisclaimerComponent } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Wallet } from "lucide-react";
 import { createContext, memo, useContext, type ReactNode } from "react";
@@ -27,6 +27,12 @@ const WalletAvatar: AvatarComponent = ({ size }) => (
   </span>
 );
 const theme = { ...baseTheme, fonts: { body: "var(--font-inter), ui-sans-serif, system-ui, sans-serif" } };
+// Replaces "New to Ethereum wallets?" on phones (and sits under the intro on desktop): MezoRoute is
+// Bitcoin-first, and the modal never said Bitcoin wallets work too (U7).
+const WalletDisclaimer: DisclaimerComponent = ({ Text }) => (
+  <Text>Use a Bitcoin wallet (Unisat, OKX, Xverse) or an EVM wallet such as MetaMask.</Text>
+);
+const appInfo = { appName: "MezoRoute", disclaimer: WalletDisclaimer };
 
 // Built once per page load (switching networks stores the choice and reloads the page), and outside
 // React: wagmi starts reconnecting while it renders, and React may discard a first render with its
@@ -49,7 +55,7 @@ const WalletTree = memo(function WalletTree() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={theme} avatar={WalletAvatar}>
+        <RainbowKitProvider theme={theme} avatar={WalletAvatar} appInfo={appInfo}>
           <ErrorToastProvider>
             <AppShell>
               <Page />

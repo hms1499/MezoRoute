@@ -4,7 +4,7 @@ import type { Outcome } from "./types";
 
 // Messages follow PRODUCT_SPEC.md §13.
 
-export const REJECTED: Outcome = { kind: "rejected", message: "Transaction was not signed.", recovery: ["retry"] };
+export const REJECTED: Outcome = { kind: "rejected", message: "You cancelled this in your wallet.", recovery: ["retry"] };
 
 export const RELAY: Outcome = {
   kind: "relay",

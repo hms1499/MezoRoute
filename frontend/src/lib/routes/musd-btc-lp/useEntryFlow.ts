@@ -8,7 +8,7 @@ import { getAccount, readContract, signTypedData, simulateContract } from "wagmi
 import { useErrorToast } from "@/components/ErrorToast";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { useNetwork } from "@/lib/config/network-context";
-import { decodeError } from "@/lib/errors/decode";
+import { decodeError, toastsInStepper } from "@/lib/errors/decode";
 import { AMOUNT_TOO_SMALL, BORROW_USED, PERMIT_EXPIRED } from "@/lib/errors/outcomes";
 import { borrowEffect } from "@/lib/trove/borrow";
 import { borrowAuthorisationState, borrowTypedData, type BorrowAuthorisation } from "@/lib/trove/borrow-signature";
@@ -53,7 +53,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
   const config = useConfig();
   const { network } = useNetwork();
   const router = useRouter();
-  const { showError } = useErrorToast();
+  const { showError, dismiss } = useErrorToast();
   const [stepper, dispatch] = useReducer(stepperReducer<StepKind>, input.plan, createStepper<StepKind>);
   const stepperRef = useRef(stepper);
   stepperRef.current = stepper;
@@ -194,7 +194,12 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
       else if (step.kind === "approve") await approve(sendPin);
       else await enter(sendPin);
     } catch (error) {
-      dispatch({ type: "failed", error: decodeError(error, network) });
+      const decoded = decodeError(error, network);
+      dispatch({ type: "failed", error: decoded });
+      if (!toastsInStepper(decoded)) {
+        dismiss();
+        return;
+      }
       showError(error, {
         retry: () => void runActive(),
         refreshQuote: () => void input.refresh().catch(() => undefined),

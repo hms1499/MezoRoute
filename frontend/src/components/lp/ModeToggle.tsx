@@ -1,17 +1,20 @@
 import type { EntryMode } from "@/lib/routes/musd-btc-lp/intent";
-import { walletCapabilities, type WalletKind } from "@/lib/wallet/capabilities";
+import { borrowMode } from "@/lib/routes/musd-btc-lp/mode";
+import type { WalletKind } from "@/lib/wallet/capabilities";
 
-/** Deposit wallet MUSD, or Borrow & Deploy (EOAs only, FR-23). */
+/** Deposit wallet MUSD, or Borrow & Deploy (EOAs with an open Trove, FR-23). */
 export function ModeToggle({
   walletKind,
+  hasTrove,
   mode,
   onChange,
 }: {
   walletKind: WalletKind | undefined;
+  hasTrove: boolean | undefined;
   mode: EntryMode;
   onChange: (mode: EntryMode) => void;
 }) {
-  const canBorrow = walletKind !== undefined && walletCapabilities(walletKind).borrowAndDeploy;
+  const borrow = borrowMode(walletKind, hasTrove);
   const option = (value: EntryMode, label: string, disabled = false) => (
     <button
       type="button"
@@ -32,12 +35,10 @@ export function ModeToggle({
     <div>
       <div role="radiogroup" aria-label="Funding" className="inline-flex rounded-full bg-well p-1 text-sm font-semibold">
         {option("deposit", "Deposit MUSD")}
-        {option("borrow", "Borrow & Deploy", !canBorrow)}
+        {option("borrow", "Borrow & Deploy", borrow.disabled)}
       </div>
-      {walletKind === "smart-account" && (
-        <p className="mt-1 text-sm text-muted">Borrow & Deploy needs a standard wallet signature.</p>
-      )}
-      {mode === "borrow" && (
+      {borrow.note && <p className="mt-1 text-sm text-muted">{borrow.note}</p>}
+      {mode === "borrow" && !borrow.disabled && (
         <p className="mt-1 text-sm text-muted">Borrow MUSD against your Trove and deposit it in one transaction.</p>
       )}
     </div>

@@ -49,16 +49,16 @@ export function ReadinessCard({
       <p className="mt-3 text-xl font-semibold">{copy.headline}</p>
       {copy.detail && <p className="mt-1 text-sm text-muted">{copy.detail}</p>}
       <div className="mt-4 flex flex-wrap gap-2 empty:hidden">
-        {copy.action && (
-          <ButtonLink href={copy.action.href} external variant="secondary">
-            {copy.action.label}
+        {copy.actions?.map((action) => (
+          <ButtonLink key={action.href} href={action.href} external variant="secondary">
+            {action.label}
           </ButtonLink>
-        )}
+        ))}
         {readiness.state === "ready" && network.executor && (
           <>
-            <ButtonLink href="/route/lp/">Deposit into LP</ButtonLink>
+            <ButtonLink href="/route/lp/">Deposit to LP</ButtonLink>
             <ButtonLink href="/route/stability-pool/" variant="secondary">
-              Back the system
+              Deposit to Stability Pool
             </ButtonLink>
           </>
         )}

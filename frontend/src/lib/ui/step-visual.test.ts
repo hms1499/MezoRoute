@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { REJECTED, RELAY } from "@/lib/errors/outcomes";
 import type { Step } from "@/lib/tx/stepper";
 import { receiptHeader, stepVisual } from "./step-visual";
 
@@ -14,7 +15,11 @@ describe("stepVisual", () => {
     expect(stepVisual(step("awaiting-wallet"), 0, 0)).toBe("wallet");
     expect(stepVisual(step("submitted"), 0, 0)).toBe("confirming");
     expect(stepVisual(step("done"), 0, 1)).toBe("done");
-    expect(stepVisual(step("failed"), 1, 1)).toBe("failed");
+    expect(stepVisual({ ...step("failed"), error: RELAY }, 1, 1)).toBe("failed");
+  });
+
+  it("shows a step the user cancelled in the wallet as cancelled, not failed", () => {
+    expect(stepVisual({ ...step("failed"), error: REJECTED }, 0, 0)).toBe("cancelled");
   });
 });
 

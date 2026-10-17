@@ -123,7 +123,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
     >
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <Card>
-        <ModeToggle walletKind={walletKind} mode={intent.mode} onChange={(mode) => update({ ...intent, mode })} />
+        <ModeToggle walletKind={walletKind} hasTrove={data.snapshot.dashboard.trove !== null} mode={intent.mode} onChange={(mode) => update({ ...intent, mode })} />
         <AmountForm
           amount={intent.amount}
           slippageBps={intent.slippageBps}

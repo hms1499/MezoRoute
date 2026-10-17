@@ -1,15 +1,18 @@
 import type { ReceiptState } from "@/lib/tx/receipt-state";
 import type { Step } from "@/lib/tx/stepper";
 
-export type StepVisual = "done" | "failed" | "wallet" | "confirming" | "current" | "upcoming";
+export type StepVisual = "done" | "failed" | "cancelled" | "wallet" | "confirming" | "current" | "upcoming";
 
-/** How a stepper node looks: its status once it moved, else current (the step to act on) or upcoming. */
+/**
+ * How a stepper node looks: its status once it moved, else current (the step to act on) or upcoming. A step
+ * the user cancelled in the wallet is not an error (U7): it reads like the current step, with a neutral note.
+ */
 export function stepVisual(step: Step<string>, index: number, active: number): StepVisual {
   switch (step.status) {
     case "done":
       return "done";
     case "failed":
-      return "failed";
+      return step.error?.kind === "rejected" ? "cancelled" : "failed";
     case "awaiting-wallet":
       return "wallet";
     case "submitted":
