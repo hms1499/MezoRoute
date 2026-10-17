@@ -91,7 +91,7 @@ export function Simulator({
 
       {sim ? (
         <>
-          <table className={cx("mt-4 w-full font-mono text-xs", amount === null && "opacity-80")}>
+          <table className={cx("mt-4 w-full text-sm", amount === null && "opacity-80")}>
             <caption className="sr-only">Both routes for {formatToken(sim.amount, 18, 2)} MUSD, estimated</caption>
             {/* Below 640 px each row stacks: its label on top, the two routes side by side underneath. */}
             <thead>
@@ -149,13 +149,23 @@ export function Simulator({
         </div>
       )}
 
-      <ConnectCta variant="nightOutline" label="Connect wallet to choose a route" className="mt-5 w-full" />
+      <ConnectCta
+        variant="nightOutline"
+        label={
+          <>
+            {/* One line at 360 px: the long label wrapped to two inside the panel. */}
+            <span className="sm:hidden">Connect to choose a route</span>
+            <span className="max-sm:hidden">Connect wallet to choose a route</span>
+          </>
+        }
+        className="mt-5 w-full"
+      />
     </section>
   );
 }
 
 function Cell({ cell }: { cell: SimCell }) {
-  if (cell.kind === "text") return <>{cell.text}</>;
+  if (cell.kind === "text") return cell.figure ? <span className="font-mono text-[13px]">{cell.text}</span> : <>{cell.text}</>;
   return <CountingFigure value={cell.value} format={cell.format} />;
 }
 
@@ -163,7 +173,7 @@ function Cell({ cell }: { cell: SimCell }) {
 function CountingFigure({ value, format }: { value: bigint; format: (value: bigint) => string }) {
   const shown = useCountUp(value);
   return (
-    <span key={value.toString()} className="landing-flash rounded px-0.5">
+    <span key={value.toString()} className="landing-flash rounded px-0.5 font-mono text-[13px]">
       {format(shown)}
     </span>
   );

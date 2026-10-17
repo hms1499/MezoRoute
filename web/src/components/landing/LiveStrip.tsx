@@ -1,10 +1,12 @@
 "use client";
 
+import { BadgeCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { explorerAddressUrl, networks } from "@/lib/config/networks";
 import { formatToken } from "@/lib/format";
 import { compactMusd, type LiveStrip as Strip } from "@/lib/landing/view";
+import { cx } from "@/lib/ui/cx";
 import { useCountUp } from "./hooks";
 import { LANDING_MOTION_MS } from "@/lib/ui/motion";
 
@@ -37,14 +39,15 @@ export function LiveStrip({ live }: { live: Strip }) {
             <Item label="Stability Pool" sub={`${live.spShare} of MUSD supply`}>
               <CountFromZero value={live.spDeposits} format={compactMusd} />
             </Item>
-            <Item label="Executor">
+            <Item label="Executor" sub={executor ? "Source on the Mezo explorer" : undefined} prose>
               {executor ? (
                 <a
                   href={explorerAddressUrl(networks.mainnet, executor.address)}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-night-lp underline-offset-4 hover:underline"
+                  className="inline-flex items-center gap-1.5 text-night-lp underline-offset-4 hover:underline"
                 >
+                  <BadgeCheck aria-hidden className="h-5 w-5" />
                   Verified
                 </a>
               ) : (
@@ -58,11 +61,12 @@ export function LiveStrip({ live }: { live: Strip }) {
   );
 }
 
-function Item({ label, sub, children }: { label: string; sub?: string; children: ReactNode }) {
+/** One figure; `prose` sets a word (the Executor link) in the sans face, since mono is for figures only. */
+function Item({ label, sub, prose = false, children }: { label: string; sub?: string; prose?: boolean; children: ReactNode }) {
   return (
     <div className="min-w-0 py-5">
       <p className="text-xs text-night-muted">{label}</p>
-      <p className="mt-1 font-mono text-lg font-medium text-night-ink sm:text-xl">{children}</p>
+      <p className={cx("mt-1 text-lg font-medium text-night-ink sm:text-xl", !prose && "font-mono")}>{children}</p>
       {sub && <p className="text-xs text-night-muted">{sub}</p>}
     </div>
   );

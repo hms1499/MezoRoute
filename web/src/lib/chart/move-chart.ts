@@ -25,8 +25,9 @@ export function chartGeometry(input: { series: Series[]; bands?: Band[]; width: 
 
   // Each band's upper edge is kept in view, so the chart always shows where the danger starts.
   const values = [...series.flatMap((s) => s.points.map((p) => p.value)), ...bands.map((b) => b.to)];
-  let lo = Math.min(...values);
-  let hi = Math.max(...values);
+  // With nothing to draw, Math.min/max give ±Infinity and every coordinate turns into NaN.
+  let lo = values.length ? Math.min(...values) : 0;
+  let hi = values.length ? Math.max(...values) : 0;
   const span = hi - lo || Math.abs(hi) * 0.1 || 1;
   lo -= span * HEADROOM;
   hi += span * HEADROOM;

@@ -48,6 +48,12 @@ describe("chartGeometry", () => {
     expect(warning.height).toBeCloseTo(withBands.y(110) - withBands.y(160), 5);
   });
 
+  it("keeps every coordinate finite with no series (the landing before its data loads)", () => {
+    const empty = chartGeometry({ series: [], width: 400, height: 160, pad });
+    expect(empty.ticks.every(Number.isFinite)).toBe(true);
+    expect(empty.ticks.map(empty.y).every(Number.isFinite)).toBe(true);
+  });
+
   it("does not collapse a flat series", () => {
     const flat = chartGeometry({ series: [sp], width: 400, height: 160, pad });
     expect(Number.isFinite(flat.y(1000))).toBe(true);

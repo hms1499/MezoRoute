@@ -55,9 +55,10 @@ export function Hero({
           Compare the MUSD/BTC pool with the Stability Pool on live Mezo data, preview the exact transaction, and exit
           back to MUSD. Non-custodial.
         </p>
-        <div className="landing-rise mt-6 flex flex-wrap items-center gap-3" style={delay(320)}>
-          <ConnectCta variant="primary" />
-          <a href="#how-it-works" className={buttonClass("ghost")}>
+        {/* Below 640 px the two actions stack at full width, so the ghost link lines up with the primary. */}
+        <div className="landing-rise mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center" style={delay(320)}>
+          <ConnectCta variant="primary" className="w-full sm:w-auto" />
+          <a href="#how-it-works" className={buttonClass("ghost", "md", "w-full sm:w-auto")}>
             How it works
             <ArrowDown aria-hidden className="h-4 w-4" />
           </a>

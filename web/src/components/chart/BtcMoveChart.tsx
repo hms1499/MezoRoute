@@ -64,7 +64,7 @@ export function BtcMoveChart({
     <div ref={ref} className={cx("w-full", className)}>
       <div role="img" aria-label={ariaLabel} className={cx("space-y-3", well && "rounded-xl bg-well p-3")}>
         {plots.map((plot) => (
-          <Plot key={plot.title} plot={plot} width={width} height={height} highlight={highlight} drawIn={drawIn} />
+          <Plot key={plot.title} plot={plot} width={width} height={height} highlight={highlight} drawIn={drawIn} halo={well ? colors.well : colors.surface} />
         ))}
       </div>
       {children}
@@ -72,7 +72,22 @@ export function BtcMoveChart({
   );
 }
 
-function Plot({ plot, width, height, highlight, drawIn }: { plot: MovePlot; width: number; height: number; highlight: SeriesId | null; drawIn: boolean }) {
+function Plot({
+  plot,
+  width,
+  height,
+  highlight,
+  drawIn,
+  halo,
+}: {
+  plot: MovePlot;
+  width: number;
+  height: number;
+  highlight: SeriesId | null;
+  drawIn: boolean;
+  /** The background behind the plot: value labels get an outline in it, so lines crossing them never cut the digits. */
+  halo: string;
+}) {
   const g = chartGeometry({ series: plot.series, bands: plot.bands, width, height });
   const labels = placeLabels(chartLabels({ series: plot.series, width }), g.y, g.plot);
   const today = g.x(0);
@@ -126,6 +141,10 @@ function Plot({ plot, width, height, highlight, drawIn }: { plot: MovePlot; widt
             fontSize={11}
             fontFamily="var(--font-mono)"
             fill={STROKE[label.id]}
+            stroke={halo}
+            strokeWidth={3}
+            strokeLinejoin="round"
+            paintOrder="stroke"
           >
             {plot.format(label.value)}
           </text>

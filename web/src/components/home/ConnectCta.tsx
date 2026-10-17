@@ -2,6 +2,7 @@
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Wallet } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 
 export function ConnectCta({
@@ -9,7 +10,7 @@ export function ConnectCta({
   variant = "primary",
   className,
 }: {
-  label?: string;
+  label?: ReactNode;
   variant?: "primary" | "night" | "nightOutline";
   className?: string;
 }) {

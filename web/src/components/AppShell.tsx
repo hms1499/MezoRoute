@@ -7,12 +7,13 @@ import { MainnetBanner } from "./MainnetBanner";
 
 /**
  * The frame of every page: skip link, header, mainnet banner, the page, footer. Pages set their own width (`Column`).
- * Below 1024 px the bottom padding keeps the footer clear of the route pages' fixed action bar.
+ * Below 1024 px a route page's fixed action bar (`data-mobile-bar`) gets bottom padding to clear the footer;
+ * pages without one (the landing) end at the footer.
  * One dark palette everywhere (U3); the landing adds its own glow behind the page.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col pb-24 lg:pb-0">
+    <div className="flex min-h-dvh flex-col max-lg:has-[[data-mobile-bar]]:pb-24">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-surface focus:px-4 focus:py-2 focus:text-ink"

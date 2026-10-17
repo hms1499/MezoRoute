@@ -19,10 +19,10 @@ export function RouteLayout({ header, summary, mobileBar, children }: { header: 
   );
 }
 
-/** The fixed bottom bar below 1024 px; AppShell's `pb-28` keeps page content clear of it. */
+/** The fixed bottom bar below 1024 px; AppShell pads the page bottom whenever one is present (`data-mobile-bar`). */
 export function MobileBar({ figure, notice, action }: { figure?: ReactNode; notice?: ReactNode; action: ReactNode }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface px-4 py-3 lg:hidden">
+    <div data-mobile-bar className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface px-4 py-3 lg:hidden">
       <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
         <div className="min-w-0 text-sm">{notice ?? <span className="font-semibold">{figure}</span>}</div>
         <div className="shrink-0">{action}</div>

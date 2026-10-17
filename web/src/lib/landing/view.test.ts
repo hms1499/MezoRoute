@@ -57,8 +57,17 @@ describe("simulatorRows", () => {
     expect(btc.lp.kind === "figure" && btc.lp.format(btc.lp.value)).toBe(`≈ +${formatToken(sim.lp.btcAdded)} BTC`);
     expect(drop.lp.kind === "figure" && drop.lp.format(drop.lp.value)).toBe(`≈ ${formatToken(sim.lp.valueAfterDrop, 18, 2)} MUSD`);
     expect(drop.sp.kind === "figure" && drop.sp.format(drop.sp.value)).toBe("1,000 MUSD");
-    expect(fee.lp).toEqual({ kind: "text", text: "0.1%" });
+    expect(fee.lp).toEqual({ kind: "text", text: "0.1%", figure: true });
     expect(fee.sp).toEqual({ kind: "text", text: "None" });
+  });
+
+  it("marks numeric text as a figure (mono) and words as prose", () => {
+    const withHistory = simulateRoutes({ reference, history, amount: 1_000n * ONE, executorFeeBps: 10n });
+    const [source, last30, btc] = simulatorRows(withHistory);
+    expect(source.lp).toEqual({ kind: "text", text: "Swap fees" });
+    expect(last30.lp).toMatchObject({ kind: "text", figure: true });
+    expect(last30.sp).not.toHaveProperty("figure");
+    expect(btc.sp).toEqual({ kind: "text", text: "0 BTC", figure: true });
   });
 
   it("says Unavailable for the 30-day row without history", () => {
