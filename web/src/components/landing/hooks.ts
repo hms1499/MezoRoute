@@ -21,7 +21,7 @@ export function usePrefersReducedMotion(): boolean {
  * A bigint that eases to `target` over `durationMs` whenever `target` changes. It starts at `initial`
  * (default: `target`, so nothing moves on mount). Under reduced motion it is always `target`.
  */
-export function useCountUp(target: bigint, durationMs = LANDING_MOTION_MS.simulatorCount, initial?: bigint): bigint {
+export function useCountUp(target: bigint, durationMs: number = LANDING_MOTION_MS.simulatorCount, initial?: bigint): bigint {
   const reduced = usePrefersReducedMotion();
   const [shown, setShown] = useState(initial ?? target);
   const latest = useRef(shown);

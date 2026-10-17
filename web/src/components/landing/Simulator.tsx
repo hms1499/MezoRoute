@@ -51,7 +51,7 @@ export function Simulator({
       <label htmlFor="simulator-amount" className="sr-only">
         Amount in MUSD
       </label>
-      <div className="landing-control mt-3 flex items-center gap-2 bg-well px-3">
+      <div className="landing-control landing-control--input mt-3 flex items-center gap-2 bg-well px-3">
         <input
           id="simulator-amount"
           inputMode="decimal"

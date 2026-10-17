@@ -20,13 +20,13 @@ export function HowItWorks() {
       id="how-it-works"
       data-seen={seen}
       aria-labelledby="how-heading"
-      className="landing-reveal scroll-mt-6 border-t border-night-line py-14"
+      className="landing-section landing-reveal scroll-mt-6"
     >
-      <h2 id="how-heading" className="text-2xl font-semibold tracking-tight text-night-ink">
+      <h2 id="how-heading" className="landing-section-title text-2xl tracking-tight">
         Three steps, every number shown before you sign
       </h2>
-      <div aria-hidden className="relative mt-8 hidden h-px bg-night-line sm:block">
-        <span data-seen={seen} className="landing-fill absolute inset-0 origin-left bg-night-lp" />
+      <div aria-hidden className="relative mt-8 hidden h-px bg-line sm:block">
+        <span data-seen={seen} className="landing-fill absolute inset-0 origin-left bg-accent" />
       </div>
       <ol className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
         {STEPS.map((step) => (

@@ -10,8 +10,8 @@ const executor = networks.mainnet.executor;
 export function TrustRow() {
   const [ref, seen] = useInView<HTMLElement>();
   return (
-    <section ref={ref} data-seen={seen} aria-labelledby="trust-heading" className="landing-reveal border-t border-night-line py-14">
-      <h2 id="trust-heading" className="text-2xl font-semibold tracking-tight text-ink">
+    <section ref={ref} data-seen={seen} aria-labelledby="trust-heading" className="landing-section landing-reveal">
+      <h2 id="trust-heading" className="landing-section-title text-2xl tracking-tight">
         Before you connect
       </h2>
       <ul className="mt-6 grid grid-cols-1 gap-6 text-sm sm:grid-cols-2 lg:grid-cols-4">
@@ -42,8 +42,10 @@ export function TrustRow() {
 function Item({ icon: Icon, title, warn = false, children }: { icon: LucideIcon; title: string; warn?: boolean; children: ReactNode }) {
   return (
     <li>
-      <p className={warn ? "inline-flex items-center gap-2 font-semibold text-warning-ink" : "inline-flex items-center gap-2 font-semibold text-night-ink"}>
-        <Icon aria-hidden className="h-4 w-4" />
+      <p className={warn ? "flex items-center gap-2 font-semibold text-warning-ink" : "flex items-center gap-2 font-semibold text-night-ink"}>
+        <span className="landing-trust-icon">
+          <Icon aria-hidden className="h-4 w-4" />
+        </span>
         {title}
       </p>
       <p className="mt-1 leading-relaxed text-night-muted">{children}</p>

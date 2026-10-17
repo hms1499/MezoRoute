@@ -75,7 +75,10 @@
   }
   .landing-control:focus-within {
     border-color: theme("colors.accent.DEFAULT");
-    box-shadow: 0 0 0 2px theme("colors.accent.DEFAULT");
+  }
+  .landing-control--input:focus-within {
+    outline: 2px solid theme("colors.accent.DEFAULT");
+    outline-offset: 2px;
   }
   .landing-control--compact {
     min-height: 2.25rem;
@@ -94,6 +97,30 @@
     border-radius: var(--landing-radius-panel);
     background-color: color-mix(in srgb, theme("colors.surface") 68%, transparent);
     padding: 1rem;
+  }
+  .landing-section {
+    border-top: 1px solid theme("colors.line");
+    padding-block: var(--landing-space-section);
+  }
+  .landing-divider {
+    border-block: 1px solid theme("colors.line");
+  }
+  .landing-route-lane {
+    transition:
+      border-color var(--landing-motion-card) ease,
+      background-color var(--landing-motion-card) ease;
+  }
+  .landing-trust-icon {
+    display: inline-flex;
+    width: 2rem;
+    height: 2rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid theme("colors.line");
+    border-radius: var(--landing-radius-control);
+    background-color: theme("colors.surface");
+    color: theme("colors.muted");
   }
 }
 
