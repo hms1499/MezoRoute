@@ -75,6 +75,7 @@ Rules that go with it:
 | `SpPositionCard` aside figure | `text-lg font-semibold` (sans) | `font-mono text-xl font-medium` — matches the LP card; it is a key figure (U3 §3.2) |
 | `ReadinessCard` headline | `text-lg font-semibold leading-snug` | `text-xl font-semibold` |
 | `Simulator` figure cells | `font-mono text-[13px]` | `font-mono text-sm` |
+| `Simulator` amount input | `font-mono text-2xl font-semibold` | `font-mono text-headline` (same 24 px and weight; found by the guard's dry run) |
 | `BtcMoveChart` SVG text | `fontSize` 10 (axis, bands) and 11 (values) | `CHART_FONT_PX` (12) everywhere; band labels show from a band height of 14 px (was 12) |
 | `Logo` wordmark | `text-base font-semibold tracking-tight` | unchanged (on scale; tracking on a wordmark is fine) |
 
