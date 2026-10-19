@@ -87,13 +87,14 @@ Optional prep that needs no funds:
 
 ## Waiting on the user
 
-- T0 research for the deck: 1–2 quotes from Mezo Discord users, and the step count for borrow → LP in the Mezo app.
 - Report to the Mezo team (Discord):
   - Passport/OrangeKit hard-code the dead relayer `test.mezo.org` (patched locally by `frontend/scripts/patch-relayer.mjs`).
   - A testnet RPC backend returns intrinsic-only gas estimates and null receipts for mined transactions.
 - Unconfirmed: spec §16 says "product code starts on 16 Oct"; we don't know whether this is a hackathon rule.
 
 ## Decisions still open / deferred minors
+
+**Deck (19 Oct, user's decision):** no Discord user quotes (there are no real users yet); the deck's problem slide uses the measured borrow → LP step count in the Mezo app (the agent measures it on testnet.mezo.org) and on-chain figures instead.
 
 **D1 video deferred minors (confirmCall review, 19 Oct):**
 - An explorer-confirmed approval can be followed by a stale-node allowance read ("approval does not cover this amount") until the node catches up.

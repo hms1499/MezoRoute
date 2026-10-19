@@ -740,7 +740,7 @@ Remaining:
 
 - (Done 30 Sep) BTC permit verified; `adjustTroveWithSignature` semantics, flash-swap hook, and fee/MCR parameters read.
 - (Done 30 Sep) `provideToSP` requires a prior MUSD allowance (`transferFrom`).
-- Short user check: ask 3–5 Mezo Discord users where they put borrowed MUSD and how many steps it takes; keep 1–2 quotes for the deck.
+- (Dropped 19 Oct) Short user check with Mezo Discord users: there are no real users yet; the deck relies on the measured step count and on-chain figures.
 - Count the actions needed today in the Mezo app for borrow → LP (for the deck comparison).
 - Ask the Mezo team on Discord whether MEZO utility for integrators (e.g. veMEZO) is planned during the event; if yes, revisit scope for Wave 2.
 
