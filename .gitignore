@@ -3,3 +3,6 @@
 .claude/settings.local.json
 # Demo video build (local only: recordings, music, renders)
 video/
+
+# macOS Finder metadata
+.DS_Store
