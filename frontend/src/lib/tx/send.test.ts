@@ -256,8 +256,43 @@ describe("confirmCall on the flaky testnet RPC", () => {
     vi.mocked(waitForTransactionReceipt).mockReturnValue(new Promise(() => {}) as never);
     vi.mocked(getTransactionReceipt).mockResolvedValue(receipt({ status: "reverted" }) as never);
     const confirmed = confirmCall(config, HASH, 31611).catch((caught: unknown) => caught);
-    await vi.advanceTimersByTimeAsync(2_000);
+    await vi.advanceTimersByTimeAsync(7_000);
     expect(await confirmed).toBeInstanceOf(TransactionRevertedError);
+  });
+
+  it("keeps viem's revert reason when the receipt poll sees the reverted receipt first", async () => {
+    // The poll asks every 2 s; viem replays the call on the next block and only then throws with the revert
+    // data that decodeError turns into "slippage" or "quote expired" advice.
+    vi.useFakeTimers();
+    const replay = new Error("execution reverted");
+    vi.mocked(waitForTransactionReceipt).mockImplementation(
+      () => new Promise((_, reject) => setTimeout(() => reject(replay), 3_000)) as never,
+    );
+    vi.mocked(getTransactionReceipt).mockResolvedValue(receipt({ status: "reverted" }) as never);
+    const confirmed = confirmCall(config, HASH, 31611).catch((caught: unknown) => caught);
+    await vi.advanceTimersByTimeAsync(4_000);
+    const error = await confirmed;
+    expect(error).toBeInstanceOf(TransactionRevertedError);
+    expect((error as Error).cause).toBe(replay);
+  });
+
+  it("ignores an explorer row for a transaction that is not mined yet", async () => {
+    vi.useFakeTimers();
+    vi.mocked(waitForTransactionReceipt).mockReturnValue(new Promise(() => {}) as never);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ jsonrpc: "2.0", id: 1, result: { transactionHash: HASH, blockHash: null, blockNumber: null, status: null, logs: [] } }),
+      }),
+    );
+    let settled = false;
+    void confirmCall(config, HASH, 31611).then(
+      () => (settled = true),
+      () => (settled = true),
+    );
+    await vi.advanceTimersByTimeAsync(6_000);
+    expect(settled).toBe(false);
   });
 
   it("stops polling for the receipt once viem has confirmed", async () => {

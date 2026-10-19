@@ -94,6 +94,8 @@ export async function submitCall(
 /** How long to wait for a receipt in total, and the pause before asking again after a flaky-RPC miss. */
 const CONFIRM_TIMEOUT_MS = 120_000;
 const RETRY_PAUSE_MS = 2_000;
+/** How long a reverted receipt from the direct poll waits for viem's replay, which carries the revert reason. */
+const REVERT_GRACE_MS = 5_000;
 
 /**
  * Waits for a submitted transaction's successful receipt; also serves the receipt page after a reload.
@@ -111,7 +113,18 @@ export async function confirmCall(config: Config, hash: Hash, chainId: number): 
     const viem = viemReceipt(config, hash, chainId, deadline, replaced);
     // If the direct poll wins, viem's wait still ends later (usually its timeout): don't leave that unhandled.
     viem.catch(() => {});
-    receipt = await Promise.race([viem, polledReceipt(config, hash, chainId, deadline, stop)]);
+    const first = await Promise.race([
+      viem.then((found) => ({ polled: false, found })),
+      polledReceipt(config, hash, chainId, deadline, stop).then((found) => ({ polled: true, found })),
+    ]);
+    receipt = first.found;
+    if (first.polled && receipt.status !== "success") {
+      // viem replays a reverted call and throws with its revert data, which decodeError turns into advice
+      // (slippage, expired quote): wait briefly for that before reporting a bare revert.
+      const grace = Math.max(Math.min(REVERT_GRACE_MS, deadline - Date.now()), 0);
+      const bare = receipt;
+      receipt = await Promise.race([viem, new Promise<TransactionReceipt>((resolve) => setTimeout(() => resolve(bare), grace))]);
+    }
   } finally {
     stop.done = true;
   }
@@ -157,7 +170,10 @@ async function explorerReceipt(hash: Hash, chainId: number): Promise<Transaction
     });
     if (!response.ok) return null;
     const { result } = (await response.json()) as { result?: RpcTransactionReceipt | null };
-    return result ? formatTransactionReceipt(result) : null;
+    // Only a mined receipt for this hash counts (Blockscout can index pending transactions).
+    const mined = result?.blockHash && result.blockNumber && (result.status === "0x1" || result.status === "0x0");
+    if (!result || !mined || result.transactionHash?.toLowerCase() !== hash.toLowerCase()) return null;
+    return formatTransactionReceipt(result);
   } catch {
     return null;
   }
