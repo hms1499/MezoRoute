@@ -34,7 +34,7 @@ Tests at `main` (17 Oct): 800 Vitest and 75 Foundry. `npm run build` passes (Fir
 
 ## Next: V1 → D1
 
-0. **Before any push to `main`:** the user sets the Vercel project's Root Directory to `frontend` (Settings → Build & Deployment; their choice on 17 Oct over disabling Git deploys). Then push the local commits (`main` is ahead of `origin/main`), check that the Git-triggered production build serves the app (not a 404), and update `AGENTS.md` with the CLI deploy command that works with the new Root Directory.
+0. Done 19 Oct: Root Directory is `frontend`; pushing `main` deploys production (first Git build served the app). Left: find the CLI deploy command that works now (try a preview from the repo root).
 1. V1: production is live at https://mezoroute.vercel.app; left: real-wallet QA on both wallet types. Bitcoin wallets on mainnet can no longer deposit BTC natively (bridge-in closed 13 Oct).
 2. D1: README, deck, video, submission form.
 
@@ -171,7 +171,7 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
-- **19 Oct 2026 (Claude Code):** Deleted the untracked leftover `web/` (iCloud stale copy from before the rename; nothing referenced it) and fixed the WalletConnect env hint to say `frontend/.env.example` (800 Vitest, build pass). `main` still not pushed (Vercel Root Directory pending).
+- **19 Oct 2026 (Claude Code):** Root Directory set to `frontend` by the user; pushed `main` (58d97c9), the Git-triggered production build is Ready and serves the app (/, /positions/, /route/lp/, /tx/ 200; live relayer chunk, not the dead one; 0 console errors, no horizontal scroll). Earlier: deleted the untracked leftover `web/` (iCloud stale copy from before the rename; nothing referenced it) and fixed the WalletConnect env hint to say `frontend/.env.example` (800 Vitest, build pass). 
 
 - **17 Oct 2026 (Claude Code), session end:** U7 and U8 live on production. `main` has local commits not pushed on purpose (Git deploys still build from the repo root). Next: Next step 0 (Vercel Root Directory), then V1 real-wallet QA (including the SP withdraw page and Positions SP card with a real SP deposit), then D1.
 
