@@ -171,6 +171,8 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
+- **19 Oct 2026 (Claude Code):** Deleted the untracked leftover `web/` (iCloud stale copy from before the rename; nothing referenced it) and fixed the WalletConnect env hint to say `frontend/.env.example` (800 Vitest, build pass). `main` still not pushed (Vercel Root Directory pending).
+
 - **17 Oct 2026 (Claude Code), session end:** U7 and U8 live on production. `main` has local commits not pushed on purpose (Git deploys still build from the repo root). Next: Next step 0 (Vercel Root Directory), then V1 real-wallet QA (including the SP withdraw page and Positions SP card with a real SP deposit), then D1.
 
 - **17 Oct 2026 (Claude Code):** Incident: pushing `main` (562ae0a) triggered a Git-sourced Vercel production build from the repo root (project Root Directory `.`, framework Other), which produced an empty output and took https://mezoroute.vercel.app to 404 for a few minutes. The user's CLI deploy from `frontend/` (dpl_3TBaqmcZfXSFzwUrti3hFagEtPDM) restored it with U7 + U8; agent QA on the URL passed (360/1440 px, mock wallet, terms, Compare routes, review LP value, no horizontal scroll, 0 console errors, live relayer chunk). **Do not push `main` until Git deploys are fixed** (the user chose Root Directory `frontend` in the Vercel project; see Next, step 0).
