@@ -1,7 +1,8 @@
-import type { Address, Hash, Hex, TransactionReceipt } from "viem";
+import { formatTransactionReceipt, type Address, type Hash, type Hex, type RpcTransactionReceipt, type TransactionReceipt } from "viem";
 import type { Config } from "wagmi";
-import { estimateGas, getAccount, sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
+import { estimateGas, getAccount, getTransactionReceipt, sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
 import { causeChain, chainNames, findRevertData } from "@/lib/errors/chain";
+import { networks } from "@/lib/config/networks";
 import { gasLimit } from "@/lib/quote/gas";
 import { isOrangeKitConnector } from "@/lib/wallet/capabilities";
 import {
@@ -97,24 +98,89 @@ const RETRY_PAUSE_MS = 2_000;
 /**
  * Waits for a submitted transaction's successful receipt; also serves the receipt page after a reload.
  * The public testnet RPC sometimes answers null for a mined transaction's receipt and block, which
- * makes viem give up early; such a miss is retried until the overall timeout.
+ * makes viem give up early; such a miss is retried until the overall timeout. It can also answer null
+ * for eth_getTransactionByHash for minutes (19 Oct 2026), and viem then keeps asking for the transaction
+ * without asking for the receipt again, so the receipt is also polled directly.
  */
 export async function confirmCall(config: Config, hash: Hash, chainId: number): Promise<TransactionReceipt> {
   const deadline = Date.now() + CONFIRM_TIMEOUT_MS;
-  let replacement: { reason: string; transaction: { hash: Hash } } | undefined;
+  const replaced: { value?: { reason: string; transaction: { hash: Hash } } } = {};
+  const stop = { done: false };
   let receipt: TransactionReceipt;
+  try {
+    const viem = viemReceipt(config, hash, chainId, deadline, replaced);
+    // If the direct poll wins, viem's wait still ends later (usually its timeout): don't leave that unhandled.
+    viem.catch(() => {});
+    receipt = await Promise.race([viem, polledReceipt(config, hash, chainId, deadline, stop)]);
+  } finally {
+    stop.done = true;
+  }
+  // viem follows a replacement and resolves with its receipt; only a repriced copy is the same call.
+  const replacement = replaced.value;
+  if (replacement && replacement.reason !== "repriced") {
+    throw new TransactionReplacedError(hash, replacement.transaction.hash);
+  }
+  if (receipt.status !== "success") throw new TransactionRevertedError(receipt.transactionHash);
+  if (hasSafeExecutionFailure(receipt.logs)) throw new SmartAccountCallFailedError(receipt.transactionHash);
+  return receipt;
+}
+
+/**
+ * Asks for the receipt itself every RETRY_PAUSE_MS until the deadline; never settles if none comes. When the
+ * RPC answers null it also asks the explorer: the browser keeps one connection to the RPC, and that can stay
+ * on a node that lacks the mined transaction (19 Oct 2026).
+ */
+async function polledReceipt(
+  config: Config,
+  hash: Hash,
+  chainId: number,
+  deadline: number,
+  stop: { done: boolean },
+): Promise<TransactionReceipt> {
+  for (;;) {
+    await new Promise((resolve) => setTimeout(resolve, RETRY_PAUSE_MS));
+    if (stop.done || Date.now() >= deadline) return new Promise<never>(() => {});
+    const receipt = (await getTransactionReceipt(config, { hash, chainId }).catch(() => null)) ?? (await explorerReceipt(hash, chainId));
+    if (receipt) return receipt;
+  }
+}
+
+/** The receipt from the explorer's (Blockscout) eth-rpc endpoint, or null. */
+async function explorerReceipt(hash: Hash, chainId: number): Promise<TransactionReceipt | null> {
+  const network = Object.values(networks).find((n) => n.chainId === chainId);
+  if (!network) return null;
+  try {
+    const response = await fetch(`${network.explorerApiUrl}/api/eth-rpc`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getTransactionReceipt", params: [hash] }),
+    });
+    if (!response.ok) return null;
+    const { result } = (await response.json()) as { result?: RpcTransactionReceipt | null };
+    return result ? formatTransactionReceipt(result) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function viemReceipt(
+  config: Config,
+  hash: Hash,
+  chainId: number,
+  deadline: number,
+  replaced: { value?: { reason: string; transaction: { hash: Hash } } },
+): Promise<TransactionReceipt> {
   for (;;) {
     try {
-      receipt = await waitForTransactionReceipt(config, {
+      return await waitForTransactionReceipt(config, {
         hash,
         chainId,
         pollingInterval: RETRY_PAUSE_MS,
         timeout: Math.max(deadline - Date.now(), 1),
-        onReplaced: (replaced) => {
-          replacement = replaced;
+        onReplaced: (replacement) => {
+          replaced.value = replacement;
         },
       });
-      break;
     } catch (error) {
       const failure = receiptFailure(error, hash);
       const viemTimedOut = chainNames(causeChain(error)).includes("WaitForTransactionReceiptTimeoutError");
@@ -124,13 +190,6 @@ export async function confirmCall(config: Config, hash: Hash, chainId: number): 
       await new Promise((resolve) => setTimeout(resolve, RETRY_PAUSE_MS));
     }
   }
-  // viem follows a replacement and resolves with its receipt; only a repriced copy is the same call.
-  if (replacement && replacement.reason !== "repriced") {
-    throw new TransactionReplacedError(hash, replacement.transaction.hash);
-  }
-  if (receipt.status !== "success") throw new TransactionRevertedError(receipt.transactionHash);
-  if (hasSafeExecutionFailure(receipt.logs)) throw new SmartAccountCallFailedError(receipt.transactionHash);
-  return receipt;
 }
 
 /** Submit, then confirm: used for steps that must finish before the next one (the approval). */

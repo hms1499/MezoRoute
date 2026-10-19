@@ -10,7 +10,7 @@ import {
   type TransactionReceipt,
 } from "viem";
 import { ConnectorChainMismatchError, type Config } from "wagmi";
-import { estimateGas, getAccount, sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
+import { estimateGas, getAccount, getTransactionReceipt, sendTransaction, waitForTransactionReceipt } from "wagmi/actions";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import {
@@ -26,6 +26,7 @@ import { assertTxHash, confirmCall, isTxHash, receiptFailure, sendCall, submitCa
 vi.mock("wagmi/actions", () => ({
   estimateGas: vi.fn(),
   getAccount: vi.fn(),
+  getTransactionReceipt: vi.fn(),
   sendTransaction: vi.fn(),
   waitForTransactionReceipt: vi.fn(),
 }));
@@ -44,6 +45,13 @@ beforeEach(() => {
   vi.mocked(getAccount).mockReturnValue({ connector: { type: "injected", id: "io.metamask" } } as never);
   vi.mocked(sendTransaction).mockResolvedValue(HASH);
   vi.mocked(waitForTransactionReceipt).mockResolvedValue(receipt() as never);
+  vi.mocked(getTransactionReceipt).mockRejectedValue(new TransactionReceiptNotFoundError({ hash: HASH }));
+  // The explorer receipt fallback must never reach the network in tests: it answers "no receipt".
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ jsonrpc: "2.0", id: 1, result: null }) }));
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe("assertTxHash", () => {
@@ -227,5 +235,70 @@ describe("confirmCall on the flaky testnet RPC", () => {
     vi.mocked(waitForTransactionReceipt).mockRejectedValueOnce(new Error("execution reverted"));
     await expect(confirmCall(config, HASH, 31611)).rejects.toBeInstanceOf(TransactionRevertedError);
     expect(waitForTransactionReceipt).toHaveBeenCalledTimes(2);
+  });
+
+  it("finds the receipt directly when viem is stuck on eth_getTransactionByHash returning null", async () => {
+    // 19 Oct 2026: the testnet RPC answered null for a mined transaction's eth_getTransactionByHash for minutes;
+    // viem kept asking for the transaction and never asked for the receipt again.
+    vi.useFakeTimers();
+    vi.mocked(waitForTransactionReceipt).mockReturnValue(new Promise(() => {}) as never);
+    vi.mocked(getTransactionReceipt)
+      .mockRejectedValueOnce(new TransactionReceiptNotFoundError({ hash: HASH }))
+      .mockResolvedValueOnce(receipt() as never);
+    const confirmed = confirmCall(config, HASH, 31611);
+    await vi.advanceTimersByTimeAsync(4_000);
+    await expect(confirmed).resolves.toMatchObject({ transactionHash: HASH });
+    expect(getTransactionReceipt).toHaveBeenCalledWith(config, { hash: HASH, chainId: 31611 });
+  });
+
+  it("still reports a revert found by the direct receipt poll", async () => {
+    vi.useFakeTimers();
+    vi.mocked(waitForTransactionReceipt).mockReturnValue(new Promise(() => {}) as never);
+    vi.mocked(getTransactionReceipt).mockResolvedValue(receipt({ status: "reverted" }) as never);
+    const confirmed = confirmCall(config, HASH, 31611).catch((caught: unknown) => caught);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(await confirmed).toBeInstanceOf(TransactionRevertedError);
+  });
+
+  it("stops polling for the receipt once viem has confirmed", async () => {
+    vi.useFakeTimers();
+    await confirmCall(config, HASH, 31611);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(getTransactionReceipt).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the explorer's eth-rpc when the RPC node keeps answering null for the receipt", async () => {
+    // 19 Oct 2026: the browser's one connection to rpc.test.mezo.org stayed on a node that lacked the mined
+    // transaction, so even direct receipt requests answered null; the explorer's indexer had it.
+    vi.useFakeTimers();
+    vi.mocked(waitForTransactionReceipt).mockReturnValue(new Promise(() => {}) as never);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        jsonrpc: "2.0",
+        id: 1,
+        result: {
+          blockHash: "0x7a29ffe13b909200d69279de2eff0741c86e91dcd39be3f8b2a8d864465d9db9",
+          blockNumber: "0xf7c553",
+          contractAddress: null,
+          cumulativeGasUsed: "0x5321f",
+          effectiveGasPrice: "0x92",
+          from: PIN.account,
+          gasUsed: "0x5321f",
+          logs: [],
+          logsBloom: "0x" + "0".repeat(512),
+          status: "0x1",
+          to: CALL.to,
+          transactionHash: HASH,
+          transactionIndex: "0x0",
+          type: "0x2",
+        },
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const confirmed = confirmCall(config, HASH, 31611);
+    await vi.advanceTimersByTimeAsync(2_000);
+    await expect(confirmed).resolves.toMatchObject({ transactionHash: HASH, status: "success", blockNumber: 16_237_907n });
+    expect(fetchMock).toHaveBeenCalledWith("https://api.explorer.test.mezo.org/api/eth-rpc", expect.objectContaining({ method: "POST" }));
   });
 });
