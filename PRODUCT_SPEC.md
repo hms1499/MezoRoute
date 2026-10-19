@@ -741,7 +741,7 @@ Remaining:
 - (Done 30 Sep) BTC permit verified; `adjustTroveWithSignature` semantics, flash-swap hook, and fee/MCR parameters read.
 - (Done 30 Sep) `provideToSP` requires a prior MUSD allowance (`transferFrom`).
 - (Dropped 19 Oct) Short user check with Mezo Discord users: there are no real users yet; the deck relies on the measured step count and on-chain figures.
-- Count the actions needed today in the Mezo app for borrow → LP (for the deck comparison).
+- (Done 19 Oct) Borrow → LP in the Mezo app (testnet.mezo.org, 10 MUSD, test wallet `0xd74f…2B49`) takes **6 wallet confirmations on 3 screens**: Borrow more (1); Swap MUSD → BTC: approve + swap (2); Pool → Add liquidity: approve MUSD + approve BTC + deposit (3). Approvals are exact amounts, so each new deposit repeats them; the user picks the swap size by hand and keeps BTC dust (0.000069 BTC swapped, 0.000062 deposited). Sign-in (one SIWE signature) excluded. All 6 transactions succeeded: borrow `0xa2c74d05…59d2`, approve `0x1596c417…fd8b`, swap `0xd2d2cec5…8c19`, approve MUSD `0x49ef1fee…4210`, approve BTC `0xb9e90bd5…e400`, add liquidity `0xc210b11d…db2a`. MezoRoute Borrow & Deploy: 1 transaction + 2 signatures on one screen.
 - Ask the Mezo team on Discord whether MEZO utility for integrators (e.g. veMEZO) is planned during the event; if yes, revisit scope for Wave 2.
 
 ### Wave 1 — Done (30 Sep 2026)
