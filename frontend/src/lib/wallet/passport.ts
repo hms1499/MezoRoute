@@ -39,6 +39,6 @@ export function createWagmiConfig(network: NetworkConfig, walletConnectProjectId
 
 export function walletConnectProjectId(): string {
   const id = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
-  if (!id) throw new Error("NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is not set (see web/.env.example)");
+  if (!id) throw new Error("NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is not set (see frontend/.env.example)");
   return id;
 }
