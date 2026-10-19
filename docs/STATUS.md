@@ -2,7 +2,7 @@
 
 Living handover file for every agent (see `AGENTS.md` → Session protocol). Update it and commit at the end of each session or milestone. Scope and the backlog are in `PRODUCT_SPEC.md` §16; this file says where we are in it.
 
-**Last updated:** 17 Oct 2026 (session end, Claude Code) · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** U4, U5, and U6 merged and pushed (17 Oct).
+**Last updated:** 19 Oct 2026 (Claude Code) · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** U4, U5, and U6 merged and pushed (17 Oct).
 
 ## Where we are
 
@@ -28,9 +28,9 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 | V1 Vercel production + QA on both wallet types | Production live (17 Oct); real-wallet QA left | **https://mezoroute.vercel.app** (deployed by the user with `cd frontend && vercel deploy --prod --yes`, dpl_BWZsKCZ19tCyuApbgG8QqxWAdhkY), public with no Vercel login. `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` is set in Vercel Production env. Agent QA on the production URL: landing on testnet and mainnet at 360/1440 px (live mainnet figures, mainnet banner, no horizontal scroll), mock-wallet dashboard/positions/LP route on testnet, 0 console errors; the served chunk carries the live relayer `testnet.mezo.org/api/v2/relay` and not the dead one. Left for the user: one real-wallet round trip per wallet type (MetaMask, a Bitcoin wallet) on the production URL. |
 | U7 UX audit fixes | Done (17 Oct), merged and pushed | Small change approved in chat (no spec), from an agent UX audit of production (12 findings; this is the approved group of 7). Testnet no-Trove card adds "Get test BTC" (faucet) and the 1,800 MUSD minimum debt; wallet modal lists Bitcoin wallets under "Bitcoin" (not "Installed") and its footer names Bitcoin and EVM wallets; account button stays on one line at 360 px (tighter header padding below 640 px); exposure aside reads "BTC price"; Borrow & Deploy tab disabled without a Trove with the reason under it; route buttons read "Deposit to LP" / "Deposit to Stability Pool"; a wallet cancellation is a neutral note on the step ("You cancelled this in your wallet."), no toast. 791 Vitest, build 92 kB, Playwright on the local build at 360/390/768/1440 px: no horizontal scroll, modal connect works, 0 console errors. The user's real Unisat connect passed (17 Oct). Live on production since 17 Oct with U8. Deferred audit items: in-app glossary for Trove/LP/slippage/permit, Next step vs Compare routes order, Dashboard link hidden below 640 px, exit vs entry stepper labels, Review page LP value in MUSD. |
 | U8 Mezo terms + remaining audit items | Done (17 Oct), merged and pushed | Small change approved in chat (no spec), visual options picked in the brainstorm companion. `Term` popovers with 10 approved one-sentence definitions (`src/lib/glossary.ts`) on the first label/heading per page; Next step "ready" has one "Compare routes" button to `#compare` (prefilled), with `scroll-padding-top` under the sticky header; below 640 px the header shows the other main page (Dashboard on Positions and its flows); LP exit uses Amount → Confirm → Done; the LP review shows "≈ … MUSD at the pool price" (`entryValue`, shared with Compare's "Position after"). 800 Vitest, build 92 kB, Playwright on the local build at 360/768/1440 px: terms never nested in links/buttons/tabs, no duplicates per page, popovers inside the 16 px gutter, hover/click/tap/Escape/keyboard/one-at-a-time and accessible descriptions checked, no horizontal scroll, 0 console errors. Not yet seen in a browser: the SP withdraw page and the Positions SP card (no QA account holds an SP deposit). Live on production since 17 Oct (dpl_3TBaqmcZfXSFzwUrti3hFagEtPDM, user CLI deploy). |
-| D1 README, deck, 2-minute video, submission form | README done (19 Oct) | `README.md` at the root (spec §17 contents, mainnet round-trip hashes, limitations, MUSD-not-MEZO). A hidden `TODO(D1)` comment marks where the video and deck links go. Open: add a `LICENSE` file (README says MIT from the SPDX header). Left: deck, video, submission form, `wave1` tag |
+| D1 README, deck, 2-minute video, submission form | README and video done (19 Oct) | README at the root. Video: `video/out/mezoroute-demo.mp4` (local only, `video/` is git-ignored; 2:58, 1080p30, 15 scenes, chip + spotlight, "New Life" by Moire; every transaction a real testnet tx, hashes in `video/out/final-take-log.jsonl`; description in `video/out/description.txt`, Uppbeat credit skipped by the user). Accepted by the user. Spec `docs/superpowers/specs/2026-10-19-d1-demo-video-design.md`, plan `docs/superpowers/plans/2026-10-19-d1-demo-video.md`; tool notes `video/NOTES.md`. Left: deck, submission form, `wave1` tag, adding the video link to the README (hidden `TODO(D1)`) once uploaded |
 
-Tests at `main` (17 Oct): 800 Vitest and 75 Foundry. `npm run build` passes (First Load JS of `/` 92 kB).
+Tests at `main` (19 Oct): 806 Vitest and 75 Foundry. `npm run build` passes (First Load JS of `/` 92 kB).
 
 ## Next: V1 → D1
 
@@ -94,6 +94,11 @@ Optional prep that needs no funds:
 - Unconfirmed: spec §16 says "product code starts on 16 Oct"; we don't know whether this is a hackathon rule.
 
 ## Decisions still open / deferred minors
+
+**D1 video deferred minors (confirmCall review, 19 Oct):**
+- An explorer-confirmed approval can be followed by a stale-node allowance read ("approval does not cover this amount") until the node catches up.
+- viem's wait keeps polling (≤ ~118 s) after the direct receipt poll wins; no stop check before its retries.
+- The explorer receipt fetch has no timeout, no stop re-check, and runs on every pending tick (~60 requests over 120 s).
 
 **F6 deferred:**
 - The LP backtest treats the user as a marginal LP, so huge amounts over-credit fees.
@@ -170,6 +175,8 @@ Optional prep that needs no funds:
 The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), and the README, deck, video, and tag (D1). The route comparison gap is now closed by F5 + F6.
 
 ## Session log
+
+- **19 Oct 2026 (Claude Code):** D1 demo video built (brainstorm → spec → plan → inline execution): a local Playwright + CDP screencast + ffmpeg tool in git-ignored `video/`, real testnet transactions from the test wallet through a keyless mock wallet. Found and fixed (user-approved) a receipt bug: `confirmCall` said "Not confirmed yet" for mined transactions because the browser's one RPC connection stayed on a node that hid them from viem; now a direct receipt poll with an explorer `eth-rpc` fallback, and a reverted polled receipt waits for viem's revert reason (fresh review: 1 Important + 1 regraded fixed, 3 minors deferred). 806 Vitest, build pass, pushed (production builds from `main`). User accepted the video. Next: deck, submission form, `wave1` tag, V1 real-wallet QA.
 
 - **19 Oct 2026 (Claude Code):** README written (user skipped the brainstorm questions), committed and pushed. Next: deck and video, then V1 real-wallet QA.
 
