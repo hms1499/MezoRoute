@@ -7,10 +7,8 @@ MezoRoute shows Mezo borrowers where to put their MUSD (the MUSD/BTC liquidity p
 - **Live app:** https://mezoroute.vercel.app (testnet by default; switch to mainnet in the header)
 - **Mainnet executor:** [`0x046449b1229C863e278f369869BA10e12bd80d9E`](https://explorer.mezo.org/address/0x046449b1229C863e278f369869BA10e12bd80d9E) (verified, capped at 1,000 MUSD per entry)
 - **Hackathon:** Build with MUSD and MEZO, AKINDO WaveHack, Wave 1. Track 2 (Access and Distribution) and Track 1 (DeFi)
-
+- **Demo video:** https://www.youtube.com/watch?v=wDJtaaEwrnk
 - **Deck:** [docs/submission/mezoroute-wave1-deck.pdf](docs/submission/mezoroute-wave1-deck.pdf)
-
-<!-- TODO(D1): add the demo video link here once uploaded. -->
 
 ## The problem
 
