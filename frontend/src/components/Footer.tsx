@@ -4,6 +4,7 @@ import { LogoMark } from "@/components/ui/Logo";
 import { MEZO_SITE, REPOSITORY } from "@/lib/config/links";
 import { useNetwork } from "@/lib/config/network-context";
 import { explorerAddressUrl } from "@/lib/config/networks";
+import { ThemeSwitch } from "./ThemeToggle";
 
 /** Brand and project links on top, the standing disclaimer underneath; the hairlines span the viewport. */
 export function Footer() {
@@ -35,6 +36,8 @@ export function Footer() {
               Mezo
             </a>
           </nav>
+          {/* Below 640 px the header has no room for the theme toggle (U9). */}
+          <ThemeSwitch />
         </div>
       </div>
       <div className="border-t border-line">

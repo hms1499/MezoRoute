@@ -9,13 +9,14 @@ import { Logo } from "@/components/ui/Logo";
 import { cx } from "@/lib/ui/cx";
 import { isCurrentPath, onMobile } from "@/lib/ui/nav";
 import { NetworkSwitch } from "./NetworkSwitch";
+import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
   { href: "/", label: "Dashboard" },
   { href: "/positions/", label: "Positions" },
 ];
 
-/** Shared header (spec §9): logo, nav with the current page marked, Testnet/Mainnet switch, wallet button. */
+/** Shared header (spec §9): logo, nav with the current page marked, Testnet/Mainnet switch, theme toggle (from 640 px), wallet button. */
 export function Header() {
   const pathname = usePathname();
   return (
@@ -43,6 +44,7 @@ export function Header() {
         })}
       </nav>
       <NetworkSwitch />
+      <ThemeToggle />
       {/* The app's own small buttons: RainbowKit's wider one pushed the header past 360 px, and its emoji
           avatar did not fit the product (U3 §6). The account button opens RainbowKit's account modal. */}
       <ConnectButton.Custom>
