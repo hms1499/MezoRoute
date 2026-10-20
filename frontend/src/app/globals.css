@@ -18,13 +18,13 @@
     --landing-motion-value-flash: 700ms;
   }
 
+  /* color-scheme and the colour variables come from tokens.ts (the Tailwind plugin), per theme (U9). */
   html {
-    color-scheme: dark;
     /* In-page links (Next step → Compare routes, Review exposure) land below the sticky header (U8). */
     scroll-padding-top: 5rem;
   }
   :focus-visible {
-    outline: 2px solid theme("colors.accent.DEFAULT");
+    outline: 2px solid rgb(var(--color-accent));
     outline-offset: 2px;
   }
   /* Figures align in columns; set per element because Inter's tabular set also widens hyphens in prose. */
@@ -61,14 +61,14 @@
     transition-duration: var(--landing-motion-card);
   }
   .landing-panel {
-    border: 1px solid theme("colors.line");
+    border: 1px solid rgb(var(--color-line));
     border-radius: var(--landing-radius-panel);
-    background-color: theme("colors.surface");
+    background-color: rgb(var(--color-surface));
     padding: var(--landing-space-content);
   }
   .landing-control {
     min-height: 3rem;
-    border: 1px solid theme("colors.line");
+    border: 1px solid rgb(var(--color-line));
     border-radius: var(--landing-radius-control);
     transition:
       border-color var(--landing-motion-control) ease,
@@ -76,10 +76,10 @@
       background-color var(--landing-motion-control) ease;
   }
   .landing-control:focus-within {
-    border-color: theme("colors.accent.DEFAULT");
+    border-color: rgb(var(--color-accent));
   }
   .landing-control--input:focus-within {
-    outline: 2px solid theme("colors.accent.DEFAULT");
+    outline: 2px solid rgb(var(--color-accent));
     outline-offset: 2px;
   }
   .landing-control--compact {
@@ -92,17 +92,17 @@
     @apply text-base font-semibold text-ink;
   }
   .landing-chart-surface {
-    border: 1px solid theme("colors.line");
+    border: 1px solid rgb(var(--color-line));
     border-radius: var(--landing-radius-panel);
-    background-color: color-mix(in srgb, theme("colors.surface") 68%, transparent);
+    background-color: color-mix(in srgb, rgb(var(--color-surface)) 68%, transparent);
     padding: 1rem;
   }
   .landing-section {
-    border-top: 1px solid theme("colors.line");
+    border-top: 1px solid rgb(var(--color-line));
     padding-block: var(--landing-space-section);
   }
   .landing-divider {
-    border-block: 1px solid theme("colors.line");
+    border-block: 1px solid rgb(var(--color-line));
   }
   .landing-route-lane {
     transition:
@@ -116,10 +116,10 @@
     flex: none;
     align-items: center;
     justify-content: center;
-    border: 1px solid theme("colors.line");
+    border: 1px solid rgb(var(--color-line));
     border-radius: var(--landing-radius-control);
-    background-color: theme("colors.surface");
-    color: theme("colors.muted");
+    background-color: rgb(var(--color-surface));
+    color: rgb(var(--color-muted));
   }
 }
 
@@ -185,16 +185,16 @@
 }
 @keyframes landing-ping {
   0% {
-    box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.6);
+    box-shadow: 0 0 0 0 rgb(var(--color-accent) / 0.6);
   }
   70%,
   100% {
-    box-shadow: 0 0 0 8px rgba(45, 212, 191, 0);
+    box-shadow: 0 0 0 8px rgb(var(--color-accent) / 0);
   }
 }
 @keyframes landing-flash {
   from {
-    background-color: rgba(45, 212, 191, 0.18);
+    background-color: rgb(var(--color-accent) / 0.18);
   }
 }
 
