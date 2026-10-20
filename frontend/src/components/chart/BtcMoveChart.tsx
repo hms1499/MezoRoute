@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BAND_LABEL_MIN_HEIGHT, chartGeometry, chartLabels, placeLabels, type Band, type Series, type SeriesId } from "@/lib/chart/move-chart";
-import { CHART_FONT_PX, colors } from "@/lib/ui/tokens";
+import { CHART_FONT_PX, themeColor } from "@/lib/ui/tokens";
 import { cx } from "@/lib/ui/cx";
 
 export type MovePlot = {
@@ -14,15 +14,16 @@ export type MovePlot = {
   crossing?: { move: number; value: number; label: string };
 };
 
+// Theme variables (U9), set through `style`: SVG presentation attributes do not reliably resolve var().
 const STROKE: Record<SeriesId, string> = {
-  lp: colors.accent.DEFAULT,
-  sp: colors.sp.DEFAULT,
-  cr: colors.ink,
-  "lp-before": colors.accent.DEFAULT,
-  "sp-before": colors.sp.DEFAULT,
+  lp: themeColor.accent,
+  sp: themeColor.sp,
+  cr: themeColor.ink,
+  "lp-before": themeColor.accent,
+  "sp-before": themeColor.sp,
 };
-const BAND_FILL = { danger: colors.danger.soft, warning: colors.warning.bg };
-const BAND_TEXT = { danger: colors.danger.DEFAULT, warning: colors.warning.ink };
+const BAND_FILL = { danger: themeColor["danger-soft"], warning: themeColor["warning-bg"] };
+const BAND_TEXT = { danger: themeColor.danger, warning: themeColor["warning-ink"] };
 const FALLBACK_WIDTH = 320;
 
 /**
@@ -64,7 +65,7 @@ export function BtcMoveChart({
     <div ref={ref} className={cx("w-full", className)}>
       <div role="img" aria-label={ariaLabel} className={cx("space-y-3", well && "rounded-xl bg-well p-3")}>
         {plots.map((plot) => (
-          <Plot key={plot.title} plot={plot} width={width} height={height} highlight={highlight} drawIn={drawIn} halo={well ? colors.well : colors.surface} />
+          <Plot key={plot.title} plot={plot} width={width} height={height} highlight={highlight} drawIn={drawIn} halo={well ? themeColor.well : themeColor.surface} />
         ))}
       </div>
       {children}
@@ -100,19 +101,19 @@ function Plot({
       </figcaption>
       <svg aria-hidden viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="mt-1 block max-w-full overflow-visible">
         {g.ticks.map((tick) => (
-          <line key={tick} x1={g.plot.left} x2={g.plot.right} y1={g.y(tick)} y2={g.y(tick)} stroke={colors.line} strokeWidth={1} />
+          <line key={tick} x1={g.plot.left} x2={g.plot.right} y1={g.y(tick)} y2={g.y(tick)} strokeWidth={1} style={{ stroke: themeColor.line }} />
         ))}
         {g.bandRects.map((band) => (
           <g key={band.label}>
-            <rect x={g.plot.left} y={band.y} width={g.plot.right - g.plot.left} height={Math.max(0, band.height)} fill={BAND_FILL[band.tone]} />
+            <rect x={g.plot.left} y={band.y} width={g.plot.right - g.plot.left} height={Math.max(0, band.height)} style={{ fill: BAND_FILL[band.tone] }} />
             {band.height >= BAND_LABEL_MIN_HEIGHT && (
-              <text x={g.plot.right - 4} y={band.y + CHART_FONT_PX} textAnchor="end" fontSize={CHART_FONT_PX} fill={BAND_TEXT[band.tone]}>
+              <text x={g.plot.right - 4} y={band.y + CHART_FONT_PX} textAnchor="end" fontSize={CHART_FONT_PX} style={{ fill: BAND_TEXT[band.tone] }}>
                 {band.label}
               </text>
             )}
           </g>
         ))}
-        <line x1={today} x2={today} y1={g.plot.top} y2={g.plot.bottom} stroke={colors.muted} strokeWidth={1} strokeDasharray="2 3" />
+        <line x1={today} x2={today} y1={g.plot.top} y2={g.plot.bottom} strokeWidth={1} strokeDasharray="2 3" style={{ stroke: themeColor.muted }} />
         {plot.series.map((s) => {
           const before = s.id.endsWith("-before");
           return (
@@ -120,7 +121,7 @@ function Plot({
               key={s.id}
               d={g.paths[s.id]}
               fill="none"
-              stroke={STROKE[s.id]}
+              style={{ stroke: STROKE[s.id] }}
               strokeOpacity={before ? 0.45 : 1}
               strokeDasharray={before ? "4 4" : undefined}
               strokeWidth={highlight === s.id ? 4 : 2.5}
@@ -131,7 +132,7 @@ function Plot({
             />
           );
         })}
-        {plot.crossing && <circle cx={g.x(plot.crossing.move)} cy={g.y(plot.crossing.value)} r={4} fill={colors.danger.DEFAULT} stroke={colors.surface} strokeWidth={2} />}
+        {plot.crossing && <circle cx={g.x(plot.crossing.move)} cy={g.y(plot.crossing.value)} r={4} strokeWidth={2} style={{ fill: themeColor.danger, stroke: themeColor.surface }} />}
         {labels.map((label) => (
           <text
             key={`${label.id}-${label.side}`}
@@ -140,8 +141,7 @@ function Plot({
             textAnchor={label.side === "right" ? "end" : "start"}
             fontSize={CHART_FONT_PX}
             fontFamily="var(--font-mono)"
-            fill={STROKE[label.id]}
-            stroke={halo}
+            style={{ fill: STROKE[label.id], stroke: halo }}
             strokeWidth={3}
             strokeLinejoin="round"
             paintOrder="stroke"
@@ -149,7 +149,7 @@ function Plot({
             {plot.format(label.value)}
           </text>
         ))}
-        <g fontSize={CHART_FONT_PX} fontFamily="var(--font-mono)" fill={colors.muted}>
+        <g fontSize={CHART_FONT_PX} fontFamily="var(--font-mono)" style={{ fill: themeColor.muted }}>
           <text x={g.plot.left} y={height - 4}>
             −30%
           </text>

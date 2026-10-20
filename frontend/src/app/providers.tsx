@@ -1,7 +1,7 @@
 "use client";
 
 import "@rainbow-me/rainbowkit/styles.css";
-import { darkTheme, RainbowKitProvider, type AvatarComponent, type DisclaimerComponent } from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider, type AvatarComponent, type DisclaimerComponent } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Wallet } from "lucide-react";
 import { createContext, memo, useContext, type ReactNode } from "react";
@@ -11,22 +11,20 @@ import { ErrorToastProvider } from "@/components/ErrorToast";
 import { readStoredNetwork, safeStorage } from "@/lib/config/network-choice";
 import { NetworkProvider } from "@/lib/config/network-context";
 import { networks } from "@/lib/config/networks";
-import { colors } from "@/lib/ui/tokens";
+import { themeColor } from "@/lib/ui/tokens";
 import { createWagmiConfig, walletConnectProjectId } from "@/lib/wallet/passport";
+import { RAINBOW_THEME_CSS } from "@/lib/wallet/rainbow-theme";
 
-// The wallet button and modal match the app's buttons (U3 dark): theme options only, no CSS into the library.
-const baseTheme = darkTheme({ accentColor: colors.accent.DEFAULT, accentColorForeground: colors.onAccent, borderRadius: "large" });
 // A plain wallet glyph instead of RainbowKit's emoji avatar, so the account modal matches the header (U3 §6).
 const WalletAvatar: AvatarComponent = ({ size }) => (
   <span
     aria-hidden
-    style={{ width: size, height: size, background: colors.accent.soft, color: colors.accent.DEFAULT }}
+    style={{ width: size, height: size, background: themeColor["accent-soft"], color: themeColor.accent }}
     className="flex items-center justify-center rounded-full"
   >
     <Wallet style={{ width: size / 2, height: size / 2 }} />
   </span>
 );
-const theme = { ...baseTheme, fonts: { body: "var(--font-inter), ui-sans-serif, system-ui, sans-serif" } };
 // Replaces "New to Ethereum wallets?" on phones (and sits under the intro on desktop): MezoRoute is
 // Bitcoin-first, and the modal never said Bitcoin wallets work too (U7).
 const WalletDisclaimer: DisclaimerComponent = ({ Text }) => (
@@ -53,17 +51,21 @@ function Page() {
 
 const WalletTree = memo(function WalletTree() {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={theme} avatar={WalletAvatar} appInfo={appInfo}>
-          <ErrorToastProvider>
-            <AppShell>
-              <Page />
-            </AppShell>
-          </ErrorToastProvider>
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <>
+      {/* Both RainbowKit themes, scoped by <html data-theme> (U9): theme={null} keeps the provider props fixed. */}
+      <style dangerouslySetInnerHTML={{ __html: RAINBOW_THEME_CSS }} />
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitProvider theme={null} avatar={WalletAvatar} appInfo={appInfo}>
+            <ErrorToastProvider>
+              <AppShell>
+                <Page />
+              </AppShell>
+            </ErrorToastProvider>
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </>
   );
 });
 

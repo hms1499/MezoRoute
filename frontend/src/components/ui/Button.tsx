@@ -3,12 +3,12 @@ import Link from "next/link";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cx } from "@/lib/ui/cx";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "night" | "nightOutline" | "nightGhost";
-type Size = "md" | "sm";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "night" | "nightOutline" | "nightGhost" | "quiet";
+type Size = "md" | "sm" | "icon";
 
 const BASE =
   "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
-const PRIMARY = "bg-accent text-onAccent hover:bg-accent/90 active:bg-accent/80";
+const PRIMARY = "bg-accent text-onAccent hover:bg-accent-hover active:bg-accent-pressed";
 const OUTLINE = "ring-1 ring-inset";
 const GHOST = "text-accent hover:bg-accent-soft";
 const VARIANTS: Record<ButtonVariant, string> = {
@@ -19,10 +19,12 @@ const VARIANTS: Record<ButtonVariant, string> = {
   danger: "bg-danger text-canvas hover:bg-danger/90",
   // Landing aliases share the same geometry; the outline keeps an accent ring on the dark surface.
   night: PRIMARY,
-  nightOutline: `${OUTLINE} text-accent ring-accent hover:bg-accent/10`,
+  nightOutline: `${OUTLINE} text-accent ring-accent hover:bg-accent-tint`,
   nightGhost: "text-muted hover:text-ink",
+  // An outlined control that is not an action: the header's theme toggle (U9).
+  quiet: `${OUTLINE} text-muted ring-line hover:text-ink`,
 };
-const SIZES: Record<Size, string> = { md: "min-h-11 px-5 text-sm", sm: "min-h-9 px-3.5 text-xs" };
+const SIZES: Record<Size, string> = { md: "min-h-11 px-5 text-sm", sm: "min-h-9 px-3.5 text-xs", icon: "h-9 w-9 shrink-0" };
 
 export function buttonClass(variant: ButtonVariant = "primary", size: Size = "md", className?: string): string {
   return cx(BASE, VARIANTS[variant], SIZES[size], className);

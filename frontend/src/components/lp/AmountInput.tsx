@@ -33,7 +33,7 @@ export function AmountInput({
         <button
           type="button"
           onClick={() => onAmount(formatUnits(max, 18))}
-          className="min-h-9 rounded-full bg-accent-soft px-3 text-xs font-semibold text-accent hover:bg-accent/10"
+          className="min-h-9 rounded-full bg-accent-soft px-3 text-xs font-semibold text-accent hover:bg-accent-tint"
         >
           Max
         </button>

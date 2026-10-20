@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
+import { THEME_INIT_SCRIPT } from "@/lib/ui/theme";
 import ClientProviders from "./client-providers";
 import "./globals.css";
 
@@ -16,7 +17,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${mono.variable}`}>
+    // The head script sets data-theme before React hydrates, hence suppressHydrationWarning (U9).
+    <html lang="en" className={`${inter.variable} ${mono.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Before the body paints, so a stored dark theme never flashes light. Light is the CSS default. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-screen bg-canvas font-sans text-ink antialiased">
         <ClientProviders>{children}</ClientProviders>
       </body>

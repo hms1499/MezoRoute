@@ -22,4 +22,31 @@ describe("palette guard", () => {
     );
     expect(hits).toEqual([]);
   });
+
+  // U9: colours follow the theme only through CSS variables; a hex or a raw palette value would stay one theme's.
+  it("never imports raw palettes in components", () => {
+    const hits = sources().filter(([, text]) => /import[^;]*\bpalettes\b[^;]*from "@\/lib\/ui\/tokens"/.test(text));
+    expect(hits.map(([path]) => path)).toEqual([]);
+  });
+
+  it("writes no hex colours in components", () => {
+    const hits = sources()
+      .filter(([path]) => !HEX_ALLOWED.includes(path))
+      .flatMap(([path, text]) => [...text.matchAll(/#[0-9A-Fa-f]{3,8}\b/g)].map((m) => `${path}: ${m[0]}`));
+    expect(hits).toEqual([]);
+  });
+
+  it("uses themeColor, not the Tailwind colours, in components", () => {
+    const hits = sources().flatMap(([path, text]) => [...text.matchAll(/\bcolors\.[a-zA-Z]+/g)].map((m) => `${path}: ${m[0]}`));
+    expect(hits).toEqual([]);
+  });
 });
+
+// The logo's white marks sit on teal in both themes.
+const HEX_ALLOWED = ["components/ui/Logo.tsx"];
+
+function sources(): [path: string, text: string][] {
+  const root = join(__dirname, "..", "..");
+  return [...files(join(root, "components")), ...files(join(root, "app"))].map((path) => [path.slice(root.length + 1), readFileSync(path, "utf8")]);
+}
+
