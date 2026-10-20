@@ -2,6 +2,9 @@ import { mix } from "./contrast";
 
 export type Theme = "light" | "dark";
 
+/** A colour at an opacity: kept translucent in CSS, flattened over each surface for the contrast test. */
+export type Wash = { hex: string; alpha: number };
+
 // U3 roles, two palettes (U9, spec 2026-10-20): orange marks BTC exposure only; the Stability Pool is
 // lavender; teal is both the action colour and the LP route. Dark is U3's palette, unchanged; light is the
 // default. Both have the same keys; Tailwind and the components only ever see CSS variables.
@@ -20,6 +23,13 @@ export type Palette = {
   warning: string;
   /** The landing's glow behind the hero and the final CTA. */
   glow: string;
+  /** A selected option's pill (network, theme, funding): `line` in dark, lighter in light so accent text passes. */
+  selected: string;
+  /** Opacity of the accent wash behind an outlined control on hover (dark is U3's `bg-accent/10`). */
+  accentTint: number;
+  /** The primary button on hover and press: dark keeps U3's lighter `/90`, `/80`; light darkens so white text passes. */
+  accentHover: Wash;
+  accentPressed: Wash;
 };
 
 export const palettes: Record<Theme, Palette> = {
@@ -37,6 +47,11 @@ export const palettes: Record<Theme, Palette> = {
     danger: "#B91C1C",
     warning: "#92400E",
     glow: "#D3EBE5",
+    // U9 audit: accent on `line` is 4.08:1 and accent over a 10% accent wash 4.30:1 in light.
+    selected: "#E2EFEE",
+    accentTint: 0.04,
+    accentHover: { hex: "#0D6B63", alpha: 1 },
+    accentPressed: { hex: "#0B5F58", alpha: 1 },
   },
   dark: {
     canvas: "#0A1416",
@@ -52,6 +67,10 @@ export const palettes: Record<Theme, Palette> = {
     danger: "#F87171",
     warning: "#FCD34D",
     glow: "#123B3A",
+    selected: "#222B2D",
+    accentTint: 0.1,
+    accentHover: { hex: "#2DD4BF", alpha: 0.9 },
+    accentPressed: { hex: "#2DD4BF", alpha: 0.8 },
   },
 };
 
@@ -78,6 +97,11 @@ export const COLOR_VARS = {
   "warning-ink": (p: Palette) => p.warning,
   "warning-bg": (p: Palette) => soft(p.warning, p),
   glow: (p: Palette) => p.glow,
+  selected: (p: Palette) => p.selected,
+  // A full colour, not channels: dark keeps today's translucent wash.
+  "accent-tint": (p: Palette) => wash({ hex: p.accent, alpha: p.accentTint }),
+  "accent-hover": (p: Palette) => wash(p.accentHover),
+  "accent-pressed": (p: Palette) => wash(p.accentPressed),
 } satisfies Record<string, (p: Palette) => string>;
 
 export type ColorVar = keyof typeof COLOR_VARS;
@@ -86,6 +110,10 @@ export type ColorVar = keyof typeof COLOR_VARS;
 function channels(value: string): string {
   if (!/^#[0-9A-Fa-f]{6}$/.test(value)) return value;
   return [1, 3, 5].map((offset) => parseInt(value.slice(offset, offset + 2), 16)).join(" ");
+}
+
+function wash({ hex, alpha }: Wash): string {
+  return `rgb(${channels(hex)} / ${alpha})`;
 }
 
 function variablesFor(theme: Theme): Record<string, string> {
@@ -109,7 +137,14 @@ export const colors = {
   ink: tw("ink"),
   muted: tw("muted"),
   line: tw("line"),
-  accent: { DEFAULT: tw("accent"), soft: tw("accent-soft") },
+  selected: tw("selected"),
+  accent: {
+    DEFAULT: tw("accent"),
+    soft: tw("accent-soft"),
+    tint: "var(--color-accent-tint)",
+    hover: "var(--color-accent-hover)",
+    pressed: "var(--color-accent-pressed)",
+  },
   onAccent: tw("on-accent"),
   sp: { DEFAULT: tw("sp"), soft: tw("sp-soft") },
   warning: { bg: tw("warning-bg"), ink: tw("warning-ink") },
@@ -189,6 +224,16 @@ export function textPairs(p: Palette): [name: string, foreground: string, backgr
     ["muted dimmed on surface", mix(p.muted, p.surface, NIGHT_DIM_OPACITY), p.surface],
     ["sp dimmed on surface", mix(p.sp, p.surface, NIGHT_DIM_OPACITY), p.surface],
     ["ink dimmed on surface", mix(p.ink, p.surface, NIGHT_DIM_OPACITY), p.surface],
+    // U9 audit: states and selected options the list above did not see; translucent fills flattened over
+    // each surface they sit on.
+    ["accent on selected (network, theme)", p.accent, p.selected],
+    ["ink on line (selected tab)", p.ink, p.line],
+    ...Object.entries(surfaces).flatMap(([bg, bgHex]): [string, string, string][] => [
+      [`accent on accent-tint over ${bg} (${bg === "well" ? "Max" : "outline"} hover)`, p.accent, mix(p.accent, bgHex, p.accentTint)],
+      [`onAccent on accent-hover over ${bg} (button hover)`, p.onAccent, mix(p.accentHover.hex, bgHex, p.accentHover.alpha)],
+      [`onAccent on accent-pressed over ${bg} (button pressed)`, p.onAccent, mix(p.accentPressed.hex, bgHex, p.accentPressed.alpha)],
+      [`canvas on danger/90 over ${bg} (button hover)`, p.canvas, mix(p.danger, bgHex, 0.9)],
+    ]),
   ];
 }
 
