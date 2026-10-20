@@ -93,8 +93,8 @@ Today's dark modal is RainbowKit's own `darkTheme()` with only the accent, radiu
 
 ### The toggle
 
-- From 640 px up: an icon button in the header, between the network switch and the Connect/account button: `Moon` in light mode, `Sun` in dark (lucide, `aria-hidden`), size matching the `sm` buttons, the same inset-ring outline the header already uses. Accessible name says what it does: "Switch to dark mode" / "Switch to light mode".
-- Below 640 px the header has no room (measured on production at 360 px: logo, the one nav link, Testnet/Mainnet, and Connect fill 16–344 px with no slack). The toggle sits in the footer instead, as a small Light | Dark segmented control in the style of the network switch (`role="radiogroup"`, label "Theme"), shown below 640 px only.
+- From 768 px up (640 px in the first draft; the final review measured the Connect button running past the page from 640 to ≈700 px, more with an account connected): an icon button in the header, between the network switch and the Connect/account button: `Moon` in light mode, `Sun` in dark (lucide, `aria-hidden`), size matching the `sm` buttons, the same inset-ring outline the header already uses. Accessible name says what it does: "Switch to dark mode" / "Switch to light mode".
+- Below 640 px the header has no room (measured on production at 360 px: logo, the one nav link, Testnet/Mainnet, and Connect fill 16–344 px with no slack). The toggle sits in the footer instead, as a small Light | Dark segmented control in the style of the network switch (`role="radiogroup"`, label "Theme"), shown below 768 px only.
 - Switching is instant and has no animated colour transition across the page.
 
 ## Everything that must follow the theme
@@ -119,4 +119,4 @@ Landing (hero glow, hero chart, simulator, live strip, route lanes, trust row, h
 - Variable naming (`--color-*` or similar) and whether channels are stored as `R G B` triplets.
 - The exact RainbowKit theme keys and overlay value.
 - Whether to add a `<meta name="theme-color">` that the head script and the toggle update.
-- How the footer control sits in the footer layout below 640 px.
+- How the footer control sits in the footer layout below 768 px.

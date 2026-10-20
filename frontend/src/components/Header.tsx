@@ -16,7 +16,7 @@ const NAV = [
   { href: "/positions/", label: "Positions" },
 ];
 
-/** Shared header (spec §9): logo, nav with the current page marked, Testnet/Mainnet switch, theme toggle (from 640 px), wallet button. */
+/** Shared header (spec §9): logo, nav with the current page marked, Testnet/Mainnet switch, theme toggle (from 768 px), wallet button. */
 export function Header() {
   const pathname = usePathname();
   return (

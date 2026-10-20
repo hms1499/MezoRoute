@@ -36,7 +36,7 @@ export function Footer() {
               Mezo
             </a>
           </nav>
-          {/* Below 640 px the header has no room for the theme toggle (U9). */}
+          {/* Below 768 px the header has no room for the theme toggle (U9). */}
           <ThemeSwitch />
         </div>
       </div>

@@ -23,7 +23,7 @@ export type Palette = {
   warning: string;
   /** The landing's glow behind the hero and the final CTA. */
   glow: string;
-  /** A selected option's pill (network, theme, funding): `line` in dark, lighter in light so accent text passes. */
+  /** A selected option's pill (network, theme): `line` in dark, lighter in light so accent text passes. */
   selected: string;
   /** Opacity of the accent wash behind an outlined control on hover (dark is U3's `bg-accent/10`). */
   accentTint: number;

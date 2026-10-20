@@ -123,6 +123,12 @@
   }
 }
 
+/* For one frame while the theme flips (theme.ts): the whole page changes colour at once, no fades. */
+.theme-switching,
+.theme-switching * {
+  transition: none !important;
+}
+
 /* Below 1024 px route pages pin an action bar to the bottom; keyboard focus scrolls clear of it. */
 @media (max-width: 1023px) {
   html {
