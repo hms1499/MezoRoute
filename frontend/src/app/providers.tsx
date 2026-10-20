@@ -13,7 +13,7 @@ import { NetworkProvider } from "@/lib/config/network-context";
 import { networks } from "@/lib/config/networks";
 import { themeColor } from "@/lib/ui/tokens";
 import { createWagmiConfig, walletConnectProjectId } from "@/lib/wallet/passport";
-import { darkRainbowTheme } from "@/lib/wallet/rainbow-theme";
+import { RAINBOW_THEME_CSS } from "@/lib/wallet/rainbow-theme";
 
 // A plain wallet glyph instead of RainbowKit's emoji avatar, so the account modal matches the header (U3 §6).
 const WalletAvatar: AvatarComponent = ({ size }) => (
@@ -51,17 +51,21 @@ function Page() {
 
 const WalletTree = memo(function WalletTree() {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={darkRainbowTheme} avatar={WalletAvatar} appInfo={appInfo}>
-          <ErrorToastProvider>
-            <AppShell>
-              <Page />
-            </AppShell>
-          </ErrorToastProvider>
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <>
+      {/* Both RainbowKit themes, scoped by <html data-theme> (U9): theme={null} keeps the provider props fixed. */}
+      <style dangerouslySetInnerHTML={{ __html: RAINBOW_THEME_CSS }} />
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitProvider theme={null} avatar={WalletAvatar} appInfo={appInfo}>
+            <ErrorToastProvider>
+              <AppShell>
+                <Page />
+              </AppShell>
+            </ErrorToastProvider>
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </>
   );
 });
 
