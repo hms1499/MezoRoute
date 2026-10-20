@@ -9,7 +9,7 @@ import { MainnetBanner } from "./MainnetBanner";
  * The frame of every page: skip link, header, mainnet banner, the page, footer. Pages set their own width (`Column`).
  * Below 1024 px a route page's fixed action bar (`data-mobile-bar`) gets bottom padding to clear the footer;
  * pages without one (the landing) end at the footer.
- * One dark palette everywhere (U3); the landing adds its own glow behind the page.
+ * Light or dark everywhere (U9, `data-theme` on <html>); the landing adds its own glow behind the page.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
