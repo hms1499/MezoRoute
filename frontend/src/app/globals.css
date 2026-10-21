@@ -144,6 +144,17 @@
   transform: translateY(110%);
   opacity: 0;
 }
+/* A pending button (U10): the status takes the label's place; the label stays the accessible name. */
+.btn-status {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-roll.is-pending .btn-label {
+  transform: translateY(-110%);
+  opacity: 0;
+}
 .btn-circle {
   position: relative;
   display: inline-grid;

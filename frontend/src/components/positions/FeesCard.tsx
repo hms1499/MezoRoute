@@ -26,7 +26,7 @@ export function FeesCard({ account, fees, block }: { account: Address; fees: Fee
       </dl>
       <div className="mt-4 flex items-center justify-between gap-3">
         <BlockNotice block={block} />
-        <Button disabled={block !== null} loading={pending} onClick={claim} className="ml-auto">
+        <Button disabled={block !== null} pending={pending ? "wallet" : null} onClick={claim} className="ml-auto">
           {pending ? "Check your wallet…" : "Claim fees"}
         </Button>
       </div>

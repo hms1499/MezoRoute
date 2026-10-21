@@ -1,14 +1,16 @@
-import { ArrowRight, ExternalLink, LoaderCircle } from "lucide-react";
+import { ArrowRight, Check, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cx } from "@/lib/ui/cx";
+import { type Pending, pendingText } from "@/lib/ui/pending";
+import { DotWave } from "./DotWave";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "night" | "nightOutline" | "nightGhost" | "quiet";
 type Size = "md" | "sm" | "icon";
 
 // `btn` hooks the U10 roll and arrow rules in globals.css; the press scales under motion-safe only.
 const BASE =
-  "btn inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-[color,background-color,box-shadow,transform] duration-base motion-safe:active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
+  "btn inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-[color,background-color,box-shadow,transform] duration-base motion-safe:active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 [&[aria-disabled=true]:not([data-pending])]:cursor-not-allowed [&[aria-disabled=true]:not([data-pending])]:opacity-50 data-[pending]:cursor-progress";
 const PRIMARY = "bg-accent text-onAccent hover:bg-accent-hover active:bg-accent-pressed";
 const OUTLINE = "ring-1 ring-inset";
 const GHOST = "text-accent hover:bg-accent-soft";
@@ -44,59 +46,83 @@ type Common = { variant?: ButtonVariant; size?: Size; className?: string; childr
  */
 export function ButtonContent({
   arrow = false,
+  pending = null,
   variant = "primary",
   size = "md",
   children,
 }: {
   arrow?: boolean;
+  /** U10: while set, the status rolls in over the label and the circle shows a dot wave, then a check. */
+  pending?: Pending | null;
   variant?: ButtonVariant;
   size?: Size;
   children: ReactNode;
 }) {
   if (size === "icon") return <>{children}</>;
+  const status = pending ? pendingText(pending) : null;
   return (
     <>
-      <span className="btn-roll">
+      <span className={cx("btn-roll", status && "is-pending")}>
         <span className="btn-label">{children}</span>
         <span className="btn-label" aria-hidden="true">
           {children}
         </span>
+        {status && (
+          // Keyed by its text, so each new status rolls in from below.
+          <span key={status} className="btn-status motion-safe:animate-roll-in" aria-hidden="true">
+            {status}
+          </span>
+        )}
       </span>
-      {arrow && (
+      {(arrow || pending) && (
         <span
           className={cx("btn-circle", size === "sm" ? "h-7 w-7" : "h-8 w-8", FILLED.has(variant) ? "bg-onAccent text-accent" : "bg-accent text-onAccent")}
           aria-hidden="true"
         >
-          <ArrowRight aria-hidden className="btn-arrow h-4 w-4" />
-          <ArrowRight aria-hidden className="btn-arrow h-4 w-4" />
+          {pending === "done" ? (
+            <Check key="done" aria-hidden className="h-4 w-4 motion-safe:animate-roll-in" />
+          ) : pending ? (
+            <DotWave key="wave" />
+          ) : (
+            <>
+              <ArrowRight aria-hidden className="btn-arrow h-4 w-4" />
+              <ArrowRight aria-hidden className="btn-arrow h-4 w-4" />
+            </>
+          )}
         </span>
       )}
     </>
   );
 }
 
-/** The app's one button style; `loading` shows a spinner and disables it. */
+/**
+ * The app's one button style. `pending` (U10) keeps it in full colour but inert: the label stays its accessible
+ * name, the status rolls in beside it, and the circle shows a dot wave, then a check.
+ */
 export function Button({
   variant,
   size,
   className,
   arrow = false,
-  loading = false,
+  pending = null,
   disabled,
   type = "button",
+  onClick,
   children,
   ...rest
-}: Common & { loading?: boolean } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children">) {
+}: Common & { pending?: Pending | null } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children">) {
   return (
     <button
       type={type}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
-      className={buttonClass(variant, size, className, arrow)}
+      disabled={disabled}
+      data-pending={pending ?? undefined}
+      aria-busy={(pending !== null && pending !== "done") || undefined}
+      aria-disabled={pending !== null || undefined}
+      onClick={pending ? undefined : onClick}
+      className={buttonClass(variant, size, className, arrow || pending !== null)}
       {...rest}
     >
-      {loading && <LoaderCircle aria-hidden className="h-4 w-4 motion-safe:animate-spin" />}
-      <ButtonContent arrow={arrow} variant={variant} size={size}>
+      <ButtonContent arrow={arrow} pending={pending} variant={variant} size={size}>
         {children}
       </ButtonContent>
     </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleCheck, CircleX, Clock, LoaderCircle } from "lucide-react";
+import { CircleCheck, CircleX, Clock } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import type { Address, Hash, TransactionReceipt } from "viem";
@@ -9,6 +9,7 @@ import { useAccount, useConfig } from "wagmi";
 import { RouteLayout } from "@/components/route/RouteLayout";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { DotWave } from "@/components/ui/DotWave";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Stat } from "@/components/ui/Stat";
 import { useNetwork } from "@/lib/config/network-context";
@@ -174,7 +175,12 @@ function StatusIcon({ state }: { state: ReceiptState }) {
   if (state === "unconfirmed") return <Clock aria-hidden className={cx(shared, "text-warning-ink")} />;
   if (state === "confirmed") return <CircleCheck aria-hidden className={cx(shared, "text-accent")} />;
   if (state === "failed") return <CircleX aria-hidden className={cx(shared, "text-danger")} />;
-  return <LoaderCircle aria-hidden className={cx(shared, "text-accent motion-safe:animate-spin")} />;
+  // U10: the pending button's dot wave continues across the navigation, then turns into the check above.
+  return (
+    <span aria-hidden className={cx(shared, "flex items-center justify-center rounded-full border-2 border-accent text-accent")}>
+      <DotWave size="lg" />
+    </span>
+  );
 }
 
 function Actions({ explorer }: { explorer?: string }) {
