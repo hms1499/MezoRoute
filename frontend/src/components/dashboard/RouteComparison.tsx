@@ -185,7 +185,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
               aria-selected={tab === route.id}
               aria-controls={`panel-${route.id}`}
               onClick={() => setTab(route.id)}
-              className={cx("min-h-10 flex-1 rounded-full px-3 transition-colors duration-150", tab === route.id ? "bg-line text-ink" : "text-muted")}
+              className={cx("min-h-10 flex-1 rounded-full px-3 transition-colors", tab === route.id ? "bg-line text-ink" : "text-muted")}
             >
               {route.title}
             </button>

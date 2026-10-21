@@ -7,7 +7,7 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "nigh
 type Size = "md" | "sm" | "icon";
 
 const BASE =
-  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
 const PRIMARY = "bg-accent text-onAccent hover:bg-accent-hover active:bg-accent-pressed";
 const OUTLINE = "ring-1 ring-inset";
 const GHOST = "text-accent hover:bg-accent-soft";

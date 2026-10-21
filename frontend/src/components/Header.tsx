@@ -33,7 +33,7 @@ export function Header() {
               href={item.href}
               aria-current={current ? "page" : undefined}
               className={cx(
-                "min-h-9 items-center rounded-full px-2 text-sm font-medium transition-colors duration-150 sm:px-3",
+                "min-h-9 items-center rounded-full px-2 text-sm font-medium transition-colors sm:px-3",
                 onMobile(item.href, pathname) ? "inline-flex" : "hidden sm:inline-flex",
                 current ? "bg-surface text-ink" : "text-muted hover:text-ink",
               )}

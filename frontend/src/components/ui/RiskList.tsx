@@ -13,7 +13,7 @@ export function RiskList({ risks }: { risks: string[] }) {
         <details className="group mt-1">
           <summary className="inline-flex min-h-9 items-center gap-1 rounded-full font-medium text-accent">
             More risks
-            <ChevronDown aria-hidden className="h-4 w-4 transition-transform duration-150 group-open:rotate-180" />
+            <ChevronDown aria-hidden className="h-4 w-4 transition-transform group-open:rotate-180" />
           </summary>
           <ul className="mt-1 list-disc space-y-1 pl-5 text-muted">
             {more.map((risk) => (

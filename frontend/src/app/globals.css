@@ -9,9 +9,9 @@
     --landing-radius-panel: 1rem;
     --landing-radius-control: 0.75rem;
     --landing-radius-pill: 9999px;
-    --landing-motion-control: 150ms;
-    --landing-motion-card: 200ms;
-    --landing-motion-reveal: 600ms;
+    --landing-motion-control: var(--motion-fast);
+    --landing-motion-card: var(--motion-fast);
+    --landing-motion-reveal: var(--motion-slow);
     --landing-motion-chart: 1200ms;
     --landing-motion-timeline: 1400ms;
     --landing-motion-live-pulse: 1800ms;
@@ -71,9 +71,9 @@
     border: 1px solid rgb(var(--color-line));
     border-radius: var(--landing-radius-control);
     transition:
-      border-color var(--landing-motion-control) ease,
-      color var(--landing-motion-control) ease,
-      background-color var(--landing-motion-control) ease;
+      border-color var(--landing-motion-control) var(--ease-smooth),
+      color var(--landing-motion-control) var(--ease-smooth),
+      background-color var(--landing-motion-control) var(--ease-smooth);
   }
   .landing-control:focus-within {
     border-color: rgb(var(--color-accent));
@@ -106,8 +106,8 @@
   }
   .landing-route-lane {
     transition:
-      border-color var(--landing-motion-card) ease,
-      background-color var(--landing-motion-card) ease;
+      border-color var(--landing-motion-card) var(--ease-smooth),
+      background-color var(--landing-motion-card) var(--ease-smooth);
   }
   .landing-trust-icon {
     display: inline-flex;
@@ -142,25 +142,25 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .landing-rise {
-    animation: landing-rise var(--landing-motion-reveal) cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation: landing-rise var(--landing-motion-reveal) var(--ease-smooth) both;
   }
   /* Drawn paths set pathLength="1", so one dash covers a line of any width (U3 review). */
   .landing-draw {
     stroke-dasharray: 1;
-    animation: landing-draw var(--landing-motion-chart) ease-out both;
+    animation: landing-draw var(--landing-motion-chart) var(--ease-smooth) both;
   }
   .landing-ping {
-    animation: landing-ping var(--landing-motion-live-pulse) ease-out infinite;
+    animation: landing-ping var(--landing-motion-live-pulse) var(--ease-smooth) infinite;
   }
   .landing-flash {
-    animation: landing-flash var(--landing-motion-value-flash) ease-out;
+    animation: landing-flash var(--landing-motion-value-flash) var(--ease-smooth);
   }
   .landing-reveal {
     opacity: 0;
     transform: translateY(18px);
     transition:
-      opacity var(--landing-motion-reveal) ease-out,
-      transform var(--landing-motion-reveal) cubic-bezier(0.2, 0.7, 0.2, 1);
+      opacity var(--landing-motion-reveal) var(--ease-smooth),
+      transform var(--landing-motion-reveal) var(--ease-smooth);
   }
   .landing-reveal[data-seen="true"] {
     opacity: 1;
@@ -168,7 +168,7 @@
   }
   .landing-fill {
     transform: scaleX(0);
-    transition: transform var(--landing-motion-timeline) cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition: transform var(--landing-motion-timeline) var(--ease-smooth);
   }
   .landing-fill[data-seen="true"] {
     transform: scaleX(1);

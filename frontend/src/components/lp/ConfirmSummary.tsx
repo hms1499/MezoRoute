@@ -96,7 +96,7 @@ export function ConfirmSummary({
         <div aria-hidden className="mt-2 h-1 overflow-hidden rounded-full bg-line">
           <div
             className={cx(
-              "h-full origin-left transition-transform duration-1000 ease-linear",
+              "h-full origin-left transition-transform duration-tick ease-linear",
               timer.phase === "expiring" ? "bg-warning-ink" : "bg-accent",
             )}
             style={{ transform: `scaleX(${timer.remaining})` }}
