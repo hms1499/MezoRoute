@@ -128,3 +128,15 @@ describe("pending button (U10)", () => {
     expect(out).not.toContain('aria-disabled="');
   });
 });
+
+describe("icon sizes in buttons (U10 §8)", () => {
+  it("sizes the arrow to the button", () => {
+    expect(html(el(Button, { arrow: true, size: "sm" }, "Go")).match(/btn-arrow h-3\.5 w-3\.5/g)).toHaveLength(2);
+    expect(html(el(Button, { arrow: true }, "Go")).match(/btn-arrow h-4 w-4/g)).toHaveLength(2);
+  });
+
+  it("sizes the external-link glyph to the button", () => {
+    expect(html(el(ButtonLink, { href: "https://x.test", external: true }, "Mezo"))).toContain("lucide-external-link h-4 w-4");
+    expect(html(el(ButtonLink, { href: "https://x.test", external: true, size: "sm" }, "Mezo"))).toContain("lucide-external-link h-3.5 w-3.5");
+  });
+});

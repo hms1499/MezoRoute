@@ -59,6 +59,8 @@ export function ButtonContent({
   children: ReactNode;
 }) {
   if (size === "icon") return <>{children}</>;
+  // U10 §8: icons follow the label (16 px next to md's 14 px text, 14 px next to sm's 12 px), written inline so
+  // icon-guard.test.ts can read them.
   const status = pending ? pendingText(pending) : null;
   return (
     <>
@@ -80,13 +82,13 @@ export function ButtonContent({
           aria-hidden="true"
         >
           {pending === "done" ? (
-            <Check key="done" aria-hidden className="h-4 w-4 motion-safe:animate-roll-in" />
+            <Check key="done" aria-hidden className={cx(size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4", "motion-safe:animate-roll-in")} />
           ) : pending ? (
             <DotWave key="wave" />
           ) : (
             <>
-              <ArrowRight aria-hidden className="btn-arrow h-4 w-4" />
-              <ArrowRight aria-hidden className="btn-arrow h-4 w-4" />
+              <ArrowRight aria-hidden className={cx("btn-arrow", size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4")} />
+              <ArrowRight aria-hidden className={cx("btn-arrow", size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4")} />
             </>
           )}
         </span>
@@ -158,7 +160,7 @@ export function ButtonLink({
     return (
       <a href={href} target="_blank" rel="noreferrer" className={classes}>
         {content}
-        <ExternalLink aria-hidden className="h-3.5 w-3.5" />
+        <ExternalLink aria-hidden className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
       </a>
     );
   }

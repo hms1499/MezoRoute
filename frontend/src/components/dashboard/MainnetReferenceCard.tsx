@@ -46,7 +46,7 @@ export function MainnetReferenceCard() {
       <Card id="mainnet-reference" variant="reference" title="Mainnet today" aside={<Badge>Mainnet · reference only</Badge>}>
         <div className="mt-3 grid gap-5 sm:grid-cols-2">
           <div>
-            <h3 className="text-sm font-medium">MUSD/BTC pool</h3>
+            <h3 className="text-sm font-semibold">MUSD/BTC pool</h3>
             <dl className="stat-list mt-2">
               <Stat label="Reserves" sub={`+ ${formatToken(r.reserveBtc, 18, 4)} BTC`}>
                 {formatToken(r.reserveMusd, 18, 0)} MUSD
@@ -57,7 +57,7 @@ export function MainnetReferenceCard() {
             </dl>
           </div>
           <div>
-            <h3 className="text-sm font-medium">Stability Pool</h3>
+            <h3 className="text-sm font-semibold">Stability Pool</h3>
             <dl className="stat-list mt-2">
               <Stat label="Deposits">{formatToken(r.spDeposits, 18, 0)} MUSD</Stat>
               <Stat label="Share of MUSD supply" sub={`of ${formatToken(r.musdSupply, 18, 0)} MUSD`}>

@@ -41,7 +41,7 @@ export function Simulator({
   return (
     <section aria-labelledby="simulator-heading" className="landing-panel">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="simulator-heading" className="landing-section-title">
+        <h2 id="simulator-heading" className="text-base font-semibold text-ink">
           Try an amount
         </h2>
         <span className="inline-flex items-center gap-2 text-xs text-accent">

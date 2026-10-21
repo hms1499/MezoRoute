@@ -95,9 +95,6 @@
   .landing-control--pill {
     border-radius: var(--landing-radius-pill);
   }
-  .landing-section-title {
-    @apply text-base font-semibold text-ink;
-  }
   .landing-chart-surface {
     border: 1px solid rgb(var(--color-line));
     border-radius: var(--landing-radius-panel);

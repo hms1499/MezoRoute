@@ -134,3 +134,27 @@ describe("type usage in source", () => {
     expect(hits).toEqual([]);
   });
 });
+
+// U10 §8: weights have roles. Headings are 600 (or a size token that carries its weight); row headers are 400.
+describe("weight roles (U10 §8)", () => {
+  const files = sourceFiles().filter((file) => file.endsWith(".tsx"));
+  const openings = (pattern: RegExp) =>
+    files.flatMap((file) => {
+      const source = readFileSync(join(SRC, file), "utf8");
+      return [...source.matchAll(pattern)].map((match) => ({ file, tag: match[0], line: source.slice(0, match.index).split("\n").length }));
+    });
+
+  it("sets every h1–h3 at 600", () => {
+    const hits = openings(/<h[1-3]\b[^>]*>/g)
+      .filter(({ tag }) => !/\bfont-semibold\b|\btext-(headline|title|display|display-lg)\b/.test(tag))
+      .map(({ file, line }) => `${file}:${line}`);
+    expect(hits).toEqual([]);
+  });
+
+  it("sets every row header at 400", () => {
+    const hits = openings(/<th\b[^>]*scope="row"[^>]*>/g)
+      .filter(({ tag }) => !/\bfont-normal\b/.test(tag))
+      .map(({ file, line }) => `${file}:${line}`);
+    expect(hits).toEqual([]);
+  });
+});
