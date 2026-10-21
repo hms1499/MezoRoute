@@ -26,13 +26,14 @@ describe("type tokens", () => {
         "28px",
         { lineHeight: "32px", fontWeight: "500", letterSpacing: "-0.025em" },
       ],
+      // U10: the landing's display type is light, as on morpho.org.
       display: [
         "40px",
-        { lineHeight: "48px", fontWeight: "700", letterSpacing: "-0.025em" },
+        { lineHeight: "48px", fontWeight: "300", letterSpacing: "-0.02em" },
       ],
       "display-lg": [
         "48px",
-        { lineHeight: "52px", fontWeight: "700", letterSpacing: "-0.025em" },
+        { lineHeight: "52px", fontWeight: "300", letterSpacing: "-0.02em" },
       ],
     });
   });
@@ -42,11 +43,11 @@ describe("type tokens", () => {
     expect(CHART_FONT_PX).toBe(12);
   });
 
-  it("uses weight 700 only for the display tokens", () => {
+  it("uses weight 300 only for the display tokens", () => {
     for (const [key, [, meta]] of Object.entries(fontSize)) {
       const weight = "fontWeight" in meta ? meta.fontWeight : undefined;
       if (weight === undefined) continue;
-      expect(DISPLAY.has(key) ? ["700"] : ["400", "500", "600"]).toContain(weight);
+      expect(DISPLAY.has(key) ? ["300"] : ["400", "500", "600"]).toContain(weight);
     }
   });
 });
