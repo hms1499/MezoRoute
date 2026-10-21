@@ -128,6 +128,14 @@ Order: Hero → Simulator section → LP section → Stability Pool section → 
 - App page titles (`title`, `headline`) keep weight 600. Only the landing uses `display*` today; confirm with a grep and keep it that way.
 - New label style for small uppercase tracked labels (hero figures, section pills): a named class or token, not ad hoc utilities, and allowed by the typography guard.
 
+### 8. Icon sizes and font-weight roles (added 21 Oct, approved in chat)
+
+The user asked for rules, not taste, for icons and weights.
+
+- **Icons** follow the text beside them: 12 px text → 14 px icon (`h-3.5 w-3.5`); 14–16 px text → 16 px (`h-4 w-4`); 20 px and up → 20 px (`h-5 w-5`). Stroke stays lucide's default 2 (no `strokeWidth`, `size`, or `absoluteStrokeWidth`). The arrow circle's arrow is 16 px on `md` buttons and 14 px on `sm`; `ExternalLink` in `ButtonLink` follows the button size the same way. Named exceptions: the receipt's status icons (48 px), the empty Positions icon (40 px), and the wallet-modal avatar in `providers.tsx` (sized by RainbowKit). Fix: the 12 px `TriangleAlert` in `ExposurePanel` becomes 14 px like its sibling.
+- **Weights** have roles: 300 the landing's display headline only; 600 every heading (h1–h3, card and step titles), buttons, and route-name column headers (the simulator's LP/SP columns); 500 labels (nav, tabs, eyebrows, form labels and legends, badges, status lines, data-table column headers, the `figure` token); 400 body text, row headers (`th scope="row"`), sub-lines, and captions. Fix: `MainnetReferenceCard`'s two h3 (500 → 600); the simulator's h2 states 600 instead of inheriting.
+- **Guards:** `icon-guard.test.ts` (every lucide icon has equal `h-N`/`w-N` from {3.5, 4, 5}, or is a named exception; no stroke or size props); `typography.test.ts` adds: h1–h3 carry `font-semibold` or a size token with its own weight (`headline`, `title`, `display*`), and `th scope="row"` carries `font-normal`.
+
 ## What is left to the builder
 
 - Exact file layout of the motion tokens (TS + CSS source of truth), the settle primitive's API, the pending prop's API on `Button`.

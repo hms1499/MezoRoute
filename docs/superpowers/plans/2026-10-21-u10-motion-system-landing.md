@@ -302,6 +302,25 @@ In `contrast.test.ts` coverage: add to `textPairs` `["accent on onAccent (arrow 
 
 ---
 
+### Task 8: Icon sizes and font-weight roles (spec §8, added 21 Oct)
+
+**Files:**
+- Create: `src/lib/ui/icon-guard.test.ts`
+- Modify: `src/lib/ui/typography.test.ts` (heading and row-header weight rules)
+- Modify: `src/components/ui/Button.tsx` (arrow and `ExternalLink` sizes per button size), `src/components/dashboard/ExposurePanel.tsx:150`, `src/components/dashboard/MainnetReferenceCard.tsx` (two h3), `src/components/landing/Simulator.tsx` (h2)
+
+**Interfaces:**
+- Consumes: Task 2/3 `ButtonContent` (`size` prop).
+- Produces: `ICON_SIZES = ["3.5", "4", "5"]` and `ICON_EXCEPTIONS: Record<file, iconName[]>` inside `icon-guard.test.ts`.
+
+- [ ] **Step 1: Write the failing guards.** `icon-guard.test.ts`: collect lucide names imported per `.tsx` file (plus the `Icon` prop alias in `TrustRow`), find each JSX use, read the size tokens in its `className` (string or `cx(...)` text); "catches each rule" cases: `className="h-3 w-3"` → off-scale, `className="h-4 w-5"` → unequal, `strokeWidth={1.5}` → stroke prop, missing size → no size; "finds none" over `src/` with exceptions `{"components/receipt/ReceiptPage.tsx": ["Clock", "CircleCheck", "CircleX"], "components/positions/PositionsPage.tsx": ["Inbox"], "app/providers.tsx": ["Wallet"]}`. `typography.test.ts`: every `<h1|h2|h3` opening tag has `font-semibold` or `text-(headline|title|display|display-lg)`; every `<th scope="row"` has `font-normal`; a Button `sm` arrow renders `h-3.5 w-3.5` arrows, `md` renders `h-4 w-4` (in `Button.test.ts`).
+- [ ] **Step 2: Run** `npx vitest run src/lib/ui/icon-guard.test.ts src/lib/ui/typography.test.ts src/components/ui/Button.test.ts` — expected: FAIL naming `ExposurePanel.tsx` (h-3), `MainnetReferenceCard.tsx` (h3 ×2), `Simulator.tsx` (h2), and the `sm` arrow size.
+- [ ] **Step 3: Fix** the listed files.
+- [ ] **Step 4: Run** `npm test && npm run build` — expected: PASS.
+- [ ] **Step 5: Commit** `feat(frontend): icon sizes and font-weight roles (U10)`.
+
+---
+
 ### Task 7: Whole-app QA and docs
 
 **Files:**
