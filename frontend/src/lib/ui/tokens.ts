@@ -178,7 +178,7 @@ const TIGHT = "-0.025em";
 
 export type FontSizeKey = "xs" | "sm" | "base" | "xl" | "headline" | "title" | "figure" | "display" | "display-lg";
 
-/** Size and line height per step; role tokens also fix weight and tracking. Weight 700 only in `display*`. */
+/** Size and line height per step; role tokens also fix weight and tracking. Weight 300 only in `display*` (U10). */
 export const fontSize: Record<FontSizeKey, [size: string, meta: TypeMeta]> = {
   xs: ["12px", { lineHeight: "16px" }],
   sm: ["14px", { lineHeight: "20px" }],
@@ -187,8 +187,9 @@ export const fontSize: Record<FontSizeKey, [size: string, meta: TypeMeta]> = {
   headline: ["24px", { lineHeight: "32px", fontWeight: "600", letterSpacing: TIGHT }],
   title: ["28px", { lineHeight: "34px", fontWeight: "600", letterSpacing: TIGHT }],
   figure: ["28px", { lineHeight: "32px", fontWeight: "500", letterSpacing: TIGHT }],
-  display: ["40px", { lineHeight: "48px", fontWeight: "700", letterSpacing: TIGHT }],
-  "display-lg": ["48px", { lineHeight: "52px", fontWeight: "700", letterSpacing: TIGHT }],
+  // U10: light display type, as on morpho.org (Inter is a variable font, so 300 costs no download).
+  display: ["40px", { lineHeight: "48px", fontWeight: "300", letterSpacing: "-0.02em" }],
+  "display-lg": ["48px", { lineHeight: "52px", fontWeight: "300", letterSpacing: "-0.02em" }],
 };
 
 /** SVG chart text (axis, values, bands): the scale's floor. */
@@ -214,6 +215,8 @@ export function textPairs(p: Palette): [name: string, foreground: string, backgr
       Object.entries(surfaces).map(([bg, bgHex]): [string, string, string] => [`${fg} on ${bg}`, fgHex, bgHex]),
     ),
     ["onAccent on accent (button)", p.onAccent, p.accent],
+    // U10: a filled button's arrow circle is onAccent with an accent arrow.
+    ["accent on onAccent (arrow circle on primary)", p.accent, p.onAccent],
     ["canvas on danger (button)", p.canvas, p.danger],
     ["accent on accent-soft", p.accent, soft(p.accent, p)],
     ["sp on sp-soft", p.sp, soft(p.sp, p)],

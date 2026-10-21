@@ -1,13 +1,12 @@
 import { cx } from "@/lib/ui/cx";
 
-/** A shimmering placeholder (static under reduced motion). */
+/** A placeholder that breathes (U10; static under reduced motion). */
 export function Skeleton({ className }: { className?: string }) {
   return (
     <span
       aria-hidden
       className={cx(
-        "block rounded-lg bg-[length:200%_100%] motion-safe:animate-shimmer",
-        "bg-gradient-to-r from-line via-surface to-line",
+        "block rounded-lg bg-line motion-safe:animate-breathe",
         className,
       )}
     />

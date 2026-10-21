@@ -7,6 +7,7 @@ import { formatPercent } from "@/lib/format";
 import { DEFAULT_EXIT_INTENT, exitQuery } from "@/lib/positions/exit-intent";
 import { showsExitGap } from "@/lib/positions/labels";
 import type { LpView } from "@/lib/positions/view";
+import { Settle } from "@/components/ui/Settle";
 
 type History = { events: unknown; error: Error | null; retry: () => void };
 
@@ -43,7 +44,7 @@ export function LpPositionCard({ lp, history }: { lp: LpView; history: History }
           {lpUnits(lp.cost.unattributedLp)} was not deposited through MezoRoute and has no cost basis.
         </p>
       )}
-      <ButtonLink href={`/positions/lp/exit/${exitQuery(DEFAULT_EXIT_INTENT)}`} className="mt-4">
+      <ButtonLink href={`/positions/lp/exit/${exitQuery(DEFAULT_EXIT_INTENT)}`} className="mt-4" arrow>
         Exit to MUSD
       </ButtonLink>
     </Card>
@@ -75,11 +76,13 @@ function CostRows({ lp, history }: { lp: LpView; history: History }) {
   return (
     <>
       <Stat label="Cost basis" sub={`incl. ${musd(lp.cost.coveredFees)} MezoRoute fees`}>
-        {musd(lp.cost.coveredBasis)}
+        <Settle as="span">{musd(lp.cost.coveredBasis)}</Settle>
       </Stat>
       {lp.valueChange !== null && (
         <Stat label="Estimated position value change" sub="Exit value minus cost basis">
-          {signedMusd(lp.valueChange)}
+          <Settle as="span" index={1}>
+            {signedMusd(lp.valueChange)}
+          </Settle>
         </Stat>
       )}
     </>

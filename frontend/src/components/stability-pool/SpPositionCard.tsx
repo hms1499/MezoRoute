@@ -9,6 +9,7 @@ import type { HistoryStatus } from "@/lib/stability-pool/cost-basis";
 import type { SpBlock } from "@/lib/stability-pool/gate";
 import { spWithdrawQuery } from "@/lib/stability-pool/intent";
 import type { SpView } from "@/lib/stability-pool/position";
+import { Settle } from "@/components/ui/Settle";
 
 type History = { status: HistoryStatus; retry: () => void };
 
@@ -48,9 +49,9 @@ export function SpPositionCard({
         <CostRows view={view} history={history} />
       </dl>
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <ButtonLink href={`/positions/stability-pool/withdraw/${spWithdrawQuery(100)}`}>Withdraw</ButtonLink>
-        <Button variant="secondary" disabled={claimBlock !== null} loading={claiming} onClick={onClaim}>
-          {claiming ? "Check your wallet…" : "Claim BTC gain"}
+        <ButtonLink href={`/positions/stability-pool/withdraw/${spWithdrawQuery(100)}`} arrow>Withdraw</ButtonLink>
+        <Button variant="secondary" disabled={claimBlock !== null} pending={claiming ? "wallet" : null} onClick={onClaim}>
+          Claim BTC gain
         </Button>
         <BlockNotice block={claimBlock?.reason === "no-gain" ? null : claimBlock} />
       </div>
@@ -82,16 +83,24 @@ function CostRows({ view, history }: { view: SpView; history: History }) {
   return (
     <>
       <Stat label="Cost basis" sub="MUSD you put in, less what you took out">
-        {musd(view.cost.basis)}
+        <Settle as="span" index={0}>
+          {musd(view.cost.basis)}
+        </Settle>
       </Stat>
       <Stat label="Estimated position value change" sub="Value now minus cost basis">
-        {signedMusd(view.cost.valueChange)}
+        <Settle as="span" index={1}>
+          {signedMusd(view.cost.valueChange)}
+        </Settle>
       </Stat>
       <Stat label="BTC gains received" sub="Since this deposit started">
-        {btc(view.cost.gainsClaimed)}
+        <Settle as="span" index={2}>
+          {btc(view.cost.gainsClaimed)}
+        </Settle>
       </Stat>
       <Stat label="Absorbed by liquidations" sub="Since this deposit started">
-        {musd(view.cost.absorbed)}
+        <Settle as="span" index={3}>
+          {musd(view.cost.absorbed)}
+        </Settle>
       </Stat>
     </>
   );

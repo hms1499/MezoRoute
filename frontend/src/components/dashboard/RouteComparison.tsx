@@ -24,6 +24,7 @@ import { entryQuery } from "@/lib/routes/musd-btc-lp/intent";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
 import { cx } from "@/lib/ui/cx";
 import { lpAmountRows, lpFee, spAmountRows, type Row } from "./compare-rows";
+import { Settle } from "@/components/ui/Settle";
 
 const FOOTNOTE =
   "Past results, not a forecast. LP values use the pool's own price (before your trade), not the oracle; Stability Pool BTC gains use the oracle price. LP gauge rewards are not included; the −30% row uses the constant-product approximation and does not model new liquidations.";
@@ -50,7 +51,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
   const typed = amount === null ? "" : text.trim();
 
   const pending = (value: (b: RouteBacktests) => ReactNode): ReactNode =>
-    backtests ? value(backtests) : historyFailed ? "Unavailable" : <Skeleton className="h-4 w-28" />;
+    backtests ? <Settle as="span">{value(backtests)}</Settle> : historyFailed ? "Unavailable" : <Skeleton className="h-4 w-28" />;
   const historyRow = (line: (b: RouteBacktests) => string): Row => ({
     label: backtests ? `Last ${windowDays(backtests.seconds)} days` : "Last 30 days",
     title: backtests ? `Blocks ${backtests.pastBlock} → ${backtests.headBlock}` : undefined,
@@ -167,7 +168,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
           <span aria-hidden />
           {routes.map((route) => (
             <div key={route.id} role="cell">
-              <ButtonLink href={route.href}>{route.cta}</ButtonLink>
+              <ButtonLink href={route.href} arrow>{route.cta}</ButtonLink>
             </div>
           ))}
         </div>
@@ -185,7 +186,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
               aria-selected={tab === route.id}
               aria-controls={`panel-${route.id}`}
               onClick={() => setTab(route.id)}
-              className={cx("min-h-10 flex-1 rounded-full px-3 transition-colors duration-150", tab === route.id ? "bg-line text-ink" : "text-muted")}
+              className={cx("min-h-10 flex-1 rounded-full px-3 transition-colors", tab === route.id ? "bg-line text-ink" : "text-muted")}
             >
               {route.title}
             </button>
@@ -218,7 +219,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
             <div className="mt-4">
               <RiskList risks={route.risks} />
             </div>
-            <ButtonLink href={route.href} className="mt-4 w-full">
+            <ButtonLink href={route.href} className="mt-4 w-full" arrow>
               {route.cta}
             </ButtonLink>
           </div>

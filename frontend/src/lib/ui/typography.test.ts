@@ -26,13 +26,14 @@ describe("type tokens", () => {
         "28px",
         { lineHeight: "32px", fontWeight: "500", letterSpacing: "-0.025em" },
       ],
+      // U10: the landing's display type is light, as on morpho.org.
       display: [
         "40px",
-        { lineHeight: "48px", fontWeight: "700", letterSpacing: "-0.025em" },
+        { lineHeight: "48px", fontWeight: "300", letterSpacing: "-0.02em" },
       ],
       "display-lg": [
         "48px",
-        { lineHeight: "52px", fontWeight: "700", letterSpacing: "-0.025em" },
+        { lineHeight: "52px", fontWeight: "300", letterSpacing: "-0.02em" },
       ],
     });
   });
@@ -42,11 +43,11 @@ describe("type tokens", () => {
     expect(CHART_FONT_PX).toBe(12);
   });
 
-  it("uses weight 700 only for the display tokens", () => {
+  it("uses weight 300 only for the display tokens", () => {
     for (const [key, [, meta]] of Object.entries(fontSize)) {
       const weight = "fontWeight" in meta ? meta.fontWeight : undefined;
       if (weight === undefined) continue;
-      expect(DISPLAY.has(key) ? ["700"] : ["400", "500", "600"]).toContain(weight);
+      expect(DISPLAY.has(key) ? ["300"] : ["400", "500", "600"]).toContain(weight);
     }
   });
 });
@@ -130,6 +131,30 @@ describe("type usage in source", () => {
           .split("\n")
           .flatMap((line, i) => offences(line, file.endsWith(".css")).map((rule) => `${file}:${i + 1} ${rule}`)),
       );
+    expect(hits).toEqual([]);
+  });
+});
+
+// U10 §8: weights have roles. Headings are 600 (or a size token that carries its weight); row headers are 400.
+describe("weight roles (U10 §8)", () => {
+  const files = sourceFiles().filter((file) => file.endsWith(".tsx"));
+  const openings = (pattern: RegExp) =>
+    files.flatMap((file) => {
+      const source = readFileSync(join(SRC, file), "utf8");
+      return [...source.matchAll(pattern)].map((match) => ({ file, tag: match[0], line: source.slice(0, match.index).split("\n").length }));
+    });
+
+  it("sets every h1–h3 at 600", () => {
+    const hits = openings(/<h[1-3]\b[^>]*>/g)
+      .filter(({ tag }) => !/\bfont-semibold\b|\btext-(headline|title|display|display-lg)\b/.test(tag))
+      .map(({ file, line }) => `${file}:${line}`);
+    expect(hits).toEqual([]);
+  });
+
+  it("sets every row header at 400", () => {
+    const hits = openings(/<th\b[^>]*scope="row"[^>]*>/g)
+      .filter(({ tag }) => !/\bfont-normal\b/.test(tag))
+      .map(({ file, line }) => `${file}:${line}`);
     expect(hits).toEqual([]);
   });
 });

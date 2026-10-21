@@ -22,7 +22,10 @@ export function HowItWorks() {
       aria-labelledby="how-heading"
       className="landing-section landing-reveal scroll-mt-6"
     >
-      <h2 id="how-heading" className="text-headline text-ink">
+      <p className="inline-flex rounded-full px-3 py-1 ring-1 ring-inset ring-line">
+        <span className="eyebrow">How it works</span>
+      </p>
+      <h2 id="how-heading" className="mt-4 text-headline text-ink">
         Three steps, every number shown before you sign
       </h2>
       <div aria-hidden className="relative mt-8 hidden h-px bg-line sm:block">

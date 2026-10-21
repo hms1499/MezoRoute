@@ -9,13 +9,20 @@
     --landing-radius-panel: 1rem;
     --landing-radius-control: 0.75rem;
     --landing-radius-pill: 9999px;
-    --landing-motion-control: 150ms;
-    --landing-motion-card: 200ms;
-    --landing-motion-reveal: 600ms;
+    --landing-motion-control: var(--motion-fast);
+    --landing-motion-card: var(--motion-fast);
+    --landing-motion-reveal: var(--motion-slow);
     --landing-motion-chart: 1200ms;
     --landing-motion-timeline: 1400ms;
     --landing-motion-live-pulse: 1800ms;
     --landing-motion-value-flash: 700ms;
+  }
+
+  /* U10: more air between landing sections from 1024 px, as on morpho.org. */
+  @media (min-width: 1024px) {
+    :root {
+      --landing-space-section: 5rem;
+    }
   }
 
   /* color-scheme and the colour variables come from tokens.ts (the Tailwind plugin), per theme (U9). */
@@ -71,9 +78,9 @@
     border: 1px solid rgb(var(--color-line));
     border-radius: var(--landing-radius-control);
     transition:
-      border-color var(--landing-motion-control) ease,
-      color var(--landing-motion-control) ease,
-      background-color var(--landing-motion-control) ease;
+      border-color var(--landing-motion-control) var(--ease-smooth),
+      color var(--landing-motion-control) var(--ease-smooth),
+      background-color var(--landing-motion-control) var(--ease-smooth);
   }
   .landing-control:focus-within {
     border-color: rgb(var(--color-accent));
@@ -87,9 +94,6 @@
   }
   .landing-control--pill {
     border-radius: var(--landing-radius-pill);
-  }
-  .landing-section-title {
-    @apply text-base font-semibold text-ink;
   }
   .landing-chart-surface {
     border: 1px solid rgb(var(--color-line));
@@ -106,8 +110,48 @@
   }
   .landing-route-lane {
     transition:
-      border-color var(--landing-motion-card) ease,
-      background-color var(--landing-motion-card) ease;
+      border-color var(--landing-motion-card) var(--ease-smooth),
+      background-color var(--landing-motion-card) var(--ease-smooth);
+  }
+  /* U10: the framed grid behind the hero and the section illustrations (morpho.org's motif, MezoRoute's colours). */
+  .landing-frame {
+    border: 1px solid rgb(var(--color-line));
+    border-radius: 0.25rem;
+    background-color: rgb(var(--color-canvas));
+    background-image:
+      linear-gradient(to right, rgb(var(--color-line) / 0.7) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--color-line) / 0.7) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .frame-cross {
+    position: absolute;
+    width: 11px;
+    height: 11px;
+    color: rgb(var(--color-accent) / 0.6);
+  }
+  .frame-cross::before,
+  .frame-cross::after {
+    content: "";
+    position: absolute;
+    background-color: currentColor;
+  }
+  .frame-cross::before {
+    left: 5px;
+    width: 1px;
+    height: 11px;
+  }
+  .frame-cross::after {
+    top: 5px;
+    width: 11px;
+    height: 1px;
+  }
+  /* Small uppercase labels over hero figures and section pills (U10). */
+  .eyebrow {
+    @apply text-xs font-medium uppercase tracking-wide text-muted;
+  }
+  /* The motif's travelling dots: hidden unless motion is welcome. */
+  .motif-flow {
+    opacity: 0;
   }
   .landing-trust-icon {
     display: inline-flex;
@@ -120,6 +164,75 @@
     border-radius: var(--landing-radius-control);
     background-color: rgb(var(--color-surface));
     color: rgb(var(--color-muted));
+  }
+}
+
+/* U10 button (Morpho's): the label sits twice in a one-line window and rolls up on hover; forward buttons carry an
+   arrow in a circle that swaps on hover. Only where hover exists, so a tap never leaves a rolled label, and only
+   without reduced motion; elsewhere the button shows its plain label. */
+.btn-roll {
+  display: inline-grid;
+  overflow: hidden;
+}
+.btn-label {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition:
+    transform var(--motion-base) var(--ease-smooth),
+    opacity var(--motion-base) var(--ease-smooth);
+}
+.btn-label + .btn-label {
+  transform: translateY(110%);
+  opacity: 0;
+}
+/* A pending button (U10): the status takes the label's place; the label stays the accessible name. */
+.btn-status {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-roll.is-pending .btn-label {
+  transform: translateY(-110%);
+  opacity: 0;
+}
+.btn-circle {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 9999px;
+  transition: transform var(--motion-slow) var(--ease-swift);
+}
+.btn-arrow {
+  grid-area: 1 / 1;
+  transition: transform var(--motion-slow) var(--ease-swift);
+}
+.btn-arrow + .btn-arrow {
+  transform: translateX(-200%);
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .btn:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) .btn-label:first-child {
+    transform: translateY(-110%);
+    opacity: 0;
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) .btn-label + .btn-label {
+    transform: none;
+    opacity: 1;
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) .btn-circle {
+    transform: scale(1.06);
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) .btn-arrow:first-child {
+    transform: translateX(200%);
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) .btn-arrow + .btn-arrow {
+    transform: none;
   }
 }
 
@@ -137,30 +250,40 @@
 }
 
 
-/* U2 landing motion. Without the media query every element shows its final state, so reduced
+/* U2 landing motion and U10 settle. Without the media query every element shows its final state, so reduced
    motion needs no override. */
 
 @media (prefers-reduced-motion: no-preference) {
+  .motif-flow {
+    opacity: 1;
+    stroke-dasharray: 2 90;
+    animation: motif-flow 4s linear infinite;
+  }
+  /* U10: content that replaces a skeleton settles in once, on mount (Settle.tsx). */
+  .settle {
+    @apply animate-settle;
+    animation-delay: calc(var(--i, 0) * var(--motion-stagger));
+  }
   .landing-rise {
-    animation: landing-rise var(--landing-motion-reveal) cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation: landing-rise var(--landing-motion-reveal) var(--ease-smooth) backwards;
   }
   /* Drawn paths set pathLength="1", so one dash covers a line of any width (U3 review). */
   .landing-draw {
     stroke-dasharray: 1;
-    animation: landing-draw var(--landing-motion-chart) ease-out both;
+    animation: landing-draw var(--landing-motion-chart) var(--ease-smooth) both;
   }
   .landing-ping {
-    animation: landing-ping var(--landing-motion-live-pulse) ease-out infinite;
+    animation: landing-ping var(--landing-motion-live-pulse) var(--ease-smooth) infinite;
   }
   .landing-flash {
-    animation: landing-flash var(--landing-motion-value-flash) ease-out;
+    animation: landing-flash var(--landing-motion-value-flash) var(--ease-smooth);
   }
   .landing-reveal {
     opacity: 0;
     transform: translateY(18px);
     transition:
-      opacity var(--landing-motion-reveal) ease-out,
-      transform var(--landing-motion-reveal) cubic-bezier(0.2, 0.7, 0.2, 1);
+      opacity var(--landing-motion-reveal) var(--ease-smooth),
+      transform var(--landing-motion-reveal) var(--ease-smooth);
   }
   .landing-reveal[data-seen="true"] {
     opacity: 1;
@@ -168,13 +291,18 @@
   }
   .landing-fill {
     transform: scaleX(0);
-    transition: transform var(--landing-motion-timeline) cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition: transform var(--landing-motion-timeline) var(--ease-smooth);
   }
   .landing-fill[data-seen="true"] {
     transform: scaleX(1);
   }
 }
 
+@keyframes motif-flow {
+  to {
+    stroke-dashoffset: -184;
+  }
+}
 @keyframes landing-rise {
   from {
     opacity: 0;

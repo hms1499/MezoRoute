@@ -147,7 +147,7 @@ function CrCell({ cr, liquidatable }: { cr: bigint | null; liquidatable: boolean
   return (
     <td className={liquidatable ? "bg-danger-soft px-1.5 py-2 text-right font-semibold text-danger" : "px-1.5 py-2 text-right"}>
       <span className="inline-flex items-center gap-1">
-        {liquidatable && <TriangleAlert aria-hidden className="h-3 w-3 shrink-0" />}
+        {liquidatable && <TriangleAlert aria-hidden className="h-3.5 w-3.5 shrink-0" />}
         {formatPercent(cr)}
       </span>
       {liquidatable && <span className="sr-only"> (liquidatable)</span>}

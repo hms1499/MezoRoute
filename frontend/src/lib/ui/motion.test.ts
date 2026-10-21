@@ -1,12 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { countUpAt, easeOutCubic, interpolateBigint, isRevealed, LANDING_MOTION_MS } from "./motion";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { MOTION_ANIMATIONS } from "./motion";
+import { countUpAt, cubicBezier, easeSmooth, interpolateBigint, isRevealed, LANDING_MOTION_MS, MOTION_KEYFRAMES, MOTION_MS, motionVariables } from "./motion";
+
+describe("motion tokens (U10)", () => {
+  it("has one curve's three durations and the named one-offs", () => {
+    expect(MOTION_MS).toEqual({ fast: 200, base: 400, slow: 600, tick: 1000, doneFlash: 1200, settleStagger: 60 });
+  });
+
+  it("writes the CSS variables from the same values", () => {
+    expect(motionVariables()).toEqual({
+      "--ease-smooth": "cubic-bezier(0.36, 0.2, 0.07, 1)",
+      "--ease-swift": "cubic-bezier(0.2, 0, 0, 1)",
+      "--motion-fast": "200ms",
+      "--motion-base": "400ms",
+      "--motion-slow": "600ms",
+      "--motion-stagger": "60ms",
+    });
+  });
+
+  it("replaces the shimmer with the breathing skeleton", () => {
+    expect(Object.keys(MOTION_KEYFRAMES).sort()).toEqual(["breathe", "dot-wave", "roll-in", "settle", "toast-in"]);
+  });
+});
 
 describe("landing motion timings", () => {
-  it("keeps interaction, reveal, chart, and value motion on one timing scale", () => {
+  it("keeps only the long one-off timings", () => {
     expect(LANDING_MOTION_MS).toEqual({
-      control: 150,
-      card: 200,
-      reveal: 600,
       chartDraw: 1200,
       timeline: 1400,
       livePulse: 1800,
@@ -17,13 +38,22 @@ describe("landing motion timings", () => {
   });
 });
 
-describe("easeOutCubic", () => {
-  it("runs from 0 to 1, fast first, and clamps outside the range", () => {
-    expect(easeOutCubic(0)).toBe(0);
-    expect(easeOutCubic(1)).toBe(1);
-    expect(easeOutCubic(0.5)).toBeCloseTo(0.875, 10);
-    expect(easeOutCubic(-1)).toBe(0);
-    expect(easeOutCubic(2)).toBe(1);
+describe("easeSmooth", () => {
+  it("evaluates cubic-bezier(0.36, 0.2, 0.07, 1)", () => {
+    expect(easeSmooth(0)).toBe(0);
+    expect(easeSmooth(1)).toBe(1);
+    expect(easeSmooth(0.25)).toBeCloseTo(0.4716, 3);
+    expect(easeSmooth(0.5)).toBeCloseTo(0.8704, 3);
+    for (let i = 1; i <= 100; i++) expect(easeSmooth(i / 100)).toBeGreaterThanOrEqual(easeSmooth((i - 1) / 100));
+  });
+
+  it("clamps outside 0–1", () => {
+    expect(easeSmooth(-1)).toBe(0);
+    expect(easeSmooth(2)).toBe(1);
+  });
+
+  it("is the identity for a linear bezier", () => {
+    expect(cubicBezier(0.25, 0.25, 0.75, 0.75)(0.3)).toBeCloseTo(0.3, 4);
   });
 });
 
@@ -39,7 +69,7 @@ describe("interpolateBigint", () => {
 describe("countUpAt", () => {
   it("eases from the start value to the target over the duration", () => {
     expect(countUpAt(0n, 1_000n, 0, 450)).toBe(0n);
-    expect(countUpAt(0n, 1_000n, 225, 450)).toBe(875n);
+    expect(countUpAt(0n, 1_000n, 225, 450)).toBe(870n); // easeSmooth(0.5) ≈ 0.8704
     expect(countUpAt(0n, 1_000n, 450, 450)).toBe(1_000n);
     expect(countUpAt(0n, 1_000n, 9_000, 450)).toBe(1_000n);
   });
@@ -62,5 +92,27 @@ describe("isRevealed", () => {
 
   it("never reveals what is not on screen", () => {
     expect(isRevealed({ isIntersecting: false, ratio: 0, visibleHeight: 0, rootHeight: root }, 0.3)).toBe(false);
+  });
+});
+
+// Final review (U10): an animation that fills forwards keeps a stacking context and a fixed-position containing block
+// alive after it ends, which buried U8's Term popovers under the next settled block. Entrances fill backwards only.
+describe("entrances leave nothing behind", () => {
+  it("fills settle and roll-in backwards", () => {
+    expect(MOTION_ANIMATIONS.settle).toMatch(/ backwards$/);
+    expect(MOTION_ANIMATIONS["roll-in"]).toMatch(/ backwards$/);
+  });
+
+  it("fills the landing's rise backwards", () => {
+    const css = readFileSync(join(__dirname, "../../app/globals.css"), "utf8");
+    expect(css).toMatch(/animation: landing-rise [^;]* backwards;/);
+  });
+});
+
+describe("one source for the settle stagger (U10 minor)", () => {
+  it("staggers settle by the token, not a number written in CSS", () => {
+    const css = readFileSync(join(__dirname, "../../app/globals.css"), "utf8");
+    expect(css).toContain("animation-delay: calc(var(--i, 0) * var(--motion-stagger));");
+    expect(css).not.toMatch(/\* 60ms/);
   });
 });

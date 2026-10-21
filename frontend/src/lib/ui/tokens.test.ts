@@ -123,3 +123,9 @@ describe("audited pairs", () => {
   });
 });
 
+
+describe("U10 arrow circle", () => {
+  it("checks the arrow on its circle in both themes", () => {
+    for (const theme of ["light", "dark"]) expect(TEXT_PAIRS.map(([name]) => name)).toContain(`${theme}: accent on onAccent (arrow circle on primary)`);
+  });
+});

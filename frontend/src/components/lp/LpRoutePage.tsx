@@ -88,7 +88,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
         ]
       : [];
   const review = (className?: string) => (
-    <ButtonLink href={`/route/lp/confirm/${entryQuery(intent)}`} disabled={preview.block !== null} className={className}>
+    <ButtonLink href={`/route/lp/confirm/${entryQuery(intent)}`} disabled={preview.block !== null} className={className} arrow>
       Review
     </ButtonLink>
   );

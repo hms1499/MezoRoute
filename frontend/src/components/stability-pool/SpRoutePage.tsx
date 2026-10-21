@@ -63,7 +63,7 @@ function SpRoute({ account }: { account: Address }) {
           { label: "Network fee (estimated)", value: preview.gasCost === null ? "—" : btc(preview.gasCost) },
         ];
   const review = (className?: string) => (
-    <ButtonLink href={`/route/stability-pool/confirm/${spDepositQuery(amount)}`} disabled={preview.block !== null} className={className}>
+    <ButtonLink href={`/route/stability-pool/confirm/${spDepositQuery(amount)}`} disabled={preview.block !== null} className={className} arrow>
       Review
     </ButtonLink>
   );

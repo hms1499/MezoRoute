@@ -15,7 +15,7 @@ const ClientProviders = dynamic(
     ssr: false,
     loading: () => (
       <div role="status" aria-label="Loading MezoRoute" className="flex min-h-dvh items-center justify-center">
-        <span aria-hidden className="h-8 w-8 rounded-lg bg-accent motion-safe:animate-pulse" />
+        <span aria-hidden className="h-8 w-8 rounded-lg bg-accent motion-safe:animate-breathe" />
       </div>
     ),
   },

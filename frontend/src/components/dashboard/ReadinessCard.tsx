@@ -56,8 +56,8 @@ export function ReadinessCard({
           </ButtonLink>
         ))}
         {/* One place to pick a route (U8): Compare routes below starts filled with the wallet's MUSD. */}
-        {readiness.state === "ready" && <ButtonLink href="#compare">Compare routes</ButtonLink>}
-        {readiness.state === "can-borrow" && network.executor && <ButtonLink href="/route/lp/?mode=borrow">Borrow & Deploy</ButtonLink>}
+        {readiness.state === "ready" && <ButtonLink href="#compare" arrow>Compare routes</ButtonLink>}
+        {readiness.state === "can-borrow" && network.executor && <ButtonLink href="/route/lp/?mode=borrow" arrow>Borrow & Deploy</ButtonLink>}
       </div>
       <p className="mt-4 flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-line pt-3 text-xs text-muted">
         <span title={btcAddress ?? account}>

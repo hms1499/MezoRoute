@@ -91,15 +91,14 @@ function WithdrawView(props: {
   const paused = check.error !== null && decodeError(check.error, network).kind === SP_WITHDRAW_BLOCKED.kind;
   const busy = actions.pending !== null;
 
-  const claimLabel = actions.pending === "claim" ? "Check your wallet…" : "Claim BTC gain";
   const withdrawButton = (className?: string) => (
     <Button
       disabled={preview.block !== null || busy || check.isPending}
-      loading={actions.pending === "withdraw"}
+      pending={actions.pending === "withdraw" ? "wallet" : null}
       onClick={() => actions.withdraw(props.percent)}
       className={className}
     >
-      {actions.pending === "withdraw" ? "Check your wallet…" : "Withdraw"}
+      Withdraw
     </Button>
   );
   const notice = preview.block?.outcome ? <BlockNotice block={preview.block} /> : undefined;
@@ -128,8 +127,8 @@ function WithdrawView(props: {
             </Notice>
             <p className="mt-3 text-sm text-muted">Claiming your BTC gain still works while withdrawals are paused.</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button disabled={claimBlock !== null || busy} loading={actions.pending === "claim"} onClick={actions.claim}>
-                {claimLabel}
+              <Button disabled={claimBlock !== null || busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim}>
+                Claim BTC gain
               </Button>
               <Button variant="ghost" onClick={() => void check.refetch()}>
                 Retry
@@ -146,8 +145,8 @@ function WithdrawView(props: {
                 {withdrawButton("w-full")}
                 {/* A pending gain can be taken without touching the deposit, even when nothing is left to withdraw. */}
                 {claimBlock === null && (
-                  <Button variant="secondary" disabled={busy} loading={actions.pending === "claim"} onClick={actions.claim} className="w-full">
-                    {actions.pending === "claim" ? "Check your wallet…" : "Claim BTC gain only"}
+                  <Button variant="secondary" disabled={busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim} className="w-full">
+                    Claim BTC gain only
                   </Button>
                 )}
               </div>
@@ -173,8 +172,8 @@ function WithdrawView(props: {
       </Card>
       {claimBlock === null && !paused && (
         <div className="lg:hidden">
-          <Button variant="secondary" disabled={busy} loading={actions.pending === "claim"} onClick={actions.claim} className="w-full">
-            {actions.pending === "claim" ? "Check your wallet…" : "Claim BTC gain only"}
+          <Button variant="secondary" disabled={busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim} className="w-full">
+            Claim BTC gain only
           </Button>
         </div>
       )}

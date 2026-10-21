@@ -128,7 +128,7 @@ function Plot({
               strokeLinecap="round"
               strokeLinejoin="round"
               pathLength={drawIn && !before ? 1 : undefined}
-              className={cx(drawIn && !before && "landing-draw", "transition-[stroke-width] duration-200")}
+              className={cx(drawIn && !before && "landing-draw", "transition-[stroke-width] duration-fast")}
             />
           );
         })}

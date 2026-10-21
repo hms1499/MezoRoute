@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { REJECTED, RELAY } from "@/lib/errors/outcomes";
 import type { Step } from "@/lib/tx/stepper";
-import { receiptHeader, stepVisual } from "./step-visual";
+import { newlyDone, receiptHeader, stepVisual } from "./step-visual";
 
 const step = (status: Step<string>["status"]): Step<string> => ({ kind: "enter", status });
 
@@ -29,5 +29,27 @@ describe("receiptHeader", () => {
     expect(receiptHeader("confirmed")).toEqual({ step: 3, stepStatus: "done" });
     expect(receiptHeader("failed")).toEqual({ step: 3, stepStatus: "failed" });
     expect(receiptHeader("unconfirmed")).toEqual({ step: 3, stepStatus: "unconfirmed" });
+  });
+});
+
+describe("newlyDone (U10)", () => {
+  const at = (kind: string, status: Step<string>["status"]): Step<string> => ({ kind, status });
+  it("names the steps that just finished", () => {
+    expect(newlyDone([at("approve", "submitted"), at("enter", "idle")], [at("approve", "done"), at("enter", "idle")])).toEqual(["approve"]);
+    expect(newlyDone([at("permit", "awaiting-wallet")], [at("permit", "done")])).toEqual(["permit"]);
+  });
+
+  it("ignores unchanged steps and steps that were already done", () => {
+    const steps = [at("approve", "done"), at("enter", "awaiting-wallet")];
+    expect(newlyDone(steps, steps)).toEqual([]);
+    expect(newlyDone(steps, [at("approve", "done"), at("enter", "submitted")])).toEqual([]);
+  });
+});
+
+describe("newlyDone across a change of shape (U10 minor)", () => {
+  const at = (kind: string, status: Step<string>["status"]): Step<string> => ({ kind, status });
+  it("matches steps by kind, so a step added in front never makes a finished step flash again", () => {
+    expect(newlyDone([at("approve", "done"), at("enter", "idle")], [at("permit", "idle"), at("approve", "done"), at("enter", "idle")])).toEqual([]);
+    expect(newlyDone([at("enter", "submitted")], [at("permit", "done"), at("enter", "done")])).toEqual(["permit", "enter"]);
   });
 });

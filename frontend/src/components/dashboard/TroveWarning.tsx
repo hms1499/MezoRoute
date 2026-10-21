@@ -1,4 +1,4 @@
-import { buttonClass } from "@/components/ui/Button";
+import { ButtonContent, buttonClass } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import type { TroveWarning as Warning } from "@/lib/dashboard/readiness";
 
@@ -10,7 +10,9 @@ export function TroveWarning({ warning }: { warning: Warning }) {
       role="alert"
       action={
         <a href="#exposure" className={buttonClass("secondary", "sm")}>
-          Review exposure
+          <ButtonContent variant="secondary" size="sm">
+            Review exposure
+          </ButtonContent>
         </a>
       }
     >

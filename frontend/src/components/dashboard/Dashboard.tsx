@@ -19,6 +19,7 @@ import { ReadinessCard } from "./ReadinessCard";
 import { RouteComparison } from "./RouteComparison";
 import { TroveCard } from "./TroveCard";
 import { TroveWarning } from "./TroveWarning";
+import { Settle } from "@/components/ui/Settle";
 
 /** The connected home page (spec §9 screen 1): warning, readiness, Trove, exposure, route comparison, positions, mainnet reference (testnet only). */
 export function Dashboard({ account }: { account: Address }) {
@@ -49,17 +50,17 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
           follows what is on screen. From 1024 px the side column spans both rows; its 1fr row keeps the
           extra height out of the Next step row. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:items-start">
-        <div className="lg:col-span-2">
+        <Settle index={0} className="lg:col-span-2">
           <ReadinessCard readiness={current} data={data} walletKind={walletKind} account={account} />
-        </div>
-        <div className="space-y-4 lg:col-start-3 lg:row-span-2 lg:row-start-1">
+        </Settle>
+        <Settle index={1} className="space-y-4 lg:col-start-3 lg:row-span-2 lg:row-start-1">
           <ExposurePanel snapshot={snapshot} />
           <TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} />
           <PositionsSummary account={account} spValue={exposure(snapshot).spValue} />
-        </div>
-        <div className="lg:col-span-2 lg:row-start-2">
+        </Settle>
+        <Settle index={2} className="lg:col-span-2 lg:row-start-2">
           <RouteComparison snapshot={snapshot} />
-        </div>
+        </Settle>
       </div>
       <MainnetReferenceCard />
     </>
