@@ -262,7 +262,7 @@
   /* U10: content that replaces a skeleton settles in once, on mount (Settle.tsx). */
   .settle {
     @apply animate-settle;
-    animation-delay: calc(var(--i, 0) * 60ms);
+    animation-delay: calc(var(--i, 0) * var(--motion-stagger));
   }
   .landing-rise {
     animation: landing-rise var(--landing-motion-reveal) var(--ease-smooth) backwards;

@@ -28,6 +28,7 @@ export function motionVariables(): Record<string, string> {
     "--motion-fast": `${MOTION_MS.fast}ms`,
     "--motion-base": `${MOTION_MS.base}ms`,
     "--motion-slow": `${MOTION_MS.slow}ms`,
+    "--motion-stagger": `${MOTION_MS.settleStagger}ms`,
   };
 }
 

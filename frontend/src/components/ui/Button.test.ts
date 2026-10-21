@@ -148,3 +148,9 @@ describe("pending wins over disabled (final review, U10)", () => {
     expect(out).toContain('aria-disabled="true"');
   });
 });
+
+describe("inert buttons do not press (U10 minor)", () => {
+  it("holds a pending or disabled-link button still on :active", () => {
+    expect(buttonClass()).toContain("aria-disabled:active:scale-100");
+  });
+});

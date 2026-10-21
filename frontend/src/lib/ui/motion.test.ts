@@ -16,6 +16,7 @@ describe("motion tokens (U10)", () => {
       "--motion-fast": "200ms",
       "--motion-base": "400ms",
       "--motion-slow": "600ms",
+      "--motion-stagger": "60ms",
     });
   });
 
@@ -105,5 +106,13 @@ describe("entrances leave nothing behind", () => {
   it("fills the landing's rise backwards", () => {
     const css = readFileSync(join(__dirname, "../../app/globals.css"), "utf8");
     expect(css).toMatch(/animation: landing-rise [^;]* backwards;/);
+  });
+});
+
+describe("one source for the settle stagger (U10 minor)", () => {
+  it("staggers settle by the token, not a number written in CSS", () => {
+    const css = readFileSync(join(__dirname, "../../app/globals.css"), "utf8");
+    expect(css).toContain("animation-delay: calc(var(--i, 0) * var(--motion-stagger));");
+    expect(css).not.toMatch(/\* 60ms/);
   });
 });

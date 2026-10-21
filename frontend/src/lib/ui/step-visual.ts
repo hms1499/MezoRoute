@@ -29,7 +29,8 @@ export function receiptHeader(state: ReceiptState): { step: 3; stepStatus: StepS
   return { step: 3, stepStatus: state === "confirmed" ? "done" : state };
 }
 
-/** The kinds whose status became "done" between two renders of a stepper (U10: the button's brief "Done"). */
+/** The kinds whose status became "done" between two renders of a stepper (U10: the button's brief "Done"), by kind. */
 export function newlyDone<K extends string>(prev: Step<K>[], next: Step<K>[]): K[] {
-  return next.filter((step, index) => step.status === "done" && prev[index]?.status !== "done").map((step) => step.kind);
+  const wasDone = new Set(prev.filter((step) => step.status === "done").map((step) => step.kind));
+  return next.filter((step) => step.status === "done" && !wasDone.has(step.kind)).map((step) => step.kind);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, LoaderCircle, Wallet, X } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import type { Step } from "@/lib/tx/stepper";
 import { cx } from "@/lib/ui/cx";
 import { MOTION_MS } from "@/lib/ui/motion";
@@ -15,22 +15,28 @@ const STATUS_TEXT: Partial<Record<StepVisual, string>> = PENDING_TEXT;
 
 /**
  * The kind of the step that just finished, for `MOTION_MS.doneFlash` (U10: its button shows the check and "Done"
- * briefly, then the row returns to the plain finished row). Cleared on unmount, so no update lands after it.
+ * briefly, then the row returns to the plain finished row). Cleared on unmount, so no update lands after it. If the
+ * finished button held keyboard focus, focus moves to the next step's button instead of falling back to the page.
  */
-function useDoneFlash<K extends string>(steps: Step<K>[]): K | null {
-  const previous = useRef(steps);
+function useDoneFlash<K extends string>(steps: Step<K>[], list: RefObject<HTMLOListElement>): K | null {
+  // Derived during render (React's "previous props" pattern), not in an effect: an effect would commit one render
+  // with the step done and no flash, unmounting the focused button before the "Done" button replaces it.
+  const [previous, setPrevious] = useState(steps);
   const [flash, setFlash] = useState<K | null>(null);
-  useEffect(() => {
-    const done = newlyDone(previous.current, steps);
-    previous.current = steps;
-    if (done.length === 0) return;
-    setFlash(done[done.length - 1]);
-  }, [steps]);
+  if (steps !== previous) {
+    const done = newlyDone(previous, steps);
+    setPrevious(steps);
+    if (done.length > 0) setFlash(done[done.length - 1]);
+  }
   useEffect(() => {
     if (flash === null) return;
-    const timer = setTimeout(() => setFlash(null), MOTION_MS.doneFlash);
+    const timer = setTimeout(() => {
+      const held = list.current?.querySelector('[data-pending="done"]')?.contains(document.activeElement) ?? false;
+      setFlash(null);
+      if (held) requestAnimationFrame(() => list.current?.querySelector<HTMLButtonElement>(".btn:not([data-pending])")?.focus());
+    }, MOTION_MS.doneFlash);
     return () => clearTimeout(timer);
-  }, [flash]);
+  }, [flash, list]);
   return flash;
 }
 
@@ -48,9 +54,10 @@ export function StepList<K extends string>({
   blocked: boolean;
   onRun: () => void;
 }) {
-  const flash = useDoneFlash(steps);
+  const list = useRef<HTMLOListElement>(null);
+  const flash = useDoneFlash(steps, list);
   return (
-    <ol className="mt-4">
+    <ol ref={list} className="mt-4">
       {steps.map((step, index) => {
         const visual = stepVisual(step, index, active);
         const text = STATUS_TEXT[visual];

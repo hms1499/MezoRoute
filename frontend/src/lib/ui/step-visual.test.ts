@@ -45,3 +45,11 @@ describe("newlyDone (U10)", () => {
     expect(newlyDone(steps, [at("approve", "done"), at("enter", "submitted")])).toEqual([]);
   });
 });
+
+describe("newlyDone across a change of shape (U10 minor)", () => {
+  const at = (kind: string, status: Step<string>["status"]): Step<string> => ({ kind, status });
+  it("matches steps by kind, so a step added in front never makes a finished step flash again", () => {
+    expect(newlyDone([at("approve", "done"), at("enter", "idle")], [at("permit", "idle"), at("approve", "done"), at("enter", "idle")])).toEqual([]);
+    expect(newlyDone([at("enter", "submitted")], [at("permit", "done"), at("enter", "done")])).toEqual(["permit", "enter"]);
+  });
+});
