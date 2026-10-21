@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { ROUTE_SECTIONS } from "@/lib/landing/sections";
 import { useMainnetReference } from "@/lib/reference/useMainnetReference";
 import { FinalCta } from "./FinalCta";
 import { Hero } from "./Hero";
 import { HowItWorks } from "./HowItWorks";
-import { RouteLanes } from "./RouteLanes";
+import { RouteSection } from "./RouteSection";
 import { SimulatorSection } from "./SimulatorSection";
 import { TrustRow } from "./TrustRow";
 
@@ -21,7 +22,9 @@ export function Landing() {
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[900px] bg-night-glow" />
       <Hero data={data} error={error} />
       <SimulatorSection data={data} error={error} highlight={highlight} onHighlight={setHighlight} />
-      <RouteLanes onHighlight={setHighlight} />
+      {ROUTE_SECTIONS.map((copy) => (
+        <RouteSection key={copy.route} copy={copy} onHighlight={setHighlight} />
+      ))}
       <HowItWorks />
       <TrustRow />
       <FinalCta />
