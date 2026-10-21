@@ -167,7 +167,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
           <span aria-hidden />
           {routes.map((route) => (
             <div key={route.id} role="cell">
-              <ButtonLink href={route.href}>{route.cta}</ButtonLink>
+              <ButtonLink href={route.href} arrow>{route.cta}</ButtonLink>
             </div>
           ))}
         </div>
@@ -218,7 +218,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
             <div className="mt-4">
               <RiskList risks={route.risks} />
             </div>
-            <ButtonLink href={route.href} className="mt-4 w-full">
+            <ButtonLink href={route.href} className="mt-4 w-full" arrow>
               {route.cta}
             </ButtonLink>
           </div>

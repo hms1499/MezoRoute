@@ -9,15 +9,18 @@ export function ConnectCta({
   label = "Connect a Bitcoin or EVM wallet",
   variant = "primary",
   className,
+  arrow = false,
 }: {
   label?: ReactNode;
   variant?: "primary" | "night" | "nightOutline";
   className?: string;
+  /** U10: the landing's calls to action move the user forward, so they carry the arrow circle. */
+  arrow?: boolean;
 }) {
   return (
     <ConnectButton.Custom>
       {({ openConnectModal, mounted }) => (
-        <Button variant={variant} disabled={!mounted} onClick={openConnectModal} className={className}>
+        <Button variant={variant} disabled={!mounted} onClick={openConnectModal} className={className} arrow={arrow}>
           <Wallet aria-hidden className="h-4 w-4" />
           {label}
         </Button>

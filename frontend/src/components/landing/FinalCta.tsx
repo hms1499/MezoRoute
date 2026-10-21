@@ -23,7 +23,7 @@ export function FinalCta() {
             Compare both routes on live Mezo data and check every amount before you sign.
           </p>
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            <ConnectCta variant="primary" className="w-full sm:w-auto" />
+            <ConnectCta variant="primary" className="w-full sm:w-auto" arrow />
             <ButtonLink href={REPOSITORY} external variant="nightGhost" className="w-full sm:w-auto">
               Read the source
             </ButtonLink>

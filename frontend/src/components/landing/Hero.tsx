@@ -3,7 +3,7 @@
 import { ArrowDown } from "lucide-react";
 import { useState } from "react";
 import { ConnectCta } from "@/components/home/ConnectCta";
-import { buttonClass } from "@/components/ui/Button";
+import { ButtonContent, buttonClass } from "@/components/ui/Button";
 import { amountState } from "@/lib/compare/view";
 import { networks } from "@/lib/config/networks";
 import { simulateRoutes } from "@/lib/landing/simulate";
@@ -57,10 +57,12 @@ export function Hero({
         </p>
         {/* Below 640 px the two actions stack at full width, so the ghost link lines up with the primary. */}
         <div className="landing-rise mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center" style={delay(320)}>
-          <ConnectCta variant="primary" className="w-full sm:w-auto" />
+          <ConnectCta variant="primary" className="w-full sm:w-auto" arrow />
           <a href="#how-it-works" className={buttonClass("ghost", "md", "w-full sm:w-auto")}>
-            How it works
-            <ArrowDown aria-hidden className="h-4 w-4" />
+            <ButtonContent variant="ghost">
+              How it works
+              <ArrowDown aria-hidden className="h-4 w-4" />
+            </ButtonContent>
           </a>
         </div>
         <HeroChart sim={sim} highlight={highlight} className="mt-10 hidden lg:block" />

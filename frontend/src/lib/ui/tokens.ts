@@ -214,6 +214,8 @@ export function textPairs(p: Palette): [name: string, foreground: string, backgr
       Object.entries(surfaces).map(([bg, bgHex]): [string, string, string] => [`${fg} on ${bg}`, fgHex, bgHex]),
     ),
     ["onAccent on accent (button)", p.onAccent, p.accent],
+    // U10: a filled button's arrow circle is onAccent with an accent arrow.
+    ["accent on onAccent (arrow circle on primary)", p.accent, p.onAccent],
     ["canvas on danger (button)", p.canvas, p.danger],
     ["accent on accent-soft", p.accent, soft(p.accent, p)],
     ["sp on sp-soft", p.sp, soft(p.sp, p)],

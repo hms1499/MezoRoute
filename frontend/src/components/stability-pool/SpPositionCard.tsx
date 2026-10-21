@@ -48,7 +48,7 @@ export function SpPositionCard({
         <CostRows view={view} history={history} />
       </dl>
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <ButtonLink href={`/positions/stability-pool/withdraw/${spWithdrawQuery(100)}`}>Withdraw</ButtonLink>
+        <ButtonLink href={`/positions/stability-pool/withdraw/${spWithdrawQuery(100)}`} arrow>Withdraw</ButtonLink>
         <Button variant="secondary" disabled={claimBlock !== null} loading={claiming} onClick={onClaim}>
           {claiming ? "Check your wallet…" : "Claim BTC gain"}
         </Button>

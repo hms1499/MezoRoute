@@ -43,7 +43,7 @@ export function LpPositionCard({ lp, history }: { lp: LpView; history: History }
           {lpUnits(lp.cost.unattributedLp)} was not deposited through MezoRoute and has no cost basis.
         </p>
       )}
-      <ButtonLink href={`/positions/lp/exit/${exitQuery(DEFAULT_EXIT_INTENT)}`} className="mt-4">
+      <ButtonLink href={`/positions/lp/exit/${exitQuery(DEFAULT_EXIT_INTENT)}`} className="mt-4" arrow>
         Exit to MUSD
       </ButtonLink>
     </Card>

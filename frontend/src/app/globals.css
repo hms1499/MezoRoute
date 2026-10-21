@@ -123,6 +123,64 @@
   }
 }
 
+/* U10 button (Morpho's): the label sits twice in a one-line window and rolls up on hover; forward buttons carry an
+   arrow in a circle that swaps on hover. Only where hover exists, so a tap never leaves a rolled label, and only
+   without reduced motion; elsewhere the button shows its plain label. */
+.btn-roll {
+  display: inline-grid;
+  overflow: hidden;
+}
+.btn-label {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition:
+    transform var(--motion-base) var(--ease-smooth),
+    opacity var(--motion-base) var(--ease-smooth);
+}
+.btn-label + .btn-label {
+  transform: translateY(110%);
+  opacity: 0;
+}
+.btn-circle {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 9999px;
+  transition: transform var(--motion-slow) var(--ease-swift);
+}
+.btn-arrow {
+  grid-area: 1 / 1;
+  transition: transform var(--motion-slow) var(--ease-swift);
+}
+.btn-arrow + .btn-arrow {
+  transform: translateX(-200%);
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .btn:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) .btn-label:first-child {
+    transform: translateY(-110%);
+    opacity: 0;
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) .btn-label + .btn-label {
+    transform: none;
+    opacity: 1;
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) .btn-circle {
+    transform: scale(1.06);
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) .btn-arrow:first-child {
+    transform: translateX(200%);
+  }
+  .btn:not(:disabled):not([aria-disabled="true"]):is(:hover, :focus-visible) .btn-arrow + .btn-arrow {
+    transform: none;
+  }
+}
+
 /* For one frame while the theme flips (theme.ts): the whole page changes colour at once, no fades. */
 .theme-switching,
 .theme-switching * {

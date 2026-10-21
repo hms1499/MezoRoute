@@ -78,8 +78,8 @@ function Positions({ account }: { account: Address }) {
           <Inbox aria-hidden className="mx-auto h-10 w-10 text-muted" />
           <p className="mt-3 text-sm">You have no MUSD/BTC LP, no unclaimed pool fees, and no Stability Pool deposit on {network.name}.</p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <ButtonLink href="/route/lp/">Deposit to LP</ButtonLink>
-            <ButtonLink href="/route/stability-pool/" variant="secondary">
+            <ButtonLink href="/route/lp/" arrow>Deposit to LP</ButtonLink>
+            <ButtonLink href="/route/stability-pool/" variant="secondary" arrow>
               Deposit to Stability Pool
             </ButtonLink>
           </div>

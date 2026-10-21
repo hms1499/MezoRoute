@@ -180,7 +180,7 @@ function StatusIcon({ state }: { state: ReceiptState }) {
 function Actions({ explorer }: { explorer?: string }) {
   return (
     <div className="mt-4 flex flex-wrap gap-2">
-      <ButtonLink href="/positions/">View positions</ButtonLink>
+      <ButtonLink href="/positions/" arrow>View positions</ButtonLink>
       {explorer && (
         <ButtonLink href={explorer} external variant="secondary">
           View on explorer
