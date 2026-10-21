@@ -24,6 +24,7 @@ import { entryQuery } from "@/lib/routes/musd-btc-lp/intent";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
 import { cx } from "@/lib/ui/cx";
 import { lpAmountRows, lpFee, spAmountRows, type Row } from "./compare-rows";
+import { Settle } from "@/components/ui/Settle";
 
 const FOOTNOTE =
   "Past results, not a forecast. LP values use the pool's own price (before your trade), not the oracle; Stability Pool BTC gains use the oracle price. LP gauge rewards are not included; the −30% row uses the constant-product approximation and does not model new liquidations.";
@@ -50,7 +51,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
   const typed = amount === null ? "" : text.trim();
 
   const pending = (value: (b: RouteBacktests) => ReactNode): ReactNode =>
-    backtests ? value(backtests) : historyFailed ? "Unavailable" : <Skeleton className="h-4 w-28" />;
+    backtests ? <Settle as="span">{value(backtests)}</Settle> : historyFailed ? "Unavailable" : <Skeleton className="h-4 w-28" />;
   const historyRow = (line: (b: RouteBacktests) => string): Row => ({
     label: backtests ? `Last ${windowDays(backtests.seconds)} days` : "Last 30 days",
     title: backtests ? `Blocks ${backtests.pastBlock} → ${backtests.headBlock}` : undefined,

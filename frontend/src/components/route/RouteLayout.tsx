@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Settle } from "@/components/ui/Settle";
 
 /**
  * Route pages (U1 §5): from 1024 px a form column and a sticky summary; below that one column, and
@@ -9,9 +10,15 @@ export function RouteLayout({ header, summary, mobileBar, children }: { header: 
     <div className="space-y-6">
       {header}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start lg:gap-6">
-        <div className="space-y-4 lg:col-span-2">{children}</div>
-        <aside aria-label="Summary" className="space-y-4 lg:sticky lg:top-6">
-          {summary}
+        {/* U10: loading branches return a LoadingCard instead of this layout, so it mounts with the data and the
+            content settles in once; refetches keep it mounted. */}
+        <Settle index={0} className="space-y-4 lg:col-span-2">
+          {children}
+        </Settle>
+        <aside aria-label="Summary" className="lg:sticky lg:top-6">
+          <Settle index={1} className="space-y-4">
+            {summary}
+          </Settle>
         </aside>
       </div>
       {mobileBar}

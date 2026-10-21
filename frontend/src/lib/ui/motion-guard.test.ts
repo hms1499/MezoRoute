@@ -71,3 +71,19 @@ describe("motion usage in source", () => {
     expect(hits).toEqual([]);
   });
 });
+
+describe("loading motion (U10)", () => {
+  const css = readFileSync(join(SRC, "app/globals.css"), "utf8");
+  it("settles content only without reduced motion", () => {
+    const media = css.indexOf("@media (prefers-reduced-motion: no-preference)");
+    const rule = css.indexOf(".settle {");
+    expect(rule).toBeGreaterThan(media);
+    expect(css.slice(media, rule)).not.toMatch(/\n\}\n/);
+  });
+
+  it("breathes instead of shimmering", () => {
+    const skeleton = readFileSync(join(SRC, "components/ui/Skeleton.tsx"), "utf8");
+    expect(skeleton).toContain("motion-safe:animate-breathe");
+    expect(skeleton).not.toContain("bg-gradient");
+  });
+});

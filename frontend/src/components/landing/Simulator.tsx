@@ -11,6 +11,7 @@ import { WAD } from "@/lib/math";
 import { cx } from "@/lib/ui/cx";
 import { useCountUp } from "./hooks";
 import type { Highlight } from "./Landing";
+import { Settle } from "@/components/ui/Settle";
 
 const PRESETS = [100n, 500n, 1_000n];
 
@@ -91,7 +92,7 @@ export function Simulator({
       </div>
 
       {sim ? (
-        <>
+        <Settle>
           <table className={cx("mt-4 w-full text-sm", amount === null && "opacity-80")}>
             <caption className="sr-only">Both routes for {formatToken(sim.amount, 18, 2)} MUSD, estimated</caption>
             {/* Below 640 px each row stacks: its label on top, the two routes side by side underneath. */}
@@ -129,7 +130,7 @@ export function Simulator({
               <li key={note}>{note}</li>
             ))}
           </ul>
-        </>
+        </Settle>
       ) : error ? (
         <div role="status" className="mt-4 flex min-h-[16rem] flex-col justify-center rounded-xl border border-night-line p-4 text-sm">
           <p className="font-semibold text-night-ink">Live data unavailable</p>

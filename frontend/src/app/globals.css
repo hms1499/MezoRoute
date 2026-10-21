@@ -206,10 +206,15 @@
 }
 
 
-/* U2 landing motion. Without the media query every element shows its final state, so reduced
+/* U2 landing motion and U10 settle. Without the media query every element shows its final state, so reduced
    motion needs no override. */
 
 @media (prefers-reduced-motion: no-preference) {
+  /* U10: content that replaces a skeleton settles in once, on mount (Settle.tsx). */
+  .settle {
+    @apply animate-settle;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
   .landing-rise {
     animation: landing-rise var(--landing-motion-reveal) var(--ease-smooth) both;
   }
