@@ -91,7 +91,6 @@ function WithdrawView(props: {
   const paused = check.error !== null && decodeError(check.error, network).kind === SP_WITHDRAW_BLOCKED.kind;
   const busy = actions.pending !== null;
 
-  const claimLabel = actions.pending === "claim" ? "Check your wallet…" : "Claim BTC gain";
   const withdrawButton = (className?: string) => (
     <Button
       disabled={preview.block !== null || busy || check.isPending}
@@ -99,7 +98,7 @@ function WithdrawView(props: {
       onClick={() => actions.withdraw(props.percent)}
       className={className}
     >
-      {actions.pending === "withdraw" ? "Check your wallet…" : "Withdraw"}
+      Withdraw
     </Button>
   );
   const notice = preview.block?.outcome ? <BlockNotice block={preview.block} /> : undefined;
@@ -129,7 +128,7 @@ function WithdrawView(props: {
             <p className="mt-3 text-sm text-muted">Claiming your BTC gain still works while withdrawals are paused.</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button disabled={claimBlock !== null || busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim}>
-                {claimLabel}
+                Claim BTC gain
               </Button>
               <Button variant="ghost" onClick={() => void check.refetch()}>
                 Retry
@@ -147,7 +146,7 @@ function WithdrawView(props: {
                 {/* A pending gain can be taken without touching the deposit, even when nothing is left to withdraw. */}
                 {claimBlock === null && (
                   <Button variant="secondary" disabled={busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim} className="w-full">
-                    {actions.pending === "claim" ? "Check your wallet…" : "Claim BTC gain only"}
+                    Claim BTC gain only
                   </Button>
                 )}
               </div>
@@ -174,7 +173,7 @@ function WithdrawView(props: {
       {claimBlock === null && !paused && (
         <div className="lg:hidden">
           <Button variant="secondary" disabled={busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim} className="w-full">
-            {actions.pending === "claim" ? "Check your wallet…" : "Claim BTC gain only"}
+            Claim BTC gain only
           </Button>
         </div>
       )}

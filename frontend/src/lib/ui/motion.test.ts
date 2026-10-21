@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { MOTION_ANIMATIONS } from "./motion";
 import { countUpAt, cubicBezier, easeSmooth, interpolateBigint, isRevealed, LANDING_MOTION_MS, MOTION_KEYFRAMES, MOTION_MS, motionVariables } from "./motion";
 
 describe("motion tokens (U10)", () => {
@@ -88,5 +91,19 @@ describe("isRevealed", () => {
 
   it("never reveals what is not on screen", () => {
     expect(isRevealed({ isIntersecting: false, ratio: 0, visibleHeight: 0, rootHeight: root }, 0.3)).toBe(false);
+  });
+});
+
+// Final review (U10): an animation that fills forwards keeps a stacking context and a fixed-position containing block
+// alive after it ends, which buried U8's Term popovers under the next settled block. Entrances fill backwards only.
+describe("entrances leave nothing behind", () => {
+  it("fills settle and roll-in backwards", () => {
+    expect(MOTION_ANIMATIONS.settle).toMatch(/ backwards$/);
+    expect(MOTION_ANIMATIONS["roll-in"]).toMatch(/ backwards$/);
+  });
+
+  it("fills the landing's rise backwards", () => {
+    const css = readFileSync(join(__dirname, "../../app/globals.css"), "utf8");
+    expect(css).toMatch(/animation: landing-rise [^;]* backwards;/);
   });
 });

@@ -116,7 +116,8 @@ export function Button({
   return (
     <button
       type={type}
-      disabled={disabled}
+      // A pending button stays in full colour and inert through aria-disabled, even if its caller also disables it.
+      disabled={pending === null ? disabled : undefined}
       data-pending={pending ?? undefined}
       aria-busy={(pending !== null && pending !== "done") || undefined}
       aria-disabled={pending !== null || undefined}

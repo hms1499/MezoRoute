@@ -44,8 +44,9 @@ export const MOTION_ANIMATIONS = {
   breathe: "breathe 1.6s var(--ease-smooth) infinite alternate",
   "toast-in": "toast-in var(--motion-fast) var(--ease-smooth)",
   "dot-wave": "dot-wave 1s var(--ease-smooth) infinite",
-  "roll-in": "roll-in var(--motion-base) var(--ease-smooth) both",
-  settle: "settle var(--motion-slow) var(--ease-smooth) both",
+  "roll-in": "roll-in var(--motion-base) var(--ease-smooth) backwards",
+  // `backwards`, never `both`: a fill that outlives the animation keeps a stacking context (it buried Term popovers).
+  settle: "settle var(--motion-slow) var(--ease-smooth) backwards",
 };
 
 const clamp01 = (t: number) => Math.min(1, Math.max(0, t));

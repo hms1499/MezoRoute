@@ -87,3 +87,13 @@ describe("loading motion (U10)", () => {
     expect(skeleton).not.toContain("bg-gradient");
   });
 });
+
+describe("pending labels (final review, U10)", () => {
+  it("writes the wallet status only in pending.ts: a pending button keeps its own label", () => {
+    const hits = readdirSync(SRC, { recursive: true, withFileTypes: false } as never) as unknown as string[];
+    const offenders = hits
+      .filter((file) => /\.(ts|tsx)$/.test(file) && !/\.test\.tsx?$/.test(file) && file !== "lib/ui/pending.ts")
+      .filter((file) => readFileSync(join(SRC, file), "utf8").includes("Check your wallet"));
+    expect(offenders).toEqual([]);
+  });
+});

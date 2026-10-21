@@ -68,8 +68,9 @@ export function StepList<K extends string>({
               <p className="mt-0.5 text-sm text-muted">{copy[step.kind].detail}</p>
               {visual === "failed" && step.error && <p className="mt-2 text-sm text-danger">{step.error.message}</p>}
               {visual === "cancelled" && step.error && <p className="mt-2 text-sm text-muted">{step.error.message}</p>}
-              {/* The live region announces the status; the button beside it shows the same status visually (U10). */}
-              <div aria-live="polite" className={cx("mt-3 empty:hidden", pending && "sr-only")}>
+              {/* The live region announces the status; the button beside it shows the same status visually (U10). It
+                  stays rendered while empty: a region that enters the accessibility tree with its text is not announced. */}
+              <div aria-live="polite" className={text && !pending ? "mt-3" : "sr-only"}>
                 {text && <span className="text-sm font-medium text-muted">{text}</span>}
               </div>
               {(canAct || pending) && (

@@ -265,7 +265,7 @@
     animation-delay: calc(var(--i, 0) * 60ms);
   }
   .landing-rise {
-    animation: landing-rise var(--landing-motion-reveal) var(--ease-smooth) both;
+    animation: landing-rise var(--landing-motion-reveal) var(--ease-smooth) backwards;
   }
   /* Drawn paths set pathLength="1", so one dash covers a line of any width (U3 review). */
   .landing-draw {

@@ -140,3 +140,11 @@ describe("icon sizes in buttons (U10 §8)", () => {
     expect(html(el(ButtonLink, { href: "https://x.test", external: true, size: "sm" }, "Mezo"))).toContain("lucide-external-link h-3.5 w-3.5");
   });
 });
+
+describe("pending wins over disabled (final review, U10)", () => {
+  it("keeps a pending button in full colour even when its caller also disables it", () => {
+    const out = html(el(Button, { pending: "wallet", disabled: true }, "Withdraw"));
+    expect(out).not.toMatch(/ disabled=""/);
+    expect(out).toContain('aria-disabled="true"');
+  });
+});
