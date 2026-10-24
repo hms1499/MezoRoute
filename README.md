@@ -10,6 +10,19 @@ MezoRoute shows Mezo borrowers where to put their MUSD (the MUSD/BTC liquidity p
 - **Demo video:** https://www.youtube.com/watch?v=wDJtaaEwrnk
 - **Deck:** [docs/submission/mezoroute-wave1-deck.pdf](docs/submission/mezoroute-wave1-deck.pdf)
 
+## Try it in five minutes (testnet)
+
+The app opens on Mezo testnet. Everything except Borrow & Deploy works with a few test MUSD in your wallet.
+
+1. **Look around without funds.** The landing page's simulator runs on live mainnet data, no wallet needed. Connect a wallet to see the dashboard: your Trove, your BTC exposure, and Compare routes, which starts filled with an example amount.
+2. **Get test BTC.** Request BTC from the [Mezo faucet](https://faucet.test.mezo.org) for the address in MezoRoute's account menu. BTC pays for gas on Mezo. With a Bitcoin wallet, that address is your Mezo smart account, not your Bitcoin address, and it needs BTC before its first transaction.
+3. **Get MUSD.** In the [Mezo testnet app](https://testnet.mezo.org), swap some test BTC for MUSD. 20 MUSD is plenty.
+4. **LP route.** In Compare routes, choose Deposit to LP. An EVM wallet signs one permit and sends one transaction; a Bitcoin wallet sends an approval and the deposit. The receipt is decoded from the executor's `Entered` event.
+5. **Positions.** See the LP value, claimable trading fees, and cost basis. Claim the fees, then exit to MUSD at 25/50/75% or Max.
+6. **Stability Pool.** Choose Deposit to Stability Pool, then withdraw or claim BTC gains from Positions.
+
+**Borrow & Deploy** needs an EVM wallet and an open Trove. Opening one in the Mezo testnet app takes at least 1,800 MUSD of debt, so it needs more test BTC than the steps above; the [demo video](https://www.youtube.com/watch?v=wDJtaaEwrnk) shows the whole flow.
+
 ## The problem
 
 A Mezo user who wants to put MUSD to work runs into four problems:
@@ -115,6 +128,7 @@ MezoRoute integrates MUSD across three protocol surfaces: borrowing through `Bor
 ## Limitations
 
 - **Unaudited.** The executor has a self-audit ([`contracts/SELF_AUDIT.md`](contracts/SELF_AUDIT.md)), unit, fuzz, and invariant tests, but no external audit. That is why mainnet entries are capped at 1,000 MUSD per transaction and the app shows an "Unaudited" banner on mainnet.
+- **Bitcoin wallets are tested on testnet only.** On testnet a real Unisat wallet deployed its smart account, approved MUSD, and entered the LP route through Mezo's relayer ([spike S1](docs/spikes/s1-passport-static-export.md)). The mainnet relayer answers the same way, but no real Bitcoin-wallet transaction has gone through it yet. A new smart account on mainnet also needs BTC first, which now arrives only as tBTC from Ethereum (see Mainnet funding below).
 - **Borrow & Deploy needs an EVM wallet and an existing Trove.** The borrow authorisation is verified with `ecrecover`, which smart accounts (Bitcoin wallets via Passport) cannot produce. The app does not open Troves; Mezo's minimum debt is 1,800 MUSD.
 - **Thin mainnet pool.** The mainnet MUSD/BTC basic pool is small, so the app blocks any entry whose swap would move the price by more than 5%.
 - **Stability Pool withdrawals pause** while any Trove is below the minimum collateral ratio (a Mezo rule). The app shows that state and still offers claiming BTC gains.
@@ -142,11 +156,11 @@ cd frontend
 npm install
 cp .env.example .env.local   # set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID (free at cloud.reown.com)
 npm run dev                  # http://localhost:3000
-npm test                     # 800 Vitest tests
+npm test                     # 962 Vitest tests
 npm run build                # static export to out/, with lint and type check
 ```
 
-`npm run quote-accuracy` replays every executor entry on testnet against the quote engine (`QUOTE_NETWORK=mainnet` for mainnet). To try the app on testnet, get test BTC from the [faucet](https://faucet.test.mezo.org).
+`npm run quote-accuracy` replays every executor entry on testnet against the quote engine (`QUOTE_NETWORK=mainnet` for mainnet). To get test funds, see [Try it in five minutes](#try-it-in-five-minutes-testnet).
 
 Stack: Solidity 0.8.24 (London EVM), Foundry, OpenZeppelin 4.9.0; Next.js 14 (static export), React 18, Mezo Passport 0.17.2, RainbowKit 2, wagmi 2, viem 2, Tailwind CSS, Vitest.
 
