@@ -2,7 +2,7 @@
 
 Living handover file for every agent (see `AGENTS.md` → Session protocol). Update it and commit at the end of each session or milestone. Scope and the backlog are in `PRODUCT_SPEC.md` §16; this file says where we are in it.
 
-**Last updated:** 4 Nov 2026 (Claude Code) · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** U10 motion system and brand hero merged and pushed (21 Oct).
+**Last updated:** 4 Nov 2026, night (Claude Code) · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** U10 motion system and brand hero merged and pushed (21 Oct).
 
 ## Where we are
 
@@ -36,7 +36,14 @@ Tests at `main` (21 Oct): 962 Vitest and 75 Foundry. `npm run build` passes (Fir
 
 ## Next: Wave 2
 
-Wave 1 judged: $20, scores 8/8/8/8/6. Feedback, the inferred integration ladder, and mainnet facts: `docs/wave2/2026-11-04-wave1-feedback.md`. **Plan for a 13 Nov deadline** (platform record; the page says 15 Nov). Order approved (4 Nov): gauge route, entry from BTC, then Unwind and Leverage. G1 spec: `docs/superpowers/specs/2026-11-04-g1-gauge-route-design.md`, approved by the user (4 Nov). Plan: `docs/superpowers/plans/2026-11-04-g1-gauge-route.md` (11 tasks), waiting for review and an execution method.
+Wave 1 judged: $20, scores 8/8/8/8/6. Feedback, the inferred integration ladder, and mainnet facts: `docs/wave2/2026-11-04-wave1-feedback.md`. **Plan for a 13 Nov deadline** (platform record; the page says 15 Nov). Order approved (4 Nov): gauge route, entry from BTC, then Unwind and Leverage. G1 spec: `docs/superpowers/specs/2026-11-04-g1-gauge-route-design.md`, approved by the user (4 Nov). Plan: `docs/superpowers/plans/2026-11-04-g1-gauge-route.md` (11 tasks), execution method: subagent-driven, chosen by the user.
+
+**G1 progress (paused by the user, 4 Nov):** Tasks 1-3 of 11 done and reviewed, on `feat/g1-gauge-route` at `91543c3` (not pushed). Next: Task 4. V2 on testnet: `0x1281cC769c136F9F4f291B390c8992a3Cd556288`, deploy block 16,569,977; gas figures and the `EnteredFromBtc` replay fixture are in `PRODUCT_SPEC.md` §20. Tests: 188 Foundry. Mainnet still uses V1, so the branch must not merge before Task 11 (Global Constraints in the plan). Task progress, rulings, and deferred minors are in the git-ignored ledger `.superpowers/sdd/2026-11-04-g1-gauge-route/progress.md`; Claude Code resumes from it with `superpowers:subagent-driven-development`, and other agents can follow the plan directly from Task 4.
+
+**iCloud workaround (local to this Mac, 4 Nov):** `fileproviderd` is stuck at about 90-100% CPU and reads of evicted files time out, so forge and git hang (`mmap failed`). The user keeps the repo on the Desktop and wants these removed once iCloud works; test by reading an evicted file (`find .git/objects -type f -flags +dataless`), and if reads are quick, undo both:
+- Forge runs only from `~/.cache/mezoroute-forge/root` (real `lib/` at the pinned commits, its own `out/` and `cache/`, a copy of `foundry.toml` and `remappings.txt`, symlinks to the Desktop `src`, `test`, `script`). Keep the two config copies identical.
+- `.git/objects/info/alternates` points at `~/.cache/mezoroute-forge/objects.git/objects`, a mirror of origin, so git reads pack data instead of evicted loose objects. Remove that line to undo; do this before deleting the mirror.
+- An unknown process switched this checkout to `main` at 21:43 on 4 Nov and left it half switched; confirm the branch before committing.
 
 ### Before Wave 2 (kept from Wave 1)
 
@@ -184,6 +191,7 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
+- **4 Nov 2026, night (Claude Code):** Mezo re-scan, G1 spec and plan approved; G1 Tasks 1-3 done (V2 contract, BTC entry, testnet deploy and smoke); paused at the user's request. iCloud stall worked around (see Next).
 - **4 Nov 2026 (Claude Code):** Wave 1 judge review, scores, criteria, and mainnet facts collected into `docs/wave2/2026-11-04-wave1-feedback.md`. Wave 2 scope still to be brainstormed and approved.
 - **24 Oct 2026 (Claude Code):** Senior review of the project (contract read in full: no findings; recommendations recorded under Next). The user reports the form submitted and a post-U10 real-wallet send passed. README: judge path "Try it in five minutes", Bitcoin-wallet limitation, test counts (962 Vitest and 75 Foundry, both run today). Docs only, on `docs/judge-path`.
 - **21 Oct 2026 (Claude Code):** U10 brainstormed with the user from morpho.org (button, loading, pending, hero picked in the companion; scope: the whole app), spec + builder check, plan, built inline on `feat/u10-motion-landing` with failing-first tests (8 tasks; icon/weight rules added at the user's request). Final review: 3 important and 4 minors fixed. 962 Vitest, build pass, Playwright QA. Merged into `main` (962 Vitest and build pass on `main`) and pushed on the user's request. Next: real-wallet check of a full send on production (approval → receipt dot wave).
