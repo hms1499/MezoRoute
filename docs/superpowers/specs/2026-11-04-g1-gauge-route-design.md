@@ -167,7 +167,7 @@ Pool mid price, not the oracle (the F6 rule). Include the user's own deposit in 
 
 ## Documents to correct
 
-- `PRODUCT_SPEC.md`: §1 (line 35), §4 (lines 73–74), §15 "Out of scope" (line 164) and the APY line, the "Never imply" rule (line 329), the Wave 2 list, and new invariants in §11.8.
+- `PRODUCT_SPEC.md`: §1 (line 35), §4 (lines 73–74), §6 "Out of scope" (line 164) and the Wave 2 list, the "Never imply" rule in §9 (line 329), and new invariants in §11.8.
 - `contracts/SELF_AUDIT.md`, `AGENTS.md` (a G1 entry), `docs/STATUS.md`, `README.md`.
 - The AKINDO resubmission and deck are handled at the end of Wave 2, not here.
 
