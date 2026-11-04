@@ -290,7 +290,7 @@ it("needs no unstake when the wallet covers it", () => expect(exitPlan(60n, 40n,
 it("Max is exact", () => expect(exitPlan(1n, 2n, 100)).toEqual({ liquidityIn: 3n, unstake: 2n }));
 it("orders the steps", () => {
   expect(exitSteps("eoa", 0n, 50n, 10n)).toEqual(["unstake", "permit", "exit"]);
-  expect(exitSteps("smart", 0n, 50n, 10n)).toEqual(["unstake", "approve", "exit"]);
+  expect(exitSteps("smart-account", 0n, 50n, 10n)).toEqual(["unstake", "approve", "exit"]);
   expect(exitSteps("eoa", 50n, 50n, 0n)).toEqual(["exit"]);
 });
 it("resumes after an unstake and a reload", () => {
