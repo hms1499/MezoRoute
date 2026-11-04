@@ -10,6 +10,8 @@
 # Optional env:
 #   AMOUNT       MUSD in wei for the MUSD entries (default 20 MUSD)
 #   BTC_AMOUNT   BTC in wei for the BTC entries (default 0.0003 BTC)
+#   GAS_MULT     gas limit = estimate x GAS_MULT (default 2; the testnet RPC has under-estimated once).
+#                Mezo charges at least half the limit, so gasUsed is floor-inflated above ~1.4; use GAS_MULT=1.3 to measure.
 #   WAIT         seconds to let the gauge accrue rewards (default 60)
 #   BORROW=1     also run borrowAndEnter (the key must own an open Trove with headroom)
 set -euo pipefail
@@ -44,7 +46,7 @@ first() { awk '{print $1}'; }
 send() {
   local hash status i est limit
   est=$(cast estimate "$@" --from "$ME" --rpc-url "$RPC" | first)
-  limit=$(calc "$est * 2")
+  limit=$(calc "$est * ${GAS_MULT:-2}")
   # The testnet RPC can under-estimate gas (a 99,138 limit ran out at 98,696 on a gauge.withdraw), so pad generously.
   hash=$(cast send "$@" --private-key "$PRIVATE_KEY" --rpc-url "$RPC" --gas-limit "$limit" --async)
   echo "  $EXPLORER/$hash" >&2
@@ -52,7 +54,7 @@ send() {
     status=$(cast receipt "$hash" status --rpc-url "$RPC" 2>/dev/null | first || true)
     if [[ -n "$status" ]]; then
       [[ "$status" == "1" ]] || { echo "  reverted: $hash" >&2; exit 1; }
-      echo "  gas ${GL:-tx}: $(cast receipt "$hash" gasUsed --rpc-url "$RPC" | first)  block $(cast receipt "$hash" blockNumber --rpc-url "$RPC" | first)" >&2
+      echo "  gas ${GL:-tx}: used $(cast receipt "$hash" gasUsed --rpc-url "$RPC" | first) estimate $est limit $limit  block $(cast receipt "$hash" blockNumber --rpc-url "$RPC" | first)" >&2
       echo "$hash"
       return
     fi
@@ -93,7 +95,6 @@ exit_lp() { # lpAmount -> exits through the executor
   GL="approve LP" send "$POOL" "approve(address,uint256)" "$EXECUTOR" "$lp" >/dev/null
   GL="exit" send "$EXECUTOR" "$EXIT_SIG" "($lp,0,0,0,$min_out,$(( $(date +%s) + 600 )),$ME)" "$NO_PERMIT" >/dev/null
 }
-
 
 executor_balances() {
   echo "$(cast call "$MUSD" "balanceOf(address)(uint256)" "$EXECUTOR" --rpc-url "$RPC" | first)" \
