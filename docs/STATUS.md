@@ -36,7 +36,7 @@ Tests at `main` (21 Oct): 962 Vitest and 75 Foundry. `npm run build` passes (Fir
 
 ## Next: Wave 2
 
-Wave 1 judged: $20, scores 8/8/8/8/6. Feedback, the inferred integration ladder, and mainnet facts: `docs/wave2/2026-11-04-wave1-feedback.md`. **Plan for a 13 Nov deadline** (platform record; the page says 15 Nov). Order approved (4 Nov): gauge route, entry from BTC, then Unwind and Leverage. G1 spec: `docs/superpowers/specs/2026-11-04-g1-gauge-route-design.md`, waiting for user review.
+Wave 1 judged: $20, scores 8/8/8/8/6. Feedback, the inferred integration ladder, and mainnet facts: `docs/wave2/2026-11-04-wave1-feedback.md`. **Plan for a 13 Nov deadline** (platform record; the page says 15 Nov). Order approved (4 Nov): gauge route, entry from BTC, then Unwind and Leverage. G1 spec: `docs/superpowers/specs/2026-11-04-g1-gauge-route-design.md`, approved by the user (4 Nov). Plan: `docs/superpowers/plans/2026-11-04-g1-gauge-route.md` (11 tasks), waiting for review and an execution method.
 
 ### Before Wave 2 (kept from Wave 1)
 
