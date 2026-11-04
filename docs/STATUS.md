@@ -2,7 +2,7 @@
 
 Living handover file for every agent (see `AGENTS.md` → Session protocol). Update it and commit at the end of each session or milestone. Scope and the backlog are in `PRODUCT_SPEC.md` §16; this file says where we are in it.
 
-**Last updated:** 24 Oct 2026 (Claude Code) · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** U10 motion system and brand hero merged and pushed (21 Oct).
+**Last updated:** 4 Nov 2026 (Claude Code) · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** U10 motion system and brand hero merged and pushed (21 Oct).
 
 ## Where we are
 
@@ -34,7 +34,11 @@ Living handover file for every agent (see `AGENTS.md` → Session protocol). Upd
 
 Tests at `main` (21 Oct): 962 Vitest and 75 Foundry. `npm run build` passes (First Load JS of `/` 92 kB).
 
-## Next: freeze until judging, then Wave 2
+## Next: Wave 2
+
+Wave 1 judged: $20, scores 8/8/8/8/6. Feedback, the inferred integration ladder, and mainnet facts: `docs/wave2/2026-11-04-wave1-feedback.md`. **Plan for a 13 Nov deadline** (platform record; the page says 15 Nov). Scope is not approved yet.
+
+### Before Wave 2 (kept from Wave 1)
 
 0. Done 19 Oct: Root Directory is `frontend`; pushing `main` deploys production (first Git build served the app). Left: find the CLI deploy command that works now (try a preview from the repo root).
 1. Done 24 Oct (user): submission form sent and a real-wallet send on production after U10 passed. Left: the `wave1` tag on the submitted commit (none exists yet). Keep `main` frozen until judging (a push deploys production); anything new goes on a branch.
@@ -180,6 +184,7 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
 
 ## Session log
 
+- **4 Nov 2026 (Claude Code):** Wave 1 judge review, scores, criteria, and mainnet facts collected into `docs/wave2/2026-11-04-wave1-feedback.md`. Wave 2 scope still to be brainstormed and approved.
 - **24 Oct 2026 (Claude Code):** Senior review of the project (contract read in full: no findings; recommendations recorded under Next). The user reports the form submitted and a post-U10 real-wallet send passed. README: judge path "Try it in five minutes", Bitcoin-wallet limitation, test counts (962 Vitest and 75 Foundry, both run today). Docs only, on `docs/judge-path`.
 - **21 Oct 2026 (Claude Code):** U10 brainstormed with the user from morpho.org (button, loading, pending, hero picked in the companion; scope: the whole app), spec + builder check, plan, built inline on `feat/u10-motion-landing` with failing-first tests (8 tasks; icon/weight rules added at the user's request). Final review: 3 important and 4 minors fixed. 962 Vitest, build pass, Playwright QA. Merged into `main` (962 Vitest and build pass on `main`) and pushed on the user's request. Next: real-wallet check of a full send on production (approval → receipt dot wave).
 - **20 Oct 2026 (Claude Code):** U9 final whole-branch review: 1 important (header overflow 640–700 px from the toggle) and 3 minors fixed; 905 Vitest, build pass, Playwright header widths and cross-tab check. Merged into `main` and pushed on the user's request (production builds from `main`).
