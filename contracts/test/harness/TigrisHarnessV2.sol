@@ -44,7 +44,7 @@ abstract contract TigrisHarnessV2 is Test {
 
     function setUp() public virtual {
         musd = _newMusd();
-        btc = new MockERC20Permit("BTC", "BTC");
+        btc = _newBtc();
         factory = new PoolFactory(address(new Pool()));
         router = new Router(address(0), address(new MockFactoryRegistry()), address(factory));
         pool = factory.createPool(address(musd), address(btc), false);
@@ -68,6 +68,10 @@ abstract contract TigrisHarnessV2 is Test {
 
     function _newMusd() internal virtual returns (MockERC20Permit) {
         return new MockERC20Permit("Mezo USD", "MUSD");
+    }
+
+    function _newBtc() internal virtual returns (MockERC20Permit) {
+        return new MockERC20Permit("BTC", "BTC");
     }
 
     function _deployExecutor(uint256 feeBps) internal returns (MezoRouteExecutorV2) {
@@ -129,6 +133,29 @@ abstract contract TigrisHarnessV2 is Test {
         });
     }
 
+    /// @dev Swaps half of the post-fee BTC; minimums at 1% below the pre-trade quote.
+    ///      Makes external calls, so build params BEFORE `vm.prank`.
+    function _btcParams(uint256 btcIn, address recipient, bool stake)
+        internal
+        view
+        returns (IMezoRouteExecutorV2.EnterFromBtcParams memory p)
+    {
+        uint256 net = btcIn - (btcIn * executor.feeBps()) / 10_000;
+        uint256 btcToSwap = net / 2;
+        uint256 musdOut = _quoteSwap(address(btc), address(musd), btcToSwap);
+        p = IMezoRouteExecutorV2.EnterFromBtcParams({
+            btcIn: btcIn,
+            btcToSwap: btcToSwap,
+            minMusdFromSwap: (musdOut * 99) / 100,
+            minMusdAdded: 0,
+            minBtcAdded: 0,
+            minLpOut: 0,
+            deadline: block.timestamp + 600,
+            recipient: recipient,
+            stake: stake
+        });
+    }
+
     function _exitParams(uint256 liquidityIn, address recipient)
         internal
         view
@@ -149,6 +176,12 @@ abstract contract TigrisHarnessV2 is Test {
         ITigrisRouter.Route[] memory routes = new ITigrisRouter.Route[](1);
         routes[0] = ITigrisRouter.Route({from: from, to: to, stable: false, factory: address(factory)});
         return ITigrisQuoter(address(router)).getAmountsOut(amountIn, routes)[1];
+    }
+
+    function _fundBtc(address who, uint256 amount) internal {
+        btc.mint(who, amount);
+        vm.prank(who);
+        btc.approve(address(executor), type(uint256).max);
     }
 
     function _fund(address who, uint256 amount) internal {

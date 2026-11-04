@@ -35,6 +35,27 @@ contract ConstructorV2Test is TigrisHarnessV2 {
         _deployExecutor(FEE_BPS, 0);
     }
 
+    function test_constructor_revertsOnZeroBtcCap() public {
+        vm.expectRevert(IMezoRouteExecutorV2.ZeroAmount.selector);
+        new MezoRouteExecutorV2(
+            address(musd),
+            address(btc),
+            address(router),
+            address(factory),
+            pool,
+            address(bos),
+            FEE_BPS,
+            feeRecipient,
+            MAX_MUSD_IN,
+            address(gauge),
+            0
+        );
+    }
+
+    function test_constructor_storesBtcCap() public view {
+        assertEq(executor.maxBtcIn(), MAX_BTC_IN);
+    }
+
     function test_constructor_acceptsMaxFee() public {
         assertEq(_deployExecutor(50, MAX_MUSD_IN).feeBps(), 50);
     }

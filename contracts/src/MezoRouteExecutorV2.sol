@@ -42,6 +42,23 @@ contract MezoRouteExecutorV2 is IMezoRouteExecutorV2, ReentrancyGuard {
         uint256 lp;
     }
 
+    struct LiquidityArgs {
+        uint256 minMusdAdded;
+        uint256 minBtcAdded;
+        uint256 minLpOut;
+        uint256 deadline;
+        address recipient;
+        bool stake;
+    }
+
+    struct Result {
+        uint256 musdAdded;
+        uint256 btcAdded;
+        uint256 liquidityOut;
+        uint256 musdRefund;
+        uint256 btcRefund;
+    }
+
     constructor(
         address musd_,
         address btc_,
@@ -161,9 +178,63 @@ contract MezoRouteExecutorV2 is IMezoRouteExecutorV2, ReentrancyGuard {
         emit Exited(msg.sender, p.recipient, p.liquidityIn, musdRemoved, btcRemoved, musdFromSwap, musdOut, btcRefund);
     }
 
+    /// @inheritdoc IMezoRouteExecutorV2
+    function enterFromBtc(EnterFromBtcParams calldata p, Permit calldata btcPermit)
+        external
+        nonReentrant
+        returns (uint256 liquidityOut)
+    {
+        if (p.stake && address(gauge) == address(0)) revert GaugeUnavailable();
+        if (p.btcIn == 0) revert ZeroAmount();
+        if (p.btcIn > maxBtcIn) revert AmountAboveCap();
+        if (p.recipient == address(0)) revert ZeroAddress();
+        _requireValidRecipient(p.recipient);
+        if (block.timestamp > p.deadline) revert Expired();
+
+        Balances memory start = _snapshot();
+
+        _tryPermit(address(btc), btcPermit);
+        btc.safeTransferFrom(msg.sender, address(this), p.btcIn);
+
+        uint256 fee = (p.btcIn * feeBps) / BPS;
+        if (fee > 0) btc.safeTransfer(feeRecipient, fee);
+        if (p.btcToSwap == 0 || p.btcToSwap >= p.btcIn - fee) revert InvalidSwapAmount();
+
+        btc.forceApprove(address(router), p.btcToSwap);
+        router.swapExactTokensForTokens(
+            p.btcToSwap, p.minMusdFromSwap, _route(address(btc), address(musd)), address(this), p.deadline
+        );
+        btc.forceApprove(address(router), 0);
+
+        uint256 musdFromSwap = _delta(musd, start.musd);
+        if (musdFromSwap < p.minMusdFromSwap) revert InsufficientSwapOutput();
+
+        Result memory r = _addLiquidity(
+            start,
+            musdFromSwap,
+            _delta(btc, start.btc),
+            LiquidityArgs(p.minMusdAdded, p.minBtcAdded, p.minLpOut, p.deadline, p.recipient, p.stake)
+        );
+
+        emit EnteredFromBtc(
+            msg.sender,
+            p.recipient,
+            p.btcIn,
+            fee,
+            p.btcToSwap,
+            musdFromSwap,
+            r.musdAdded,
+            r.btcAdded,
+            r.liquidityOut,
+            r.musdRefund,
+            r.btcRefund
+        );
+        return r.liquidityOut;
+    }
+
     function _enter(EnterParams calldata p, Permit calldata musdPermit, uint256 musdBorrowed)
         private
-        returns (uint256 liquidityOut)
+        returns (uint256)
     {
         Balances memory start = _snapshot();
 
@@ -183,37 +254,12 @@ contract MezoRouteExecutorV2 is IMezoRouteExecutorV2, ReentrancyGuard {
         uint256 btcFromSwap = _delta(btc, start.btc);
         if (btcFromSwap < p.minBtcFromSwap) revert InsufficientSwapOutput();
 
-        uint256 musdForLiquidity = _delta(musd, start.musd);
-        musd.forceApprove(address(router), musdForLiquidity);
-        btc.forceApprove(address(router), btcFromSwap);
-        uint256 musdAdded;
-        uint256 btcAdded;
-        (musdAdded, btcAdded, liquidityOut) = router.addLiquidity(
-            address(musd),
-            address(btc),
-            false,
-            musdForLiquidity,
+        Result memory r = _addLiquidity(
+            start,
+            _delta(musd, start.musd),
             btcFromSwap,
-            p.minMusdAdded,
-            p.minBtcAdded,
-            p.stake ? address(this) : p.recipient,
-            p.deadline
+            LiquidityArgs(p.minMusdAdded, p.minBtcAdded, p.minLpOut, p.deadline, p.recipient, p.stake)
         );
-        musd.forceApprove(address(router), 0);
-        btc.forceApprove(address(router), 0);
-
-        if (musdAdded < p.minMusdAdded || btcAdded < p.minBtcAdded || liquidityOut < p.minLpOut) {
-            revert InsufficientLiquidityOutput();
-        }
-
-        if (p.stake) _stake(liquidityOut, p.recipient);
-
-        uint256 musdRefund = _delta(musd, start.musd);
-        uint256 btcRefund = _delta(btc, start.btc);
-        if (musdRefund > 0) musd.safeTransfer(p.recipient, musdRefund);
-        if (btcRefund > 0) btc.safeTransfer(p.recipient, btcRefund);
-
-        _assertNoDecrease(start);
 
         emit Entered(
             msg.sender,
@@ -223,12 +269,53 @@ contract MezoRouteExecutorV2 is IMezoRouteExecutorV2, ReentrancyGuard {
             fee,
             p.musdToSwap,
             btcFromSwap,
-            musdAdded,
-            btcAdded,
-            liquidityOut,
-            musdRefund,
-            btcRefund
+            r.musdAdded,
+            r.btcAdded,
+            r.liquidityOut,
+            r.musdRefund,
+            r.btcRefund
         );
+        return r.liquidityOut;
+    }
+
+    /// @dev Shared tail of both entries: add liquidity in `(musd, btc)` order, stake or hand the LP
+    ///      to the recipient, refund every leftover to the recipient, and check nothing decreased.
+    function _addLiquidity(Balances memory start, uint256 musdDesired, uint256 btcDesired, LiquidityArgs memory a)
+        private
+        returns (Result memory r)
+    {
+        musd.forceApprove(address(router), musdDesired);
+        btc.forceApprove(address(router), btcDesired);
+        (r.musdAdded, r.btcAdded, r.liquidityOut) = router.addLiquidity(
+            address(musd),
+            address(btc),
+            false,
+            musdDesired,
+            btcDesired,
+            a.minMusdAdded,
+            a.minBtcAdded,
+            a.stake ? address(this) : a.recipient,
+            a.deadline
+        );
+        musd.forceApprove(address(router), 0);
+        btc.forceApprove(address(router), 0);
+
+        if (r.musdAdded < a.minMusdAdded || r.btcAdded < a.minBtcAdded || r.liquidityOut < a.minLpOut) {
+            revert InsufficientLiquidityOutput();
+        }
+
+        if (a.stake) {
+            // Stake what the executor measurably received, which must be what the Router reported.
+            if (_delta(pool, start.lp) != r.liquidityOut) revert LiquidityNotReceived();
+            _stake(r.liquidityOut, a.recipient);
+        }
+
+        r.musdRefund = _delta(musd, start.musd);
+        r.btcRefund = _delta(btc, start.btc);
+        if (r.musdRefund > 0) musd.safeTransfer(a.recipient, r.musdRefund);
+        if (r.btcRefund > 0) btc.safeTransfer(a.recipient, r.btcRefund);
+
+        _assertNoDecrease(start);
     }
 
     /// @dev The LP sits in the executor only for the duration of this call. The gauge must credit
@@ -251,8 +338,9 @@ contract MezoRouteExecutorV2 is IMezoRouteExecutorV2, ReentrancyGuard {
         if (block.timestamp > p.deadline) revert Expired();
     }
 
-    /// @dev Tokens sent to this contract or to the pool cannot be recovered by the user:
-    ///      the executor has no withdrawal path and the pool pays balances to the next caller.
+    /// @dev Tokens sent to this contract, the pool, or the gauge cannot be recovered by the user:
+    ///      the executor has no withdrawal path, the pool pays balances to the next caller, and the
+    ///      gauge credits LP only to the account it was deposited for.
     function _requireValidRecipient(address recipient) private view {
         if (recipient == address(this) || recipient == address(pool) || recipient == address(gauge)) {
             revert InvalidRecipient();

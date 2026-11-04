@@ -30,6 +30,18 @@ interface IMezoRouteExecutorV2 {
         bool stake; // deposit the new LP in the gauge, credited to `recipient`
     }
 
+    struct EnterFromBtcParams {
+        uint256 btcIn;
+        uint256 btcToSwap;
+        uint256 minMusdFromSwap;
+        uint256 minMusdAdded;
+        uint256 minBtcAdded;
+        uint256 minLpOut;
+        uint256 deadline;
+        address recipient;
+        bool stake; // deposit the new LP in the gauge, credited to `recipient`
+    }
+
     struct ExitParams {
         uint256 liquidityIn;
         uint256 minMusdRemoved;
@@ -48,6 +60,20 @@ interface IMezoRouteExecutorV2 {
         uint256 fee,
         uint256 musdSwapped,
         uint256 btcFromSwap,
+        uint256 musdAdded,
+        uint256 btcAdded,
+        uint256 liquidityOut,
+        uint256 musdRefund,
+        uint256 btcRefund
+    );
+
+    event EnteredFromBtc(
+        address indexed caller,
+        address indexed recipient,
+        uint256 btcIn,
+        uint256 fee,
+        uint256 btcToSwap,
+        uint256 musdFromSwap,
         uint256 musdAdded,
         uint256 btcAdded,
         uint256 liquidityOut,
@@ -86,10 +112,15 @@ interface IMezoRouteExecutorV2 {
     error GaugeMismatch();
     error GaugeUnavailable();
     error StakeNotCredited();
+    error LiquidityNotReceived();
 
     function enter(EnterParams calldata p, Permit calldata musdPermit) external returns (uint256 liquidityOut);
 
     function borrowAndEnter(Borrow calldata b, Permit calldata musdPermit, EnterParams calldata p)
+        external
+        returns (uint256 liquidityOut);
+
+    function enterFromBtc(EnterFromBtcParams calldata p, Permit calldata btcPermit)
         external
         returns (uint256 liquidityOut);
 

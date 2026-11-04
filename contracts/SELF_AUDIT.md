@@ -28,6 +28,27 @@ Legend: ✅ holds, with evidence · ⚠️ accepted risk, see notes.
 | 11 | Fee only on entry, `musdIn × feeBps / 10_000`, ≤ `MAX_FEE_BPS`, only to `feeRecipient` | `_enter`; constructor `FeeTooHigh()` | `test_enter_mintsLpToRecipientAndChargesFee`, `test_fee_roundsDownOnDustAmounts`, `test_enter_withZeroFeeExecutorChargesNothing`, `test_borrowAndEnter_chargesExecutionFee`, `test_exit_chargesNoFee`, `test_constructor_{acceptsMaxFee,revertsAboveMaxFee}`, `test_roundTrip_executionFeeIsTheOnlyExtraCost` ✅ |
 | 12 | Immutable per-transaction cap on entry | `_validateEnter`: `AmountAboveCap()`, checked before any borrow; `exit` has no cap | `CapTest` (5 tests), `DeployScriptTest` (1,000 MUSD mainnet, 1,000,000 MUSD testnet) ✅ |
 
+### V2 additions (`src/MezoRouteExecutorV2.sol`, G1)
+
+V2 keeps invariants 1-12 above (re-run as the `test/v2/` suite) and adds `enterFromBtc`, optional staking, and a BTC cap (`maxBtcIn`).
+
+| # | Invariant | Where enforced | Evidence |
+|---|---|---|---|
+| 13 | No LP held after any call | `_addLiquidity` mints to the executor only when staking, requires the measured LP delta to equal the Router's `liquidityOut` (`LiquidityNotReceived`), then `_stake` deposits all of it; `_assertNoDecrease` | `test_enter_stake_creditsRecipientAndLeavesNothing`, `test_enterFromBtc_stake_creditsGauge`, `test_enter_stake_refundsGoToRecipientAndExecutorEndsEmpty`, `invariant_executorHoldsOnlyDonations` ✅ (the `LiquidityNotReceived` guard cannot be reached with the real Router, which mints exactly `liquidityOut`; it is defence in depth) |
+| 14 | Gauge allowance is 0 after any call | `forceApprove(gauge, amount)` then `forceApprove(gauge, 0)` in `_stake` | `invariant_noLingeringAllowances`, `test_enter_stake_creditsRecipientAndLeavesNothing` ✅ |
+| 15 | Staked LP credited only to `recipient`, exactly the deposited amount; gauge is never a recipient | `_stake` compares `gauge.balanceOf(recipient)` before/after (`StakeNotCredited`); `_requireValidRecipient` rejects the gauge | `test_enter_stake_recipientCredited_notCaller`, `test_enter_stake_revertsWhenGaugeCreditsLessThanDeposited`, `test_enter_revertsWhenRecipientIsGauge`, `test_exit_revertsWhenRecipientIsGauge`, `test_enterFromBtc_revertsOnBadRecipientAndInputs`, `invariant_stakeCreditedOnlyToActors` ✅ |
+| 16 | BTC (and MUSD, LP) held before a call is never paid out, for `enterFromBtc` too | Same `_snapshot`/`_delta`/`_assertNoDecrease` | `test_enterFromBtc_ignoresPreExistingBalances`, `test_enter_stake_ignoresPreExistingExecutorLp`, `invariant_executorHoldsOnlyDonations` ✅ |
+| 17 | The executor never touches MEZO | No MEZO reference in `src/`; rewards accrue in the gauge to the owner | `test_executorNeverTouchesMezo`, `invariant_mezoUnchanged` ✅ |
+
+Also covered for `enterFromBtc`: fee in BTC only (`test_enterFromBtc_feeInBtc`), cap at/above
+`maxBtcIn` (`test_enterFromBtc_revertsAboveCap`), swap amount bounds, slippage, refunds to the
+recipient, permit and front-run permit, reentrancy (`test_enterFromBtc_reentrancy`), killed or absent
+gauge, and the constructor checks (`test_constructor_revertsOnZeroBtcCap`, `test_constructor_storesBtcCap`,
+`test_constructor_revertsOnGaugeForOtherToken`).
+
+Accepted: `exit` cannot unstake (`gauge.withdraw` pays only its caller), so leaving a staked position
+takes two transactions.
+
 ## 2. Checklist
 
 ### Access control and configuration
@@ -115,3 +136,7 @@ test failed, then the source was restored.
 5. Testnet: `script/smoke-testnet.sh` must end with `PASS: executor balances unchanged`.
    Mainnet: one small enter → exit round trip from the UI, then confirm executor balances are zero.
 6. Update the frontend allowlist (executor address and fee), `contracts/README.md`, and spec 11.1.
+7. V2 only: also read back `gauge` and `maxBtcIn` too; `gauge.stakingToken()` must
+   equal `pool`; the BTC cap is pinned per chain in the deploy script (mainnet 0.0125 BTC, testnet 12 BTC);
+   then run one small `enterFromBtc` with `stake = true` and confirm the executor holds no LP,
+   MUSD, or BTC afterwards.

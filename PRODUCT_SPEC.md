@@ -557,6 +557,14 @@ event Exited(
 11. The fee is charged only on entry, equals `musdIn × feeBps / 10_000`, never exceeds `MAX_FEE_BPS`, and is only ever sent to the immutable `feeRecipient`.
 12. An immutable per-transaction `musdIn` cap on entry (Wave 1, required before mainnet).
 
+`MezoRouteExecutorV2` (G1, `docs/superpowers/specs/2026-11-04-g1-gauge-route-design.md`) keeps 1-12 and adds an immutable `maxBtcIn` cap on `enterFromBtc` (the fee is then `btcIn × feeBps / 10_000` in BTC). It also holds five more:
+
+13. The executor holds no LP after any call (staked LP is deposited in the gauge inside the call).
+14. The gauge allowance is 0 after any call.
+15. Staked LP is credited only to `recipient`, and the gauge must credit exactly the deposited amount (`StakeNotCredited`); the gauge, like the executor and the pool, is never a valid recipient.
+16. BTC held before a call is never paid out: `enterFromBtc` measures the same deltas as `enter`.
+17. The executor never touches MEZO.
+
 ### 11.9 Wave 2 — `MezoRouteLeverage`
 
 A second immutable executor; `MezoRouteExecutor` is not modified.
