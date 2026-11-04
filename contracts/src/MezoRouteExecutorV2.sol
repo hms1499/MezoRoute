@@ -184,12 +184,7 @@ contract MezoRouteExecutorV2 is IMezoRouteExecutorV2, ReentrancyGuard {
         nonReentrant
         returns (uint256 liquidityOut)
     {
-        if (p.stake && address(gauge) == address(0)) revert GaugeUnavailable();
-        if (p.btcIn == 0) revert ZeroAmount();
-        if (p.btcIn > maxBtcIn) revert AmountAboveCap();
-        if (p.recipient == address(0)) revert ZeroAddress();
-        _requireValidRecipient(p.recipient);
-        if (block.timestamp > p.deadline) revert Expired();
+        _validateEntry(p.stake, p.btcIn, maxBtcIn, p.recipient, p.deadline);
 
         Balances memory start = _snapshot();
 
@@ -308,6 +303,8 @@ contract MezoRouteExecutorV2 is IMezoRouteExecutorV2, ReentrancyGuard {
             // Stake what the executor measurably received, which must be what the Router reported.
             if (_delta(pool, start.lp) != r.liquidityOut) revert LiquidityNotReceived();
             _stake(r.liquidityOut, a.recipient);
+            // The gauge must have pulled all of it: no LP may stay behind in the executor.
+            if (pool.balanceOf(address(this)) != start.lp) revert StakeIncomplete();
         }
 
         r.musdRefund = _delta(musd, start.musd);
@@ -330,12 +327,19 @@ contract MezoRouteExecutorV2 is IMezoRouteExecutorV2, ReentrancyGuard {
     }
 
     function _validateEnter(EnterParams calldata p) private view {
-        if (p.stake && address(gauge) == address(0)) revert GaugeUnavailable();
-        if (p.musdIn == 0) revert ZeroAmount();
-        if (p.musdIn > maxMusdIn) revert AmountAboveCap();
-        if (p.recipient == address(0)) revert ZeroAddress();
-        _requireValidRecipient(p.recipient);
-        if (block.timestamp > p.deadline) revert Expired();
+        _validateEntry(p.stake, p.musdIn, maxMusdIn, p.recipient, p.deadline);
+    }
+
+    function _validateEntry(bool stake, uint256 amountIn, uint256 cap, address recipient, uint256 deadline)
+        private
+        view
+    {
+        if (stake && address(gauge) == address(0)) revert GaugeUnavailable();
+        if (amountIn == 0) revert ZeroAmount();
+        if (amountIn > cap) revert AmountAboveCap();
+        if (recipient == address(0)) revert ZeroAddress();
+        _requireValidRecipient(recipient);
+        if (block.timestamp > deadline) revert Expired();
     }
 
     /// @dev Tokens sent to this contract, the pool, or the gauge cannot be recovered by the user:

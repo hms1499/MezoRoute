@@ -7,6 +7,8 @@ import {IGauge} from "@tigris/interfaces/IGauge.sol";
 import {Gauge} from "@tigris/gauges/Gauge.sol";
 import {TigrisHarnessV2} from "../harness/TigrisHarnessV2.sol";
 import {IMezoRouteExecutorV2} from "../../src/interfaces/IMezoRouteExecutorV2.sol";
+import {MockUnderPullingGauge} from "../mocks/MockUnderPullingGauge.sol";
+import {ITigrisRouter} from "../../src/interfaces/external/ITigrisRouter.sol";
 import {MockMiscreditingGauge} from "../mocks/MockMiscreditingGauge.sol";
 
 /// @dev Staking through the real Tigris `Gauge`: LP is credited to the recipient inside the gauge,
@@ -276,5 +278,28 @@ contract StakeV2Test is TigrisHarnessV2 {
         vm.prank(user);
         executor.borrowAndEnter(b, _noPermit(), p);
         assertEq(bos.lastBorrower(), address(0)); // validated before borrowing
+    }
+
+    /// @dev The Router mints exactly `liquidityOut`, so a mismatch needs a mocked Router reply.
+    function test_enter_stake_revertsWhenReceivedLpDiffersFromReported() public {
+        _fund(user, 1_000e18);
+        IMezoRouteExecutorV2.EnterParams memory p = _enterParams(1_000e18, user, true);
+        vm.mockCall(
+            address(router),
+            abi.encodeWithSelector(ITigrisRouter.addLiquidity.selector),
+            abi.encode(uint256(1), uint256(1), uint256(1))
+        );
+        vm.expectRevert(IMezoRouteExecutorV2.LiquidityNotReceived.selector);
+        vm.prank(user);
+        executor.enter(p, _noPermit());
+    }
+
+    function test_enter_stake_revertsWhenGaugePullsLessThanItCredits() public {
+        executor = _deployExecutor(FEE_BPS, MAX_MUSD_IN, address(new MockUnderPullingGauge(pool)));
+        _fund(user, 1_000e18);
+        IMezoRouteExecutorV2.EnterParams memory p = _enterParams(1_000e18, user, true);
+        vm.expectRevert(IMezoRouteExecutorV2.StakeIncomplete.selector);
+        vm.prank(user);
+        executor.enter(p, _noPermit());
     }
 }

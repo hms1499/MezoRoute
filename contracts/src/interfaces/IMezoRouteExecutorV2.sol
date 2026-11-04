@@ -113,6 +113,7 @@ interface IMezoRouteExecutorV2 {
     error GaugeUnavailable();
     error StakeNotCredited();
     error LiquidityNotReceived();
+    error StakeIncomplete();
 
     function enter(EnterParams calldata p, Permit calldata musdPermit) external returns (uint256 liquidityOut);
 

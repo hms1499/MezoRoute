@@ -3,6 +3,8 @@ pragma solidity 0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import {IRouter} from "@tigris/interfaces/IRouter.sol";
+import {ITigrisRouter} from "../../src/interfaces/external/ITigrisRouter.sol";
 import {IGauge} from "@tigris/interfaces/IGauge.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {TigrisHarnessV2} from "../harness/TigrisHarnessV2.sol";
@@ -128,13 +130,28 @@ contract EnterFromBtcV2Test is TigrisHarnessV2 {
 
         // The Router enforces amountOutMin first, so the swap minimum reverts inside it.
         p.minMusdFromSwap = _quoteSwap(address(btc), address(musd), p.btcToSwap) + 1;
-        vm.expectRevert();
+        vm.expectRevert(IRouter.InsufficientOutputAmount.selector);
         vm.prank(user);
         executor.enterFromBtc(p, _noPermit());
 
         p = _btcParams(BTC_IN, user, false);
         p.minLpOut = type(uint256).max;
         vm.expectRevert(IMezoRouteExecutorV2.InsufficientLiquidityOutput.selector);
+        vm.prank(user);
+        executor.enterFromBtc(p, _noPermit());
+    }
+
+    /// @dev The executor's own check backs up the Router's: a Router that reports success but
+    ///      delivers nothing (mocked here) is still rejected.
+    function test_enterFromBtc_revertsWhenSwapDeliversLessThanMinimum() public {
+        _fundBtc(user, BTC_IN);
+        IMezoRouteExecutorV2.EnterFromBtcParams memory p = _btcParams(BTC_IN, user, false);
+        vm.mockCall(
+            address(router),
+            abi.encodeWithSelector(ITigrisRouter.swapExactTokensForTokens.selector),
+            abi.encode(new uint256[](2))
+        );
+        vm.expectRevert(IMezoRouteExecutorV2.InsufficientSwapOutput.selector);
         vm.prank(user);
         executor.enterFromBtc(p, _noPermit());
     }
