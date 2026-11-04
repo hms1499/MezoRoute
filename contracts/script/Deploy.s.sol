@@ -2,9 +2,9 @@
 pragma solidity 0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {MezoRouteExecutor} from "../src/MezoRouteExecutor.sol";
+import {MezoRouteExecutorV2} from "../src/MezoRouteExecutorV2.sol";
 
-/// @notice Deploys MezoRouteExecutor with the fixed Mezo addresses for the current chain.
+/// @notice Deploys MezoRouteExecutorV2 (V1 stays deployed) with the fixed Mezo addresses for the current chain.
 /// Env: FEE_BPS (e.g. 10), FEE_RECIPIENT (address). The per-transaction cap is fixed per chain.
 contract Deploy is Script {
     struct MezoAddresses {
@@ -47,13 +47,27 @@ contract Deploy is Script {
         revert("Deploy: unsupported chain");
     }
 
-    function run() external returns (MezoRouteExecutor executor) {
+    /// @notice Cap on BTC entries: about 1,000 MUSD worth while unaudited on mainnet, 12 BTC on testnet.
+    function maxBtcInFor(uint256 chainId) public pure returns (uint256) {
+        if (chainId == 31611) return 12e18;
+        if (chainId == 31612) return 125e14;
+        revert("Deploy: unsupported chain");
+    }
+
+    /// @notice The pool's Tigris gauge (spec "Chain facts").
+    function gaugeFor(uint256 chainId) public pure returns (address) {
+        if (chainId == 31611) return 0x72D88B0795373437E86792DEd8362D66dC43Cd2c;
+        if (chainId == 31612) return 0x8Be20a5fF57E381025aE5E3A121B697269569AaF;
+        revert("Deploy: unsupported chain");
+    }
+
+    function run() external returns (MezoRouteExecutorV2 executor) {
         MezoAddresses memory a = addressesFor(block.chainid);
         uint256 feeBps = vm.envUint("FEE_BPS");
         address feeRecipient = vm.envAddress("FEE_RECIPIENT");
 
         vm.startBroadcast();
-        executor = new MezoRouteExecutor(
+        executor = new MezoRouteExecutorV2(
             a.musd,
             a.btc,
             a.router,
@@ -62,10 +76,12 @@ contract Deploy is Script {
             a.borrowerOperationsSignatures,
             feeBps,
             feeRecipient,
-            maxMusdInFor(block.chainid)
+            maxMusdInFor(block.chainid),
+            gaugeFor(block.chainid),
+            maxBtcInFor(block.chainid)
         );
         vm.stopBroadcast();
 
-        console2.log("MezoRouteExecutor", address(executor));
+        console2.log("MezoRouteExecutorV2", address(executor));
     }
 }
