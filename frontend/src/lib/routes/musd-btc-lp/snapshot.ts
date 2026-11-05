@@ -34,6 +34,9 @@ export const DASHBOARD_READS = 13;
 /** The LP route's own reads between the dashboard's and the gauge's. */
 const LP_ROUTE_READS = 13;
 
+/** Where `lpRouteContracts`' gauge reads start. */
+export const LP_ROUTE_GAUGE_START = DASHBOARD_READS + LP_ROUTE_READS;
+
 type LpRouteTail = readonly [
   allowance: bigint,
   permitNonce: bigint,
@@ -73,7 +76,7 @@ export function lpRouteContracts(network: NetworkConfig, executor: Address, acco
   ] as const;
 }
 
-export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteResults): LpRouteSnapshot {
+export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteResults, gaugeReadFailed = false): LpRouteSnapshot {
   const [
     allowance,
     permitNonce,
@@ -89,9 +92,9 @@ export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteRes
     btcAllowance,
     btcPermitNonce,
   ] = results.slice(DASHBOARD_READS) as unknown as LpRouteTail;
-  const gaugeResults = results.slice(DASHBOARD_READS + LP_ROUTE_READS);
+  const gaugeResults = results.slice(LP_ROUTE_GAUGE_START);
   const gauge = network.gauge && gaugeResults.length === GAUGE_READS ? parseGaugeState(gaugeResults as unknown as GaugeResults) : null;
-  const dashboard = withStakedLp(parseSnapshot(network, results.slice(0, DASHBOARD_READS) as unknown as SnapshotResults), gauge);
+  const dashboard = { ...withStakedLp(parseSnapshot(network, results.slice(0, DASHBOARD_READS) as unknown as SnapshotResults), gauge), gaugeReadFailed };
   return {
     dashboard,
     pool: {

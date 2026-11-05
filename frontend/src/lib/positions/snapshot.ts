@@ -17,6 +17,7 @@ export type PositionsSnapshot = {
   allowance: bigint; // LP the executor may already pull
   permitNonce: bigint; // LP EIP-2612 nonce of the account
   gauge: GaugeState | null; // null on a network without a gauge
+  gaugeReadFailed: boolean; // the gauge's reads failed in this snapshot: staked LP and MEZO are unknown
   blockNumber: bigint;
   blockTimestamp: bigint;
 };
@@ -72,7 +73,7 @@ export function positionsContracts(network: NetworkConfig, account: Address) {
   ] as const;
 }
 
-export function parsePositionsSnapshot(network: NetworkConfig, results: PositionsResults): PositionsSnapshot {
+export function parsePositionsSnapshot(network: NetworkConfig, results: PositionsResults, gaugeReadFailed = false): PositionsSnapshot {
   const gaugeResults = results.slice(POSITIONS_POOL_READS);
   const [
     price,
@@ -109,6 +110,7 @@ export function parsePositionsSnapshot(network: NetworkConfig, results: Position
     allowance,
     permitNonce,
     gauge: network.gauge && gaugeResults.length === GAUGE_READS ? parseGaugeState(gaugeResults as unknown as GaugeResults) : null,
+    gaugeReadFailed,
     blockNumber,
     blockTimestamp,
   };

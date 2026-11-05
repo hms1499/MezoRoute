@@ -30,12 +30,13 @@ export type DashboardSnapshot = {
   poolFeeBps: bigint; // the pool's swap fee in bps (PoolFactory.getFee)
   // Read by the dashboard only (`dashboardContracts`); null in the route pages' own snapshots.
   gauge: GaugeState | null; // null on a network without a gauge
+  gaugeReadFailed: boolean; // the gauge's reads failed in this snapshot: `lp.balance` leaves out staked LP
   block: { number: bigint; timestamp: bigint } | null; // the block the snapshot was read at
   troveDebt: bigint | null; // MUSD owed by every open Trove: what liquidations can pay the Stability Pool
   protocolOwnedSp: bigint | null; // MUSD the protocol (PCV) holds in the Stability Pool
 };
 
-/** The multicall results in `snapshotContracts` order (`allowFailure: false`). */
+/** The values of the multicall, in `snapshotContracts` order. */
 export type SnapshotResults = readonly [
   price: bigint,
   mcr: bigint,
@@ -54,6 +55,9 @@ export type SnapshotResults = readonly [
 
 /** How many reads `snapshotContracts` makes. */
 const BASE_READS = 13;
+
+/** Where `dashboardContracts`' gauge reads start. */
+export const DASHBOARD_GAUGE_START = BASE_READS;
 
 /** TroveManager `Status.active`; none, closedByOwner, closedByLiquidation, and closedByRedemption mean no open Trove. */
 const TROVE_ACTIVE = 1;
@@ -108,6 +112,7 @@ export function parseSnapshot(network: NetworkConfig, results: SnapshotResults):
     sp: { deposit: spDeposit, btcGain: spBtcGain },
     poolFeeBps,
     gauge: null,
+    gaugeReadFailed: false,
     block: null,
     troveDebt: null,
     protocolOwnedSp: null,
@@ -138,7 +143,7 @@ export function dashboardContracts(network: NetworkConfig, account: Address) {
   ] as const;
 }
 
-export function parseDashboard(network: NetworkConfig, results: readonly unknown[]): DashboardSnapshot {
+export function parseDashboard(network: NetworkConfig, results: readonly unknown[], gaugeReadFailed = false): DashboardSnapshot {
   const base = parseSnapshot(network, results.slice(0, BASE_READS) as unknown as SnapshotResults);
   const gaugeResults = results.slice(BASE_READS, results.length - DASHBOARD_TAIL);
   const [blockNumber, blockTimestamp, troveDebt, protocolOwnedSp] = results.slice(results.length - DASHBOARD_TAIL) as unknown as DashboardTail;
@@ -146,6 +151,7 @@ export function parseDashboard(network: NetworkConfig, results: readonly unknown
   return {
     ...withStakedLp(base, gauge),
     gauge,
+    gaugeReadFailed,
     block: { number: blockNumber, timestamp: blockTimestamp },
     troveDebt,
     protocolOwnedSp,

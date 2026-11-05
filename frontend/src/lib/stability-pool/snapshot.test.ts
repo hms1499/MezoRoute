@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
 import type { SnapshotResults } from "@/lib/dashboard/snapshot";
 import { GAUGE_READS } from "@/lib/gauge/state";
-import { parseSpSnapshot, spContracts, type SpResults } from "./snapshot";
+import { parseSpSnapshot, SP_GAUGE_START, spContracts, type SpResults } from "./snapshot";
 
 const ACCOUNT = "0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8";
 const ONE = 10n ** 18n;
@@ -51,6 +51,17 @@ describe("parseSpSnapshot", () => {
     expect(snapshot.dashboard.sp).toEqual({ deposit: 40n * ONE, btcGain: 7n });
     expect(snapshot.dashboard.musd).toBe(500n * ONE);
     expect(snapshot).toMatchObject({ initialDeposit: 50n * ONE, allowance: 3n * ONE, blockNumber: 16_000_000n });
+  });
+
+  it("reports a failed gauge read in its dashboard", () => {
+    const parsed = parseSpSnapshot(networks.testnet, [...dashboardResults, 50n * ONE, 3n * ONE, 16_000_000n], true);
+    expect(parsed.dashboard.gaugeReadFailed).toBe(true);
+    expect(parsed.dashboard.gauge).toBeNull();
+    expect(parsed.blockNumber).toBe(16_000_000n);
+  });
+
+  it("names where the gauge's reads start", () => {
+    expect(spContracts(networks.testnet, ACCOUNT)[SP_GAUGE_START]).toMatchObject({ functionName: "isAlive" });
   });
 
   it("counts staked LP in the dashboard's lp.balance", () => {

@@ -1,14 +1,15 @@
 "use client";
 
 import type { Address } from "viem";
-import { useBalance, useGasPrice, useReadContracts } from "wagmi";
+import { useBalance, useGasPrice } from "wagmi";
 import { useNetwork } from "@/lib/config/network-context";
+import { useSnapshotReads, type SnapshotReads } from "@/lib/gauge/snapshot-reads";
 import { QUOTE_REFRESH_MS } from "@/lib/routes/musd-btc-lp/useLpRouteSnapshot";
-import { parsePositionsSnapshot, positionsContracts, type PositionsData, type PositionsResults } from "./snapshot";
+import { parsePositionsSnapshot, POSITIONS_POOL_READS, positionsContracts, type PositionsData, type PositionsResults } from "./snapshot";
 
 /**
  * The positions reads on the selected network: one multicall snapshot plus gas balance and price,
- * refetched every 15 s. `refresh` resolves with fresh data (the exit's send re-quotes from it).
+ * refetched every 15 s. A failed gauge read only sets `gaugeReadFailed`. `refresh` resolves with fresh data (the exit's send re-quotes from it).
  */
 export function usePositionsSnapshot(account: Address): {
   data: PositionsData | undefined;
@@ -16,16 +17,17 @@ export function usePositionsSnapshot(account: Address): {
   refresh: () => Promise<PositionsData>;
 } {
   const { network } = useNetwork();
-  const reads = useReadContracts({
+  const reads = useSnapshotReads({
+    network,
     contracts: positionsContracts(network, account),
-    allowFailure: false,
-    query: { refetchInterval: QUOTE_REFRESH_MS },
+    gaugeStart: POSITIONS_POOL_READS,
+    refetchInterval: QUOTE_REFRESH_MS,
   });
   const gas = useBalance({ address: account, chainId: network.chainId, query: { refetchInterval: QUOTE_REFRESH_MS } });
   const gasPrice = useGasPrice({ chainId: network.chainId, query: { refetchInterval: QUOTE_REFRESH_MS } });
 
-  const toData = (results: unknown, gasBalance: bigint, price: bigint | undefined, fetchedAt: number): PositionsData => ({
-    snapshot: parsePositionsSnapshot(network, results as PositionsResults),
+  const toData = (read: SnapshotReads, gasBalance: bigint, price: bigint | undefined, fetchedAt: number): PositionsData => ({
+    snapshot: parsePositionsSnapshot(network, read.results as unknown as PositionsResults, read.gaugeReadFailed),
     gasBalance,
     gasPrice: price,
     fetchedAt,

@@ -25,6 +25,9 @@ export type SpResults = readonly [...SnapshotResults, ...SpTail, ...(readonly un
 /** The Stability Pool's own reads between the dashboard's and the gauge's. */
 const SP_READS = 3;
 
+/** Where `spContracts`' gauge reads start. */
+export const SP_GAUGE_START = DASHBOARD_READS + SP_READS;
+
 /** The dashboard's reads, the Stability Pool's, then the gauge's (staked LP counts in BTC exposure), one multicall at one block, all on the selected network. */
 export function spContracts(network: NetworkConfig, account: Address) {
   const { addresses: a, chainId } = network;
@@ -37,10 +40,10 @@ export function spContracts(network: NetworkConfig, account: Address) {
   ] as const;
 }
 
-export function parseSpSnapshot(network: NetworkConfig, results: SpResults): SpSnapshot {
-  const [initialDeposit, allowance, blockNumber] = results.slice(DASHBOARD_READS, DASHBOARD_READS + SP_READS) as unknown as SpTail;
-  const gaugeResults = results.slice(DASHBOARD_READS + SP_READS);
+export function parseSpSnapshot(network: NetworkConfig, results: SpResults, gaugeReadFailed = false): SpSnapshot {
+  const [initialDeposit, allowance, blockNumber] = results.slice(DASHBOARD_READS, SP_GAUGE_START) as unknown as SpTail;
+  const gaugeResults = results.slice(SP_GAUGE_START);
   const gauge = network.gauge && gaugeResults.length === GAUGE_READS ? parseGaugeState(gaugeResults as unknown as GaugeResults) : null;
-  const dashboard = withStakedLp(parseSnapshot(network, results.slice(0, DASHBOARD_READS) as unknown as SnapshotResults), gauge);
+  const dashboard = { ...withStakedLp(parseSnapshot(network, results.slice(0, DASHBOARD_READS) as unknown as SnapshotResults), gauge), gaugeReadFailed };
   return { dashboard, initialDeposit, allowance, blockNumber };
 }

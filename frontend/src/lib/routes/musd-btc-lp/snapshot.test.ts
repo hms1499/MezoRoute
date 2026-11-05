@@ -4,7 +4,7 @@ import { networks } from "@/lib/config/networks";
 import { snapshotContracts, type SnapshotResults } from "@/lib/dashboard/snapshot";
 import { BORROWING_RATE, FIXTURE_PRICE, MCR } from "@/lib/dashboard/test-fixtures";
 import { GAUGE_READS } from "@/lib/gauge/state";
-import { DASHBOARD_READS, lpRouteContracts, parseLpRouteSnapshot, type LpRouteResults } from "./snapshot";
+import { DASHBOARD_READS, LP_ROUTE_GAUGE_START, lpRouteContracts, parseLpRouteSnapshot, type LpRouteResults } from "./snapshot";
 
 const ACCOUNT = "0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8";
 const EXECUTOR = "0xB36B2E012003840951CFf00fA6b1E3237A110920";
@@ -111,6 +111,19 @@ describe("parseLpRouteSnapshot", () => {
       staked: 5n * ONE,
       earned: 2n * ONE,
     });
+  });
+
+  it("reports a failed gauge read in its dashboard, with no gauge and wallet LP only", () => {
+    const withoutGauge = results([520n * ONE, 6_000_000_000_000_000n, 1n]).slice(0, LP_ROUTE_GAUGE_START) as unknown as LpRouteResults;
+    const parsed = parseLpRouteSnapshot(networks.testnet, withoutGauge, true);
+    expect(parsed.gauge).toBeNull();
+    expect(parsed.dashboard.gaugeReadFailed).toBe(true);
+    expect(parsed.dashboard.lp.balance).toBe(0n);
+    expect(parsed.btcPermitNonce).toBe(9n);
+  });
+
+  it("names where the gauge's reads start", () => {
+    expect(lpRouteContracts(networks.testnet, EXECUTOR, ACCOUNT)[LP_ROUTE_GAUGE_START]).toMatchObject({ functionName: "isAlive" });
   });
 
   it("counts staked LP in the dashboard's lp.balance", () => {

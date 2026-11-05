@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
 import { GAUGE_READS } from "@/lib/gauge/state";
-import { dashboardContracts, parseDashboard, parseSnapshot, snapshotContracts, type SnapshotResults } from "./snapshot";
+import { DASHBOARD_GAUGE_START, dashboardContracts, parseDashboard, parseSnapshot, snapshotContracts, type SnapshotResults } from "./snapshot";
 import { BORROWING_RATE, deployerTrove, FIXTURE_PRICE, MCR, ONE } from "./test-fixtures";
 
 const ACCOUNT = "0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8";
@@ -71,6 +71,7 @@ describe("parseSnapshot", () => {
       sp: { deposit: 50n * ONE, btcGain: 20_000_000_000_000n },
       poolFeeBps: 30n,
       gauge: null,
+      gaugeReadFailed: false,
       block: null,
       troveDebt: null,
       protocolOwnedSp: null,
@@ -129,6 +130,20 @@ describe("parseDashboard", () => {
     expect(snapshot.troveDebt).toBe(3_000_000n * ONE);
     expect(snapshot.protocolOwnedSp).toBe(14_000_000n * ONE);
     expect(snapshot.trove).toEqual(deployerTrove);
+  });
+
+  it("reports a failed gauge read: no gauge, wallet LP only, the rest parsed", () => {
+    const results = [...raw(1, [520n * ONE, 6_000_000_000_000_000n, 1n]), ...tail];
+    const snapshot = parseDashboard(networks.testnet, results as never, true);
+    expect(snapshot.gauge).toBeNull();
+    expect(snapshot.gaugeReadFailed).toBe(true);
+    expect(snapshot.lp.balance).toBe(100n * ONE);
+    expect(snapshot.block).toEqual({ number: 12_000_000n, timestamp: 1_790_000_000n });
+    expect(snapshot.protocolOwnedSp).toBe(14_000_000n * ONE);
+  });
+
+  it("names where the gauge's reads start", () => {
+    expect(dashboardContracts(networks.testnet, ACCOUNT)[DASHBOARD_GAUGE_START]).toMatchObject({ functionName: "isAlive" });
   });
 
   it("counts staked LP in lp.balance: wallet + gauge", () => {

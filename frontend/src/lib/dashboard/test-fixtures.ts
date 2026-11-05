@@ -41,6 +41,7 @@ export function snapshotWith(overrides: Partial<DashboardSnapshot> = {}): Dashbo
     sp: { deposit: 0n, btcGain: 0n },
     poolFeeBps: 30n,
     gauge: null,
+    gaugeReadFailed: false,
     block: null,
     troveDebt: null,
     protocolOwnedSp: null,
