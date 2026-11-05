@@ -2,8 +2,10 @@
 pragma solidity 0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {TigrisHarnessV2} from "../harness/TigrisHarnessV2.sol";
 import {IMezoRouteExecutorV2} from "../../src/interfaces/IMezoRouteExecutorV2.sol";
+import {ITigrisRouter} from "../../src/interfaces/external/ITigrisRouter.sol";
 
 contract ExitV2Test is TigrisHarnessV2 {
     uint256 internal lp;
@@ -46,12 +48,22 @@ contract ExitV2Test is TigrisHarnessV2 {
         btc.mint(address(executor), 1e18);
         IMezoRouteExecutorV2.ExitParams memory p = _exitParams(lp, user);
 
+        vm.recordLogs();
         vm.prank(user);
         uint256 musdOut = executor.exit(p, _noPermit());
 
         assertEq(musd.balanceOf(address(executor)), 500e18);
         assertEq(btc.balanceOf(address(executor)), 1e18);
         assertLt(musdOut, 1_000e18);
+
+        // The app's cost basis reads the event: donated tokens must not show up in it.
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        (uint256 liquidityIn, uint256 musdRemoved,, uint256 musdFromSwap, uint256 eventMusdOut, uint256 btcRefund) =
+            abi.decode(logs[logs.length - 1].data, (uint256, uint256, uint256, uint256, uint256, uint256));
+        assertEq(liquidityIn, lp);
+        assertEq(eventMusdOut, musdOut);
+        assertEq(musdRemoved + musdFromSwap, musdOut);
+        assertEq(btcRefund, 0);
     }
 
     function test_exit_partialAmount() public {
@@ -165,6 +177,68 @@ contract ExitV2Test is TigrisHarnessV2 {
         vm.expectRevert(); // Router enforces amountOutMin first (IRouter.InsufficientOutputAmount)
         vm.prank(user);
         executor.exit(p, _noPermit());
+    }
+
+    /// @dev The Router enforces its own minimums, so reaching the executor's checks needs a Router
+    ///      that reports success but delivers nothing (mocked here).
+    function test_exit_revertsWhenRemoveDeliversLessThanMinimum() public {
+        vm.mockCall(
+            address(router),
+            abi.encodeWithSelector(ITigrisRouter.removeLiquidity.selector),
+            abi.encode(uint256(0), uint256(0))
+        );
+        IMezoRouteExecutorV2.ExitParams memory p = _exitParams(lp, user);
+
+        p.minMusdRemoved = 1;
+        vm.expectRevert(IMezoRouteExecutorV2.InsufficientLiquidityOutput.selector);
+        vm.prank(user);
+        executor.exit(p, _noPermit());
+
+        p.minMusdRemoved = 0;
+        p.minBtcRemoved = 1;
+        vm.expectRevert(IMezoRouteExecutorV2.InsufficientLiquidityOutput.selector);
+        vm.prank(user);
+        executor.exit(p, _noPermit());
+    }
+
+    function test_exit_revertsWhenSwapDeliversLessThanMinimum() public {
+        vm.mockCall(
+            address(router),
+            abi.encodeWithSelector(ITigrisRouter.swapExactTokensForTokens.selector),
+            abi.encode(new uint256[](2))
+        );
+        IMezoRouteExecutorV2.ExitParams memory p = _exitParams(lp, user);
+        p.minMusdFromSwap = 1;
+        vm.expectRevert(IMezoRouteExecutorV2.InsufficientSwapOutput.selector);
+        vm.prank(user);
+        executor.exit(p, _noPermit());
+    }
+
+    /// @dev The real Router swaps all the BTC, so a BTC refund needs a swap that takes none (mocked).
+    function test_exit_unswappedBtcGoesToRecipientAndAllowanceIsReset() public {
+        address recipient = makeAddr("recipient");
+        uint256 callerBtcBefore = btc.balanceOf(user);
+        vm.mockCall(
+            address(router),
+            abi.encodeWithSelector(ITigrisRouter.swapExactTokensForTokens.selector),
+            abi.encode(new uint256[](2))
+        );
+        IMezoRouteExecutorV2.ExitParams memory p = _exitParams(lp, recipient);
+
+        vm.recordLogs();
+        vm.prank(user);
+        executor.exit(p, _noPermit());
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        (,, uint256 btcRemoved, uint256 musdFromSwap,, uint256 btcRefund) =
+            abi.decode(logs[logs.length - 1].data, (uint256, uint256, uint256, uint256, uint256, uint256));
+        assertGt(btcRefund, 0);
+        assertEq(btcRefund, btcRemoved);
+        assertEq(musdFromSwap, 0);
+        assertEq(btc.balanceOf(recipient), btcRefund);
+        assertEq(btc.balanceOf(user), callerBtcBefore);
+        assertEq(btc.balanceOf(address(executor)), 0);
+        assertEq(btc.allowance(address(executor), address(router)), 0);
     }
 
     function test_exit_neverPaysOutPreExistingLp() public {

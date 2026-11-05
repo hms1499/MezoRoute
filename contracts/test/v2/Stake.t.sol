@@ -247,6 +247,30 @@ contract StakeV2Test is TigrisHarnessV2 {
         assertEq(IERC20(pool).balanceOf(address(executor)), 0);
     }
 
+    function test_enter_stake_refundsBtcToRecipientNotCaller() public {
+        address recipient = makeAddr("recipient");
+        IMezoRouteExecutorV2.EnterParams memory p = _enterParams(1_000e18, recipient, true);
+        p.musdToSwap = 900e18; // above the optimum: most BTC cannot be paired and is refunded
+        p.minBtcFromSwap = 0;
+
+        vm.recordLogs();
+        vm.prank(user);
+        uint256 lp = executor.enter(p, _noPermit());
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        (,,,,,,,,, uint256 btcRefund) = abi.decode(
+            logs[logs.length - 1].data,
+            (uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256)
+        );
+        assertGt(btcRefund, 0);
+        assertEq(btc.balanceOf(recipient), btcRefund);
+        assertEq(btc.balanceOf(user), 0);
+        assertEq(gauge.balanceOf(recipient), lp);
+        assertEq(gauge.balanceOf(user), 0);
+        assertEq(btc.balanceOf(address(executor)), 0);
+        assertEq(btc.allowance(address(executor), address(router)), 0);
+    }
+
     function _borrow() internal view returns (IMezoRouteExecutorV2.Borrow memory) {
         return IMezoRouteExecutorV2.Borrow({
             amount: 1_000e18,

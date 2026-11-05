@@ -209,6 +209,9 @@ contract EnterFromBtcV2Test is TigrisHarnessV2 {
 
         _fundBtc(user, BTC_IN);
         IMezoRouteExecutorV2.EnterFromBtcParams memory p = _btcParams(BTC_IN, user, true);
+        uint256 musdQuote = _quoteSwap(address(btc), address(musd), p.btcToSwap);
+
+        vm.recordLogs();
         vm.prank(user);
         uint256 lp = executor.enterFromBtc(p, _noPermit());
 
@@ -218,6 +221,45 @@ contract EnterFromBtcV2Test is TigrisHarnessV2 {
         assertEq(gauge.balanceOf(user), lp);
         assertLt(musd.balanceOf(user), 500e18);
         assertLt(btc.balanceOf(user), 1e18);
+
+        // The app's cost basis reads the event: donated tokens must not show up in it.
+        Vm.Log memory e = _lastEvent();
+        (
+            uint256 btcIn,
+            uint256 fee,
+            uint256 btcToSwap,
+            uint256 musdFromSwap,
+            uint256 musdAdded,
+            uint256 btcAdded,
+            uint256 lpOut,
+            uint256 musdRefund,
+            uint256 btcRefund
+        ) = abi.decode(e.data, (uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256));
+        assertEq(btcIn, BTC_IN);
+        assertEq(fee, (BTC_IN * FEE_BPS) / 10_000);
+        assertEq(btcToSwap, p.btcToSwap);
+        assertEq(musdFromSwap, musdQuote);
+        assertEq(musdFromSwap, musdAdded + musdRefund);
+        assertEq(btcIn - fee, btcToSwap + btcAdded + btcRefund);
+        assertEq(lpOut, lp);
+        assertEq(musd.balanceOf(user), musdRefund);
+        assertEq(btc.balanceOf(user), btcRefund);
+    }
+
+    /// @dev The Router enforces its own minimum, so reaching the executor's check needs a Router
+    ///      that reports success but delivers nothing (mocked here).
+    function test_enterFromBtc_swapMinimumNotSatisfiedByDonatedMusd() public {
+        _fundBtc(user, BTC_IN);
+        IMezoRouteExecutorV2.EnterFromBtcParams memory p = _btcParams(BTC_IN, user, false);
+        musd.mint(address(executor), p.minMusdFromSwap);
+        vm.mockCall(
+            address(router),
+            abi.encodeWithSelector(ITigrisRouter.swapExactTokensForTokens.selector),
+            abi.encode(new uint256[](2))
+        );
+        vm.expectRevert(IMezoRouteExecutorV2.InsufficientSwapOutput.selector);
+        vm.prank(user);
+        executor.enterFromBtc(p, _noPermit());
     }
 
     function test_enterFromBtc_refundsToRecipient() public {
@@ -256,6 +298,37 @@ contract EnterFromBtcV2Test is TigrisHarnessV2 {
         assertEq(btc.balanceOf(user), 0);
         assertEq(musd.balanceOf(address(executor)), 0);
         assertEq(btc.balanceOf(address(executor)), 0);
+    }
+
+    /// @dev Swapping well below the optimum leaves most BTC unpaired, so it is refunded.
+    function _assertBtcRefundReachesRecipient(bool stake) internal {
+        address recipient = makeAddr("recipient");
+        _fundBtc(user, BTC_IN);
+        IMezoRouteExecutorV2.EnterFromBtcParams memory p = _btcParams(BTC_IN, recipient, stake);
+        p.btcToSwap = BTC_IN / 10;
+        p.minMusdFromSwap = 0;
+
+        vm.recordLogs();
+        vm.prank(user);
+        uint256 lp = executor.enterFromBtc(p, _noPermit());
+
+        (,,,,,,,, uint256 btcRefund) = abi.decode(
+            _lastEvent().data, (uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256)
+        );
+        assertGt(btcRefund, 0);
+        assertEq(btc.balanceOf(recipient), btcRefund);
+        assertEq(btc.balanceOf(user), 0);
+        assertEq(stake ? gauge.balanceOf(recipient) : IERC20(pool).balanceOf(recipient), lp);
+        assertEq(btc.balanceOf(address(executor)), 0);
+        assertEq(btc.allowance(address(executor), address(router)), 0);
+    }
+
+    function test_enterFromBtc_refundsBtcToRecipientNotCaller() public {
+        _assertBtcRefundReachesRecipient(false);
+    }
+
+    function test_enterFromBtc_stake_refundsBtcToRecipientNotCaller() public {
+        _assertBtcRefundReachesRecipient(true);
     }
 
     function test_enterFromBtc_permit_andFrontRunPermit() public {

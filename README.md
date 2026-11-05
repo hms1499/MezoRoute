@@ -153,7 +153,7 @@ Requirements: Node.js 18.17+ (developed on Node 24), npm, and [Foundry](https://
 ```bash
 cd contracts
 forge build
-forge test        # 188 tests: unit, fuzz, invariant (V1 and V2)
+forge test        # 198 tests: unit, fuzz, invariant (V1 and V2)
 ```
 
 Tests deploy the real Tigris Pool, PoolFactory, and Router (commit `0a3b5e8`) locally with mock MUSD and BTC. Fork tests are not possible because Mezo's BTC token is a chain precompile; [`contracts/script/smoke-testnet.sh`](contracts/script/smoke-testnet.sh) exercises a deployed executor on Mezo testnet instead. Deployment steps are in [`contracts/README.md`](contracts/README.md).

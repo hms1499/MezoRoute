@@ -37,14 +37,16 @@ V2 keeps invariants 1-12 above (re-run as the `test/v2/` suite) and adds `enterF
 | 13 | No LP held after any call | `_addLiquidity` mints to the executor only when staking, requires the measured LP delta to equal the Router's `liquidityOut` (`LiquidityNotReceived`), then `_stake` deposits all of it, then the executor's LP must be back to its starting balance (`StakeIncomplete`); `_assertNoDecrease` | `test_enter_stake_creditsRecipientAndLeavesNothing`, `test_enterFromBtc_stake_creditsGauge`, `test_enter_stake_refundsGoToRecipientAndExecutorEndsEmpty`, `invariant_executorHoldsOnlyDonations`, `test_enter_stake_revertsWhenReceivedLpDiffersFromReported` (`LiquidityNotReceived`, reached with a mocked Router reply), `test_enter_stake_revertsWhenGaugePullsLessThanItCredits` (`StakeIncomplete`) ✅ |
 | 14 | Gauge allowance is 0 after any call | `forceApprove(gauge, amount)` then `forceApprove(gauge, 0)` in `_stake` | `invariant_noLingeringAllowances`, `test_enter_stake_creditsRecipientAndLeavesNothing` ✅ |
 | 15 | Staked LP credited only to `recipient`, exactly the deposited amount; gauge is never a recipient | `_stake` compares `gauge.balanceOf(recipient)` before/after (`StakeNotCredited`); `_requireValidRecipient` rejects the gauge | `test_enter_stake_recipientCredited_notCaller`, `test_enter_stake_revertsWhenGaugeCreditsLessThanDeposited`, `test_enter_revertsWhenRecipientIsGauge`, `test_exit_revertsWhenRecipientIsGauge`, `test_enterFromBtc_revertsOnBadRecipientAndInputs`, `invariant_stakeCreditedOnlyToActors` ✅ |
-| 16 | BTC (and MUSD, LP) held before a call is never paid out, for `enterFromBtc` too | Same `_snapshot`/`_delta`/`_assertNoDecrease` | `test_enterFromBtc_ignoresPreExistingBalances`, `test_enter_stake_ignoresPreExistingExecutorLp`, `invariant_executorHoldsOnlyDonations` ✅ |
+| 16 | BTC (and MUSD, LP) held before a call is never paid out, for `enterFromBtc` too | Same `_snapshot`/`_delta`/`_assertNoDecrease` | `test_enterFromBtc_ignoresPreExistingBalances` and `test_enter_neverPaysOutPreExistingBalances` (event values too), `test_enterFromBtc_swapMinimumNotSatisfiedByDonatedMusd`, `test_enter_swapMinimumNotSatisfiedByDonatedBtc`, `test_enter_stake_ignoresPreExistingExecutorLp`, `invariant_executorHoldsOnlyDonations` ✅ |
 | 17 | The executor never touches MEZO | No MEZO reference in `src/`; rewards accrue in the gauge to the owner | `test_executorNeverTouchesMezo`, `invariant_mezoUnchanged` ✅ |
 
-`InsufficientSwapOutput` is backed up by `test_enterFromBtc_revertsWhenSwapDeliversLessThanMinimum` (mocked Router reply); the real Router's own check is pinned in `test_enterFromBtc_slippageChecks`.
+`InsufficientSwapOutput` is backed up by `test_enterFromBtc_revertsWhenSwapDeliversLessThanMinimum` (mocked Router reply); the real Router's own check is pinned in `test_enterFromBtc_slippageChecks`. The other checks the real Router makes unreachable are backed up the same way: `test_enter_swapMinimumNotSatisfiedByDonatedBtc`, `test_enter_revertsWhenRouterReportsLessThanMinimumsAdded`, `test_exit_revertsWhenRemoveDeliversLessThanMinimum`, `test_exit_revertsWhenSwapDeliversLessThanMinimum`.
 
 Also covered for `enterFromBtc`: fee in BTC only (`test_enterFromBtc_feeInBtc`), cap at/above
 `maxBtcIn` (`test_enterFromBtc_revertsAboveCap`), swap amount bounds, slippage, refunds to the
-recipient, permit and front-run permit, reentrancy (`test_enterFromBtc_reentrancy`), killed or absent
+recipient with a non-zero BTC refund (`test_enterFromBtc_refundsBtcToRecipientNotCaller`,
+`test_enterFromBtc_stake_refundsBtcToRecipientNotCaller`; `enter`: `test_enter_refundsBtcToRecipientNotCaller`,
+`test_enter_stake_refundsBtcToRecipientNotCaller`), permit and front-run permit, reentrancy (`test_enterFromBtc_reentrancy`), killed or absent
 gauge, and the constructor checks (`test_constructor_revertsOnZeroBtcCap`, `test_constructor_storesBtcCap`,
 `test_constructor_revertsOnGaugeForOtherToken`).
 
@@ -127,6 +129,52 @@ test failed, then the source was restored.
 | `exit` without the zero-recipient check | `test_exit_revertsOnZeroRecipient` |
 | Cap compared with `>=` instead of `>` | `test_enter_acceptsAmountEqualToCap`, `test_exit_isNotCapped` |
 | `borrowAndEnter` borrows before validating its parameters | `test_borrowAndEnter_revertsWhenExpiredBeforeBorrowing` (and every `borrowAndEnter` happy path) |
+
+### V2 (`src/MezoRouteExecutorV2.sol`, G1)
+
+Each mutation was applied to a temporary copy of the contracts and the `test/v2/` suites were run
+(5 Nov 2026). The first pass ran 109 tests; survivors that were real gaps got tests and were rerun
+against 113. A comment-only control passed both times. `src/` in this repo was never changed.
+
+| Mutation | Caught by |
+|---|---|
+| BTC refund on entry sent to the caller, not the recipient | `test_enter_refundsBtcToRecipientNotCaller`, `test_enter_stake_refundsBtcToRecipientNotCaller`, `test_enterFromBtc_refundsBtcToRecipientNotCaller`, `test_enterFromBtc_stake_refundsBtcToRecipientNotCaller` |
+| MUSD refund on entry sent to the caller | `test_enter_refundsResidueToRecipientNotCaller`, `test_enter_stake_refundsGoToRecipientAndExecutorEndsEmpty`, `test_enterFromBtc_refundsToRecipient` |
+| `enterFromBtc`: `musdFromSwap = musd.balanceOf(this)`, counting donated MUSD | `test_enterFromBtc_ignoresPreExistingBalances`, `test_enterFromBtc_swapMinimumNotSatisfiedByDonatedMusd` |
+| `enter`: `btcFromSwap = btc.balanceOf(this)`, counting donated BTC | `test_enter_neverPaysOutPreExistingBalances`, `test_enter_swapMinimumNotSatisfiedByDonatedBtc`, `testFuzz_roundTrip_neverProfitsAndKeepsResidues` |
+| `exit`: `musdFromSwap` counts donated MUSD | `test_exit_neverPaysOutPreExistingBalances` |
+| `StakeNotCredited` check removed | `test_enter_stake_revertsWhenGaugeCreditsLessThanDeposited` |
+| `StakeIncomplete` check removed | `test_enter_stake_revertsWhenGaugePullsLessThanItCredits` |
+| `LiquidityNotReceived` check removed | `test_enter_stake_revertsWhenReceivedLpDiffersFromReported` |
+| Gauge credits the wrong account (`deposit` for the executor or `feeRecipient`; `_stake` called for either) | 13-14 tests each, including `test_enter_stake_creditsRecipientAndLeavesNothing`, `test_enterFromBtc_stake_creditsGauge`, `test_borrowAndEnter_stake_creditsCaller` |
+| BTC Router allowance reset removed after `addLiquidity` | `test_enter_refundsBtcToRecipientNotCaller`, `test_enter_stake_refundsBtcToRecipientNotCaller`, `test_enterFromBtc_refundsBtcToRecipientNotCaller`, `test_enterFromBtc_stake_refundsBtcToRecipientNotCaller` |
+| BTC Router allowance reset removed after the `exit` swap | `test_exit_unswappedBtcGoesToRecipientAndAllowanceIsReset` |
+| `exit`: BTC refund sent to the caller | `test_exit_unswappedBtcGoesToRecipientAndAllowanceIsReset` |
+| `enterFromBtc` swap minimum check removed | `test_enterFromBtc_revertsWhenSwapDeliversLessThanMinimum`, `test_enterFromBtc_swapMinimumNotSatisfiedByDonatedMusd` |
+| `enter` swap minimum check removed | `test_enter_swapMinimumNotSatisfiedByDonatedBtc` |
+| Add-liquidity minimums removed: all, `minLpOut` | `test_enter_revertsWhenLpBelowMinimum`, `test_enterFromBtc_slippageChecks` |
+| Add-liquidity minimums removed: `minMusdAdded`, `minBtcAdded` | `test_enter_revertsWhenRouterReportsLessThanMinimumsAdded` |
+| `exit` removed-amount minimums removed: all, `minMusdRemoved`, `minBtcRemoved` | `test_exit_revertsWhenRemoveDeliversLessThanMinimum` |
+| `exit` swap minimum check removed | `test_exit_revertsWhenSwapDeliversLessThanMinimum` |
+| `exit` final minimum check removed | `test_exit_revertsWhenFinalOutputBelowMinimum` |
+| `GaugeUnavailable` check removed | `test_enter_stake_revertsWithoutGauge`, `test_borrowAndEnter_stake_revertsWithoutGauge`, `test_enterFromBtc_stake_revertsWithoutGaugeOrOnKilledGauge` |
+| BTC permit applied to MUSD | `test_enterFromBtc_permit_andFrontRunPermit` |
+| Constructor gauge mismatch check removed | `test_constructor_revertsOnGaugeForOtherToken` |
+
+The minimum checks caught only by a mocked Router reply are backups: the real Router enforces the
+same minimums first, so these mutants matter only if the Router misbehaves.
+
+Killed in the G1 final review and not rerun here: `nonReentrant` removed from `enterFromBtc`, BTC
+desired includes the pre-existing balance, Router allowance reset removed after add, stake credits the
+caller, BTC cap uses the MUSD cap, BTC fee sent to the caller.
+
+Survivors, all equivalent:
+
+| Mutation | Why no test can catch it |
+|---|---|
+| BTC Router allowance reset removed after the `enterFromBtc` swap | `_addLiquidity` always runs next, overwrites this allowance, and resets it to 0, and any other path reverts. Also passes `test/invariant/ExecutorV2`. |
+| Gauge allowance reset removed (G1 final review, not rerun) | `StakeIncomplete` requires the gauge to have pulled all of the LP, so an exact allowance is already spent. |
+| `_assertNoDecrease` removed on entry (G1 final review, not rerun) | The refund deltas already revert on a decrease in MUSD or BTC. For LP, `StakeIncomplete` covers the stake path and the other path never spends LP. |
 
 ## 4. Deployment checklist (run for every new deployment)
 
