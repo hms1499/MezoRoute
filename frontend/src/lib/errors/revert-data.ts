@@ -1,4 +1,5 @@
 import { decodeErrorResult, parseAbi, type Abi, type Hex } from "viem";
+import { gaugeAbi } from "@/lib/abi/gauge";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { tigrisErrorsAbi } from "@/lib/abi/tigrisErrors";
 
@@ -15,6 +16,7 @@ const ozErrorsAbi = parseAbi([
 export const revertErrorsAbi: Abi = [
   ...mezoRouteExecutorAbi.filter((item) => item.type === "error"),
   ...tigrisErrorsAbi,
+  ...gaugeAbi.filter((item) => item.type === "error"),
   ...ozErrorsAbi,
 ];
 

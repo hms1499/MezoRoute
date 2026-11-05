@@ -7,6 +7,7 @@ import {
   POOL,
   QUOTE_EXPIRED,
   SLIPPAGE,
+  STAKING_CLOSED,
 } from "./outcomes";
 import type { Outcome } from "./types";
 
@@ -31,6 +32,8 @@ const BY_NAME: Record<string, Outcome | ((network: NetworkConfig) => Outcome)> =
   InsufficientLiquidityMinted: POOL,
   InsufficientLiquidityBurned: POOL,
   IsPaused: POOL,
+  // The gauge stopped counting as alive between the quote and the send.
+  NotAlive: STAKING_CLOSED,
 };
 
 export function customErrorOutcome(name: string, network: NetworkConfig): Outcome | null {

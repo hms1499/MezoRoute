@@ -38,6 +38,7 @@ export function lpRouteSnapshotWith(overrides: Partial<LpRouteSnapshot> = {}): L
     blockTimestamp: 1_759_600_000n,
     borrowNonce: 0n,
     system: TESTNET_SYSTEM,
+    gauge: null,
     ...overrides,
   };
 }

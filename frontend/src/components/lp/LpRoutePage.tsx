@@ -16,6 +16,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/lib/config/network-context";
 import { formatBps, formatPercent } from "@/lib/format";
+import { emissionsApr, mezoPerWeek } from "@/lib/gauge/maths";
+import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
 import { entryQuery, parseEntryIntent, type EntryIntent } from "@/lib/routes/musd-btc-lp/intent";
 import { entryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import { useLpRouteSnapshot } from "@/lib/routes/musd-btc-lp/useLpRouteSnapshot";
@@ -29,6 +31,7 @@ import { EntryPreviewCard } from "./EntryPreviewCard";
 import { ModeToggle } from "./ModeToggle";
 import { NoExecutorCard } from "./NoExecutorCard";
 import { RisksCard } from "./RisksCard";
+import { StakeToggle } from "./StakeToggle";
 import { TroveChangeCard } from "./TroveChangeCard";
 import { btc, lp, musd } from "./units";
 
@@ -50,8 +53,9 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
   const searchParams = useSearchParams();
   const [intent, setIntent] = useState<EntryIntent>(() => parseEntryIntent(searchParams));
   const { data, error, refresh } = useLpRouteSnapshot(account, executor);
+  const mezoPrice = useMezoPrice(network, data?.snapshot.blockNumber);
 
-  function update(next: Pick<EntryIntent, "amount" | "slippageBps" | "mode">) {
+  function update(next: Pick<EntryIntent, "amount" | "slippageBps" | "mode" | "stake">) {
     const query = entryQuery(next);
     setIntent(parseEntryIntent(new URLSearchParams(query)));
     window.history.replaceState(null, "", query);
@@ -76,6 +80,25 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
   });
 
   const quote = preview.quote;
+  // This week's rate, only while the week pays: between weeks there is no rate to show.
+  const { gauge } = data.snapshot;
+  const open = preview.stake.availability === "open" && gauge !== null && quote !== null;
+  const weekly = open ? mezoPerWeek(gauge.rewardRate, quote.liquidity, gauge.totalStaked) : null;
+  const apr = open
+    ? emissionsApr({
+        rewardRate: gauge.rewardRate,
+        mezoPrice,
+        userLp: quote.liquidity,
+        totalStaked: gauge.totalStaked,
+        pool: {
+          reserveMusd: data.snapshot.pool.reserveMusd,
+          reserveBtc: data.snapshot.pool.reserveBtc,
+          balanceMusd: data.snapshot.pool.reserveMusd,
+          balanceBtc: data.snapshot.pool.reserveBtc,
+          totalSupply: data.snapshot.pool.totalSupply,
+        },
+      })
+    : null;
   const rows: SummaryRow[] =
     quote && preview.minimums
       ? [
@@ -84,6 +107,9 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           { label: "Deposited to the pool", value: musd(quote.musdAdded), sub: `+ ${btc(quote.btcAdded)}` },
           { label: "MezoRoute fee", value: musd(quote.fee), sub: formatBps(data.snapshot.executorFeeBps) },
           { label: "Price impact", value: formatPercent(quote.priceImpact, 2), sub: "includes the pool's swap fee" },
+          ...(preview.stake.availability === "unavailable"
+            ? []
+            : [{ label: "Staking", value: preview.stake.on ? "In the MEZO gauge" : "Off", sub: preview.stake.on ? "swap fees go to veBTC voters" : undefined }]),
           { label: "Network fee", value: preview.gasCost === null ? "—" : btc(preview.gasCost) },
         ]
       : [];
@@ -129,10 +155,17 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           slippageBps={intent.slippageBps}
           max={preview.borrow ? preview.borrow.limit : data.snapshot.dashboard.musd}
           maxLabel={preview.borrow ? "You can borrow" : "In your wallet"}
-          onChange={(next) => update({ ...next, mode: intent.mode })}
+          onChange={(next) => update({ ...next, mode: intent.mode, stake: intent.stake })}
         />
       </Card>
-      {quote && <EntryPreviewCard quote={quote} feeBps={data.snapshot.executorFeeBps} borrowFee={preview.borrow?.effect?.fee} />}
+      <StakeToggle
+        availability={preview.stake.availability}
+        on={preview.stake.on}
+        onChange={(stake) => update({ ...intent, stake })}
+        mezoPerWeek={weekly}
+        aprLabel={apr === null ? null : formatPercent(apr, 1)}
+      />
+      {quote && <EntryPreviewCard quote={quote} feeBps={data.snapshot.executorFeeBps} borrowFee={preview.borrow?.effect?.fee} stake={preview.stake.on} />}
       {preview.borrow?.trove && preview.borrow.effect && (
         <TroveChangeCard
           trove={preview.borrow.trove}

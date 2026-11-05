@@ -1,5 +1,12 @@
 /** Gas units for `enter`; S1 measured 328,115–433,422 (5 Oct 2026). */
 export const ENTER_GAS = 450_000n;
+/**
+ * `enter` that also stakes the LP in the gauge: 423,282 measured on V2 (testnet, §20), plus 5%,
+ * rounded up to 5,000. The RPC estimate plus 20% still wins when it is higher (`gasLimit`).
+ */
+export const ENTER_STAKE_GAS = 445_000n;
+/** What the gauge deposit adds to an entry: 423,282 − 323,655 measured (§20), plus 5%, rounded up to 5,000. */
+export const STAKE_EXTRA_GAS = 105_000n;
 
 /**
  * `borrowAndEnter` with Trove hints: 754,103 measured on testnet (12 Oct 2026, 242 Troves), rounded
@@ -9,8 +16,8 @@ export const BORROW_ENTER_GAS = 880_000n;
 /** `borrowAndEnter` with zero hints: 2,178,863 measured (2 Oct 2026), rounded up to 2,200,000 plus 10%. */
 export const BORROW_ENTER_NO_HINTS_GAS = 2_420_000n;
 
-export function borrowEnterGas(hintsFound: boolean): bigint {
-  return hintsFound ? BORROW_ENTER_GAS : BORROW_ENTER_NO_HINTS_GAS;
+export function borrowEnterGas(hintsFound: boolean, stake = false): bigint {
+  return (hintsFound ? BORROW_ENTER_GAS : BORROW_ENTER_NO_HINTS_GAS) + (stake ? STAKE_EXTRA_GAS : 0n);
 }
 /** An ERC-20 approval. */
 export const APPROVE_GAS = 60_000n;
@@ -18,9 +25,14 @@ export const APPROVE_GAS = 60_000n;
 export const RELAYED_CALL_GAS = 197_471n;
 
 /** Estimated gas units for the whole entry flow, for the preview's network-fee line. */
-export function entryGasUnits(input: { approve: boolean; smartAccount: boolean; borrow?: boolean }): bigint {
+export function entryGasUnits(input: { approve: boolean; smartAccount: boolean; borrow?: boolean; stake?: boolean }): bigint {
   const calls = input.approve ? 2n : 1n;
-  const units = (input.borrow ? BORROW_ENTER_GAS : ENTER_GAS) + (input.approve ? APPROVE_GAS : 0n);
+  const enter = input.borrow
+    ? BORROW_ENTER_GAS + (input.stake ? STAKE_EXTRA_GAS : 0n)
+    : input.stake
+      ? ENTER_STAKE_GAS
+      : ENTER_GAS;
+  const units = enter + (input.approve ? APPROVE_GAS : 0n);
   return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
 }
 

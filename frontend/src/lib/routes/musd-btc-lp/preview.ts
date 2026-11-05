@@ -1,3 +1,4 @@
+import { effectiveStake, stakeAvailability, type StakeAvailability } from "@/lib/gauge/availability";
 import type { NetworkConfig } from "@/lib/config/networks";
 import type { DashboardSnapshot, Trove } from "@/lib/dashboard/snapshot";
 import { lacksGas } from "@/lib/dashboard/readiness";
@@ -24,6 +25,8 @@ export type EntryPreview = {
   deadline: bigint; // unix seconds: snapshot block time + 10 minutes
   after: DashboardSnapshot | null;
   borrow: BorrowPreview | null;
+  /** Whether the gauge can take the LP, and whether this entry will stake it (the URL wish, applied). */
+  stake: { availability: StakeAvailability; on: boolean };
   block: EntryBlock | null;
 };
 
@@ -41,11 +44,14 @@ export function entryPreview(input: {
   const { dashboard } = snapshot;
   const borrowing = intent.mode === "borrow";
   const quote = intent.musdIn === null ? null : quoteEntry(snapshot.pool, intent.musdIn, snapshot.executorFeeBps);
+  const availability = stakeAvailability(snapshot.gauge, snapshot.blockTimestamp);
+  const stake = { availability, on: effectiveStake(intent.stake, availability) };
   const steps = entrySteps(walletKind, snapshot.allowance, intent.musdIn ?? 0n, intent.mode);
   const gasUnits = entryGasUnits({
     approve: steps.includes("approve"),
     smartAccount: walletKind === "smart-account",
     borrow: borrowing,
+    stake: stake.on,
   });
   const borrow: BorrowPreview | null = borrowing
     ? {
@@ -72,6 +78,7 @@ export function entryPreview(input: {
     deadline: snapshot.blockTimestamp + DEADLINE_SECONDS,
     after,
     borrow,
+    stake,
     block: entryBlock({
       network,
       walletChainId: input.walletChainId,

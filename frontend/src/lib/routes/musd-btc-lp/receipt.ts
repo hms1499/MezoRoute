@@ -17,6 +17,9 @@ export type EnteredEvent = {
   btcRefund: bigint;
 };
 
+/** The executor's `Staked` event: the LP it staked in the gauge for the recipient (V2). */
+export type StakedEvent = { recipient: Address; liquidity: bigint };
+
 export type ExitedEvent = {
   caller: Address;
   recipient: Address;
@@ -50,8 +53,28 @@ export function findEnteredEvent(logs: readonly LogLike[], executor: Address): E
   return null;
 }
 
-/** The receipt's rows, from the Entered event only (FR-11); realised values, six decimals. */
-export function enteredRows(event: EnteredEvent): { label: string; value: string }[] {
+/** The executor's `Staked` event from a receipt, null when the entry did not stake. */
+export function findStakedEvent(logs: readonly LogLike[], executor: Address): StakedEvent | null {
+  for (const log of logs) {
+    if (!isAddressEqual(log.address, executor) || log.topics.length === 0) continue;
+    try {
+      const decoded = decodeEventLog({
+        abi: mezoRouteExecutorAbi,
+        eventName: "Staked",
+        topics: log.topics as [Hex, ...Hex[]],
+        data: log.data,
+      });
+      // viem decodes whichever ABI event the topic matches; `eventName` only narrows the type.
+      if (decoded.eventName === "Staked") return decoded.args as StakedEvent;
+    } catch {
+      // Another executor event; keep looking.
+    }
+  }
+  return null;
+}
+
+/** The receipt's rows, from the Entered and Staked events only (FR-11); realised values, six decimals. */
+export function enteredRows(event: EnteredEvent, staked: StakedEvent | null = null): { label: string; value: string }[] {
   const musd = (value: bigint) => `${formatToken(value)} MUSD`;
   const btc = (value: bigint) => `${formatToken(value)} BTC`;
   return [
@@ -63,6 +86,12 @@ export function enteredRows(event: EnteredEvent): { label: string; value: string
     { label: "MUSD deposited", value: musd(event.musdAdded) },
     { label: "BTC deposited", value: btc(event.btcAdded) },
     { label: "LP received", value: `${formatToken(event.liquidityOut)} LP` },
+    ...(staked
+      ? [
+          { label: "Staked in the gauge", value: `${formatToken(staked.liquidity)} LP` },
+          { label: "LP left in your wallet", value: `${formatToken(event.liquidityOut - staked.liquidity)} LP` },
+        ]
+      : []),
     { label: "MUSD returned", value: musd(event.musdRefund) },
     { label: "BTC returned", value: btc(event.btcRefund) },
   ];

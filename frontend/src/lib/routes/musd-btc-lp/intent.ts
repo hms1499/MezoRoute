@@ -15,8 +15,8 @@ export function slippageParam(bps: SlippageBps): string {
 
 export type EntryMode = "deposit" | "borrow";
 
-/** What the user asked for; the only state the LP pages pass between them (in the URL). */
-export type EntryIntent = { amount: string; musdIn: bigint | null; slippageBps: SlippageBps; mode: EntryMode };
+/** What the user asked for (`stake` is the wish: the page applies the gauge's availability); the only state the LP pages pass between them (in the URL). */
+export type EntryIntent = { amount: string; musdIn: bigint | null; slippageBps: SlippageBps; mode: EntryMode; stake: boolean };
 
 export function parseEntryIntent(params: { get(name: string): string | null }): EntryIntent {
   const amount = params.get("amount") ?? "";
@@ -25,14 +25,16 @@ export function parseEntryIntent(params: { get(name: string): string | null }): 
     musdIn: parseMusdAmount(amount),
     slippageBps: parseSlippage(params.get("slippage")),
     mode: params.get("mode") === "borrow" ? "borrow" : "deposit",
+    stake: params.get("stake") !== "0",
   };
 }
 
 /** The query both LP pages share: the user's inputs only, never quote values. */
-export function entryQuery(intent: { amount: string; slippageBps: SlippageBps; mode?: EntryMode }): string {
+export function entryQuery(intent: { amount: string; slippageBps: SlippageBps; mode?: EntryMode; stake?: boolean }): string {
   const query = new URLSearchParams();
   if (intent.amount) query.set("amount", intent.amount);
   query.set("slippage", slippageParam(intent.slippageBps));
   if (intent.mode === "borrow") query.set("mode", "borrow");
+  if (intent.stake === false) query.set("stake", "0");
   return `?${query.toString()}`;
 }

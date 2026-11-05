@@ -9,7 +9,8 @@ export type Recovery =
   | "reduce-amount"
   | "copy-details"
   | "view-transaction"
-  | "use-deposit";
+  | "use-deposit"
+  | "skip-stake";
 
 export type ErrorKind =
   | "rejected"
@@ -40,6 +41,7 @@ export type ErrorKind =
   | "borrow-used"
   | "signature-invalid"
   | "no-lp"
+  | "staking-closed"
   | "lp-changed"
   | "nothing-to-claim"
   | "sp-withdraw-blocked"

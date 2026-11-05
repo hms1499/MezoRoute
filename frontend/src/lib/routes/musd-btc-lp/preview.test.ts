@@ -5,6 +5,7 @@ import { deployerTrove, snapshotWith } from "@/lib/dashboard/test-fixtures";
 import { exposure } from "@/lib/exposure/exposure";
 import { afterEntry } from "./after-entry";
 import { parseEntryIntent } from "./intent";
+import type { GaugeState } from "@/lib/gauge/state";
 import { entryPreview } from "./preview";
 import { lpRouteDataWith, lpRouteSnapshotWith, ONE, TESTNET_POOL } from "./test-fixtures";
 
@@ -104,5 +105,42 @@ describe("entryPreview in borrow mode", () => {
     const result = borrowPreview("amount=1", { data: noTrove });
     expect(result.block?.reason).toBe("no-trove");
     expect(result.after).toBeNull();
+  });
+});
+
+describe("entryPreview staking", () => {
+  const now = 1_759_600_000n;
+  const gauge = (overrides: Partial<GaugeState> = {}): GaugeState => ({
+    alive: true,
+    rewardRate: ONE / 1_000n,
+    periodFinish: now + 3_600n,
+    totalStaked: 1_000n * ONE,
+    staked: 0n,
+    earned: 0n,
+    ...overrides,
+  });
+  const withGauge = (state: GaugeState | null) => lpRouteDataWith({ snapshot: lpRouteSnapshotWith({ gauge: state }) });
+
+  it("stakes by default when the gauge is open, with the measured budget", () => {
+    const result = preview("amount=100", { data: withGauge(gauge()) });
+    expect(result.stake).toEqual({ availability: "open", on: true });
+    expect(result.gasUnits).toBe(445_000n);
+  });
+
+  it("stakes=0 turns it off and uses the plain budget", () => {
+    const result = preview("amount=100&stake=0", { data: withGauge(gauge()) });
+    expect(result.stake).toEqual({ availability: "open", on: false });
+    expect(result.gasUnits).toBe(450_000n);
+  });
+
+  it("never stakes without a live gauge, whatever the URL says", () => {
+    for (const state of [null, gauge({ alive: false })]) {
+      expect(preview("amount=100", { data: withGauge(state) }).stake).toEqual({ availability: "unavailable", on: false });
+    }
+  });
+
+  it("stakes between weeks: the box stays on", () => {
+    const result = preview("amount=100", { data: withGauge(gauge({ periodFinish: now })) });
+    expect(result.stake).toEqual({ availability: "between-weeks", on: true });
   });
 });

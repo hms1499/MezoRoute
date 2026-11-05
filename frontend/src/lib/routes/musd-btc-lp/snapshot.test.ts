@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
 import { snapshotContracts, type SnapshotResults } from "@/lib/dashboard/snapshot";
 import { BORROWING_RATE, FIXTURE_PRICE, MCR } from "@/lib/dashboard/test-fixtures";
+import { GAUGE_READS } from "@/lib/gauge/state";
 import { DASHBOARD_READS, lpRouteContracts, parseLpRouteSnapshot, type LpRouteResults } from "./snapshot";
 
 const ACCOUNT = "0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8";
@@ -38,6 +39,12 @@ function results(reserves: readonly [bigint, bigint, bigint]): LpRouteResults {
     428_873_804n * ONE,
     1_500_000_000_000_000_000n,
     242n,
+    true,
+    1_000_000_000_000n,
+    1_759_700_000n,
+    50n * ONE,
+    5n * ONE,
+    2n * ONE,
   ];
 }
 
@@ -45,8 +52,8 @@ describe("lpRouteContracts", () => {
   it("adds the LP-route reads after the dashboard's, all on the selected network", () => {
     for (const network of [networks.testnet, networks.mainnet]) {
       const calls = lpRouteContracts(network, EXECUTOR, ACCOUNT);
-      expect(calls).toHaveLength(DASHBOARD_READS + 11);
-      const allowed: string[] = [...Object.values(network.addresses), EXECUTOR];
+      expect(calls).toHaveLength(DASHBOARD_READS + 11 + GAUGE_READS);
+      const allowed: string[] = [...Object.values(network.addresses), EXECUTOR, network.gauge!.address, network.gauge!.voter];
       for (const call of calls) {
         expect(call.chainId).toBe(network.chainId);
         expect(allowed).toContain(call.address);
@@ -84,6 +91,24 @@ describe("lpRouteContracts", () => {
 });
 
 describe("parseLpRouteSnapshot", () => {
+  it("parses the gauge reads that follow the LP-route reads", () => {
+    const parsed = parseLpRouteSnapshot(networks.testnet, results([520n * ONE, 6_000_000_000_000_000n, 1n]));
+    expect(parsed.gauge).toEqual({
+      alive: true,
+      rewardRate: 1_000_000_000_000n,
+      periodFinish: 1_759_700_000n,
+      totalStaked: 50n * ONE,
+      staked: 5n * ONE,
+      earned: 2n * ONE,
+    });
+  });
+
+  it("has no gauge state on a network without a gauge", () => {
+    const network = { ...networks.testnet, gauge: null };
+    const parsed = parseLpRouteSnapshot(network, results([520n * ONE, 6_000_000_000_000_000n, 1n]).slice(0, DASHBOARD_READS + 11) as unknown as LpRouteResults);
+    expect(parsed.gauge).toBeNull();
+  });
+
   it("parses the LP-route reads on testnet (MUSD is token0)", () => {
     const parsed = parseLpRouteSnapshot(networks.testnet, results([520n * ONE, 6_000_000_000_000_000n, 1n]));
     expect(parsed.pool).toEqual({

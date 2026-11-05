@@ -2,6 +2,7 @@ import { erc20Abi, type Address } from "viem";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { multicall3BlockAbi } from "@/lib/abi/multicall3";
 import { borrowerOperationsSignaturesAbi, musdPermitAbi, troveSystemAbi } from "@/lib/abi/musd";
+import { gaugeContracts, GAUGE_READS, parseGaugeState, type GaugeResults, type GaugeState } from "@/lib/gauge/state";
 import type { NetworkConfig } from "@/lib/config/networks";
 import { parseSnapshot, snapshotContracts, type DashboardSnapshot, type SnapshotResults } from "@/lib/dashboard/snapshot";
 import type { PoolState } from "@/lib/quote/entry";
@@ -19,6 +20,7 @@ export type LpRouteSnapshot = {
   blockTimestamp: bigint;
   borrowNonce: bigint; // BorrowerOperationsSignatures nonce of the account
   system: SystemState; // recovery mode and hint trials
+  gauge: GaugeState | null; // null on a network without a gauge
 };
 
 /** The snapshot plus gas, as the hook returns it; `fetchedAt` (ms) dates the quote. */
@@ -26,6 +28,9 @@ export type LpRouteData = { snapshot: LpRouteSnapshot; gasBalance: bigint; gasPr
 
 /** How many reads `snapshotContracts` makes; the LP-route reads follow them. */
 export const DASHBOARD_READS = 13;
+
+/** The LP route's own reads between the dashboard's and the gauge's. */
+const LP_ROUTE_READS = 11;
 
 type LpRouteTail = readonly [
   allowance: bigint,
@@ -40,7 +45,7 @@ type LpRouteTail = readonly [
   ccr: bigint,
   troveCount: bigint,
 ];
-export type LpRouteResults = readonly [...SnapshotResults, ...LpRouteTail];
+export type LpRouteResults = readonly [...SnapshotResults, ...LpRouteTail, ...(readonly unknown[])];
 
 /** The dashboard's reads plus the LP route's, one multicall at one block, all on the selected network. */
 export function lpRouteContracts(network: NetworkConfig, executor: Address, account: Address) {
@@ -58,6 +63,7 @@ export function lpRouteContracts(network: NetworkConfig, executor: Address, acco
     { chainId, address: a.troveManager, abi: troveSystemAbi, functionName: "getEntireSystemDebt" },
     { chainId, address: a.troveManager, abi: troveSystemAbi, functionName: "CCR" },
     { chainId, address: a.troveManager, abi: troveSystemAbi, functionName: "getTroveOwnersCount" },
+    ...gaugeContracts(network, account),
   ] as const;
 }
 
@@ -75,9 +81,8 @@ export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteRes
     systemDebt,
     ccr,
     troveCount,
-  ] = results.slice(
-    DASHBOARD_READS,
-  ) as unknown as LpRouteTail;
+  ] = results.slice(DASHBOARD_READS) as unknown as LpRouteTail;
+  const gaugeResults = results.slice(DASHBOARD_READS + LP_ROUTE_READS);
   return {
     dashboard,
     pool: {
@@ -94,5 +99,6 @@ export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteRes
     blockTimestamp,
     borrowNonce,
     system: { coll: systemColl, debt: systemDebt, ccr, troveCount },
+    gauge: network.gauge && gaugeResults.length === GAUGE_READS ? parseGaugeState(gaugeResults as unknown as GaugeResults) : null,
   };
 }

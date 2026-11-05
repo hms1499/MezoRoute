@@ -114,7 +114,7 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
   const borrowed = result.kind === "entered" && result.event.musdBorrowed > 0n;
   const rows =
     result.kind === "entered"
-      ? enteredRows(result.event)
+      ? enteredRows(result.event, result.staked)
       : result.kind === "exited"
         ? exitedRows(result.event)
         : result.kind === "claim"

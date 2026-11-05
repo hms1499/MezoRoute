@@ -16,6 +16,7 @@ import { ConnectorAccountNotFoundError, ConnectorChainMismatchError } from "wagm
 import { describe, expect, it } from "vitest";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { priceFeedAbi } from "@/lib/abi/musd";
+import { gaugeAbi } from "@/lib/abi/gauge";
 import { tigrisErrorsAbi } from "@/lib/abi/tigrisErrors";
 import { networks } from "@/lib/config/networks";
 import {
@@ -303,5 +304,14 @@ describe("decodeError: F3 additions", () => {
 
   it("matches viem's InsufficientFundsError by name (F1 follow-up 3)", () => {
     expect(decodeError(new InsufficientFundsError({}), testnet).kind).toBe("needs-gas");
+  });
+});
+
+describe("decodeError: gauge", () => {
+  it("decodes a gauge's NotAlive into the closed-staking outcome, with an action that clears stake", () => {
+    const decoded = decodeError(contractRevert(encode(gaugeAbi, "NotAlive")), testnet);
+    expect(decoded.kind).toBe("staking-closed");
+    expect(decoded.message).toBe("Staking is closed; enter without staking");
+    expect(decoded.recovery).toEqual(["skip-stake"]);
   });
 });

@@ -63,7 +63,7 @@ describe("buildEnterParams", () => {
   it("copies the quote's amounts and the minimums, with the deadline and recipient", () => {
     const quote = quoteEntry(TESTNET_POOL, 100n * ONE, 10n)!;
     const minimums = entryMinimums(quote, 100n);
-    expect(buildEnterParams(quote, minimums, 1_759_600_600n, ME)).toEqual({
+    expect(buildEnterParams(quote, minimums, 1_759_600_600n, ME, false)).toEqual({
       musdIn: 100n * ONE,
       musdToSwap: quote.musdToSwap,
       ...minimums,
@@ -113,5 +113,16 @@ describe("borrowAndEnter call", () => {
     const decoded = decodeFunctionData({ abi: mezoRouteExecutorAbi, data: encodeBorrowAndEnterCall(borrow, params) });
     expect(decoded.functionName).toBe("borrowAndEnter");
     expect(decoded.args).toEqual([borrow, NO_PERMIT, params]);
+  });
+});
+
+describe("stake in EnterParams", () => {
+  it("sends stake in EnterParams and decodes back", () => {
+    const quote = quoteEntry(TESTNET_POOL, MUSD_20, 10n)!;
+    const params = buildEnterParams(quote, entryMinimums(quote, 100n), DEADLINE_SECONDS, ME, true);
+    expect(params.stake).toBe(true);
+    const decoded = decodeFunctionData({ abi: mezoRouteExecutorAbi, data: encodeEnterCall(params) });
+    expect((decoded.args?.[0] as EnterParams).stake).toBe(true);
+    expect(buildEnterParams(quote, entryMinimums(quote, 100n), DEADLINE_SECONDS, ME, false).stake).toBe(false);
   });
 });

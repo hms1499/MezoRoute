@@ -13,7 +13,7 @@ export type EnterParams = {
   minLpOut: bigint;
   deadline: bigint;
   recipient: Address;
-  /** V2: stake the minted LP in the gauge for the recipient. Task 5 wires the UI; until then always false. */
+  /** V2: stake the minted LP in the gauge for the recipient. */
   stake: boolean;
 };
 
@@ -41,8 +41,9 @@ export function buildEnterParams(
   minimums: EntryMinimums,
   deadline: bigint,
   recipient: Address,
+  stake: boolean,
 ): EnterParams {
-  return { musdIn: quote.musdIn, musdToSwap: quote.musdToSwap, ...minimums, deadline, recipient, stake: false };
+  return { musdIn: quote.musdIn, musdToSwap: quote.musdToSwap, ...minimums, deadline, recipient, stake };
 }
 
 /** The executor's Borrow struct (spec 11.2). */

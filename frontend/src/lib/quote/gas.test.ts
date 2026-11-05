@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BORROW_ENTER_GAS, BORROW_ENTER_NO_HINTS_GAS, borrowEnterGas, gasLimit, SP_DEPOSIT_GAS, SP_WITHDRAW_GAS } from "./gas";
+import { entryGasUnits, ENTER_GAS, ENTER_STAKE_GAS, STAKE_EXTRA_GAS, BORROW_ENTER_GAS, BORROW_ENTER_NO_HINTS_GAS, borrowEnterGas, gasLimit, SP_DEPOSIT_GAS, SP_WITHDRAW_GAS } from "./gas";
 
 describe("gasLimit", () => {
   it("never goes below the measured budget, so a broken RPC estimate cannot send an out-of-gas transaction", () => {
@@ -35,5 +35,17 @@ describe("Stability Pool gas budgets", () => {
 
   it("covers a deposit that also pays a BTC gain, with a 20% margin", () => {
     expect(SP_DEPOSIT_GAS).toBeGreaterThanOrEqual(((DEPOSIT_TOP_UP + GAIN_PAYOUT) * 12n) / 10n);
+  });
+});
+
+describe("entryGasUnits with staking", () => {
+  it("uses the measured budget: 423,282 with the stake, plus 5%, up to a multiple of 5,000", () => {
+    expect(ENTER_STAKE_GAS).toBe(445_000n);
+    expect(entryGasUnits({ approve: false, smartAccount: false, stake: true })).toBe(ENTER_STAKE_GAS);
+    expect(entryGasUnits({ approve: false, smartAccount: false, stake: false })).toBe(ENTER_GAS);
+  });
+
+  it("adds the gauge deposit to a borrow entry", () => {
+    expect(entryGasUnits({ approve: false, smartAccount: false, borrow: true, stake: true })).toBe(BORROW_ENTER_GAS + STAKE_EXTRA_GAS);
   });
 });

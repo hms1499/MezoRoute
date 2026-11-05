@@ -20,7 +20,8 @@ export type GaugeResults = readonly [alive: boolean, rewardRate: bigint, periodF
 /** The six gauge reads to append to a snapshot multicall; `[]` when the network has no gauge. */
 export function gaugeContracts(network: NetworkConfig, account: Address) {
   const { gauge } = network;
-  if (!gauge) return [];
+  // `never` keeps the tuple type of the calls below: a bare `[]` widens the union and breaks wagmi's inference.
+  if (!gauge) return [] as never;
   const { chainId } = network;
   return [
     { chainId, address: gauge.voter, abi: voterAbi, functionName: "isAlive", args: [gauge.address] },

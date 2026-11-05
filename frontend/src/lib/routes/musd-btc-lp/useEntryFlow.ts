@@ -13,7 +13,7 @@ import { AMOUNT_TOO_SMALL, BORROW_USED, PERMIT_EXPIRED } from "@/lib/errors/outc
 import { borrowEffect } from "@/lib/trove/borrow";
 import { borrowAuthorisationState, borrowTypedData, type BorrowAuthorisation } from "@/lib/trove/borrow-signature";
 import { findHints, type HintRead } from "@/lib/trove/hints";
-import { APPROVE_GAS, borrowEnterGas, ENTER_GAS } from "@/lib/quote/gas";
+import { APPROVE_GAS, borrowEnterGas, ENTER_GAS, ENTER_STAKE_GAS } from "@/lib/quote/gas";
 import { BlockedError } from "@/lib/tx/errors";
 import { confirmCall, submitCall, type SendPin } from "@/lib/tx/send";
 import { createStepper, hasStarted, stepperReducer, type Stepper } from "@/lib/tx/stepper";
@@ -141,10 +141,10 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
     });
     if (preview.block) throw new BlockedError(preview.block.outcome ?? AMOUNT_TOO_SMALL);
     if (!preview.quote || !preview.minimums) throw new BlockedError(AMOUNT_TOO_SMALL);
-    const params = buildEnterParams(preview.quote, preview.minimums, preview.deadline, sendPin.account);
+    const params = buildEnterParams(preview.quote, preview.minimums, preview.deadline, sendPin.account, preview.stake.on);
     const usedPermit = signed ? signed.permit : NO_PERMIT;
     let data = encodeEnterCall(params, usedPermit);
-    let gasBudget = ENTER_GAS;
+    let gasBudget = preview.stake.on ? ENTER_STAKE_GAS : ENTER_GAS;
     // A simulated revert is decoded and nothing is sent.
     if (auth) {
       const { trove, price, protocol } = fresh.snapshot.dashboard;
@@ -166,7 +166,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
         chainId: sendPin.chainId,
       });
       data = encodeBorrowAndEnterCall(borrow, params, usedPermit);
-      gasBudget = borrowEnterGas(hints.found);
+      gasBudget = borrowEnterGas(hints.found, preview.stake.on);
     } else {
       await simulateContract(config, {
         address: input.executor,
@@ -204,6 +204,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
         retry: () => void runActive(),
         refreshQuote: () => void input.refresh().catch(() => undefined),
         reduceAmount: () => router.push(`/route/lp/${entryQuery(input.intent)}`),
+        skipStake: () => router.push(`/route/lp/${entryQuery({ ...input.intent, stake: false })}`),
         useDeposit: () => router.push(`/route/lp/${entryQuery({ ...input.intent, mode: "deposit" })}`),
       });
     }

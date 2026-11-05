@@ -187,3 +187,9 @@ export function aboveCap(network: NetworkConfig): Outcome {
     recovery: ["reduce-amount"],
   };
 }
+
+export const STAKING_CLOSED: Outcome = {
+  kind: "staking-closed",
+  message: "Staking is closed; enter without staking",
+  recovery: ["skip-stake"],
+};

@@ -72,6 +72,11 @@ export function ConfirmSummary({
           <Stat label="LP tokens" sub={`≈ ${musd(entryValue(data.snapshot.pool, quote))} at the pool price · at least ${lp(minimums.minLpOut)}`}>
             {lp(quote.liquidity)}
           </Stat>
+          {preview.stake.availability !== "unavailable" && (
+            <Stat label="Staking" sub={preview.stake.on ? "swap fees go to veBTC voters while staked" : undefined}>
+              {preview.stake.on ? "Staked in the MEZO gauge" : "Not staked"}
+            </Stat>
+          )}
           <Stat label="Slippage">{formatBps(slippageBps, 1)}</Stat>
           <Stat label="Deadline" sub="10 minutes after this quote's block">
             {new Date(Number(preview.deadline) * 1000).toLocaleTimeString()}
