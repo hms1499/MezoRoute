@@ -16,3 +16,10 @@ export function entrySteps(kind: WalletKind, allowance: bigint, musdIn: bigint, 
       : ["approve"];
   return mode === "borrow" ? [...authorise, "borrow", "enter"] : [...authorise, "enter"];
 }
+
+/** What the deposit transaction does, in order. The same for MUSD and BTC entries; the borrow and the stake happen inside it. */
+export function enterStepDetail({ mode, stake }: { mode: EntryMode; stake: boolean }): string {
+  const parts = [...(mode === "borrow" ? ["borrow"] : []), "fee", "swap"];
+  const work = stake ? `${parts.join(", ")}, add liquidity, and stake` : `${parts.join(", ")}, and add liquidity`;
+  return `One transaction: ${work}. Leftovers return to you.`;
+}

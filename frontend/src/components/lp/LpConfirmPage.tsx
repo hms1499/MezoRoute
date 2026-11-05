@@ -73,6 +73,7 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
           plan={preview.steps}
           refresh={refresh}
           block={preview.block}
+          stake={preview.stake.on}
         />
       }
     >

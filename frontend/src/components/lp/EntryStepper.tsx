@@ -4,12 +4,12 @@ import { Card } from "@/components/ui/Card";
 import { StepList, type StepCopy } from "@/components/ui/StepList";
 import { Term } from "@/components/ui/Term";
 import type { EntryBlock } from "@/lib/routes/musd-btc-lp/gate";
-import type { StepKind } from "@/lib/routes/musd-btc-lp/steps";
+import { enterStepDetail, type StepKind } from "@/lib/routes/musd-btc-lp/steps";
 import { useEntryFlow, type EntryFlowInput } from "@/lib/routes/musd-btc-lp/useEntryFlow";
 import { BlockNotice } from "./BlockNotice";
 
-/** The steps' copy; the permit and approval name the token the entry brings. */
-function stepCopy(unit: "MUSD" | "BTC"): Record<StepKind, StepCopy> {
+/** The steps' copy; the permit and approval name the token the entry brings; the send says what the transaction does. */
+function stepCopy(unit: "MUSD" | "BTC", enterDetail: string): Record<StepKind, StepCopy> {
   return {
     permit: {
       title: (
@@ -32,15 +32,15 @@ function stepCopy(unit: "MUSD" | "BTC"): Record<StepKind, StepCopy> {
     },
     enter: {
       title: "Deposit into the pool",
-      detail: "One transaction: fee, swap, and add liquidity. Leftovers return to you.",
+      detail: enterDetail,
       action: "Send",
     },
   };
 }
 
-export function EntryStepper({ block, ...flow }: EntryFlowInput & { block: EntryBlock | null }) {
+export function EntryStepper({ block, stake, ...flow }: EntryFlowInput & { block: EntryBlock | null; stake: boolean }) {
   const { stepper, run } = useEntryFlow(flow);
-  const copy = stepCopy(flow.intent.asset === "btc" ? "BTC" : "MUSD");
+  const copy = stepCopy(flow.intent.asset === "btc" ? "BTC" : "MUSD", enterStepDetail({ mode: flow.intent.mode, stake }));
   return (
     <Card title="Confirm">
       <StepList steps={stepper.steps} active={stepper.active} copy={copy} blocked={block !== null} onRun={run} />
