@@ -18,7 +18,7 @@ export const ROUTE_SECTIONS: readonly RouteSectionCopy[] = [
     pill: "MUSD/BTC LP",
     title: "Earn swap fees or MEZO",
     body: [LP_RETURN_SOURCE, LP_RISKS[0]],
-    txs: "One transaction in, after a permit or approval; one transaction out, back to MUSD.",
+    txs: "One transaction in, after a permit or approval; unstake if staked, exit to MUSD.",
     illustration: "right",
   },
   {

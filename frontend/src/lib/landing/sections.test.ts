@@ -23,7 +23,7 @@ describe("landing route sections (U10)", () => {
   it("takes its copy from the one route copy source", () => {
     expect(ROUTE_SECTIONS[0].body).toEqual([LP_RETURN_SOURCE, LP_RISKS[0]]);
     expect(ROUTE_SECTIONS[1].body).toEqual([SP_RETURN_SOURCE, SP_RISKS[0]]);
-    expect(ROUTE_SECTIONS[0].txs).toBe("One transaction in, after a permit or approval; one transaction out, back to MUSD.");
+    expect(ROUTE_SECTIONS[0].txs).toBe("One transaction in, after a permit or approval; unstake if staked, exit to MUSD.");
     expect(ROUTE_SECTIONS[1].txs).toBe("Approve, then deposit; withdraw to exit.");
   });
 });
