@@ -113,6 +113,11 @@ describe("parseLpRouteSnapshot", () => {
     });
   });
 
+  it("counts staked LP in the dashboard's lp.balance", () => {
+    const parsed = parseLpRouteSnapshot(networks.testnet, results([520n * ONE, 6_000_000_000_000_000n, 1n]));
+    expect(parsed.dashboard.lp.balance).toBe(5n * ONE);
+  });
+
   it("has no gauge state on a network without a gauge", () => {
     const network = { ...networks.testnet, gauge: null };
     const parsed = parseLpRouteSnapshot(network, results([520n * ONE, 6_000_000_000_000_000n, 1n]).slice(0, DASHBOARD_READS + 13) as unknown as LpRouteResults);

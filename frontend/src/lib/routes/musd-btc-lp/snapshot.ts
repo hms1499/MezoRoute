@@ -4,7 +4,7 @@ import { multicall3BlockAbi } from "@/lib/abi/multicall3";
 import { borrowerOperationsSignaturesAbi, musdPermitAbi, troveSystemAbi } from "@/lib/abi/musd";
 import { gaugeContracts, GAUGE_READS, parseGaugeState, type GaugeResults, type GaugeState } from "@/lib/gauge/state";
 import type { NetworkConfig } from "@/lib/config/networks";
-import { parseSnapshot, snapshotContracts, type DashboardSnapshot, type SnapshotResults } from "@/lib/dashboard/snapshot";
+import { parseSnapshot, snapshotContracts, withStakedLp, type DashboardSnapshot, type SnapshotResults } from "@/lib/dashboard/snapshot";
 import type { PoolState } from "@/lib/quote/entry";
 import type { SystemState } from "@/lib/trove/borrow";
 
@@ -74,7 +74,6 @@ export function lpRouteContracts(network: NetworkConfig, executor: Address, acco
 }
 
 export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteResults): LpRouteSnapshot {
-  const dashboard = parseSnapshot(network, results.slice(0, DASHBOARD_READS) as unknown as SnapshotResults);
   const [
     allowance,
     permitNonce,
@@ -91,6 +90,8 @@ export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteRes
     btcPermitNonce,
   ] = results.slice(DASHBOARD_READS) as unknown as LpRouteTail;
   const gaugeResults = results.slice(DASHBOARD_READS + LP_ROUTE_READS);
+  const gauge = network.gauge && gaugeResults.length === GAUGE_READS ? parseGaugeState(gaugeResults as unknown as GaugeResults) : null;
+  const dashboard = withStakedLp(parseSnapshot(network, results.slice(0, DASHBOARD_READS) as unknown as SnapshotResults), gauge);
   return {
     dashboard,
     pool: {
@@ -109,6 +110,6 @@ export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteRes
     blockTimestamp,
     borrowNonce,
     system: { coll: systemColl, debt: systemDebt, ccr, troveCount },
-    gauge: network.gauge && gaugeResults.length === GAUGE_READS ? parseGaugeState(gaugeResults as unknown as GaugeResults) : null,
+    gauge,
   };
 }

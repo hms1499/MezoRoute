@@ -12,7 +12,12 @@ export type Trove = {
   debt: bigint; // principal + interest
   maxBorrowingCapacity: bigint; // MUSD; BorrowerOperations rejects borrows past it
 };
-export type LpPosition = { balance: bigint; totalSupply: bigint; reserveMusd: bigint; reserveBtc: bigint };
+export type LpPosition = {
+  balance: bigint; // the account's LP: wallet + gauge, once `withStakedLp` has run (`parseSnapshot` alone reads the wallet)
+  totalSupply: bigint;
+  reserveMusd: bigint;
+  reserveBtc: bigint;
+};
 export type SpPosition = { deposit: bigint; btcGain: bigint };
 export type Protocol = { mcr: bigint; borrowingRate: bigint };
 export type DashboardSnapshot = {
@@ -109,6 +114,12 @@ export function parseSnapshot(network: NetworkConfig, results: SnapshotResults):
   };
 }
 
+/** Adds LP staked in the gauge to `lp.balance`: staked LP moves with BTC exactly like LP in the wallet. */
+export function withStakedLp(snapshot: DashboardSnapshot, gauge: GaugeState | null): DashboardSnapshot {
+  if (!gauge) return snapshot;
+  return { ...snapshot, lp: { ...snapshot.lp, balance: snapshot.lp.balance + gauge.staked } };
+}
+
 /** The dashboard's extra reads after the base ones and the gauge's: block, open Trove debt, protocol-owned Stability Pool. */
 const DASHBOARD_TAIL = 4;
 
@@ -131,9 +142,10 @@ export function parseDashboard(network: NetworkConfig, results: readonly unknown
   const base = parseSnapshot(network, results.slice(0, BASE_READS) as unknown as SnapshotResults);
   const gaugeResults = results.slice(BASE_READS, results.length - DASHBOARD_TAIL);
   const [blockNumber, blockTimestamp, troveDebt, protocolOwnedSp] = results.slice(results.length - DASHBOARD_TAIL) as unknown as DashboardTail;
+  const gauge = network.gauge && gaugeResults.length === GAUGE_READS ? parseGaugeState(gaugeResults as unknown as GaugeResults) : null;
   return {
-    ...base,
-    gauge: network.gauge && gaugeResults.length === GAUGE_READS ? parseGaugeState(gaugeResults as unknown as GaugeResults) : null,
+    ...withStakedLp(base, gauge),
+    gauge,
     block: { number: blockNumber, timestamp: blockTimestamp },
     troveDebt,
     protocolOwnedSp,

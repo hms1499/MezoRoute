@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { atRiskTrove, deployerTrove, lpShare, snapshotWith, spPosition } from "@/lib/dashboard/test-fixtures";
+import { withStakedLp } from "@/lib/dashboard/snapshot";
+import type { GaugeState } from "@/lib/gauge/state";
 import { drawdownScenarios, exposure, lpValueAfterDrop, showsDoubleExposure } from "./exposure";
 
 const full = snapshotWith({ trove: deployerTrove, lp: lpShare, sp: spPosition });
@@ -35,6 +37,27 @@ describe("exposure", () => {
     const current = exposure(snapshotWith({ trove: deployerTrove }));
     expect(current.spValue).toBe(0n);
     expect(current.totalBtc).toBe(45_000_000_000_000_000n);
+  });
+});
+
+describe("exposure with staked LP", () => {
+  const gauge = (staked: bigint): GaugeState => ({ alive: true, rewardRate: 1n, periodFinish: 2n, totalStaked: staked, staked, earned: 0n });
+
+  it("counts LP staked in the gauge like LP in the wallet", () => {
+    const allStaked = withStakedLp(snapshotWith({ lp: { ...lpShare, balance: 0n } }), gauge(lpShare.balance));
+    const inWallet = snapshotWith({ lp: lpShare });
+    expect(exposure(allStaked)).toEqual(exposure(inWallet));
+    expect(exposure(allStaked).lpBtc).toBeGreaterThan(0n);
+  });
+
+  it("keeps the double-exposure warning when all the LP is staked", () => {
+    const allStaked = withStakedLp(snapshotWith({ trove: deployerTrove, lp: { ...lpShare, balance: 0n } }), gauge(lpShare.balance));
+    expect(showsDoubleExposure(exposure(allStaked))).toBe(true);
+  });
+
+  it("adds wallet and staked LP, and changes nothing without a gauge", () => {
+    expect(withStakedLp(snapshotWith({ lp: { ...lpShare, balance: 3n } }), gauge(4n)).lp.balance).toBe(7n);
+    expect(withStakedLp(snapshotWith({ lp: { ...lpShare, balance: 3n } }), null).lp.balance).toBe(3n);
   });
 });
 

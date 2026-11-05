@@ -130,4 +130,9 @@ describe("parseDashboard", () => {
     expect(snapshot.protocolOwnedSp).toBe(14_000_000n * ONE);
     expect(snapshot.trove).toEqual(deployerTrove);
   });
+
+  it("counts staked LP in lp.balance: wallet + gauge", () => {
+    const results = [...raw(1, [520n * ONE, 6_000_000_000_000_000n, 1n]), ...gauge, ...tail];
+    expect(parseDashboard(networks.testnet, results as never).lp.balance).toBe(100n * ONE + 5n * ONE);
+  });
 });
