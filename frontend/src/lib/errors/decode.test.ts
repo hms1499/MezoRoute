@@ -28,6 +28,7 @@ import {
   TransactionReplacedError,
   TransactionRevertedError,
 } from "@/lib/tx/errors";
+import { customErrorOutcome } from "./custom-errors";
 import { decodeError, MAX_DETAILS, toastsInStepper } from "./decode";
 import { PRICE_IMPACT } from "./outcomes";
 
@@ -178,11 +179,11 @@ describe("decodeError: reverts with data", () => {
   });
 
   it("falls back to a generic revert that names the error", () => {
-    expect(decodeError(contractRevert(encode(mezoRouteExecutorAbi, "NotBorrower")), testnet)).toEqual({
+    expect(decodeError(contractRevert(encode(gaugeAbi, "NotVoter")), testnet)).toEqual({
       kind: "reverted",
       message: "The transaction reverted.",
       recovery: ["retry", "copy-details"],
-      details: "NotBorrower",
+      details: "NotVoter",
     });
     expect(decodeError(callRevert(encode(ozAbi, "Panic", [0x11n])), testnet).details).toBe("Panic");
     expect(decodeError(callRevert(encode(ozAbi, "Error", ["Something else"])), testnet).details).toBe("Something else");
@@ -304,6 +305,59 @@ describe("decodeError: F3 additions", () => {
 
   it("matches viem's InsufficientFundsError by name (F1 follow-up 3)", () => {
     expect(decodeError(new InsufficientFundsError({}), testnet).kind).toBe("needs-gas");
+  });
+});
+
+describe("decodeError: V2 executor and gauge errors", () => {
+  const decodedName = (name: string, abi: Abi = mezoRouteExecutorAbi as Abi) => decodeError(contractRevert(encodeErrorResult({ abi, errorName: name })), testnet);
+
+  it("maps every custom error in the executor's ABI to an outcome", () => {
+    const names = (mezoRouteExecutorAbi as Abi).flatMap((item) => (item.type === "error" ? [item.name] : []));
+    expect(names.length).toBeGreaterThan(0);
+    expect(names.filter((name) => customErrorOutcome(name, testnet) === null)).toEqual([]);
+  });
+
+  it("offers entering without staking when the executor has no gauge", () => {
+    const decoded = decodedName("GaugeUnavailable");
+    expect(decoded.kind).toBe("staking-closed");
+    expect(decoded.recovery).toEqual(["skip-stake"]);
+  });
+
+  it.each(["StakeNotCredited", "StakeIncomplete"])("%s: nothing moved; retry or enter without staking", (name) => {
+    const decoded = decodedName(name);
+    expect(decoded.kind).toBe("stake-failed");
+    expect(decoded.message).toMatch(/nothing moved/i);
+    expect(decoded.recovery).toEqual(["retry", "skip-stake"]);
+  });
+
+  it("treats LiquidityNotReceived as the pool's refusal", () => {
+    expect(decodedName("LiquidityNotReceived").kind).toBe("pool");
+  });
+
+  it("sends a borrow that does not match the deposit back to review", () => {
+    const decoded = decodedName("BorrowAmountMismatch");
+    expect(decoded.kind).toBe("borrow-mismatch");
+    expect(decoded.recovery).toEqual(["reduce-amount"]);
+  });
+
+  it("reads NotBorrower and the gauge's NotAuthorized as a changed wallet account", () => {
+    expect(decodedName("NotBorrower").kind).toBe("account-changed");
+    expect(decodedName("NotAuthorized", gaugeAbi as Abi).kind).toBe("account-changed");
+  });
+
+  it.each(["InvalidRecipient", "ZeroAddress", "UnexpectedBalanceDecrease"])("%s: MezoRoute refused it; nothing moved", (name) => {
+    const decoded = decodedName(name);
+    expect(decoded.kind).toBe("route-refused");
+    expect(decoded.message).toMatch(/nothing moved/i);
+    expect(decoded.recovery).toEqual(["retry", "copy-details"]);
+  });
+
+  it.each(["FactoryMismatch", "PoolMismatch", "GaugeMismatch", "FeeTooHigh"])("%s (constructor only) reads as a deployment mismatch", (name) => {
+    expect(decodedName(name).kind).toBe("fee-mismatch");
+  });
+
+  it("never shows raw error text", () => {
+    expect(decodedName("StakeIncomplete").message).not.toContain("StakeIncomplete");
   });
 });
 

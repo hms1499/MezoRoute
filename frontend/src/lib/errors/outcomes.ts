@@ -220,6 +220,26 @@ export const STAKING_CLOSED: Outcome = {
   recovery: ["skip-stake"],
 };
 
+/** The executor's stake check tripped (`StakeNotCredited`, `StakeIncomplete`); the revert undoes the whole entry. */
+export const STAKE_FAILED: Outcome = {
+  kind: "stake-failed",
+  message: "Staking did not go through, so nothing moved. Try again or enter without staking.",
+  recovery: ["retry", "skip-stake"],
+};
+
+export const BORROW_MISMATCH: Outcome = {
+  kind: "borrow-mismatch",
+  message: "The borrow does not match this deposit. Review it again.",
+  recovery: ["reduce-amount"],
+};
+
+/** A safety check of the executor refused the call; the app's own calls should never reach these. */
+export const ROUTE_REFUSED: Outcome = {
+  kind: "route-refused",
+  message: "MezoRoute refused this transaction, so nothing moved.",
+  recovery: ["retry", "copy-details"],
+};
+
 export const GAUGE_READ_FAILED: Outcome = { kind: "gauge-read-failed", message: GAUGE_READ_FAILED_RETRY, recovery: ["retry"] };
 
 // Gauge actions on Positions (G1).
