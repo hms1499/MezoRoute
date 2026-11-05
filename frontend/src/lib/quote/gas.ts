@@ -1,14 +1,13 @@
 /** Gas units for `enter`; S1 measured 328,115–433,422 (5 Oct 2026). */
 export const ENTER_GAS = 450_000n;
 /**
- * `enter` that also stakes the LP in the gauge: the highest measured use on V2 is 448,402 (testnet,
- * earlier runs in §20; 423,282 in the latest), plus 5%, rounded up to 5,000. It is the floor that
- * protects a send when the RPC answers `eth_estimateGas` with the bare intrinsic gas; the estimate
- * plus 20% still wins when it is higher (`gasLimit`).
+ * `enter` that also stakes the LP in the gauge. `gasUsed` is net of refunds, so it understates the limit a
+ * call needs (Ruling P15): the budget is max(highest gasUsed 448,402, highest healthy estimate 535,750)
+ * plus 5%, rounded up to 5,000. The estimate plus 20% still wins when it is higher (`gasLimit`).
  */
-export const ENTER_STAKE_GAS = 475_000n;
-/** What the gauge deposit adds to an entry: 423,282 − 323,655 measured (§20), plus 5%, rounded up to 5,000. */
-export const STAKE_EXTRA_GAS = 105_000n;
+export const ENTER_STAKE_GAS = 565_000n;
+/** What the gauge deposit adds to an entry: estimate difference 535,750 − 396,741 = 139,009, plus 5%, rounded up to 5,000. */
+export const STAKE_EXTRA_GAS = 150_000n;
 
 /**
  * `borrowAndEnter` with Trove hints: 754,103 measured on testnet (12 Oct 2026, 242 Troves), rounded
@@ -87,13 +86,14 @@ export function spGasUnits(input: { approve: boolean; smartAccount: boolean; act
 }
 
 /**
- * Direct gauge calls. Each budget is the highest measurement in PRODUCT_SPEC §20 "Measured gas" plus 5%,
- * rounded up to 5,000 (Ruling P13): it is the floor that protects a send when the RPC answers
+ * Direct gauge calls. Each budget is max(highest `gasUsed`, highest healthy `eth_estimateGas`) + 5%, rounded
+ * up to 5,000 (Ruling P15): `gasUsed` is net of refunds, and a deposit that used about 140,000 ran out of gas
+ * at a 145,000 limit (5 Nov 2026). It is the floor that protects a send when the RPC answers
  * `eth_estimateGas` with the bare intrinsic gas.
  */
-/** `gauge.deposit`: 142,295 measured on testnet (127,995 in the latest run). */
-export const GAUGE_DEPOSIT_GAS = 145_000n;
-/** `gauge.withdraw`: 130,620 measured after an `enter` stake with accrued rewards (97,194 direct). */
+/** `gauge.deposit`: estimate 154,522 (highest used 142,295). */
+export const GAUGE_DEPOSIT_GAS = 165_000n;
+/** `gauge.withdraw`: used 130,620 after an `enter` stake with accrued rewards (97,194 direct). */
 export const GAUGE_WITHDRAW_GAS = 140_000n;
-/** `gauge.getReward`: 58,168 measured on testnet. */
-export const GAUGE_CLAIM_GAS = 65_000n;
+/** `gauge.getReward`: estimate 67,949 (highest used 66,295). */
+export const GAUGE_CLAIM_GAS = 75_000n;

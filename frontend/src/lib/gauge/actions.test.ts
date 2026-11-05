@@ -64,10 +64,10 @@ describe("encodeGaugeCall", () => {
 });
 
 describe("gauge gas budgets", () => {
-  it("are the highest measured gas plus 5%, rounded up to 5,000 (PRODUCT_SPEC §20)", () => {
-    expect(GAUGE_DEPOSIT_GAS).toBe(145_000n); // 142,295
+  it("are max(highest gasUsed, highest healthy estimate) plus 5%, rounded up to 5,000 (Ruling P15)", () => {
+    expect(GAUGE_DEPOSIT_GAS).toBe(165_000n); // estimate 154,522
     expect(GAUGE_WITHDRAW_GAS).toBe(140_000n); // 130,620
-    expect(GAUGE_CLAIM_GAS).toBe(65_000n); // 58,168
+    expect(GAUGE_CLAIM_GAS).toBe(75_000n); // estimate 67,949, used 66,295
   });
 });
 
