@@ -42,7 +42,7 @@ A Mezo user who wants to put MUSD to work runs into four problems:
 | **LP route** | Deposit wallet MUSD into the MUSD/BTC pool through the executor. The app computes the optimal swap to the wei (it mirrors the pool's rounding; replays of every live entry match exactly), sets on-chain minimums, and uses an EIP-2612 permit instead of an approval transaction. |
 | **Borrow & Deploy** | For an existing Trove: sign a borrow authorisation and a permit, send one transaction. The executor borrows through Mezo's `BorrowerOperationsSignatures` and deposits into the pool. The borrowed MUSD always goes to the borrower. |
 | **Stability Pool** | Deposit, withdraw, and claim BTC gains with direct calls to Mezo's Stability Pool (no executor, no fee). |
-| **Positions** | LP value, claimable trading fees (with a Claim button), Stability Pool deposit and BTC gain, and cost basis rebuilt from executor events. Exit LP to MUSD at 25/50/75% or Max. |
+| **Positions** | LP value (wallet and staked), claimable trading fees (with a Claim button), pending MEZO with Claim, Stake, and Unstake, Stability Pool deposit and BTC gain, and cost basis rebuilt from executor events. Exit LP to MUSD at 25/50/75% or Max (a staked position unstakes first: two transactions). |
 | **Receipts** | Every result is decoded from executor or Stability Pool events, with an explorer link. Reloading the receipt page keeps tracking the transaction. |
 | **Both wallet types** | EVM wallets (MetaMask, WalletConnect) and Bitcoin wallets (Unisat and others) through [Mezo Passport](https://www.npmjs.com/package/@mezo-org/passport). Bitcoin wallets act through an OrangeKit smart account, so they use approvals instead of permits and cannot use Borrow & Deploy. |
 | **Mezo terms explained** | Trove, MCR, Stability Pool and other Mezo-specific terms show a one-sentence definition on hover or tap. |
@@ -73,6 +73,7 @@ flowchart LR
   - `enter(params, musdPermit)`: MUSD → optimal swap to BTC → add liquidity → LP to the recipient, refunding leftovers.
   - `borrowAndEnter(borrow, musdPermit, params)`: borrows MUSD to the caller with their EIP-712 authorisation, then the same entry.
   - `exit(params, lpPermit)`: LP → remove liquidity → swap BTC back → MUSD to the recipient.
+  - `MezoRouteExecutorV2` ([`contracts/src/MezoRouteExecutorV2.sol`](contracts/src/MezoRouteExecutorV2.sol), testnet `0x1281cC769c136F9F4f291B390c8992a3Cd556288`) adds a `stake` flag to `enter` and `borrowAndEnter` and `enterFromBtc(params, btcPermit)`, with its own immutable BTC cap. It keeps every V1 safety property and adds: no LP or MEZO is ever held, the gauge allowance is reset to 0, and staked LP is credited only to the recipient.
 
 ### Safety properties
 
@@ -121,9 +122,17 @@ A disclosed execution fee of **10 bps** on MUSD entering the LP route through th
 
 For Mezo, Borrow & Deploy mints new MUSD and deepens the MUSD/BTC pool, and the route comparison points idle MUSD at Mezo's own destinations.
 
-## MUSD, not MEZO
+## MUSD and MEZO
 
-MezoRoute integrates MUSD across three protocol surfaces: borrowing through `BorrowerOperationsSignatures`, the MUSD/BTC pool, and the Stability Pool. It does **not** integrate MEZO. Our on-chain research (30 Sep 2026) found that Mezo's gauges pay BTC rather than MEZO, veMEZO is not deployed, and the mainnet MUSD/BTC pools have no gauge. With no MEZO-paying surface for this use case, we chose a deep MUSD integration over a superficial MEZO one.
+MezoRoute integrates MUSD across three protocol surfaces: borrowing through `BorrowerOperationsSignatures`, the MUSD/BTC pool, and the Stability Pool. Wave 1 did not integrate MEZO: our 30 Sep 2026 research found gauges paying BTC and no gauge on the mainnet MUSD/BTC pool. That was out of date by 4 Nov 2026. The pool's gauge now pays MEZO to staked LP on both networks, so Wave 2 (G1, in progress) adds it:
+
+- **Stake in the same transaction.** The LP route has a "Stake to earn MEZO" switch (on by default when the gauge is live). `MezoRouteExecutorV2` deposits the new LP in the gauge for you inside the entry; MezoRoute never holds your LP or your MEZO.
+- **Positions** shows wallet and staked LP together, pending MEZO, and Claim, Stake, and Unstake. Exit unstakes first when it needs to, so exiting a staked position is **two transactions** (unstake, then exit), and it resumes if you reload in between.
+- **Compare routes** shows pool fees and MEZO separately on your own amount.
+- **Enter from BTC.** Choose BTC instead of MUSD on the LP route; the executor swaps about half to MUSD and adds liquidity. A BTC entry is **capped per transaction** (12 BTC on testnet; 0.0125 BTC on mainnet) and the app keeps a gas reserve out of "Use my balance", because BTC pays for gas on Mezo.
+- **What staking costs you.** While LP is staked, its swap fees go to veBTC voters instead of you. The MEZO rate is this week's and changes weekly; it is not a promise, and MEZO can fall in price.
+
+Status: V2 is live on testnet. Mainnet still runs the V1 executor, and the G1 branch is not merged (so the live site is unchanged) until the mainnet V2 deploy is pinned (Task 11). veBTC and veMEZO features, bribes, and voting stay out of scope.
 
 ## Limitations
 
@@ -133,7 +142,7 @@ MezoRoute integrates MUSD across three protocol surfaces: borrowing through `Bor
 - **Thin mainnet pool.** The mainnet MUSD/BTC basic pool is small, so the app blocks any entry whose swap would move the price by more than 5%.
 - **Stability Pool withdrawals pause** while any Trove is below the minimum collateral ratio (a Mezo rule). The app shows that state and still offers claiming BTC gains.
 - **Mainnet funding.** Mezo's native BTC bridge-in closed on 13 Oct 2026; BTC now arrives as tBTC from Ethereum through the Mezo app.
-- **No gauge staking or MEZO rewards** (see above).
+- **Gauge staking and BTC entry are testnet-only until the mainnet V2 deploy.** MEZO emissions are this week's rate and can change; staked LP gives up its swap fees to veBTC voters.
 
 ## Run it locally
 
@@ -144,7 +153,7 @@ Requirements: Node.js 18.17+ (developed on Node 24), npm, and [Foundry](https://
 ```bash
 cd contracts
 forge build
-forge test        # 75 tests: unit, fuzz, invariant
+forge test        # 188 tests: unit, fuzz, invariant (V1 and V2)
 ```
 
 Tests deploy the real Tigris Pool, PoolFactory, and Router (commit `0a3b5e8`) locally with mock MUSD and BTC. Fork tests are not possible because Mezo's BTC token is a chain precompile; [`contracts/script/smoke-testnet.sh`](contracts/script/smoke-testnet.sh) exercises a deployed executor on Mezo testnet instead. Deployment steps are in [`contracts/README.md`](contracts/README.md).
@@ -156,7 +165,7 @@ cd frontend
 npm install
 cp .env.example .env.local   # set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID (free at cloud.reown.com)
 npm run dev                  # http://localhost:3000
-npm test                     # 962 Vitest tests
+npm test                     # 1120 Vitest tests + 1 expected failure (the pre-merge guard for mainnet V2)
 npm run build                # static export to out/, with lint and type check
 ```
 
@@ -175,7 +184,7 @@ docs/               build status, feature designs, and the Passport spike
 
 ## Roadmap
 
-1. **Wave 2 (by 15 Nov 2026):** one-transaction BTC leverage and unwind on MUSD Troves using Tigris flash swaps, on testnet and capped mainnet.
+1. **Wave 2 (by 15 Nov 2026):** gauge staking and entry from BTC (G1, in progress), then one-transaction BTC leverage and unwind on MUSD Troves using Tigris flash swaps, on testnet and capped mainnet.
 2. **After the hackathon:** more routes as separate executors, and opening a Trove in the same flow.
 3. **After the hackathon:** smart-account support for Borrow & Deploy, and an external audit before raising the cap.
 

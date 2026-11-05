@@ -32,7 +32,7 @@ Non-negotiable product rules:
 
 ### Integration scope: MUSD, not MEZO
 
-MezoRoute integrates **MUSD** deeply (borrowing via `BorrowerOperationsSignatures`, the MUSD/BTC pool, and the Stability Pool). It does **not** integrate MEZO. On-chain research (Section 4) shows that no Mezo gauge pays MEZO, veMEZO is not deployed, and mainnet MUSD/BTC pools have no gauge. The hackathon requires "MUSD and/or MEZO"; we choose a deep MUSD integration over a superficial MEZO one and state this openly in the submission.
+MezoRoute integrates **MUSD** deeply (borrowing via `BorrowerOperationsSignatures`, the MUSD/BTC pool, and the Stability Pool). Wave 2 (G1, 4 Nov 2026) adds **MEZO** as well: the MUSD/BTC pool's gauge pays MEZO to staked LP, and the LP route can stake the new LP in the same transaction, show the pending MEZO, and claim, stake, and unstake from Positions. MezoRoute never pays or holds MEZO; the gauge pays it straight to the staker. The Wave 1 research below (30 Sep: no gauge pays MEZO, no mainnet MUSD/BTC gauge) was out of date by 4 Nov and is superseded by the re-scan in `docs/wave2/2026-11-04-wave1-feedback.md` and the G1 spec. veMEZO and veBTC voting stay out of scope.
 
 ## 2. Problem
 
@@ -70,8 +70,8 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 | The borrow signature binds `amount`, `borrower`, `recipient`, `nonce`, `deadline`; anyone may submit it; verification is `ECDSA.recover` | `_verifySignature` source | Borrowed MUSD is always sent to the **user** (Section 11.4). EOA signers only |
 | MUSD and the pool LP token implement EIP-2612 `permit` | `MUSD is ERC20Permit`; LP exposes `DOMAIN_SEPARATOR` and `nonces` | Permit replaces approval transactions for entry and exit |
 | MUSD/BTC basic LP supports a full entry and exit | 20 MUSD round trip returned `19.988002574284855609 MUSD` | Executable LP route; show attributable execution cost |
-| Gauges pay **BTC**, not MEZO | Testnet gauge `rewardToken = 0x7b7C…` (BTC); `Voter.rewardToken = ve.token()`; only `VeBTCVoter` is deployed | No gauge staking and no MEZO claims in scope |
-| Testnet MUSD/BTC gauge exists but `rewardRate = 0`; mainnet MUSD/BTC basic and CL pools have **no gauge** | Voter `gauges(pool)` reads | Gauge staking cannot be demonstrated or carried to mainnet |
+| *Superseded 4 Nov 2026:* the 30 Sep read found gauges paying BTC; the current voters' gauges for the MUSD/BTC pool pay **MEZO** (`rewardRate` 1.281 MEZO/s testnet, 0.481 mainnet; staked LP 171.86 of 208.28 on mainnet) | G1 spec, Chain facts | Gauge staking and MEZO claims are in scope (G1) |
+| *Superseded 4 Nov 2026:* both networks have a live gauge for the basic MUSD/BTC pool (`voter.gauges(pool)`, `voter.isAlive`); the testnet one the 30 Sep read found sat on an older voter at rate 0 | G1 spec, Chain facts | Gauge staking can be demonstrated on testnet and carried to mainnet (mainnet V2 pending, Task 11) |
 | Mainnet MUSD Stability Pool holds ≈ 14.17M of ≈ 19.79M MUSD supply (≈ 72%) | `getTotalMUSDDeposits`, `totalSupply` | The Stability Pool is the dominant MUSD destination → offered as the second route |
 | Testnet Stability Pool is active: ≈ 86.2M MUSD deposits and ≈ 176 BTC collateral gains | Contract reads | Stability Pool route is demonstrable on testnet with real gains |
 | `provideToSP` / `withdrawFromSP` act only for `msg.sender`; `withdrawFromSP` reverts while any Trove is under-collateralised | `StabilityPool.sol` | Stability Pool actions are called by the user directly, not through the executor; the blocked-withdrawal case is an explicit error state |
@@ -154,6 +154,7 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 - Invariant suite and self-audit checklist for `MezoRouteLeverage`.
 - Mainnet deployment of `MezoRouteLeverage` with an immutable per-transaction cap.
 - Changes driven by Wave 1 judge feedback.
+- **G1 (first Wave 2 item, 4 Nov):** `MezoRouteExecutorV2` with a `stake` flag and `enterFromBtc`; gauge staking, MEZO claims, unstake, and exit-unstakes-first in Positions; gauge rows in Compare; entry from BTC. Spec `docs/superpowers/specs/2026-11-04-g1-gauge-route-design.md`. V2 is live on testnet; mainnet V2 is Task 11.
 
 ### Wave 2 — Could
 
@@ -161,7 +162,7 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 
 ### Out of scope
 
-- Gauge staking and MEZO rewards (no MEZO-paying gauge exists; Section 4).
+- veBTC and veMEZO features, bribes, and voting; auto-compounding or selling MEZO for the user; concentrated pools. (Gauge staking and MEZO claims are in scope since G1.)
 - Opening a new Trove through the executor.
 - Borrow → Stability Pool in one transaction (Stability Pool deposits are keyed to `msg.sender`).
 - Smart-account / ERC-1271 signers for `borrowAndEnter` and permits (smart accounts use approvals; Borrow & Deploy is unavailable to them).
@@ -326,7 +327,7 @@ Precondition: user has a Trove and uses an EOA wallet.
 - Use "estimated" for all pre-transaction values and "realised" only after confirmation.
 - Explain impermanent loss, the double BTC exposure, and Stability Pool deposit loss in one sentence each before linking to detail.
 - Visually and textually separate testnet execution data from mainnet reference data.
-- Never imply that MezoRoute pays MEZO or gauge rewards.
+- Never imply that MezoRoute pays MEZO or gauge rewards: the gauge pays them. Always say a gauge APR is this week's rate and can change, and that while LP is staked its swap fees go to veBTC voters.
 
 ## 10. System architecture
 
