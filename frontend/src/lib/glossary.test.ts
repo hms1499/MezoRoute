@@ -15,7 +15,11 @@ const TERMS: TermId[] = [
   "btcGain",
   "borrowAndDeploy",
   "permit",
+  "gauge",
+  "emissions",
 ];
+
+const G1_TERMS: TermId[] = ["gauge", "emissions"];
 
 describe("GLOSSARY", () => {
   it("defines exactly the Mezo terms approved for U8, and no general DeFi terms", () => {
@@ -23,11 +27,20 @@ describe("GLOSSARY", () => {
   });
 
   it("keeps every definition to one short sentence", () => {
-    for (const term of TERMS) {
+    for (const term of TERMS.filter((id) => !G1_TERMS.includes(id))) {
       const text = GLOSSARY[term];
       expect(text, term).toMatch(/^[A-Z].*\.$/);
       expect(text.slice(0, -1), term).not.toMatch(/[.!?](\s|$)/);
       expect(text.length, term).toBeLessThanOrEqual(110);
+    }
+  });
+
+  // G1's wording is fixed by the plan: both carry the veBTC-voters caveat, so they run to two sentences or 120 characters.
+  it("keeps the G1 gauge terms to two short sentences", () => {
+    for (const term of G1_TERMS) {
+      const text = GLOSSARY[term];
+      expect(text, term).toMatch(/^[A-Z][^.!?]*(\.\s\S[^.!?]*)?\.$/);
+      expect(text.length, term).toBeLessThanOrEqual(120);
     }
   });
 

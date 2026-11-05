@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
 import type { EnteredEvent } from "@/lib/routes/musd-btc-lp/receipt";
 import type { HistoryEvent } from "./history";
+import type { GaugeState } from "@/lib/gauge/state";
 import { LIVE_EXIT_LIQUIDITY, LIVE_EXIT_POOL, ONE, positionsSnapshotWith } from "./test-fixtures";
 import { positionView } from "./view";
 
 const ME = "0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49";
+
+const gaugeState = (overrides: Partial<GaugeState> = {}): GaugeState => ({
+  alive: true,
+  rewardRate: 10n ** 15n,
+  periodFinish: 2_000_000_000n,
+  totalStaked: 10n * ONE,
+  staked: 0n,
+  earned: 0n,
+  ...overrides,
+});
 
 const entry: HistoryEvent = {
   kind: "entered",
@@ -59,5 +70,29 @@ describe("positionView", () => {
     const view = positionView(positionsSnapshotWith({ lpBalance: 0n }), []);
     expect(view.empty).toBe(true);
     expect(view.lp.exit).toBeNull();
+  });
+
+  it("values wallet and staked LP together", () => {
+    const wallet = LIVE_EXIT_LIQUIDITY;
+    const staked = 2n * LIVE_EXIT_LIQUIDITY;
+    const split = positionView(positionsSnapshotWith({ lpBalance: wallet, gauge: gaugeState({ staked }) }), null);
+    const whole = positionView(positionsSnapshotWith({ lpBalance: 3n * LIVE_EXIT_LIQUIDITY }), null);
+    expect(split.lp).toMatchObject({ balance: 3n * wallet, walletLp: wallet, stakedLp: staked });
+    expect(split.lp.value).toBe(whole.lp.value);
+    expect(split.lp.share).toBe(whole.lp.share);
+    expect(split.lp.exit).toEqual(whole.lp.exit);
+  });
+
+  it("covers staked LP with the cost basis", () => {
+    const view = positionView(positionsSnapshotWith({ lpBalance: 0n, gauge: gaugeState({ staked: LIVE_EXIT_LIQUIDITY }) }), [entry]);
+    expect(view.lp.cost?.coveredLp).toBe(LIVE_EXIT_LIQUIDITY);
+    expect(view.lp.valueChange).toBe(39936013820348314126n - 40n * ONE);
+  });
+
+  it("empties only when wallet and staked are both zero, and nothing is pending", () => {
+    const base = { lpBalance: 0n, fees: { musd: 0n, btc: 0n } };
+    expect(positionView(positionsSnapshotWith({ ...base, gauge: gaugeState({ staked: 1n }) }), []).empty).toBe(false);
+    expect(positionView(positionsSnapshotWith({ ...base, gauge: gaugeState({ earned: 1n }) }), []).empty).toBe(false);
+    expect(positionView(positionsSnapshotWith({ ...base, gauge: gaugeState() }), []).empty).toBe(true);
   });
 });

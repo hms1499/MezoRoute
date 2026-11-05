@@ -5,16 +5,18 @@ import { poolAbi, poolFactoryAbi } from "@/lib/abi/pool";
 import type { NetworkConfig } from "@/lib/config/networks";
 import { musdIsToken0 } from "@/lib/dashboard/snapshot";
 import type { ExitPool } from "@/lib/quote/exit";
+import { gaugeContracts, GAUGE_READS, parseGaugeState, type GaugeResults, type GaugeState } from "@/lib/gauge/state";
 import { claimableFees, type Fees } from "./fees";
 
 /** Everything the positions pages read, from one block. */
 export type PositionsSnapshot = {
   price: bigint; // MUSD per BTC, 1e18
-  lpBalance: bigint;
+  lpBalance: bigint; // LP in the wallet; LP staked in the gauge is `gauge.staked`
   pool: ExitPool;
   fees: Fees; // what claimFees() would pay at this block
   allowance: bigint; // LP the executor may already pull
   permitNonce: bigint; // LP EIP-2612 nonce of the account
+  gauge: GaugeState | null; // null on a network without a gauge
   blockNumber: bigint;
   blockTimestamp: bigint;
 };
@@ -41,7 +43,10 @@ export type PositionsResults = readonly [
   blockTimestamp: bigint,
 ];
 
-/** One multicall on the selected network. Without an executor (mainnet before M1) the allowance is read for the zero address. */
+/** The pool reads before the gauge's. */
+export const POSITIONS_POOL_READS = 17;
+
+/** One multicall on the selected network, then the gauge's reads. Without an executor (mainnet before M1) the allowance is read for the zero address. */
 export function positionsContracts(network: NetworkConfig, account: Address) {
   const { addresses: a, chainId } = network;
   const spender = network.executor?.address ?? zeroAddress;
@@ -63,10 +68,12 @@ export function positionsContracts(network: NetworkConfig, account: Address) {
     { chainId, address: a.pool, abi: poolAbi, functionName: "nonces", args: [account] },
     { chainId, address: a.multicall3, abi: multicall3BlockAbi, functionName: "getBlockNumber" },
     { chainId, address: a.multicall3, abi: multicall3BlockAbi, functionName: "getCurrentBlockTimestamp" },
+    ...gaugeContracts(network, account),
   ] as const;
 }
 
 export function parsePositionsSnapshot(network: NetworkConfig, results: PositionsResults): PositionsSnapshot {
+  const gaugeResults = results.slice(POSITIONS_POOL_READS);
   const [
     price,
     lpBalance,
@@ -101,6 +108,7 @@ export function parsePositionsSnapshot(network: NetworkConfig, results: Position
     fees: claimableFees(network, { lpBalance, index0, index1, supplyIndex0, supplyIndex1, claimable0, claimable1 }),
     allowance,
     permitNonce,
+    gauge: network.gauge && gaugeResults.length === GAUGE_READS ? parseGaugeState(gaugeResults as unknown as GaugeResults) : null,
     blockNumber,
     blockTimestamp,
   };

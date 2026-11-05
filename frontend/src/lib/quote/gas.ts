@@ -85,3 +85,15 @@ export function spGasUnits(input: { approve: boolean; smartAccount: boolean; act
   const units = (input.action === "deposit" ? SP_DEPOSIT_GAS : SP_WITHDRAW_GAS) + (input.approve ? APPROVE_GAS : 0n);
   return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
 }
+
+/**
+ * Direct gauge calls. Each budget is the highest measurement in PRODUCT_SPEC §20 "Measured gas" plus 5%,
+ * rounded up to 5,000 (Ruling P13): it is the floor that protects a send when the RPC answers
+ * `eth_estimateGas` with the bare intrinsic gas.
+ */
+/** `gauge.deposit`: 142,295 measured on testnet (127,995 in the latest run). */
+export const GAUGE_DEPOSIT_GAS = 145_000n;
+/** `gauge.withdraw`: 130,620 measured after an `enter` stake with accrued rewards (97,194 direct). */
+export const GAUGE_WITHDRAW_GAS = 140_000n;
+/** `gauge.getReward`: 58,168 measured on testnet. */
+export const GAUGE_CLAIM_GAS = 65_000n;

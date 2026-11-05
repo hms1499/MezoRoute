@@ -11,7 +11,7 @@ import { useClaimFees } from "@/lib/positions/useClaimFees";
 import type { FeesView } from "@/lib/positions/view";
 
 /** Flow G2: the pool's swap fees owed to this account, paid only when it calls claimFees(). */
-export function FeesCard({ account, fees, block }: { account: Address; fees: FeesView; block: ClaimBlock | null }) {
+export function FeesCard({ account, fees, block, note }: { account: Address; fees: FeesView; block: ClaimBlock | null; note?: string | null }) {
   const { claim, pending } = useClaimFees(account);
   return (
     <Card title="Pool fees earned" subtitle="The pool pays its trading fees to LP holders when they claim. Claiming does not touch your LP.">
@@ -24,6 +24,7 @@ export function FeesCard({ account, fees, block }: { account: Address; fees: Fee
           {musd(fees.total)}
         </Stat>
       </dl>
+      {note && <p className="mt-2 text-xs text-muted">{note}</p>}
       <div className="mt-4 flex items-center justify-between gap-3">
         <BlockNotice block={block} />
         <Button disabled={block !== null} pending={pending ? "wallet" : null} onClick={claim} className="ml-auto">

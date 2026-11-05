@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STAKE_TITLE, stakeLines } from "./copy";
+import { feesStakedNote, STAKE_TITLE, stakeLines } from "./copy";
 
 describe("stake copy", () => {
   it("says the rate is this week's and that swap fees go to veBTC voters", () => {
@@ -24,5 +24,19 @@ describe("stake copy", () => {
 
   it("has no copy when staking is unavailable", () => {
     expect(stakeLines("unavailable", null)).toEqual([]);
+  });
+});
+
+describe("feesStakedNote", () => {
+  const none = { musd: 0n, btc: 0n };
+  it("says no pool fees accrue when all LP is staked and none is claimable", () => {
+    expect(feesStakedNote({ walletLp: 0n, stakedLp: 5n, fees: none })).toBe(
+      "Your LP is all staked, so it earns no pool fees: swap fees go to veBTC voters.",
+    );
+  });
+  it("stays silent when some LP is in the wallet, nothing is staked, or fees are waiting", () => {
+    expect(feesStakedNote({ walletLp: 1n, stakedLp: 5n, fees: none })).toBeNull();
+    expect(feesStakedNote({ walletLp: 0n, stakedLp: 0n, fees: none })).toBeNull();
+    expect(feesStakedNote({ walletLp: 0n, stakedLp: 5n, fees: { musd: 1n, btc: 0n } })).toBeNull();
   });
 });

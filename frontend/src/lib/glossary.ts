@@ -11,7 +11,9 @@ export type TermId =
   | "liquidationPrice"
   | "btcGain"
   | "borrowAndDeploy"
-  | "permit";
+  | "permit"
+  | "gauge"
+  | "emissions";
 
 /**
  * One sentence per Mezo term, shown by `Term` (U8). Readers know basic DeFi (LP, slippage, approvals),
@@ -28,4 +30,6 @@ export const GLOSSARY: Record<TermId, string> = {
   btcGain: "BTC the Stability Pool paid you from liquidations; you can claim it any time.",
   borrowAndDeploy: "Borrow MUSD from your Trove and add it to the pool in one transaction.",
   permit: "A gasless signature that lets MezoRoute take exactly this amount, instead of an approval transaction.",
+  gauge: "A contract that pays MEZO to people who stake their LP in it; while staked, swap fees go to veBTC voters.",
+  emissions: "MEZO paid to a gauge each week. veBTC voters decide how much each gauge gets.",
 };

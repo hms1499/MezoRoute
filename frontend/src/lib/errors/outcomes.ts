@@ -193,3 +193,13 @@ export const STAKING_CLOSED: Outcome = {
   message: "Staking is closed; enter without staking",
   recovery: ["skip-stake"],
 };
+
+// Gauge actions on Positions (G1).
+export const NO_PENDING_MEZO: Outcome = { kind: "nothing-to-claim", message: "You have no MEZO to claim yet.", recovery: [] };
+export const NO_WALLET_LP: Outcome = { kind: "no-lp", message: "You have no LP in your wallet to stake.", recovery: [] };
+export const NO_STAKED_LP: Outcome = { kind: "no-staked-lp", message: "You have no staked LP.", recovery: [] };
+export const STAKING_CLOSED_NOW: Outcome = {
+  kind: "staking-closed",
+  message: "Staking is closed right now. You can still claim and unstake.",
+  recovery: [],
+};

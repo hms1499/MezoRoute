@@ -27,7 +27,9 @@ import { spClaimPreview } from "@/lib/stability-pool/preview";
 import { useSpActions } from "@/lib/stability-pool/useSpActions";
 import { useSpHistory } from "@/lib/stability-pool/useSpHistory";
 import { useSpSnapshot } from "@/lib/stability-pool/useSpSnapshot";
+import { feesStakedNote } from "@/lib/gauge/copy";
 import { FeesCard } from "./FeesCard";
+import { GaugeCard, showsGaugeCard } from "./GaugeCard";
 import { LpPositionCard } from "./LpPositionCard";
 
 /** Spec §9 screen 5: LP, pool fees, and the Stability Pool. */
@@ -118,7 +120,17 @@ function Positions({ account }: { account: Address }) {
       }
     >
       {view.lp.balance > 0n && <LpPositionCard lp={view.lp} history={history} />}
-      {!view.empty && <FeesCard account={account} fees={view.fees} block={block} />}
+      {showsGaugeCard(data.snapshot.gauge, view.lp.walletLp) && (
+        <GaugeCard account={account} lp={view.lp} data={data} gauge={data.snapshot.gauge} />
+      )}
+      {(view.lp.balance > 0n || view.fees.musd > 0n || view.fees.btc > 0n) && (
+        <FeesCard
+          account={account}
+          fees={view.fees}
+          block={block}
+          note={feesStakedNote({ walletLp: view.lp.walletLp, stakedLp: view.lp.stakedLp, fees: view.fees })}
+        />
+      )}
       {sp.error && !sp.data && <LoadError error={sp.error} onRetry={() => void sp.refresh().catch(() => undefined)} />}
       {sp.data && pool && !pool.empty && (
         <SpPositionCard

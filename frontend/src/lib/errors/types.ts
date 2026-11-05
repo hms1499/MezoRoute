@@ -41,6 +41,7 @@ export type ErrorKind =
   | "borrow-used"
   | "signature-invalid"
   | "no-lp"
+  | "no-staked-lp"
   | "staking-closed"
   | "lp-changed"
   | "nothing-to-claim"

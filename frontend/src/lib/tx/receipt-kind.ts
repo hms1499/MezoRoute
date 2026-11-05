@@ -1,4 +1,5 @@
 import type { NetworkConfig } from "@/lib/config/networks";
+import { findGaugeReceipt, type GaugeReceipt } from "@/lib/gauge/actions";
 import { findClaimEvent } from "@/lib/positions/claim";
 import type { Fees } from "@/lib/positions/fees";
 import {
@@ -16,10 +17,11 @@ export type ReceiptKind =
   | { kind: "entered"; event: EnteredEvent; staked: StakedEvent | null }
   | { kind: "exited"; event: ExitedEvent }
   | { kind: "claim"; fees: Fees }
+  | { kind: "gauge"; gauge: GaugeReceipt }
   | { kind: SpReceipt["kind"]; sp: SpReceipt }
   | null;
 
-/** What a confirmed transaction did, from its logs: an entry, an exit, a fee claim, or a Stability Pool action. */
+/** What a confirmed transaction did, from its logs: an entry, an exit, a fee claim, a gauge action, or a Stability Pool action. */
 export function receiptKind(logs: readonly LogLike[], network: NetworkConfig): ReceiptKind {
   const executor = network.executor?.address;
   const entered = executor ? findEnteredEvent(logs, executor) : null;
@@ -28,6 +30,8 @@ export function receiptKind(logs: readonly LogLike[], network: NetworkConfig): R
   if (exited) return { kind: "exited", event: exited };
   const fees = findClaimEvent(logs, network);
   if (fees) return { kind: "claim", fees };
+  const gauge = network.gauge ? findGaugeReceipt(logs, network.gauge.address) : null;
+  if (gauge) return { kind: "gauge", gauge };
   const sp = findSpReceipt(logs, network);
   return sp ? { kind: sp.kind, sp } : null;
 }

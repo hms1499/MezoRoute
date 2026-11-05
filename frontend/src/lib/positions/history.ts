@@ -32,7 +32,8 @@ export function scanRanges(from: bigint, head: bigint, size: bigint = LOG_RANGE)
   return ranges;
 }
 
-function sortEvents(events: HistoryEvent[]): HistoryEvent[] {
+/** Chain order: by block, then log index. */
+export function sortEvents(events: HistoryEvent[]): HistoryEvent[] {
   return [...events].sort((a, b) =>
     a.blockNumber === b.blockNumber ? a.logIndex - b.logIndex : a.blockNumber < b.blockNumber ? -1 : 1,
   );
@@ -144,4 +145,38 @@ export function parseHistory(text: string | null): HistoryCache | null {
   } catch {
     return null;
   }
+}
+
+/** The executors whose events make up the cost basis: the current one, then the older ones, each scanned from its own deploy block. */
+export function historyExecutors(network: NetworkConfig): { address: Address; deployBlock: bigint }[] {
+  const { executor, legacyExecutors } = network;
+  return [...(executor ? [{ address: executor.address, deployBlock: executor.deployBlock }] : []), ...legacyExecutors];
+}
+
+/**
+ * Every executor's events in chain order. Each executor has its own cache and its own scan from its
+ * deploy block; caches are written only after every scan has succeeded.
+ */
+export async function loadAllHistory(input: {
+  executors: { address: Address; deployBlock: bigint }[];
+  readFor: (executor: Address) => ReadChunk;
+  readCache: (executor: Address) => HistoryCache | null;
+  writeCache: (executor: Address, cache: HistoryCache) => void;
+  head: bigint;
+  sleep?: Sleep;
+}): Promise<HistoryEvent[]> {
+  const loaded = await Promise.all(
+    input.executors.map(async (executor) => ({
+      executor,
+      ...(await loadHistory({
+        read: input.readFor(executor.address),
+        head: input.head,
+        deployBlock: executor.deployBlock,
+        cache: input.readCache(executor.address),
+        sleep: input.sleep,
+      })),
+    })),
+  );
+  for (const item of loaded) if (item.cache) input.writeCache(item.executor.address, item.cache);
+  return sortEvents(loaded.flatMap((item) => item.events));
 }

@@ -5,7 +5,9 @@ import type { HistoryEvent } from "./history";
 import type { PositionsSnapshot } from "./snapshot";
 
 export type LpView = {
-  balance: bigint;
+  balance: bigint; // walletLp + stakedLp
+  walletLp: bigint;
+  stakedLp: bigint; // in the gauge, earning MEZO instead of pool fees
   share: bigint; // of the pool, 1e18 = 100%
   musd: bigint; // what burn would pay now
   btc: bigint;
@@ -20,7 +22,10 @@ export type PositionView = { lp: LpView; fees: FeesView; empty: boolean };
 
 /** Positions screen values (spec Flow F) from one snapshot and, once loaded, the event history. */
 export function positionView(snapshot: PositionsSnapshot, events: HistoryEvent[] | null): PositionView {
-  const { pool, lpBalance: balance, price } = snapshot;
+  const { pool, price } = snapshot;
+  const walletLp = snapshot.lpBalance;
+  const stakedLp = snapshot.gauge?.staked ?? 0n;
+  const balance = walletLp + stakedLp;
   const supply = pool.totalSupply;
   const musd = supply === 0n ? 0n : (balance * pool.balanceMusd) / supply;
   const btc = supply === 0n ? 0n : (balance * pool.balanceBtc) / supply;
@@ -33,6 +38,8 @@ export function positionView(snapshot: PositionsSnapshot, events: HistoryEvent[]
   return {
     lp: {
       balance,
+      walletLp,
+      stakedLp,
       share: supply === 0n ? 0n : (balance * WAD) / supply,
       musd,
       btc,
@@ -43,6 +50,7 @@ export function positionView(snapshot: PositionsSnapshot, events: HistoryEvent[]
       valueChange,
     },
     fees: { ...snapshot.fees, btcValue: feesBtcValue, total: snapshot.fees.musd + feesBtcValue },
-    empty: balance === 0n && snapshot.fees.musd === 0n && snapshot.fees.btc === 0n,
+    // Unstaked LP can still hold pending MEZO, so that counts as something to show.
+    empty: balance === 0n && snapshot.fees.musd === 0n && snapshot.fees.btc === 0n && (snapshot.gauge?.earned ?? 0n) === 0n,
   };
 }

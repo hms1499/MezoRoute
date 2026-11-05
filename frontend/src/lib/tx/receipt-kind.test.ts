@@ -1,5 +1,6 @@
-import { encodeAbiParameters, type Hex } from "viem";
+import { encodeAbiParameters, getAbiItem, toEventSelector, type Hex } from "viem";
 import { describe, expect, it } from "vitest";
+import { gaugeAbi } from "@/lib/abi/gauge";
 import { networks } from "@/lib/config/networks";
 import { receiptKind } from "./receipt-kind";
 
@@ -26,6 +27,18 @@ describe("receiptKind", () => {
       data: `0x${word(5n)}` as Hex,
     };
     expect(receiptKind([depositChanged], testnet)).toMatchObject({ kind: "sp-claim", sp: { depositAfter: 5n } });
+  });
+
+  it("decodes a gauge claim, stake, and unstake", () => {
+    const gauge = testnet.gauge!.address;
+    const log = (name: "ClaimRewards" | "Deposit" | "Withdraw", indexed: string[], amount: bigint) => ({
+      address: gauge,
+      topics: [toEventSelector(getAbiItem({ abi: gaugeAbi, name })), ...indexed.map(topic)] as Hex[],
+      data: `0x${word(amount)}` as Hex,
+    });
+    expect(receiptKind([log("ClaimRewards", [ME], 5n)], testnet)).toEqual({ kind: "gauge", gauge: { action: "claim", amount: 5n } });
+    expect(receiptKind([log("Deposit", [ME, ME], 6n)], testnet)).toEqual({ kind: "gauge", gauge: { action: "stake", amount: 6n } });
+    expect(receiptKind([log("Withdraw", [ME], 7n)], testnet)).toEqual({ kind: "gauge", gauge: { action: "unstake", amount: 7n } });
   });
 
   it("is null for a receipt without MezoRoute or pool events", () => {

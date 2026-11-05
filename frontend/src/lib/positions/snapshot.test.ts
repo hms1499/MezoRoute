@@ -2,6 +2,7 @@ import { encodeFunctionData, zeroAddress } from "viem";
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
 import { FIXTURE_PRICE } from "@/lib/dashboard/test-fixtures";
+import { GAUGE_READS } from "@/lib/gauge/state";
 import { parsePositionsSnapshot, positionsContracts, type PositionsResults } from "./snapshot";
 
 const ACCOUNT = "0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8";
@@ -33,10 +34,10 @@ describe("positionsContracts", () => {
   it("reads only allowlisted addresses on the selected network", () => {
     for (const network of [networks.testnet, networks.mainnet]) {
       const calls = positionsContracts(network, ACCOUNT);
-      expect(calls).toHaveLength(17);
+      expect(calls).toHaveLength(17 + GAUGE_READS);
       for (const call of calls) {
         expect(call.chainId).toBe(network.chainId);
-        expect(Object.values(network.addresses)).toContain(call.address);
+        expect([...Object.values(network.addresses), network.gauge!.address, network.gauge!.voter]).toContain(call.address);
       }
     }
   });
@@ -52,6 +53,8 @@ describe("positionsContracts", () => {
       const call = positionsContracts(network, ACCOUNT).find((item) => item.functionName === "allowance");
       return call && "args" in call ? call.args : undefined;
     };
+    // V1 LP stays exitable, but only through a new approval to V2: an allowance given to V1 is never read.
+    expect(networks.testnet.legacyExecutors.map((item) => item.address)).not.toContain(networks.testnet.executor!.address);
     expect(allowance(networks.testnet)).toEqual([ACCOUNT, networks.testnet.executor!.address]);
     expect(allowance(networks.mainnet)).toEqual([ACCOUNT, networks.mainnet.executor!.address]);
     expect(allowance({ ...networks.mainnet, executor: null })).toEqual([ACCOUNT, zeroAddress]);
@@ -59,6 +62,13 @@ describe("positionsContracts", () => {
 });
 
 describe("parsePositionsSnapshot", () => {
+  it("reads the gauge state from the reads after the pool's", () => {
+    const gauge = [true, 7n, 99n, 5n * ONE, 3n * ONE, 11n] as const;
+    const parsed = parsePositionsSnapshot(networks.testnet, [...results([520n * ONE, 6_000_000_000_000_000n, 1n]), ...gauge] as unknown as PositionsResults);
+    expect(parsed.gauge).toEqual({ alive: true, rewardRate: 7n, periodFinish: 99n, totalStaked: 5n * ONE, staked: 3n * ONE, earned: 11n });
+    expect(parsePositionsSnapshot(networks.testnet, results([520n * ONE, 6_000_000_000_000_000n, 1n])).gauge).toBeNull();
+  });
+
   it("maps reserves and fees by token on testnet (MUSD is token0)", () => {
     const parsed = parsePositionsSnapshot(networks.testnet, results([520n * ONE, 6_000_000_000_000_000n, 1n]));
     expect(parsed.pool).toEqual({

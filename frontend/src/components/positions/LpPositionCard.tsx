@@ -27,6 +27,12 @@ export function LpPositionCard({ lp, history }: { lp: LpView; history: History }
         <Stat label="LP balance" sub={`${formatPercent(lp.share, 4)} of the pool`}>
           {lpUnits(lp.balance)}
         </Stat>
+        {lp.stakedLp > 0n && (
+          <>
+            <Stat label="In your wallet">{lpUnits(lp.walletLp)}</Stat>
+            <Stat label="Staked in the gauge">{lpUnits(lp.stakedLp)}</Stat>
+          </>
+        )}
         <Stat label="Underlying MUSD">{musd(lp.musd)}</Stat>
         <Stat label="Underlying BTC" sub={`≈ ${musd(lp.btcValue)}`}>
           {btc(lp.btc)}
@@ -44,9 +50,16 @@ export function LpPositionCard({ lp, history }: { lp: LpView; history: History }
           {lpUnits(lp.cost.unattributedLp)} was not deposited through MezoRoute and has no cost basis.
         </p>
       )}
-      <ButtonLink href={`/positions/lp/exit/${exitQuery(DEFAULT_EXIT_INTENT)}`} className="mt-4" arrow>
-        Exit to MUSD
-      </ButtonLink>
+      {lp.stakedLp > 0n && (
+        <p className="mt-2 text-xs text-muted">
+          {lp.walletLp > 0n ? "Exit uses the LP in your wallet. " : ""}Unstake first to exit staked LP.
+        </p>
+      )}
+      {lp.walletLp > 0n && (
+        <ButtonLink href={`/positions/lp/exit/${exitQuery(DEFAULT_EXIT_INTENT)}`} className="mt-4" arrow>
+          Exit to MUSD
+        </ButtonLink>
+      )}
     </Card>
   );
 }
