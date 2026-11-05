@@ -1,6 +1,6 @@
 import type { Address } from "viem";
 import type { NetworkConfig } from "@/lib/config/networks";
-import type { EnteredEvent, ExitedEvent } from "@/lib/routes/musd-btc-lp/receipt";
+import type { EnteredEvent, EnteredFromBtcEvent, ExitedEvent } from "@/lib/routes/musd-btc-lp/receipt";
 
 /** Mezo's public RPC serves eth_getLogs over at most 10,000 blocks. */
 export const LOG_RANGE = 10_000n;
@@ -17,6 +17,7 @@ const wait: Sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 export type BlockRange = { fromBlock: bigint; toBlock: bigint };
 export type HistoryEvent =
   | { kind: "entered"; blockNumber: bigint; logIndex: number; event: EnteredEvent }
+  | { kind: "enteredBtc"; blockNumber: bigint; logIndex: number; event: EnteredFromBtcEvent }
   | { kind: "exited"; blockNumber: bigint; logIndex: number; event: ExitedEvent };
 /** Every event up to `scannedTo`; the scan resumes after it. */
 export type HistoryCache = { scannedTo: bigint; events: HistoryEvent[] };
@@ -122,9 +123,12 @@ export function visibleHistory(
   return { events, error: events ? null : error };
 }
 
-/** One cache per network, executor, and account (spec §12: a convenience only). */
+/**
+ * One cache per network, executor, and account (spec §12: a convenience only). `history-v2`: caches written before
+ * BTC entries existed hold no `EnteredFromBtc` events for the blocks they cover, so they are not reused.
+ */
 export function historyKey(network: NetworkConfig, executor: Address, account: Address): string {
-  return `mezoroute.${network.id}.history.${executor.toLowerCase()}.${account.toLowerCase()}`;
+  return `mezoroute.${network.id}.history-v2.${executor.toLowerCase()}.${account.toLowerCase()}`;
 }
 
 export function serializeHistory(cache: HistoryCache): string {

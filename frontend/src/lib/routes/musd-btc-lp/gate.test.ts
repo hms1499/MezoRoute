@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
 import { lacksGas } from "@/lib/dashboard/readiness";
-import { quoteEntry, type EntryQuote } from "@/lib/quote/entry";
+import { quoteEntry, quoteEntryFromBtc, type BtcEntryQuote, type EntryQuote } from "@/lib/quote/entry";
 import { CR_SAFETY_FLOOR } from "@/lib/trove/constants";
 import { entryBlock, PRICE_IMPACT_LIMIT, QUOTE_TTL_MS, type EntryGateInput } from "./gate";
 import { ONE, TESTNET_POOL } from "./test-fixtures";
@@ -124,5 +124,63 @@ describe("entryBlock in borrow mode", () => {
     });
     expect(entryBlock(borrowInput({ borrow: { ...borrow, limit: 100n * ONE - 1n } }))?.reason).toBe("above-headroom");
     expect(entryBlock(borrowInput({ borrow: { ...borrow, limit: 100n * ONE } }))).toBeNull();
+  });
+});
+
+describe("entryBlock for a BTC entry", () => {
+  const BTC_IN = 3n * 10n ** 14n;
+  const BTC_QUOTE = quoteEntryFromBtc(TESTNET_POOL, BTC_IN, 10n) as BtcEntryQuote;
+  const btcInput = (btc: Partial<NonNullable<EntryGateInput["btc"]>> = {}, overrides: Partial<EntryGateInput> = {}) =>
+    input({
+      musdIn: null,
+      walletMusd: 0n,
+      quote: BTC_QUOTE,
+      btc: { btcIn: BTC_IN, walletBtc: 10n ** 16n, maxBtcIn: 12n * ONE, gasReserve: 1_000n, ...btc },
+      ...overrides,
+    });
+
+  it("lets a valid BTC entry through without any MUSD", () => {
+    expect(entryBlock(btcInput())).toBeNull();
+  });
+
+  it("keeps the button disabled without a message when there is no amount", () => {
+    expect(entryBlock(btcInput({ btcIn: null }, { quote: null }))).toEqual({ reason: "zero", outcome: null });
+  });
+
+  it("allows exactly the BTC balance minus the reserve, and reports needs-gas one wei above", () => {
+    expect(entryBlock(btcInput({ walletBtc: BTC_IN + 1_000n }))).toBeNull();
+    expect(entryBlock(btcInput({ walletBtc: BTC_IN + 999n }))).toMatchObject({ reason: "needs-gas", outcome: { kind: "needs-gas" } });
+  });
+
+  it("reports needs-gas for a wallet whose whole balance is the entry", () => {
+    expect(entryBlock(btcInput({ walletBtc: BTC_IN, gasReserve: 1_000n }))).toMatchObject({
+      reason: "needs-gas",
+      outcome: { message: "Keep some BTC in your wallet to pay for the network fee. Enter a little less." },
+    });
+  });
+
+  it("blocks more BTC than the wallet holds, in BTC", () => {
+    expect(entryBlock(btcInput({ walletBtc: BTC_IN - 1n }))).toMatchObject({
+      reason: "insufficient-balance",
+      outcome: { message: "Amount exceeds your available BTC." },
+    });
+  });
+
+  it("blocks above entryCapBtc and allows exactly the cap", () => {
+    expect(entryBlock(btcInput({ maxBtcIn: BTC_IN }))).toBeNull();
+    expect(entryBlock(btcInput({ maxBtcIn: BTC_IN - 1n }))).toMatchObject({ reason: "above-cap", outcome: { kind: "above-cap" } });
+  });
+
+  it.each([
+    ["no swap", { ...BTC_QUOTE, btcToSwap: 0n }],
+    ["swap of the whole amount", { ...BTC_QUOTE, btcToSwap: BTC_QUOTE.net }],
+    ["no MUSD from the swap", { ...BTC_QUOTE, musdFromSwap: 0n }],
+    ["no LP", { ...BTC_QUOTE, liquidity: 0n }],
+  ])("blocks an amount too small to route: %s", (_name, quote) => {
+    expect(entryBlock(btcInput({}, { quote }))?.reason).toBe("too-small");
+  });
+
+  it("applies the same price-impact limit", () => {
+    expect(entryBlock(btcInput({}, { quote: { ...BTC_QUOTE, priceImpact: PRICE_IMPACT_LIMIT + 1n } }))?.reason).toBe("price-impact");
   });
 });

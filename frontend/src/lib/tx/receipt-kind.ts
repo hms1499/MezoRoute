@@ -4,9 +4,11 @@ import { findClaimEvent } from "@/lib/positions/claim";
 import type { Fees } from "@/lib/positions/fees";
 import {
   findEnteredEvent,
+  findEnteredFromBtcEvent,
   findExitedEvent,
   findStakedEvent,
   type EnteredEvent,
+  type EnteredFromBtcEvent,
   type ExitedEvent,
   type LogLike,
   type StakedEvent,
@@ -15,6 +17,7 @@ import { findSpReceipt, type SpReceipt } from "@/lib/stability-pool/receipt";
 
 export type ReceiptKind =
   | { kind: "entered"; event: EnteredEvent; staked: StakedEvent | null }
+  | { kind: "enteredBtc"; event: EnteredFromBtcEvent; staked: StakedEvent | null }
   | { kind: "exited"; event: ExitedEvent }
   | { kind: "claim"; fees: Fees }
   | { kind: "gauge"; gauge: GaugeReceipt }
@@ -26,6 +29,8 @@ export function receiptKind(logs: readonly LogLike[], network: NetworkConfig): R
   const executor = network.executor?.address;
   const entered = executor ? findEnteredEvent(logs, executor) : null;
   if (entered) return { kind: "entered", event: entered, staked: executor ? findStakedEvent(logs, executor) : null };
+  const enteredBtc = executor ? findEnteredFromBtcEvent(logs, executor) : null;
+  if (enteredBtc) return { kind: "enteredBtc", event: enteredBtc, staked: executor ? findStakedEvent(logs, executor) : null };
   const exited = executor ? findExitedEvent(logs, executor) : null;
   if (exited) return { kind: "exited", event: exited };
   const fees = findClaimEvent(logs, network);

@@ -23,7 +23,7 @@ export function LpPositionCard({ lp, history }: { lp: LpView; history: History }
         </div>
       }
     >
-      <dl className="mt-3 stat-list">
+      <dl className="mt-3 stat-list grid-cols-[minmax(8rem,1fr)_minmax(0,auto)]">
         <Stat label="LP balance" sub={`${formatPercent(lp.share, 4)} of the pool`}>
           {lpUnits(lp.balance)}
         </Stat>

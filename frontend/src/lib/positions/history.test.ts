@@ -151,9 +151,9 @@ describe("visibleHistory", () => {
 });
 
 describe("history storage", () => {
-  it("keys the cache by network, executor, and account, lower-cased", () => {
+  it("keys the cache by network, executor, and account, lower-cased; v2 because caches from before BTC entries lack those events", () => {
     expect(historyKey(networks.testnet, "0xB36B2E012003840951CFf00fA6b1E3237A110920", ME)).toBe(
-      "mezoroute.testnet.history.0xb36b2e012003840951cff00fa6b1e3237a110920.0xd74f60bb70d2a8b412ff12d8ef0ffdaae81b2b49",
+      "mezoroute.testnet.history-v2.0xb36b2e012003840951cff00fa6b1e3237a110920.0xd74f60bb70d2a8b412ff12d8ef0ffdaae81b2b49",
     );
   });
 

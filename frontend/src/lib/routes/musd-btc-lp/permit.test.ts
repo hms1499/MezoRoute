@@ -2,7 +2,7 @@ import { domainSeparator, recoverTypedDataAddress, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
-import { musdPermitDomain, permitState, permitTypedData, permitUsable, toExecutorPermit } from "./permit";
+import { btcPermitDomain, musdPermitDomain, permitState, permitTypedData, permitUsable, toExecutorPermit } from "./permit";
 
 const testnet = networks.testnet;
 // Anvil's first well-known test key; it holds nothing on Mezo.
@@ -59,5 +59,37 @@ describe("permitState", () => {
     expect(permitState({ permit, nonce: 3n }, 900n, 4n)).toBe("used");
     expect(permitState({ permit, nonce: 3n }, 940n, 3n)).toBe("expired");
     expect(permitState(null, 900n, 3n)).toBe("expired");
+  });
+});
+
+describe("BTC permit", () => {
+  // The real BTC token's DOMAIN_SEPARATOR() equals the hash of ("BTC", "1", 31611, token) (G1 smoke, 4 Nov 2026).
+  it("signs the BTC permit domain, matching the chain", async () => {
+    const domain = { name: "BTC", version: "1", chainId: 31611, verifyingContract: testnet.addresses.btc } as const;
+    expect(btcPermitDomain(testnet)).toEqual(domain);
+    const typedData = permitTypedData({
+      network: testnet,
+      asset: "btc",
+      owner: signer.address,
+      spender: EXECUTOR,
+      value: 5n,
+      nonce: 0n,
+      deadline: 1_759_600_600n,
+    });
+    expect(typedData.domain).toEqual(domain);
+    const signature = await signer.signTypedData(typedData);
+    // Recovered against an independently written domain: a wrong name, version, chain, or token fails here.
+    expect(await recoverTypedDataAddress({ domain, types: typedData.types, primaryType: "Permit", message: typedData.message, signature })).toBe(
+      signer.address,
+    );
+    expect(
+      await recoverTypedDataAddress({ domain: { ...domain, name: "Mezo USD" }, types: typedData.types, primaryType: "Permit", message: typedData.message, signature }),
+    ).not.toBe(signer.address);
+  });
+
+  it("keeps MUSD as the default asset", () => {
+    expect(permitTypedData({ network: testnet, owner: signer.address, spender: EXECUTOR, value: 1n, nonce: 0n, deadline: 1n }).domain).toEqual(
+      musdPermitDomain(testnet),
+    );
   });
 });

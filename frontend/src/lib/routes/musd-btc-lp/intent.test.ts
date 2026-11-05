@@ -11,11 +11,13 @@ describe("parseEntryIntent", () => {
       slippageBps: 50n,
       mode: "deposit",
       stake: true,
+      asset: "musd",
+      btcIn: null,
     });
   });
 
   it("defaults to 1% slippage and no amount", () => {
-    expect(parseEntryIntent(new URLSearchParams(""))).toEqual({ amount: "", musdIn: null, slippageBps: 100n, mode: "deposit", stake: true });
+    expect(parseEntryIntent(new URLSearchParams(""))).toEqual({ amount: "", musdIn: null, slippageBps: 100n, mode: "deposit", stake: true, asset: "musd", btcIn: null });
   });
 
   it("never accepts a slippage outside the presets", () => {
@@ -31,7 +33,7 @@ describe("entryQuery", () => {
   it("round-trips through parseEntryIntent", () => {
     const query = entryQuery({ amount: "100", slippageBps: 200n });
     expect(query).toBe("?amount=100&slippage=2");
-    expect(parseEntryIntent(new URLSearchParams(query))).toEqual({ amount: "100", musdIn: 100n * ONE, slippageBps: 200n, mode: "deposit", stake: true });
+    expect(parseEntryIntent(new URLSearchParams(query))).toEqual({ amount: "100", musdIn: 100n * ONE, slippageBps: 200n, mode: "deposit", stake: true, asset: "musd", btcIn: null });
   });
 
   it("omits an empty amount", () => {
@@ -57,5 +59,28 @@ describe("stake", () => {
     expect(query).toBe("?amount=5&slippage=1&stake=0");
     expect(parseEntryIntent(new URLSearchParams(query)).stake).toBe(false);
     expect(entryQuery({ amount: "5", slippageBps: 100n, stake: true })).toBe("?amount=5&slippage=1");
+  });
+});
+
+describe("asset", () => {
+  it("defaults to MUSD and reads asset=btc as a BTC amount", () => {
+    expect(parseEntryIntent(new URLSearchParams("amount=5"))).toMatchObject({ asset: "musd", musdIn: 5n * ONE, btcIn: null });
+    expect(parseEntryIntent(new URLSearchParams("amount=0.5&asset=btc"))).toMatchObject({
+      asset: "btc",
+      musdIn: null,
+      btcIn: ONE / 2n,
+    });
+  });
+
+  it("round-trips asset=btc and omits it for MUSD", () => {
+    const query = entryQuery({ amount: "0.5", slippageBps: 100n, asset: "btc" });
+    expect(query).toBe("?amount=0.5&slippage=1&asset=btc");
+    expect(parseEntryIntent(new URLSearchParams(query)).asset).toBe("btc");
+    expect(entryQuery({ amount: "0.5", slippageBps: 100n, asset: "musd" })).toBe("?amount=0.5&slippage=1");
+  });
+
+  it("hides the BTC asset in borrow mode", () => {
+    expect(parseEntryIntent(new URLSearchParams("amount=5&mode=borrow&asset=btc"))).toMatchObject({ mode: "borrow", asset: "musd", musdIn: 5n * ONE });
+    expect(entryQuery({ amount: "5", slippageBps: 100n, mode: "borrow", asset: "btc" })).toBe("?amount=5&slippage=1&mode=borrow");
   });
 });

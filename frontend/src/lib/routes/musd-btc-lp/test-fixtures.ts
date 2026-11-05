@@ -32,6 +32,8 @@ export function lpRouteSnapshotWith(overrides: Partial<LpRouteSnapshot> = {}): L
     pool: TESTNET_POOL,
     allowance: 0n,
     permitNonce: 0n,
+    btcAllowance: 0n,
+    btcPermitNonce: 0n,
     executorFeeBps: 10n,
     maxMusdIn: 1_000_000n * ONE,
     blockNumber: 15936716n,

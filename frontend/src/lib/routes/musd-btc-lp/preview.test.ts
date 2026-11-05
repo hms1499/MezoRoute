@@ -144,3 +144,64 @@ describe("entryPreview staking", () => {
     expect(result.stake).toEqual({ availability: "between-weeks", on: true });
   });
 });
+
+describe("entryPreview from BTC", () => {
+  const BTC_URL = "amount=0.0003&asset=btc";
+  // 0.0526 BTC like the testnet deployer; gas price 146 wei as on testnet.
+  const data = (gasBalance: bigint) => lpRouteDataWith({ gasBalance });
+
+  it("quotes a BTC amount with the four BTC-route minimums and the BTC budget", () => {
+    const result = preview(BTC_URL, { data: data(ONE / 20n) });
+    expect(result.quote).toBeNull();
+    expect(result.btcQuote?.btcIn).toBe(3n * 10n ** 14n);
+    expect(result.btcMinimums?.minLpOut).toBe((result.btcQuote!.liquidity * 9_900n) / 10_000n);
+    expect(result.steps).toEqual(["permit", "enter"]);
+    expect(result.gasUnits).toBe(465_000n);
+    expect(result.block).toBeNull();
+  });
+
+  it("uses the BTC staking budget when the LP is staked", () => {
+    const now = 1_759_600_000n;
+    const gauge = { alive: true, rewardRate: 1n, periodFinish: now + 3_600n, totalStaked: ONE, staked: 0n, earned: 0n };
+    const staked = lpRouteDataWith({ gasBalance: ONE / 20n, snapshot: lpRouteSnapshotWith({ gauge }) });
+    expect(preview(BTC_URL, { data: staked }).gasUnits).toBe(515_000n);
+  });
+
+  it("keeps twice the entry's gas units at the gas price in the wallet", () => {
+    const result = preview(BTC_URL, { data: data(ONE / 20n) });
+    expect(result.btc?.gasReserve).toBe(465_000n * 2n * 146n);
+    expect(result.btc?.walletBtc).toBe(ONE / 20n);
+    expect(result.btc?.maxSpendable).toBe(ONE / 20n - 465_000n * 2n * 146n);
+  });
+
+  it("reserves for the approval and the relayer on a smart account, whatever the allowance", () => {
+    const result = preview(BTC_URL, { data: data(ONE / 20n), walletKind: "smart-account" });
+    expect(result.steps).toEqual(["approve", "enter"]);
+    expect(result.btc?.gasReserve).toBe((465_000n + 60_000n + 2n * 197_471n) * 2n * 146n);
+  });
+
+  it("blocks spending the whole balance (the reserve stays) and allows the spendable maximum", () => {
+    const balance = 3n * 10n ** 14n;
+    expect(preview(BTC_URL, { data: data(balance) }).block?.reason).toBe("needs-gas");
+    const reserve = 465_000n * 2n * 146n;
+    expect(preview(BTC_URL, { data: data(balance + reserve) }).block).toBeNull();
+    expect(preview(BTC_URL, { data: data(balance + reserve - 1n) }).block?.reason).toBe("needs-gas");
+  });
+
+  it("blocks above the BTC cap, from the network config", () => {
+    const capped = { ...testnet, entryCapBtc: 3n * 10n ** 14n - 1n };
+    expect(preview(BTC_URL, { data: data(ONE / 20n), network: capped }).block?.reason).toBe("above-cap");
+  });
+
+  it("does not offer BTC in borrow mode", () => {
+    const result = preview("amount=5&mode=borrow&asset=btc");
+    expect(result.btcQuote).toBeNull();
+    expect(result.btc).toBeNull();
+  });
+
+  it("shows the exposure after: BTC leaves the wallet side only through the swap and the deposit", () => {
+    const result = preview(BTC_URL, { data: data(ONE / 20n) });
+    expect(result.after?.lp.balance).toBe(result.btcQuote!.liquidity);
+    expect(result.after?.musd).toBe(lpRouteDataWith().snapshot.dashboard.musd + result.btcQuote!.musdRefund);
+  });
+});

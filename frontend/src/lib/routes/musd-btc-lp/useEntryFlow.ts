@@ -13,19 +13,21 @@ import { AMOUNT_TOO_SMALL, BORROW_USED, PERMIT_EXPIRED } from "@/lib/errors/outc
 import { borrowEffect } from "@/lib/trove/borrow";
 import { borrowAuthorisationState, borrowTypedData, type BorrowAuthorisation } from "@/lib/trove/borrow-signature";
 import { findHints, type HintRead } from "@/lib/trove/hints";
-import { APPROVE_GAS, borrowEnterGas, ENTER_GAS, ENTER_STAKE_GAS } from "@/lib/quote/gas";
+import { APPROVE_GAS, borrowEnterGas, ENTER_BTC_GAS, ENTER_BTC_STAKE_GAS, ENTER_GAS, ENTER_STAKE_GAS } from "@/lib/quote/gas";
 import { BlockedError } from "@/lib/tx/errors";
 import { confirmCall, submitCall, type SendPin } from "@/lib/tx/send";
 import { createStepper, hasStarted, stepperReducer, type Stepper } from "@/lib/tx/stepper";
 import type { WalletKind } from "@/lib/wallet/capabilities";
-import { entryQuery, type EntryIntent } from "./intent";
+import { entryQuery, intentAmount, type EntryIntent } from "./intent";
 import {
+  approveCall,
   buildBorrow,
+  buildEnterFromBtcParams,
   buildEnterParams,
   DEADLINE_SECONDS,
-  encodeApproveCall,
   encodeBorrowAndEnterCall,
   encodeEnterCall,
+  encodeEnterFromBtcCall,
   NO_PERMIT,
 } from "./params";
 import { permitState, permitTypedData, toExecutorPermit, type SignedPermit } from "./permit";
@@ -45,8 +47,8 @@ export type EntryFlowInput = {
 const nowSeconds = () => BigInt(Math.floor(Date.now() / 1000));
 
 /**
- * Runs the confirm stepper: permit (EOA) or exact approval (smart account), the borrow authorisation
- * in Borrow & Deploy, then enter or borrowAndEnter. The account and chain are pinned on the first
+ * Runs the confirm stepper: permit (EOA) or exact approval (smart account) for the entry's token (MUSD, or
+ * BTC for a BTC entry), the borrow authorisation in Borrow & Deploy, then enter, borrowAndEnter, or enterFromBtc. The account and chain are pinned on the first
  * step; the send re-quotes, simulates, submits, and hands the hash to the receipt page.
  */
 export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: () => void } {
@@ -66,21 +68,28 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
     if (!hasStarted(stepperRef.current)) dispatch({ type: "reset", kinds: planKey.split(",") as StepKind[] });
   }, [planKey]);
 
-  const musdIn = input.intent.musdIn ?? 0n;
+  const asset = input.intent.asset;
+  // The entry's amount in its own token: MUSD, or BTC for a BTC entry.
+  const amountIn = intentAmount(input.intent) ?? 0n;
+  const musdIn = input.intent.musdIn ?? 0n; // Borrow & Deploy only
+  const token = asset === "btc" ? network.addresses.btc : network.addresses.musd;
+  const tokenNonce = (snapshot: LpRouteData["snapshot"]) => (asset === "btc" ? snapshot.btcPermitNonce : snapshot.permitNonce);
 
   async function signPermit(sendPin: SendPin) {
     const fresh = await input.refresh();
     const deadline = fresh.snapshot.blockTimestamp + DEADLINE_SECONDS;
+    const nonce = tokenNonce(fresh.snapshot);
     const typedData = permitTypedData({
       network,
+      asset,
       owner: sendPin.account,
       spender: input.executor,
-      value: musdIn,
-      nonce: fresh.snapshot.permitNonce,
+      value: amountIn,
+      nonce,
       deadline,
     });
     const signature = await signTypedData(config, { account: sendPin.account, ...typedData });
-    permit.current = { permit: toExecutorPermit(signature, musdIn, deadline), nonce: fresh.snapshot.permitNonce };
+    permit.current = { permit: toExecutorPermit(signature, amountIn, deadline), nonce };
     dispatch({ type: "signed" });
   }
 
@@ -113,7 +122,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
   }
 
   async function approve(sendPin: SendPin) {
-    const hash = await submitCall(config, { to: network.addresses.musd, data: encodeApproveCall(input.executor, musdIn) }, sendPin, APPROVE_GAS);
+    const hash = await submitCall(config, approveCall(token, input.executor, amountIn), sendPin, APPROVE_GAS);
     dispatch({ type: "submitted", hash });
     await confirmCall(config, hash, sendPin.chainId);
     dispatch({ type: "confirmed" });
@@ -123,7 +132,7 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
     const hasPermitStep = stepperRef.current.steps.some((step) => step.kind === "permit");
     const fresh = await input.refresh();
     // Expired, or spent elsewhere (the nonce moved): sign again rather than send a permit the executor would skip.
-    const signed = hasPermitStep && permitState(permit.current, nowSeconds(), fresh.snapshot.permitNonce) === "usable" ? permit.current : null;
+    const signed = hasPermitStep && permitState(permit.current, nowSeconds(), tokenNonce(fresh.snapshot)) === "usable" ? permit.current : null;
     if (hasPermitStep && !signed) {
       permit.current = null;
       dispatch({ type: "signature-expired" });
@@ -140,9 +149,30 @@ export function useEntryFlow(input: EntryFlowInput): { stepper: Stepper; run: ()
       now: Date.now(),
     });
     if (preview.block) throw new BlockedError(preview.block.outcome ?? AMOUNT_TOO_SMALL);
+    const usedPermit = signed ? signed.permit : NO_PERMIT;
+    if (preview.btcQuote && preview.btcMinimums) {
+      // A BTC entry: the permit (or approval) is for BTC, and the call is enterFromBtc.
+      const btcParams = buildEnterFromBtcParams(preview.btcQuote, preview.btcMinimums, preview.deadline, sendPin.account, preview.stake.on);
+      await simulateContract(config, {
+        address: input.executor,
+        abi: mezoRouteExecutorAbi,
+        functionName: "enterFromBtc",
+        args: [btcParams, usedPermit],
+        account: sendPin.account,
+        chainId: sendPin.chainId,
+      });
+      const btcHash = await submitCall(
+        config,
+        { to: input.executor, data: encodeEnterFromBtcCall(btcParams, usedPermit) },
+        sendPin,
+        preview.stake.on ? ENTER_BTC_STAKE_GAS : ENTER_BTC_GAS,
+      );
+      dispatch({ type: "submitted", hash: btcHash });
+      router.push(`/tx/?hash=${btcHash}`);
+      return;
+    }
     if (!preview.quote || !preview.minimums) throw new BlockedError(AMOUNT_TOO_SMALL);
     const params = buildEnterParams(preview.quote, preview.minimums, preview.deadline, sendPin.account, preview.stake.on);
-    const usedPermit = signed ? signed.permit : NO_PERMIT;
     let data = encodeEnterCall(params, usedPermit);
     let gasBudget = preview.stake.on ? ENTER_STAKE_GAS : ENTER_GAS;
     // A simulated revert is decoded and nothing is sent.

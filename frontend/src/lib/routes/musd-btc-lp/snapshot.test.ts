@@ -39,6 +39,8 @@ function results(reserves: readonly [bigint, bigint, bigint]): LpRouteResults {
     428_873_804n * ONE,
     1_500_000_000_000_000_000n,
     242n,
+    4n,
+    9n,
     true,
     1_000_000_000_000n,
     1_759_700_000n,
@@ -52,7 +54,7 @@ describe("lpRouteContracts", () => {
   it("adds the LP-route reads after the dashboard's, all on the selected network", () => {
     for (const network of [networks.testnet, networks.mainnet]) {
       const calls = lpRouteContracts(network, EXECUTOR, ACCOUNT);
-      expect(calls).toHaveLength(DASHBOARD_READS + 11 + GAUGE_READS);
+      expect(calls).toHaveLength(DASHBOARD_READS + 13 + GAUGE_READS);
       const allowed: string[] = [...Object.values(network.addresses), EXECUTOR, network.gauge!.address, network.gauge!.voter];
       for (const call of calls) {
         expect(call.chainId).toBe(network.chainId);
@@ -90,6 +92,14 @@ describe("lpRouteContracts", () => {
   });
 });
 
+describe("BTC reads", () => {
+  it("reads the account's BTC allowance to the executor and its BTC permit nonce from the BTC token", () => {
+    const calls = lpRouteContracts(networks.testnet, EXECUTOR, ACCOUNT).filter((call) => call.address === networks.testnet.addresses.btc);
+    expect(calls.map((call) => call.functionName)).toEqual(["allowance", "nonces"]);
+    expect(calls.map((call) => ("args" in call ? call.args : undefined))).toEqual([[ACCOUNT, EXECUTOR], [ACCOUNT]]);
+  });
+});
+
 describe("parseLpRouteSnapshot", () => {
   it("parses the gauge reads that follow the LP-route reads", () => {
     const parsed = parseLpRouteSnapshot(networks.testnet, results([520n * ONE, 6_000_000_000_000_000n, 1n]));
@@ -105,7 +115,7 @@ describe("parseLpRouteSnapshot", () => {
 
   it("has no gauge state on a network without a gauge", () => {
     const network = { ...networks.testnet, gauge: null };
-    const parsed = parseLpRouteSnapshot(network, results([520n * ONE, 6_000_000_000_000_000n, 1n]).slice(0, DASHBOARD_READS + 11) as unknown as LpRouteResults);
+    const parsed = parseLpRouteSnapshot(network, results([520n * ONE, 6_000_000_000_000_000n, 1n]).slice(0, DASHBOARD_READS + 13) as unknown as LpRouteResults);
     expect(parsed.gauge).toBeNull();
   });
 
@@ -125,6 +135,8 @@ describe("parseLpRouteSnapshot", () => {
       blockNumber: 15936716n,
       blockTimestamp: 1_759_600_000n,
       borrowNonce: 2n,
+      btcAllowance: 4n,
+      btcPermitNonce: 9n,
       system: { coll: 15_413n * ONE, debt: 428_873_804n * ONE, ccr: 1_500_000_000_000_000_000n, troveCount: 242n },
     });
     expect(parsed.dashboard.musd).toBe(120n * ONE);

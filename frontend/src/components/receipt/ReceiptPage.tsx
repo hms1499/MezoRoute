@@ -19,7 +19,7 @@ import { useDashboardSnapshot } from "@/lib/dashboard/useDashboardSnapshot";
 import { formatPercent, formatToken, shortAddress } from "@/lib/format";
 import { gaugeReceiptRows } from "@/lib/gauge/actions";
 import { claimRows } from "@/lib/positions/claim";
-import { enteredRows, exitedRows } from "@/lib/routes/musd-btc-lp/receipt";
+import { enteredFromBtcRows, enteredRows, exitedRows } from "@/lib/routes/musd-btc-lp/receipt";
 import { spReceiptRows } from "@/lib/stability-pool/receipt";
 import { collateralRatio } from "@/lib/trove/health";
 import { receiptKind } from "@/lib/tx/receipt-kind";
@@ -96,6 +96,7 @@ const GAUGE_TITLES = { claim: "MEZO claimed", stake: "LP staked", unstake: "LP u
 
 const TITLES = {
   entered: "Deposit confirmed",
+  enteredBtc: "Deposit confirmed",
   exited: "Exit confirmed",
   claim: "Fees claimed",
   "sp-deposit": "Stability Pool deposit confirmed",
@@ -118,7 +119,9 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
   const rows =
     result.kind === "entered"
       ? enteredRows(result.event, result.staked)
-      : result.kind === "exited"
+      : result.kind === "enteredBtc"
+        ? enteredFromBtcRows(result.event, result.staked)
+        : result.kind === "exited"
         ? exitedRows(result.event)
         : result.kind === "claim"
           ? claimRows(result.fees)

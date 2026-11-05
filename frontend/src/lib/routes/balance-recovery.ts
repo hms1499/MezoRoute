@@ -1,6 +1,9 @@
 import { MIN_USABLE_MUSD } from "@/lib/dashboard/readiness";
 
-export type BalanceAction = { kind: "borrow-instead"; amount: bigint } | { kind: "use-balance"; amount: bigint; capped?: true } | { kind: "get-musd"; href: string };
+export type BalanceAction =
+  | { kind: "borrow-instead"; amount: bigint }
+  | { kind: "use-balance"; amount: bigint; capped?: true } | { kind: "get-musd"; href: string }
+  | { kind: "get-btc"; href: string };
 
 /**
  * The ways out of "Amount exceeds your available MUSD" (U3 §5.4), at most two: borrow the amount

@@ -1,4 +1,12 @@
-import { entryMinimums, quoteEntry, simulateEntry, type PoolState } from "./entry";
+import {
+  btcEntryMinimums,
+  entryMinimums,
+  quoteEntry,
+  quoteEntryFromBtc,
+  simulateEntry,
+  simulateEntryFromBtc,
+  type PoolState,
+} from "./entry";
 
 const BPS = 10_000n;
 
@@ -12,6 +20,22 @@ export type EnteredEvent = {
   fee: bigint;
   musdSwapped: bigint;
   btcFromSwap: bigint;
+  musdAdded: bigint;
+  btcAdded: bigint;
+  liquidityOut: bigint;
+  musdRefund: bigint;
+  btcRefund: bigint;
+};
+
+/** One executor `EnteredFromBtc` event, decoded. */
+export type EnteredFromBtcEvent = {
+  blockNumber: bigint;
+  logIndex: number;
+  txHash: string;
+  btcIn: bigint;
+  fee: bigint;
+  btcToSwap: bigint;
+  musdFromSwap: bigint;
   musdAdded: bigint;
   btcAdded: bigint;
   liquidityOut: bigint;
@@ -58,6 +82,40 @@ export function checkEntry(input: { event: EnteredEvent; pool: PoolState; feeBps
   };
 }
 
+const mismatchesOf = (fields: [string, bigint, bigint][]) =>
+  fields.filter(([, sim, live]) => sim !== live).map(([name, sim, live]) => `${name}: simulated ${sim}, event ${live}`);
+
+/**
+ * The BTC route's version of `checkEntry`: the event's own swap (`btcToSwap`) must simulate to the wei,
+ * the fee is `btcIn × feeBps / 10,000` in BTC, and the optimal quote must land within the slippage.
+ */
+export function checkEntryFromBtc(input: { event: EnteredFromBtcEvent; pool: PoolState; feeBps: bigint; slippageBps: bigint }): EntryCheck {
+  const { event, pool, feeBps } = input;
+  const simulated = simulateEntryFromBtc(pool, event.btcIn - event.fee, event.btcToSwap);
+  const mismatches = mismatchesOf([
+    ["musdFromSwap", simulated.musdFromSwap, event.musdFromSwap],
+    ["musdAdded", simulated.musdAdded, event.musdAdded],
+    ["btcAdded", simulated.btcAdded, event.btcAdded],
+    ["liquidity", simulated.liquidity, event.liquidityOut],
+    ["musdRefund", simulated.musdRefund, event.musdRefund],
+    ["btcRefund", simulated.btcRefund, event.btcRefund],
+  ]);
+  const quote = quoteEntryFromBtc(pool, event.btcIn, feeBps);
+  return {
+    feeOk: event.fee === (event.btcIn * feeBps) / BPS,
+    simulation: { ok: mismatches.length === 0, mismatches },
+    quote:
+      quote === null || quote.liquidity === 0n
+        ? null
+        : {
+            quotedLiquidity: quote.liquidity,
+            deviationBps: ((quote.liquidity - event.liquidityOut) * BPS) / quote.liquidity,
+            withinSlippage: event.liquidityOut >= btcEntryMinimums(quote, input.slippageBps).minLpOut,
+            optimal: event.btcToSwap === quote.btcToSwap,
+          },
+  };
+}
+
 /** True when another transaction moved the pool earlier in the entry's block, so block − 1 is not its starting state. */
 export function earlierPoolActivity(
   syncLogs: readonly { logIndex: number; transactionHash: string }[],
@@ -66,7 +124,7 @@ export function earlierPoolActivity(
   return syncLogs.some((log) => log.logIndex < event.logIndex && log.transactionHash !== event.txHash);
 }
 
-export type CheckResult = { event: EnteredEvent } & (
+export type CheckResult<E = EnteredEvent> = { event: E } & (
   | { status: "checked"; check: EntryCheck }
   | { status: "skipped"; reason: string }
 );
@@ -86,7 +144,7 @@ export type AccuracySummary = {
  * Passes with no mismatches, every quote within slippage, at least one event checked, and at most half
  * skipped. The script only summarises when an executor exists, so an empty scan is a failure, not a pass.
  */
-export function summarise(results: readonly CheckResult[]): AccuracySummary {
+export function summarise<E>(results: readonly CheckResult<E>[]): AccuracySummary {
   const checks = results.flatMap((result) => (result.status === "checked" ? [result.check] : []));
   const skipped = results.length - checks.length;
   const simulationMismatches = checks.filter((c) => !c.simulation.ok).length;

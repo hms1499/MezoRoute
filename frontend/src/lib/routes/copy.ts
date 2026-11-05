@@ -10,6 +10,14 @@ export const LP_RISKS = [
   "MezoRoute is unaudited software.",
 ];
 
+/** The BTC entry swaps about half of the BTC to MUSD, so the second risk differs from the MUSD route's. */
+export const LP_BTC_RISKS = [
+  LP_RISKS[0],
+  "About half of your BTC is swapped to MUSD before it is deposited. Your pool share still moves with the BTC price, and the swap pays the pool's fee.",
+  LP_RISKS[2],
+  LP_RISKS[3],
+];
+
 export const SP_RISKS = [
   "Your deposit shrinks when the pool absorbs liquidated debt; you receive that Trove's BTC instead, usually worth more than the debt.",
   "Withdrawals pause while any Trove is under-collateralised. Claiming your BTC gain is never paused.",

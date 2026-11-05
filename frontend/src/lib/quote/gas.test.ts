@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { entryGasUnits, ENTER_GAS, ENTER_STAKE_GAS, STAKE_EXTRA_GAS, BORROW_ENTER_GAS, BORROW_ENTER_NO_HINTS_GAS, borrowEnterGas, gasLimit, SP_DEPOSIT_GAS, SP_WITHDRAW_GAS } from "./gas";
+import { ENTER_BTC_GAS, ENTER_BTC_STAKE_GAS, entryGasUnits, ENTER_GAS, ENTER_STAKE_GAS, STAKE_EXTRA_GAS, BORROW_ENTER_GAS, BORROW_ENTER_NO_HINTS_GAS, borrowEnterGas, gasLimit, SP_DEPOSIT_GAS, SP_WITHDRAW_GAS } from "./gas";
 
 describe("gasLimit", () => {
   it("never goes below the measured budget, so a broken RPC estimate cannot send an out-of-gas transaction", () => {
@@ -49,5 +49,20 @@ describe("entryGasUnits with staking", () => {
 
   it("adds the gauge deposit to a borrow entry", () => {
     expect(entryGasUnits({ approve: false, smartAccount: false, borrow: true, stake: true })).toBe(BORROW_ENTER_GAS + STAKE_EXTRA_GAS);
+  });
+});
+
+describe("BTC entry gas budgets", () => {
+  it("budgets enterFromBtc: max(used 383,737, estimate 439,723) plus 5%, up to a multiple of 5,000", () => {
+    expect(ENTER_BTC_GAS).toBe(465_000n);
+    expect(ENTER_BTC_GAS).toBeGreaterThanOrEqual((439_723n * 105n) / 100n);
+    expect(ENTER_BTC_STAKE_GAS).toBe(515_000n);
+    expect(ENTER_BTC_STAKE_GAS).toBeGreaterThanOrEqual((487_483n * 105n) / 100n);
+  });
+
+  it("estimates the whole BTC flow by asset", () => {
+    expect(entryGasUnits({ approve: false, smartAccount: false, asset: "btc" })).toBe(ENTER_BTC_GAS);
+    expect(entryGasUnits({ approve: false, smartAccount: false, asset: "btc", stake: true })).toBe(ENTER_BTC_STAKE_GAS);
+    expect(entryGasUnits({ approve: true, smartAccount: false, asset: "btc" })).toBe(ENTER_BTC_GAS + 60_000n);
   });
 });

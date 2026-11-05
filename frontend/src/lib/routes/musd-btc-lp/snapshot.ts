@@ -14,6 +14,8 @@ export type LpRouteSnapshot = {
   pool: PoolState;
   allowance: bigint; // MUSD the executor may already pull from the account
   permitNonce: bigint; // MUSD EIP-2612 nonce of the account
+  btcAllowance: bigint; // BTC the executor may already pull from the account (BTC entries)
+  btcPermitNonce: bigint; // BTC EIP-2612 nonce of the account
   executorFeeBps: bigint; // read on chain; the gate compares it with the pinned fee
   maxMusdIn: bigint; // the executor's per-transaction entry cap
   blockNumber: bigint;
@@ -30,7 +32,7 @@ export type LpRouteData = { snapshot: LpRouteSnapshot; gasBalance: bigint; gasPr
 export const DASHBOARD_READS = 13;
 
 /** The LP route's own reads between the dashboard's and the gauge's. */
-const LP_ROUTE_READS = 11;
+const LP_ROUTE_READS = 13;
 
 type LpRouteTail = readonly [
   allowance: bigint,
@@ -44,6 +46,8 @@ type LpRouteTail = readonly [
   systemDebt: bigint,
   ccr: bigint,
   troveCount: bigint,
+  btcAllowance: bigint,
+  btcPermitNonce: bigint,
 ];
 export type LpRouteResults = readonly [...SnapshotResults, ...LpRouteTail, ...(readonly unknown[])];
 
@@ -63,6 +67,8 @@ export function lpRouteContracts(network: NetworkConfig, executor: Address, acco
     { chainId, address: a.troveManager, abi: troveSystemAbi, functionName: "getEntireSystemDebt" },
     { chainId, address: a.troveManager, abi: troveSystemAbi, functionName: "CCR" },
     { chainId, address: a.troveManager, abi: troveSystemAbi, functionName: "getTroveOwnersCount" },
+    { chainId, address: a.btc, abi: erc20Abi, functionName: "allowance", args: [account, executor] },
+    { chainId, address: a.btc, abi: musdPermitAbi, functionName: "nonces", args: [account] },
     ...gaugeContracts(network, account),
   ] as const;
 }
@@ -81,6 +87,8 @@ export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteRes
     systemDebt,
     ccr,
     troveCount,
+    btcAllowance,
+    btcPermitNonce,
   ] = results.slice(DASHBOARD_READS) as unknown as LpRouteTail;
   const gaugeResults = results.slice(DASHBOARD_READS + LP_ROUTE_READS);
   return {
@@ -93,6 +101,8 @@ export function parseLpRouteSnapshot(network: NetworkConfig, results: LpRouteRes
     },
     allowance,
     permitNonce,
+    btcAllowance,
+    btcPermitNonce,
     executorFeeBps,
     maxMusdIn,
     blockNumber,

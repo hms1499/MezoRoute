@@ -3,10 +3,13 @@ import { writeBlocker } from "@/lib/config/write-gate";
 import {
   ABOVE_HEADROOM,
   aboveCap,
+  aboveCapBtc,
   AMOUNT_TOO_SMALL,
   CR_FLOOR,
   FEE_MISMATCH,
   INSUFFICIENT_BALANCE,
+  INSUFFICIENT_BTC,
+  KEEP_GAS_BTC,
   needsGas,
   NO_TROVE,
   noExecutor,
@@ -17,7 +20,7 @@ import {
   wrongNetwork,
 } from "@/lib/errors/outcomes";
 import type { Outcome } from "@/lib/errors/types";
-import type { EntryQuote } from "@/lib/quote/entry";
+import type { BtcEntryQuote, EntryQuote } from "@/lib/quote/entry";
 import { CR_SAFETY_FLOOR } from "@/lib/trove/constants";
 
 /** 5% (PRODUCT_SPEC §12, provisional until integration tests); 1e18 = 100%. */
@@ -28,6 +31,12 @@ export const QUOTE_TTL_MS = 60_000;
 /** Borrow & Deploy's extra inputs; absent in deposit mode. `limit` is `borrowLimit` (headroom and cap). */
 export type BorrowGate = { canSign: boolean; hasTrove: boolean; recoveryMode: boolean; limit: bigint; newCr: bigint | null };
 
+/**
+ * A BTC entry's inputs (V2 `enterFromBtc`); absent for MUSD. `gasReserve` stays in the wallet: BTC is also the gas,
+ * so `btcIn + gasReserve` may not exceed the balance.
+ */
+export type BtcGate = { btcIn: bigint | null; walletBtc: bigint; maxBtcIn: bigint; gasReserve: bigint };
+
 export type EntryGateInput = {
   network: NetworkConfig;
   walletChainId: number | undefined;
@@ -35,10 +44,11 @@ export type EntryGateInput = {
   musdIn: bigint | null;
   walletMusd: bigint;
   maxMusdIn: bigint;
-  quote: EntryQuote | null;
+  quote: EntryQuote | BtcEntryQuote | null;
   lacksGas: boolean;
   quoteAgeMs: number;
   borrow?: BorrowGate | null;
+  btc?: BtcGate | null;
 };
 
 export type EntryBlockReason =
@@ -58,6 +68,13 @@ export type EntryBlockReason =
   | "cr-floor"
   | "above-headroom";
 
+/** The swap a quote makes: what goes in and what comes out, whichever token that is. */
+function swapOf(quote: EntryQuote | BtcEntryQuote): { input: bigint; output: bigint } {
+  return "btcIn" in quote
+    ? { input: quote.btcToSwap, output: quote.musdFromSwap }
+    : { input: quote.musdToSwap, output: quote.btcFromSwap };
+}
+
 /** `outcome` is null when the button simply stays disabled (no amount yet). */
 export type EntryBlock = { reason: EntryBlockReason; outcome: Outcome | null };
 
@@ -72,22 +89,25 @@ export function entryBlock(input: EntryGateInput): EntryBlock | null {
   if (borrow && !borrow.canSign) return block("smart-account-borrow", SMART_ACCOUNT_BORROW);
   if (borrow && !borrow.hasTrove) return block("no-trove", NO_TROVE);
   if (borrow?.recoveryMode) return block("recovery-mode", RECOVERY_MODE);
-  if (input.musdIn === null) return block("zero", null);
-  if (!borrow && input.musdIn > input.walletMusd) return block("insufficient-balance", INSUFFICIENT_BALANCE);
-  if (input.musdIn > input.maxMusdIn) return block("above-cap", aboveCap(network));
+  const btc = input.btc ?? null;
+  if (btc) {
+    if (btc.btcIn === null) return block("zero", null);
+    if (btc.btcIn > btc.walletBtc) return block("insufficient-balance", INSUFFICIENT_BTC);
+    if (btc.btcIn > btc.maxBtcIn) return block("above-cap", aboveCapBtc(network));
+  } else {
+    if (input.musdIn === null) return block("zero", null);
+    if (!borrow && input.musdIn > input.walletMusd) return block("insufficient-balance", INSUFFICIENT_BALANCE);
+    if (input.musdIn > input.maxMusdIn) return block("above-cap", aboveCap(network));
+  }
   if (borrow && borrow.newCr !== null && borrow.newCr < CR_SAFETY_FLOOR) return block("cr-floor", CR_FLOOR);
-  if (borrow && input.musdIn > borrow.limit) return block("above-headroom", ABOVE_HEADROOM);
-  if (
-    !quote ||
-    quote.musdToSwap === 0n ||
-    quote.musdToSwap >= quote.net ||
-    quote.btcFromSwap === 0n ||
-    quote.liquidity === 0n
-  ) {
+  if (borrow && input.musdIn !== null && input.musdIn > borrow.limit) return block("above-headroom", ABOVE_HEADROOM);
+  const swap = quote ? swapOf(quote) : null;
+  if (!quote || !swap || swap.input === 0n || swap.input >= quote.net || swap.output === 0n || quote.liquidity === 0n) {
     return block("too-small", AMOUNT_TOO_SMALL);
   }
   if (quote.priceImpact > PRICE_IMPACT_LIMIT) return block("price-impact", PRICE_IMPACT);
   if (input.lacksGas) return block("needs-gas", needsGas(network));
+  if (btc && btc.btcIn !== null && btc.btcIn + btc.gasReserve > btc.walletBtc) return block("needs-gas", KEEP_GAS_BTC);
   if (input.quoteAgeMs > QUOTE_TTL_MS) return block("quote-expired", QUOTE_EXPIRED);
   return null;
 }

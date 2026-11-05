@@ -1,14 +1,18 @@
-import { decodeFunctionData, erc20Abi, zeroHash } from "viem";
+import { decodeFunctionData, erc20Abi, getAbiItem, toFunctionSelector, zeroHash } from "viem";
 import { describe, expect, it } from "vitest";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
-import { entryMinimums, quoteEntry } from "@/lib/quote/entry";
+import { networks } from "@/lib/config/networks";
+import { btcEntryMinimums, entryMinimums, quoteEntry, quoteEntryFromBtc } from "@/lib/quote/entry";
 import {
+  approveCall,
   buildBorrow,
+  buildEnterFromBtcParams,
   buildEnterParams,
   DEADLINE_SECONDS,
   encodeApproveCall,
   encodeBorrowAndEnterCall,
   encodeEnterCall,
+  encodeEnterFromBtcCall,
   needsApproval,
   netOfFee,
   NO_PERMIT,
@@ -124,5 +128,40 @@ describe("stake in EnterParams", () => {
     const decoded = decodeFunctionData({ abi: mezoRouteExecutorAbi, data: encodeEnterCall(params) });
     expect((decoded.args?.[0] as EnterParams).stake).toBe(true);
     expect(buildEnterParams(quote, entryMinimums(quote, 100n), DEADLINE_SECONDS, ME, false).stake).toBe(false);
+  });
+});
+
+describe("enterFromBtc params", () => {
+  const quote = quoteEntryFromBtc(TESTNET_POOL, 3n * 10n ** 14n, 10n)!;
+  const minimums = btcEntryMinimums(quote, 100n);
+
+  it("builds the nine EnterFromBtcParams fields from a quote", () => {
+    expect(buildEnterFromBtcParams(quote, minimums, 1_700n, ME, true)).toEqual({
+      btcIn: quote.btcIn,
+      btcToSwap: quote.btcToSwap,
+      minMusdFromSwap: minimums.minMusdFromSwap,
+      minMusdAdded: minimums.minMusdAdded,
+      minBtcAdded: minimums.minBtcAdded,
+      minLpOut: minimums.minLpOut,
+      deadline: 1_700n,
+      recipient: ME,
+      stake: true,
+    });
+  });
+
+  it("encodes enterFromBtc(params, permit) with the deployed V2 selector", () => {
+    const params = buildEnterFromBtcParams(quote, minimums, 1_700n, ME, false);
+    const data = encodeEnterFromBtcCall(params);
+    const decoded = decodeFunctionData({ abi: mezoRouteExecutorAbi, data });
+    expect(decoded.functionName).toBe("enterFromBtc");
+    expect(decoded.args).toEqual([params, NO_PERMIT]);
+    expect(data.slice(0, 10)).toBe(toFunctionSelector(getAbiItem({ abi: mezoRouteExecutorAbi, name: "enterFromBtc" })));
+  });
+
+  it("smart accounts approve BTC exactly", () => {
+    const call = approveCall(networks.testnet.addresses.btc, EXECUTOR, 5n);
+    expect(call.to).toBe(networks.testnet.addresses.btc);
+    const decoded = decodeFunctionData({ abi: erc20Abi, data: call.data });
+    expect(decoded).toEqual({ functionName: "approve", args: [EXECUTOR, 5n] });
   });
 });

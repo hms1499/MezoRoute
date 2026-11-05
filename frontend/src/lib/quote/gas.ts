@@ -6,6 +6,14 @@ export const ENTER_GAS = 450_000n;
  * plus 5%, rounded up to 5,000. The estimate plus 20% still wins when it is higher (`gasLimit`).
  */
 export const ENTER_STAKE_GAS = 565_000n;
+/**
+ * `enterFromBtc` (Ruling P15): max(highest gasUsed 383,737, highest healthy estimate 439,723) plus 5% is
+ * 461,709, rounded up to 5,000. The G1 smoke measured used 299,498 and estimate 355,484 (4 Nov 2026); the
+ * Task 9 drive on testnet (5 Nov 2026, tx 0x5942…2b59) estimated 439,723 and used 383,737, so those win.
+ */
+export const ENTER_BTC_GAS = 465_000n;
+/** `enterFromBtc` that also stakes: max(highest gasUsed 402,945, highest healthy estimate 487,483) plus 5% is 511,857, rounded up to 5,000 (the Task 9 drive estimated 487,483 and used 388,897, tx 0x729d…b030b). */
+export const ENTER_BTC_STAKE_GAS = 515_000n;
 /** What the gauge deposit adds to an entry: estimate difference 535,750 − 396,741 = 139,009, plus 5%, rounded up to 5,000. */
 export const STAKE_EXTRA_GAS = 150_000n;
 
@@ -26,9 +34,19 @@ export const APPROVE_GAS = 60_000n;
 export const RELAYED_CALL_GAS = 197_471n;
 
 /** Estimated gas units for the whole entry flow, for the preview's network-fee line. */
-export function entryGasUnits(input: { approve: boolean; smartAccount: boolean; borrow?: boolean; stake?: boolean }): bigint {
+export function entryGasUnits(input: {
+  approve: boolean;
+  smartAccount: boolean;
+  borrow?: boolean;
+  stake?: boolean;
+  asset?: "musd" | "btc";
+}): bigint {
   const calls = input.approve ? 2n : 1n;
-  const enter = input.borrow
+  const enter = input.asset === "btc"
+    ? input.stake
+      ? ENTER_BTC_STAKE_GAS
+      : ENTER_BTC_GAS
+    : input.borrow
     ? BORROW_ENTER_GAS + (input.stake ? STAKE_EXTRA_GAS : 0n)
     : input.stake
       ? ENTER_STAKE_GAS

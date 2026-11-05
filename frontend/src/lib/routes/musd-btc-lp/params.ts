@@ -1,6 +1,6 @@
 import { encodeFunctionData, erc20Abi, zeroHash, type Address, type Hex } from "viem";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
-import type { EntryMinimums, EntryQuote } from "@/lib/quote/entry";
+import type { BtcEntryMinimums, BtcEntryQuote, EntryMinimums, EntryQuote } from "@/lib/quote/entry";
 import type { BorrowAuthorisation } from "@/lib/trove/borrow-signature";
 import type { Hints } from "@/lib/trove/hints";
 
@@ -46,6 +46,34 @@ export function buildEnterParams(
   return { musdIn: quote.musdIn, musdToSwap: quote.musdToSwap, ...minimums, deadline, recipient, stake };
 }
 
+/** V2's `EnterFromBtcParams`: BTC in, swapped in part to MUSD, then deposited. */
+export type EnterFromBtcParams = {
+  btcIn: bigint;
+  btcToSwap: bigint;
+  minMusdFromSwap: bigint;
+  minMusdAdded: bigint;
+  minBtcAdded: bigint;
+  minLpOut: bigint;
+  deadline: bigint;
+  recipient: Address;
+  stake: boolean;
+};
+
+export function encodeEnterFromBtcCall(params: EnterFromBtcParams, permit: ExecutorPermit = NO_PERMIT): Hex {
+  return encodeFunctionData({ abi: mezoRouteExecutorAbi, functionName: "enterFromBtc", args: [params, permit] });
+}
+
+/** EnterFromBtcParams from a fresh quote; the recipient is always the caller's own account. */
+export function buildEnterFromBtcParams(
+  quote: BtcEntryQuote,
+  minimums: BtcEntryMinimums,
+  deadline: bigint,
+  recipient: Address,
+  stake: boolean,
+): EnterFromBtcParams {
+  return { btcIn: quote.btcIn, btcToSwap: quote.btcToSwap, ...minimums, deadline, recipient, stake };
+}
+
 /** The executor's Borrow struct (spec 11.2). */
 export type BorrowCall = { amount: bigint; upperHint: Address; lowerHint: Address; signature: Hex; deadline: bigint };
 
@@ -65,6 +93,11 @@ export function encodeBorrowAndEnterCall(borrow: BorrowCall, params: EnterParams
 
 export function encodeApproveCall(spender: Address, amount: bigint): Hex {
   return encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [spender, amount] });
+}
+
+/** An exact approval of `token` to `spender`, as a call (MUSD or BTC). */
+export function approveCall(token: Address, spender: Address, amount: bigint): { to: Address; data: Hex } {
+  return { to: token, data: encodeApproveCall(spender, amount) };
 }
 
 export function needsApproval(allowance: bigint, amount: bigint): boolean {

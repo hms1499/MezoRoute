@@ -56,6 +56,20 @@ export const INSUFFICIENT_BALANCE: Outcome = {
   recovery: ["reduce-amount"],
 };
 
+/** A BTC entry: BTC is also the gas, so a BTC amount can fail on the wallet's own balance. */
+export const INSUFFICIENT_BTC: Outcome = {
+  kind: "insufficient-balance",
+  message: "Amount exceeds your available BTC.",
+  recovery: ["reduce-amount"],
+};
+
+/** The amount fits the balance but leaves too little BTC to pay for the transaction. */
+export const KEEP_GAS_BTC: Outcome = {
+  kind: "needs-gas",
+  message: "Keep some BTC in your wallet to pay for the network fee. Enter a little less.",
+  recovery: ["reduce-amount"],
+};
+
 export const POOL: Outcome = {
   kind: "pool",
   message: "The pool cannot take this trade right now.",
@@ -183,6 +197,17 @@ export function aboveCap(network: NetworkConfig): Outcome {
     message:
       network.id === "mainnet"
         ? "Mainnet deposits are limited to 1,000 MUSD per transaction while unaudited."
+        : "Amount is above the per-transaction cap.",
+    recovery: ["reduce-amount"],
+  };
+}
+
+export function aboveCapBtc(network: NetworkConfig): Outcome {
+  return {
+    kind: "above-cap",
+    message:
+      network.id === "mainnet"
+        ? "Mainnet deposits are limited to 0.0125 BTC per transaction while unaudited."
         : "Amount is above the per-transaction cap.",
     recovery: ["reduce-amount"],
   };
