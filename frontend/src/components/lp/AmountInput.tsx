@@ -1,6 +1,7 @@
 import { formatUnits } from "viem";
 import { formatToken } from "@/lib/format";
 import type { EntryAsset } from "@/lib/routes/musd-btc-lp/asset";
+import { cx } from "@/lib/ui/cx";
 import { AssetSwitch } from "./AssetSwitch";
 
 /**
@@ -30,7 +31,7 @@ export function AmountInput({
   const unit = asset === "btc" ? "BTC" : "MUSD";
   return (
     <div className="space-y-3">
-      <div className="flex min-h-9 items-center justify-between gap-3">
+      <div className={cx("flex items-center justify-between gap-3", onAsset && "min-h-11")}>
         <label htmlFor="amount" className="block text-sm font-medium">
           Amount
         </label>

@@ -62,7 +62,12 @@ export function GaugeCard({ account, lp, data, gauge }: { account: Address; lp: 
     <Card
       title={<Term id="gauge">MEZO gauge</Term>}
       subtitle="Staked LP earns MEZO instead of pool fees."
-      aside={<span className="font-mono text-xl font-medium">{mezo(gauge.earned)}</span>}
+      aside={
+        <div className="text-right">
+          <p className="text-xs text-muted">Pending MEZO</p>
+          <p className="font-mono text-xl font-medium">{mezo(gauge.earned)}</p>
+        </div>
+      }
     >
       <dl className="mt-3 stat-list">
         <Stat label="Staked LP" sub={lp.balance > 0n ? `${formatPercent((gauge.staked * 10n ** 18n) / lp.balance, 1)} of your LP` : undefined}>
@@ -96,9 +101,11 @@ export function GaugeCard({ account, lp, data, gauge }: { account: Address; lp: 
           </Button>
         )}
       </div>
-      <div className="mt-3">
-        <BlockNotice block={notice} />
-      </div>
+      {notice?.outcome && (
+        <div className="mt-3">
+          <BlockNotice block={notice} />
+        </div>
+      )}
     </Card>
   );
 }

@@ -25,12 +25,16 @@ export function FeesCard({ account, fees, block, note }: { account: Address; fee
         </Stat>
       </dl>
       {note && <p className="mt-2 text-xs text-muted">{note}</p>}
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <BlockNotice block={block} />
-        <Button disabled={block !== null} pending={pending ? "wallet" : null} onClick={claim} className="ml-auto">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Button disabled={block !== null} pending={pending ? "wallet" : null} onClick={claim}>
           Claim fees
         </Button>
       </div>
+      {block?.outcome && (
+        <div className="mt-3">
+          <BlockNotice block={block} />
+        </div>
+      )}
     </Card>
   );
 }

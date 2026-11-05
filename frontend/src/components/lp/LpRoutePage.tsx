@@ -207,7 +207,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           mcr={data.snapshot.dashboard.protocol.mcr}
         />
       )}
-      {preview.after && <ExposurePanel snapshot={preview.after} before={data.snapshot.dashboard} title="BTC exposure after this deposit" />}
+      {preview.after && <ExposurePanel snapshot={preview.after} before={data.snapshot.dashboard} title="BTC exposure after this deposit" fromBtc={fromBtc} />}
       <RisksCard borrow={intent.mode === "borrow"} fromBtc={fromBtc} />
     </RouteLayout>
   );

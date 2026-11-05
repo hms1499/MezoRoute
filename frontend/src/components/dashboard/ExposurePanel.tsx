@@ -11,6 +11,9 @@ import { collateralRatio } from "@/lib/trove/health";
 
 const DOUBLE_EXPOSURE =
   "Borrowing MUSD against BTC and adding it to the MUSD/BTC pool raises your BTC exposure: a BTC drop lowers your collateral ratio and your LP value at the same time.";
+/** A BTC entry takes the BTC out of the wallet, which this panel does not count, so its "rise" is not the whole story. */
+const FROM_BTC =
+  "The BTC you deposit leaves your wallet, which this panel does not count, so your real BTC exposure falls: about half of it becomes MUSD in the pool. These figures show your Trove and pool share only.";
 const FOOTNOTE =
   "Estimates in MUSD. LP value uses the constant-product approximation (fees ignored). Stability Pool value does not model new liquidations caused by the drop.";
 
@@ -25,7 +28,7 @@ const chartPercent = (value: number) => `${Math.round(value)}%`;
  * "If BTC moves" chart, with the 10/20/30% drawdown table behind "Show figures". With `before` (route
  * previews) every line reads before → after, and the chart draws the before lines faint.
  */
-export function ExposurePanel({ snapshot, before, title = "BTC exposure" }: { snapshot: DashboardSnapshot; before?: DashboardSnapshot; title?: string }) {
+export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBtc = false }: { snapshot: DashboardSnapshot; before?: DashboardSnapshot; title?: string; fromBtc?: boolean }) {
   const current = exposure(snapshot);
   const prior = before ? exposure(before) : null;
   const scenarios = drawdownScenarios(snapshot, current);
@@ -81,7 +84,7 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure" }: { sn
           )}
         </dl>
       )}
-      {showsDoubleExposure(current) && <Notice className="mt-4">{DOUBLE_EXPOSURE}</Notice>}
+      {fromBtc ? <Notice className="mt-4">{FROM_BTC}</Notice> : showsDoubleExposure(current) && <Notice className="mt-4">{DOUBLE_EXPOSURE}</Notice>}
       <BtcMoveChart well plots={chart} ariaLabel={describeDrop(scenarios[scenarios.length - 1], { hasTrove, hasLp, hasSp })} className="mt-5">
         <details className="mt-3 text-sm">
           <summary className="inline-flex min-h-9 cursor-pointer items-center rounded-full font-medium text-accent hover:underline">Show figures</summary>
