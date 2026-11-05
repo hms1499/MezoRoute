@@ -77,7 +77,7 @@ export function GaugeCard({ account, lp, data, gauge }: { account: Address; lp: 
         <Stat label="Pending MEZO" sub={earnedValue === null ? undefined : `≈ ${musd(earnedValue)}`} strong>
           {mezo(gauge.earned)}
         </Stat>
-        <Stat label={<Term id="emissions">Emissions</Term>} sub="At this week's rate, which can change">
+        <Stat label={<Term id="emissions">Emissions</Term>} sub={availability === "unavailable" ? undefined : "At this week's rate, which can change"}>
           {gaugeRateLine(availability, weekly)}
         </Stat>
         {apr !== null && (

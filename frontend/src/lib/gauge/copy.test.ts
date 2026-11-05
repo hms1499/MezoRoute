@@ -30,7 +30,9 @@ describe("a failed gauge read", () => {
 
 describe("GAUGE_NOT_FUNDED", () => {
   it("says why staked LP earns nothing there and points to the way out", () => {
-    expect(GAUGE_NOT_FUNDED).toMatch(/no new MEZO and no swap fees/);
+    expect(GAUGE_NOT_FUNDED).toMatch(/no new MEZO/);
+    expect(GAUGE_NOT_FUNDED).toMatch(/end with the current week/);
+    expect(GAUGE_NOT_FUNDED).toMatch(/no swap fees/);
     expect(GAUGE_NOT_FUNDED).toMatch(/Unstake/);
   });
 });
@@ -43,7 +45,7 @@ describe("gaugeRateLine", () => {
 
   it("does not promise a new week's rate on a gauge that is not being funded", () => {
     expect(gaugeRateLine("between-weeks", null)).toBe("Not set for the new week yet");
-    expect(gaugeRateLine("unavailable", null)).toBe("None: not being funded");
+    expect(gaugeRateLine("unavailable", null)).toBe("No new MEZO: not being funded");
   });
 });
 

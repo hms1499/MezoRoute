@@ -15,12 +15,12 @@ export const GAUGE_READ_FAILED_EXIT = "Staked LP could not be read right now, so
 export const GAUGE_READ_FAILED_RETRY = "Staked LP could not be read right now. Try again in a moment.";
 export const GAUGE_READ_FAILED_SUMMARY = "In your wallet only: staked LP could not be read";
 
-/** On Positions, when staking is unavailable but LP is staked: claim and unstake still work. */
-export const GAUGE_NOT_FUNDED = "This gauge is not being funded, so staked LP earns no new MEZO and no swap fees. Unstake to earn pool fees.";
+/** On Positions, when staking is unavailable but LP is staked: claim and unstake still work. A killed gauge keeps paying what it was funded until `periodFinish`. */
+export const GAUGE_NOT_FUNDED = "This gauge gets no new MEZO, so any rewards end with the current week, and staked LP earns no swap fees. Unstake to earn pool fees.";
 
 /** The emissions row on the gauge card: this week's amount, or why there is none. */
 export function gaugeRateLine(availability: StakeAvailability, mezoPerWeek: bigint | null): string {
-  if (availability === "unavailable") return "None: not being funded";
+  if (availability === "unavailable") return "No new MEZO: not being funded";
   if (availability === "between-weeks") return "Not set for the new week yet";
   return mezoPerWeek === null ? "—" : `≈ ${formatToken(mezoPerWeek, 18, 4)} MEZO a week`;
 }
