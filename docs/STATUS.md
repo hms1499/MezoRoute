@@ -2,7 +2,7 @@
 
 Living handover file for every agent (see `AGENTS.md` → Session protocol). Update it and commit at the end of each session or milestone. Scope and the backlog are in `PRODUCT_SPEC.md` §16; this file says where we are in it.
 
-**Last updated:** 4 Nov 2026, night (Claude Code) · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** U10 motion system and brand hero merged and pushed (21 Oct).
+**Last updated:** 5 Nov 2026 (Claude Code) · **Deadline:** Wave 1 submission 26 Oct 2026 22:00. The DoD keeps one buffer day, so the target is 25 Oct. · **`main`:** U10 motion system and brand hero merged and pushed (21 Oct).
 
 ## Where we are
 
@@ -38,7 +38,7 @@ Tests at `main` (21 Oct): 962 Vitest and 75 Foundry. `npm run build` passes (Fir
 
 Wave 1 judged: $20, scores 8/8/8/8/6. Feedback, the inferred integration ladder, and mainnet facts: `docs/wave2/2026-11-04-wave1-feedback.md`. **Plan for a 13 Nov deadline** (platform record; the page says 15 Nov). Order approved (4 Nov): gauge route, entry from BTC, then Unwind and Leverage. G1 spec: `docs/superpowers/specs/2026-11-04-g1-gauge-route-design.md`, approved by the user (4 Nov). Plan: `docs/superpowers/plans/2026-11-04-g1-gauge-route.md` (11 tasks), execution method: subagent-driven, chosen by the user.
 
-**G1 progress (paused by the user, 4 Nov):** Tasks 1-3 of 11 done and reviewed, on `feat/g1-gauge-route` at `91543c3` (not pushed). Next: Task 4. V2 on testnet: `0x1281cC769c136F9F4f291B390c8992a3Cd556288`, deploy block 16,569,977; gas figures and the `EnteredFromBtc` replay fixture are in `PRODUCT_SPEC.md` §20. Tests: 188 Foundry. Mainnet still uses V1, so the branch must not merge before Task 11 (Global Constraints in the plan). Task progress, rulings, and deferred minors are in the git-ignored ledger `.superpowers/sdd/2026-11-04-g1-gauge-route/progress.md`; Claude Code resumes from it with `superpowers:subagent-driven-development`, and other agents can follow the plan directly from Task 4.
+**G1 progress (paused by the user, 5 Nov, to restart the machine):** Tasks 1-4 of 11 done and reviewed, on `feat/g1-gauge-route` at the commit after `cc1b751` (not pushed). Next: Task 5. V2 on testnet: `0x1281cC769c136F9F4f291B390c8992a3Cd556288`, deploy block 16,569,977; gas figures and the `EnteredFromBtc` replay fixture are in `PRODUCT_SPEC.md` §20. Tests: 188 Foundry, 980 Vitest + 1 expected fail (the merge guard `it.fails`, removed by Task 11). Mainnet still uses V1 with the V2 ABI, so the branch must not merge before Task 11 (Global Constraints in the plan). Task progress, rulings, and deferred minors are in the git-ignored ledger `.superpowers/sdd/2026-11-04-g1-gauge-route/progress.md`; Claude Code resumes from it with `superpowers:subagent-driven-development`, and other agents can follow the plan directly from Task 5.
 
 **Repo moved (5 Nov):** the working copy is `/Users/vanhuy/code/mezoroute`, outside iCloud, because `fileproviderd` and `bird` were stuck near 100% CPU and reads of evicted files hung git and forge. Forge and git run normally there, so the 4 Nov workarounds (forge build root, git alternates) no longer apply. The old copy stays at `~/Desktop/mezoroute` until the user removes it. Only there: `video/` (local demo video sources, not in git), `.playwright-mcp/`, and the local branch `backup/pre-email-rewrite` at `7837282`, whose evicted objects could not be read. Copy what is wanted before deleting.
 
