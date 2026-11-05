@@ -40,17 +40,14 @@ Wave 1 judged: $20, scores 8/8/8/8/6. Feedback, the inferred integration ladder,
 
 **G1 progress (paused by the user, 4 Nov):** Tasks 1-3 of 11 done and reviewed, on `feat/g1-gauge-route` at `91543c3` (not pushed). Next: Task 4. V2 on testnet: `0x1281cC769c136F9F4f291B390c8992a3Cd556288`, deploy block 16,569,977; gas figures and the `EnteredFromBtc` replay fixture are in `PRODUCT_SPEC.md` §20. Tests: 188 Foundry. Mainnet still uses V1, so the branch must not merge before Task 11 (Global Constraints in the plan). Task progress, rulings, and deferred minors are in the git-ignored ledger `.superpowers/sdd/2026-11-04-g1-gauge-route/progress.md`; Claude Code resumes from it with `superpowers:subagent-driven-development`, and other agents can follow the plan directly from Task 4.
 
-**iCloud workaround (local to this Mac, 4 Nov):** `fileproviderd` is stuck at about 90-100% CPU and reads of evicted files time out, so forge and git hang (`mmap failed`). The user keeps the repo on the Desktop and wants these removed once iCloud works; test by reading an evicted file (`find .git/objects -type f -flags +dataless`), and if reads are quick, undo both:
-- Forge runs only from `~/.cache/mezoroute-forge/root` (real `lib/` at the pinned commits, its own `out/` and `cache/`, a copy of `foundry.toml` and `remappings.txt`, symlinks to the Desktop `src`, `test`, `script`). Keep the two config copies identical.
-- `.git/objects/info/alternates` points at `~/.cache/mezoroute-forge/objects.git/objects`, a mirror of origin, so git reads pack data instead of evicted loose objects. Remove that line to undo; do this before deleting the mirror.
-- An unknown process switched this checkout to `main` at 21:43 on 4 Nov and left it half switched; confirm the branch before committing.
+**Repo moved (5 Nov):** the working copy is `/Users/vanhuy/code/mezoroute`, outside iCloud, because `fileproviderd` and `bird` were stuck near 100% CPU and reads of evicted files hung git and forge. Forge and git run normally there, so the 4 Nov workarounds (forge build root, git alternates) no longer apply. The old copy stays at `~/Desktop/mezoroute` until the user removes it. Only there: `video/` (local demo video sources, not in git), `.playwright-mcp/`, and the local branch `backup/pre-email-rewrite` at `7837282`, whose evicted objects could not be read. Copy what is wanted before deleting.
 
 ### Before Wave 2 (kept from Wave 1)
 
 0. Done 19 Oct: Root Directory is `frontend`; pushing `main` deploys production (first Git build served the app). Left: find the CLI deploy command that works now (try a preview from the repo root).
 1. Done 24 Oct (user): submission form sent and a real-wallet send on production after U10 passed. Left: the `wave1` tag on the submitted commit (none exists yet). Keep `main` frozen until judging (a push deploys production); anything new goes on a branch.
 2. 24 Oct: README gained "Try it in five minutes (testnet)" (faucet → swap for MUSD in the Mezo testnet app → LP, Positions, Stability Pool; Borrow & Deploy needs a Trove) and a "Bitcoin wallets are tested on testnet only" limitation (mainnet relayer untried with a real Bitcoin wallet).
-3. Open from the 24 Oct review: run Slither and Aderyn and record the results in `contracts/SELF_AUDIT.md`; before Wave 2, re-scan for MEZO surfaces (veMEZO, MEZO-paying gauges) and MUSD pool depth (research is from 30 Sep); build Unwind before Leverage; a public stats page from executor events; move the repo out of iCloud (`git status` takes minutes and dies in submodules).
+3. Open from the 24 Oct review: run Slither and Aderyn and record the results in `contracts/SELF_AUDIT.md`; before Wave 2, re-scan for MEZO surfaces (veMEZO, MEZO-paying gauges) and MUSD pool depth (research is from 30 Sep); build Unwind before Leverage; a public stats page from executor events.
 
 ## M1 record (15 Oct)
 
