@@ -196,7 +196,7 @@ it("treats a finished week as closed", () => {
 
 - [ ] **Step 4: Run.** `npx vitest run`. Expected: new tests PASS; fix type errors from the new `stake` field by adding `stake: false` only where needed to keep `npm run build` green until Task 5.
 
-- [ ] **Step 5: Add the merge guard** `it("pins V2 on mainnet before merge")` in `networks.test.ts`, marked `it.fails` today, asserting mainnet `legacyExecutors` is non-empty. It starts as an expected failure, and Task 11 removes `.fails`. This makes the merge gate visible in the suite.
+- [ ] **Step 5: Add the merge guard** `it("pins V2 on mainnet before merge")` in `networks.test.ts`, marked `it.fails` today, asserting mainnet `legacyExecutors` is non-empty. It starts as an expected failure, and Task 11 removes `.fails`. This makes the merge gate visible in the suite. (Replaced on 5 Nov by `frontend/scripts/check-mainnet-pin.mjs`, because an `it.fails` stays green on a premature merge.)
 
 - [ ] **Step 6: Commit** `feat(frontend): gauge config, ABIs, and maths`
 
@@ -414,11 +414,12 @@ it("merges BTC and MUSD entries in history", ...);
 ### Task 11: Mainnet deployment and real round trip (approval gate)
 
 **Files:**
-- Modify: `frontend/src/lib/config/networks.ts`, `frontend/src/lib/config/networks.test.ts`, `PRODUCT_SPEC.md` (§11.1, §20), `contracts/SELF_AUDIT.md`, `docs/STATUS.md`
+- Modify: `frontend/src/lib/config/networks.ts`, `frontend/src/lib/config/networks.test.ts`, `frontend/package.json`, `frontend/src/lib/quote/gas.ts` (if budgets move), `PRODUCT_SPEC.md` (§11.1, §20), `contracts/SELF_AUDIT.md`, `contracts/README.md`, `README.md`, `AGENTS.md`, `docs/STATUS.md`
+- Delete: `frontend/scripts/check-mainnet-pin.mjs`, `frontend/scripts/check-mainnet-pin.test.ts`
 
-- [ ] **Step 1: Ask the user for approval to deploy,** showing fee 10 bps, recipient, `maxMusdIn` 1,000, `maxBtcIn` 0.0125, gauge, and the dry-run output. Deploying is irreversible. Do not continue without a yes.
+- [ ] **Step 1: Agent runs the dry run.** `FEE_BPS=10 FEE_RECIPIENT=<addr> forge script script/Deploy.s.sol --rpc-url mezo_mainnet --sender <addr>`. Expected: constructor checks pass; gas estimate shown.
 
-- [ ] **Step 2: Agent runs the dry run.** `FEE_BPS=10 FEE_RECIPIENT=<addr> forge script script/Deploy.s.sol --rpc-url mezo_mainnet --sender <addr>`. Expected: constructor checks pass; gas estimate shown.
+- [ ] **Step 2: Ask the user for approval to deploy,** showing fee 10 bps, recipient, `maxMusdIn` 1,000, `maxBtcIn` 0.0125, gauge, and the dry-run output. Deploying is irreversible. Do not continue without a yes.
 
 - [ ] **Step 3: The user broadcasts** by adding `--account mezo-mainnet --broadcast` in their own terminal, and sends the agent the address.
 
@@ -426,7 +427,7 @@ it("merges BTC and MUSD entries in history", ...);
 
 - [ ] **Step 5: Pin.** Mainnet `executor` = V2, `legacyExecutors` = `[{ 0x046449b1229C863e278f369869BA10e12bd80d9E, 12_524_142n }]`. Update `networks.test.ts` (it pins V1 as the mainnet executor) and the `networks.ts` comment. Check `entryCapBtc` against on-chain `maxBtcIn`. Remove the production gate: `scripts/check-mainnet-pin.mjs`, its test, and its `prebuild` entry. Run `npm test && npm run build`. Expected: PASS. Commit `feat(frontend): pin the mainnet V2 executor`.
 
-- [ ] **Step 6: Real round trip with the user's wallet, before any merge,** on a build pinned to V2 (the local `frontend/out`, or a Vercel preview if the mainnet RPC refuses localhost). About 10 MUSD: enter + stake → wait → claim MEZO → exit (unstake, then exit). Then one small `enterFromBtc` with stake, as `contracts/SELF_AUDIT.md` §4 item 7 requires; it is also the first BTC permit a wallet signs through the app and the first on mainnet. Then read the executor: it holds nothing. Run `QUOTE_NETWORK=mainnet npm run quote-accuracy`. Expected: exact or skipped with reason. Re-measure `ENTER_STAKE_GAS` and the BTC budgets from these transactions with `cast estimate`, and update `gas.ts` by the Gas limits rule in `AGENTS.md` if they moved. Production stays on V1 throughout, so a failure here costs no live users.
+- [ ] **Step 6: Real round trip with the user's wallet, before any merge,** on a build pinned to V2 (the local `frontend/out`, or a Vercel preview if the mainnet RPC refuses localhost). About 10 MUSD: enter + stake → wait → claim MEZO → exit (unstake, then exit). Then one small `enterFromBtc` with stake, as `contracts/SELF_AUDIT.md` §4 item 7 requires; it is also the first BTC permit a wallet signs through the app and the first on mainnet. Then read the executor: it holds nothing. Run `QUOTE_NETWORK=mainnet npm run quote-accuracy`. Expected: exact or skipped with reason. Re-measure `ENTER_STAKE_GAS` and the BTC budgets from these transactions with `cast estimate`, and update `gas.ts` by the Gas limits rule in `AGENTS.md` if they moved; then run `npm test && npm run build` and commit `fix(frontend): mainnet gas budgets for V2`. Production stays on V1 throughout, so a failure here costs no live users.
 
 - [ ] **Step 7: Merge on the user's word.** Use `superpowers:finishing-a-development-branch`. A push to `main` deploys production; confirm the deployed site serves the new chunk.
 

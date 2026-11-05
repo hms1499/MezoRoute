@@ -126,7 +126,7 @@ emissionsApr(amt) = rewardRate × 31,536,000 × mezoPrice / lpValue(stakedLp + u
 Pool mid price, not the oracle (the F6 rule). Include the user's own deposit in the denominator, so a large amount shows its own dilution. With no price pool (testnet) or a failed read, `emissionsApr` is `null` and the UI shows MEZO amounts only. The price is for display and is never used for a send. Check the result against mezo.org's 94.14% at the same block during QA.
 
 **LP route (`/route/lp/`):**
-- A "Stake to earn MEZO" checkbox, on by default when `active`, hidden when the gauge is `null` or not alive.
+- A "Stake to earn MEZO" checkbox, on by default when `active`, hidden when the gauge is `null` or not alive. (Refined during the build: it stays on between weeks while the gauge is alive, and an alive gauge with `periodFinish` more than 8 days past, or a gauge that could not be read, counts as unavailable, so the box is hidden and stake is false. `stakeAvailability` holds the rule.)
 - Under it: "≈ {mezoWeek} MEZO a week at this week's rate. While staked, swap fees go to veBTC voters instead of you."
 - `stake` goes in the URL intent, so reloads keep it.
 - The receipt names both steps from `Entered` and `Staked`.

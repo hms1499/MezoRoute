@@ -165,7 +165,7 @@ cd frontend
 npm install
 cp .env.example .env.local   # set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID (free at cloud.reown.com)
 npm run dev                  # http://localhost:3000
-npm test                     # 1215 Vitest tests
+npm test                     # 1216 Vitest tests
 npm run build                # static export to out/, with lint and type check
 ```
 
