@@ -26,13 +26,16 @@ export type ReceiptKind =
 
 /** What a confirmed transaction did, from its logs: an entry, an exit, a fee claim, a gauge action, or a Stability Pool action. */
 export function receiptKind(logs: readonly LogLike[], network: NetworkConfig): ReceiptKind {
-  const executor = network.executor?.address;
-  const entered = executor ? findEnteredEvent(logs, executor) : null;
-  if (entered) return { kind: "entered", event: entered, staked: executor ? findStakedEvent(logs, executor) : null };
-  const enteredBtc = executor ? findEnteredFromBtcEvent(logs, executor) : null;
-  if (enteredBtc) return { kind: "enteredBtc", event: enteredBtc, staked: executor ? findStakedEvent(logs, executor) : null };
-  const exited = executor ? findExitedEvent(logs, executor) : null;
-  if (exited) return { kind: "exited", event: exited };
+  // Legacy executors too: a receipt link from before an upgrade still names what it did.
+  const executors = [...(network.executor ? [network.executor.address] : []), ...network.legacyExecutors.map((item) => item.address)];
+  for (const executor of executors) {
+    const entered = findEnteredEvent(logs, executor);
+    if (entered) return { kind: "entered", event: entered, staked: findStakedEvent(logs, executor) };
+    const enteredBtc = findEnteredFromBtcEvent(logs, executor);
+    if (enteredBtc) return { kind: "enteredBtc", event: enteredBtc, staked: findStakedEvent(logs, executor) };
+    const exited = findExitedEvent(logs, executor);
+    if (exited) return { kind: "exited", event: exited };
+  }
   const fees = findClaimEvent(logs, network);
   if (fees) return { kind: "claim", fees };
   const gauge = network.gauge ? findGaugeReceipt(logs, network.gauge.address) : null;
