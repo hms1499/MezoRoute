@@ -1,3 +1,7 @@
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { blocksProduction, mainnetLegacyExecutors } from "./check-mainnet-pin.mjs";
@@ -62,5 +66,20 @@ describe("the real networks.ts", () => {
     expect(mainnetLegacyExecutors(real)).toBe("");
     expect(blocksProduction({ VERCEL_ENV: "production" }, real)).toBe(true);
     expect(blocksProduction({ VERCEL_ENV: "preview" }, real)).toBe(false);
+  });
+});
+
+describe("check-mainnet-pin as a script", () => {
+  it("still blocks production when its path runs through a symlink", () => {
+    const dir = mkdtempSync(join(tmpdir(), "check-mainnet-pin-"));
+    try {
+      const link = join(dir, "check-mainnet-pin.mjs");
+      symlinkSync(join(process.cwd(), "scripts/check-mainnet-pin.mjs"), link);
+      const run = spawnSync(process.execPath, [link], { env: { ...process.env, VERCEL_ENV: "production" }, encoding: "utf8" });
+      expect(run.status).toBe(1);
+      expect(run.stderr).toContain("mainnet is not pinned to V2");
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
   });
 });

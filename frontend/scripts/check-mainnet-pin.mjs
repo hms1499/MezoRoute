@@ -1,6 +1,6 @@
 // Merge gate for G1: the frontend's ABI is V2 but mainnet still runs V1, and a push to main deploys production.
 // Fails a production build until Task 11 deploys V2 on mainnet and lists V1 under `legacyExecutors`. Task 11 removes this.
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,4 +26,5 @@ function main() {
   console.log("check-mainnet-pin: ok");
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) main();
+// Real paths on both sides: argv keeps a symlink that import.meta.url resolves, and a gate that silently skips is no gate.
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) main();
