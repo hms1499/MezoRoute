@@ -23,6 +23,7 @@ import { encodeGaugeCall } from "@/lib/gauge/actions";
 import { buildExitParams, encodeExitCall } from "./exit-params";
 import { exitPreview } from "./exit-preview";
 import type { ExitStepKind } from "./exit-steps";
+import { unstakeNeeded } from "./exit-unstake";
 import { lpPermitTypedData } from "./lp-permit";
 import type { PositionsData } from "./snapshot";
 
@@ -31,7 +32,6 @@ export type ExitFlowInput = {
   executor: Address;
   intent: ExitIntent;
   liquidityIn: bigint; // follows the percent until the first step pins it
-  unstake: bigint; // LP to take out of the gauge first; pinned with the amount
   walletKind: WalletKind;
   plan: ExitStepKind[];
   refresh: () => Promise<PositionsData>;
@@ -61,7 +61,6 @@ export function useExitFlow(input: ExitFlowInput): {
   const pin = useRef<SendPin | null>(null);
   const pinnedLiquidity = useRef<bigint | null>(null);
   const [pinnedShown, setPinnedShown] = useState<bigint | null>(null);
-  const pinnedUnstake = useRef<bigint | null>(null);
   const permit = useRef<SignedPermit | null>(null);
   const planKey = input.plan.join(",");
 
@@ -71,14 +70,17 @@ export function useExitFlow(input: ExitFlowInput): {
 
   const liquidityIn = () => pinnedLiquidity.current ?? input.liquidityIn;
 
-  /** `gauge.withdraw(unstake)`, confirmed here; the permit is signed after, so its deadline does not run while this waits. */
+  /** `gauge.withdraw`, confirmed here; the permit is signed after, so its deadline does not run while this waits. */
   async function unstake(sendPin: SendPin) {
     const gauge = network.gauge?.address;
-    const amount = pinnedUnstake.current ?? input.unstake;
-    const fresh = await input.refresh();
     if (!gauge) throw new Error("This network has no gauge");
-    // The gauge no longer holds it (unstaked elsewhere): start over to plan from what the wallet holds now.
-    if ((fresh.snapshot.gauge?.staked ?? 0n) < amount) throw new BlockedError(LP_CHANGED);
+    const fresh = await input.refresh();
+    const amount = unstakeNeeded(fresh.snapshot, liquidityIn());
+    // A retry after a withdraw that was mined but never confirmed: the wallet already holds the LP.
+    if (amount === 0n) {
+      dispatch({ type: "skipped" });
+      return;
+    }
     await simulateContract(config, {
       address: gauge,
       abi: gaugeAbi,
@@ -165,7 +167,6 @@ export function useExitFlow(input: ExitFlowInput): {
       pinnedLiquidity.current = input.liquidityIn;
       setPinnedShown(input.liquidityIn);
     }
-    pinnedUnstake.current ??= input.unstake;
     const sendPin = pin.current;
     dispatch({ type: "start" });
     try {
@@ -191,7 +192,6 @@ export function useExitFlow(input: ExitFlowInput): {
   function restart() {
     pin.current = null;
     pinnedLiquidity.current = null;
-    pinnedUnstake.current = null;
     permit.current = null;
     setPinnedShown(null);
     dispatch({ type: "restart", kinds: input.plan });

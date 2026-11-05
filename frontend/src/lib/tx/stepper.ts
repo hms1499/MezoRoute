@@ -12,6 +12,8 @@ export type StepperEvent<K extends string = StepKind> =
   | { type: "signed" }
   | { type: "submitted"; hash: Hash }
   | { type: "confirmed" }
+  /** The step turned out to have nothing to send (an earlier attempt already did it). */
+  | { type: "skipped" }
   | { type: "failed"; error: DecodedError }
   | { type: "signature-expired" }
   | { type: "reset"; kinds: K[] }
@@ -64,6 +66,8 @@ export function stepperReducer<K extends string = StepKind>(state: Stepper<K>, e
         : state;
     case "confirmed":
       return step?.status === "submitted" ? replace({ ...step, status: "done" }, true) : state;
+    case "skipped":
+      return step?.status === "awaiting-wallet" ? replace({ kind: step.kind, status: "done" }, true) : state;
     case "failed":
       return step && (step.status === "awaiting-wallet" || step.status === "submitted")
         ? replace({ ...step, status: "failed", error: event.error })

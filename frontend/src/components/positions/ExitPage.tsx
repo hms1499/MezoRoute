@@ -88,7 +88,6 @@ function ExitFlowView(props: {
     executor: props.executor,
     intent: props.intent,
     liquidityIn: unpinned.liquidityIn,
-    unstake: unpinned.unstake,
     walletKind: props.walletKind,
     plan: unpinned.steps,
     refresh: props.refresh,
