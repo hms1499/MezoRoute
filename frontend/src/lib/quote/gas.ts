@@ -1,19 +1,29 @@
-/** Gas units for `enter`; S1 measured 328,115–433,422 (5 Oct 2026). */
-export const ENTER_GAS = 450_000n;
 /**
- * `enter` that also stakes the LP in the gauge. `gasUsed` is net of refunds, so it understates the limit a
- * call needs (Ruling P15): the budget is max(highest gasUsed 448,402, highest healthy estimate 535,750)
- * plus 5%, rounded up to 5,000. The estimate plus 20% still wins when it is higher (`gasLimit`).
+ * `enter` (Ruling P15 and P19): the highest figure is Mezo mainnet's real LP entry, `cast estimate` 479,120 at the
+ * block before the 15 Oct 2026 transaction; plus 5% is 503,076, rounded up to 5,000. Testnet is lower: S1 used
+ * 328,115 to 433,422, and a permit entry estimated 411,686 to 424,887 (5 Nov 2026).
  */
-export const ENTER_STAKE_GAS = 565_000n;
+export const ENTER_GAS = 505_000n;
+/**
+ * `enter` that also stakes the LP in the gauge (Ruling P15): max(highest gasUsed 448,402, highest healthy
+ * estimate 548,483, a MUSD-permit entry with stake on testnet, 5 Nov 2026) plus 5% is 575,907, rounded up to
+ * 5,000. `gasUsed` is net of refunds, so it understates the limit a call needs. The estimate plus 20% still wins
+ * when it is higher (`gasLimit`).
+ */
+export const ENTER_STAKE_GAS = 580_000n;
 /**
  * `enterFromBtc` (Ruling P15): max(highest gasUsed 383,737, highest healthy estimate 439,723) plus 5% is
- * 461,709, rounded up to 5,000. The G1 smoke measured used 299,498 and estimate 355,484 (4 Nov 2026); the
- * Task 9 drive on testnet (5 Nov 2026, tx 0x5942…2b59) estimated 439,723 and used 383,737, so those win.
+ * 461,709, rounded up to 5,000. Figures: the Task 9 drive without a permit (5 Nov 2026, tx 0x5942…2b59,
+ * estimate 439,723, used 383,737) and with a real BTC permit (tx 0x7fa6…e3ae, estimate 365,530, used 309,544);
+ * the G1 smoke measured used 299,498 and estimate 355,484.
  */
 export const ENTER_BTC_GAS = 465_000n;
-/** `enterFromBtc` that also stakes: max(highest gasUsed 402,945, highest healthy estimate 487,483) plus 5% is 511,857, rounded up to 5,000 (the Task 9 drive estimated 487,483 and used 388,897, tx 0x729d…b030b). */
-export const ENTER_BTC_STAKE_GAS = 515_000n;
+/**
+ * `enterFromBtc` that also stakes: max(highest gasUsed 402,945, highest healthy estimate 497,277) plus 5% is
+ * 522,141, rounded up to 5,000. Figures: a real BTC permit with stake (tx 0xb924…fe75, 5 Nov 2026, estimates
+ * 484,076 and 497,277, used 398,691); without a permit estimate 487,483, used 388,897; the G1 smoke used 402,945.
+ */
+export const ENTER_BTC_STAKE_GAS = 525_000n;
 /** What the gauge deposit adds to an entry: estimate difference 535,750 − 396,741 = 139,009, plus 5%, rounded up to 5,000. */
 export const STAKE_EXTRA_GAS = 150_000n;
 
@@ -56,10 +66,11 @@ export function entryGasUnits(input: {
 }
 
 /**
- * `exit`: 417,468 measured on testnet with an LP permit (tx 0x05ae…dad0, 12 Oct 2026; 350,049 with an
- * approval on 2 Oct), rounded up to 450,000 plus 10%.
+ * `exit` (Ruling P15 and P19): Mezo mainnet's real exit, `cast estimate` 491,297 at the block before the 15 Oct
+ * 2026 transaction, plus 5% is 515,862, rounded up to 5,000. Testnet is lower: 417,468 with an LP permit (tx
+ * 0x05ae…dad0, 12 Oct 2026) and 350,049 with an approval (2 Oct).
  */
-export const EXIT_GAS = 495_000n;
+export const EXIT_GAS = 520_000n;
 
 /** Estimated gas units for the whole exit flow, for the preview's network-fee line. */
 export function exitGasUnits(input: { approve: boolean; smartAccount: boolean; unstake?: boolean }): bigint {

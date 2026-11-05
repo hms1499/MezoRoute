@@ -10,6 +10,7 @@ import {
   INSUFFICIENT_BALANCE,
   INSUFFICIENT_BTC,
   KEEP_GAS_BTC,
+  rpcUnavailable,
   needsGas,
   NO_TROVE,
   noExecutor,
@@ -32,10 +33,11 @@ export const QUOTE_TTL_MS = 60_000;
 export type BorrowGate = { canSign: boolean; hasTrove: boolean; recoveryMode: boolean; limit: bigint; newCr: bigint | null };
 
 /**
- * A BTC entry's inputs (V2 `enterFromBtc`); absent for MUSD. `gasReserve` stays in the wallet: BTC is also the gas,
- * so `btcIn + gasReserve` may not exceed the balance.
+ * A BTC entry's inputs (V2 `enterFromBtc`); absent for MUSD. `gasReserve` stays in the wallet for the steps still
+ * to come: BTC is also the gas, so `btcIn + gasReserve` may not exceed the balance. It is null while the gas price
+ * is unknown, and the entry is then blocked with a retry (Ruling P18); the MUSD route is not.
  */
-export type BtcGate = { btcIn: bigint | null; walletBtc: bigint; maxBtcIn: bigint; gasReserve: bigint };
+export type BtcGate = { btcIn: bigint | null; walletBtc: bigint; maxBtcIn: bigint; gasReserve: bigint | null };
 
 export type EntryGateInput = {
   network: NetworkConfig;
@@ -61,6 +63,7 @@ export type EntryBlockReason =
   | "too-small"
   | "price-impact"
   | "needs-gas"
+  | "gas-price-unknown"
   | "quote-expired"
   | "smart-account-borrow"
   | "no-trove"
@@ -107,7 +110,10 @@ export function entryBlock(input: EntryGateInput): EntryBlock | null {
   }
   if (quote.priceImpact > PRICE_IMPACT_LIMIT) return block("price-impact", PRICE_IMPACT);
   if (input.lacksGas) return block("needs-gas", needsGas(network));
-  if (btc && btc.btcIn !== null && btc.btcIn + btc.gasReserve > btc.walletBtc) return block("needs-gas", KEEP_GAS_BTC);
+  if (btc && btc.btcIn !== null) {
+    if (btc.gasReserve === null) return block("gas-price-unknown", rpcUnavailable(network));
+    if (btc.btcIn + btc.gasReserve > btc.walletBtc) return block("needs-gas", KEEP_GAS_BTC);
+  }
   if (input.quoteAgeMs > QUOTE_TTL_MS) return block("quote-expired", QUOTE_EXPIRED);
   return null;
 }

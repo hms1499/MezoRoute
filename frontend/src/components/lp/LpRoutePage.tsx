@@ -138,7 +138,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           btcRecoveries({
             amount: intent.btcIn,
             walletBtc: preview.btc.walletBtc,
-            reserve: preview.btc.gasReserve,
+            reserve: preview.btc.fillReserve ?? preview.btc.walletBtc,
             cap: preview.btc.cap,
             network,
           }),
@@ -184,7 +184,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           slippageBps={intent.slippageBps}
           max={preview.btc ? preview.btc.maxSpendable : preview.borrow ? preview.borrow.limit : data.snapshot.dashboard.musd}
           balance={preview.btc ? preview.btc.walletBtc : undefined}
-          note={preview.btc && preview.btc.gasReserve >= MIN_SHOWN_RESERVE ? `${formatToken(preview.btc.gasReserve, 18, 8)} BTC stays for the network fee` : undefined}
+          note={preview.btc?.fillReserve != null && preview.btc.fillReserve >= MIN_SHOWN_RESERVE ? `${formatToken(preview.btc.fillReserve, 18, 8)} BTC stays for the network fee` : undefined}
           maxLabel={preview.borrow ? "You can borrow" : "In your wallet"}
           asset={intent.asset}
           onAsset={intent.mode === "borrow" ? undefined : (asset: EntryAsset) => update({ ...intent, asset, amount: "" })}

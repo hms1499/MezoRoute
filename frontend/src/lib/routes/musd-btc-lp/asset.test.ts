@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
+import { ENTER_BTC_GAS, ENTER_BTC_STAKE_GAS } from "@/lib/quote/gas";
 import { btcGasReserve, btcRecoveries, maxBtcSpendable, parseEntryAsset, spendableCap } from "./asset";
 
 describe("maxBtcSpendable", () => {
@@ -14,12 +15,15 @@ describe("maxBtcSpendable", () => {
 });
 
 describe("btcGasReserve", () => {
-  it("is twice the entry's gas units at the current gas price", () => {
-    expect(btcGasReserve(450_000n, 146n)).toBe(450_000n * 2n * 146n);
+  it("is four times the entry's gas units at the current gas price (Ruling P17)", () => {
+    expect(btcGasReserve(450_000n, 146n)).toBe(450_000n * 4n * 146n);
   });
 
-  it("is 0 while the gas price is unknown (the gate's needs-gas rule still applies)", () => {
-    expect(btcGasReserve(450_000n, undefined)).toBe(0n);
+  it("covers MetaMask's limit of 3 x the highest healthy estimate, for every BTC entry budget", () => {
+    // Highest healthy estimates on testnet (5 Nov 2026): 439,723 unstaked, 497,277 staked. A wallet needs
+    // balance >= limit x price, and MetaMask on Mezo mainnet sets the limit to 3 x the estimate.
+    expect(btcGasReserve(ENTER_BTC_GAS, 1n)).toBeGreaterThanOrEqual(3n * 439_723n);
+    expect(btcGasReserve(ENTER_BTC_STAKE_GAS, 1n)).toBeGreaterThanOrEqual(3n * 497_277n);
   });
 });
 

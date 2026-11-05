@@ -159,6 +159,17 @@ describe("entryBlock for a BTC entry", () => {
     });
   });
 
+  it("blocks a BTC entry with a retry while the gas price is unknown, never reserving 0 (Ruling P18)", () => {
+    expect(entryBlock(btcInput({ gasReserve: null }))).toMatchObject({
+      reason: "gas-price-unknown",
+      outcome: { kind: "rpc-unavailable", recovery: ["retry"] },
+    });
+  });
+
+  it("does not block a MUSD entry on an unknown gas price", () => {
+    expect(entryBlock(input({ lacksGas: false }))).toBeNull();
+  });
+
   it("blocks more BTC than the wallet holds, in BTC", () => {
     expect(entryBlock(btcInput({ walletBtc: BTC_IN - 1n }))).toMatchObject({
       reason: "insufficient-balance",

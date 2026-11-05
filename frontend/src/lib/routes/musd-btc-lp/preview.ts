@@ -16,7 +16,7 @@ import { entryGasUnits } from "@/lib/quote/gas";
 import { borrowEffect, borrowLimit, isRecoveryMode, type BorrowEffect } from "@/lib/trove/borrow";
 import { walletCapabilities, type WalletKind } from "@/lib/wallet/capabilities";
 import { afterBorrowEntry, afterBtcEntry, afterEntry } from "./after-entry";
-import { btcGasReserve, maxBtcSpendable } from "./asset";
+import { btcGasReserve, spendableCap } from "./asset";
 import { entryBlock, type EntryBlock } from "./gate";
 import type { EntryIntent } from "./intent";
 import { DEADLINE_SECONDS } from "./params";
@@ -26,8 +26,19 @@ import { entrySteps, type StepKind } from "./steps";
 /** Borrow & Deploy's part of the preview; null in deposit mode. */
 export type BorrowPreview = { trove: Trove | null; limit: bigint; recoveryMode: boolean; effect: BorrowEffect | null };
 
-/** A BTC entry's wallet side: the balance, the gas reserve kept back, and what "Use my balance" may enter (reserve and cap applied). */
-export type BtcPreview = { walletBtc: bigint; gasReserve: bigint; maxSpendable: bigint; cap: bigint };
+/**
+ * A BTC entry's wallet side. `fillReserve` is what Max and "Use my balance" keep back: it always includes the
+ * approval a wallet without permits needs. `gasReserve` is what the gate keeps back for the steps still to come
+ * (an approval already paid is not counted again). Both are null while the gas price is unknown (Ruling P18:
+ * the entry is blocked, nothing is reserved at 0). `maxSpendable` is the balance less `fillReserve`, capped.
+ */
+export type BtcPreview = {
+  walletBtc: bigint;
+  fillReserve: bigint | null;
+  gasReserve: bigint | null;
+  maxSpendable: bigint;
+  cap: bigint;
+};
 
 export type EntryPreview = {
   /** The MUSD entry's quote; null for a BTC entry. */
@@ -80,17 +91,20 @@ export function entryPreview(input: {
     stake: stake.on,
     asset: intent.asset,
   });
-  // The reserve is sized for the approval whenever the wallet cannot sign a permit, whatever the allowance now
-  // is, so the amount "Use my balance" fills in never needs more gas than the reserve once the plan is built.
+  // Max keeps back the approval whenever the wallet cannot sign a permit, whatever the allowance now is, so the
+  // amount it fills in still covers the whole plan; the gate counts only the steps still to come (`gasUnits`).
   const btc: BtcPreview | null = fromBtc
     ? (() => {
-        const gasReserve = btcGasReserve(
-          entryGasUnits({ approve: !walletCapabilities(walletKind).permit, smartAccount, stake: stake.on, asset: "btc" }),
-          data.gasPrice,
-        );
-        const cap = network.entryCapBtc;
-        const spendable = maxBtcSpendable(data.gasBalance, gasReserve);
-        return { walletBtc: data.gasBalance, gasReserve, maxSpendable: spendable < cap ? spendable : cap, cap };
+        const price = data.gasPrice;
+        const fillUnits = entryGasUnits({ approve: !walletCapabilities(walletKind).permit, smartAccount, stake: stake.on, asset: "btc" });
+        const fillReserve = price === undefined ? null : btcGasReserve(fillUnits, price);
+        return {
+          walletBtc: data.gasBalance,
+          fillReserve,
+          gasReserve: price === undefined ? null : btcGasReserve(gasUnits, price),
+          maxSpendable: fillReserve === null ? 0n : spendableCap(data.gasBalance, fillReserve, network.entryCapBtc),
+          cap: network.entryCapBtc,
+        };
       })()
     : null;
   const borrow: BorrowPreview | null = borrowing

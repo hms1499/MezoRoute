@@ -11,12 +11,14 @@ export function parseEntryAsset(param: string | null, mode: EntryMode): EntryAss
 }
 
 /**
- * The BTC that stays in the wallet to pay for the entry: twice its gas units at the current gas price.
- * BTC is both the asset and the gas, so spending the whole balance would leave the send unpayable.
- * With no gas price the reserve is 0 and only the gate's own needs-gas rule applies.
+ * The BTC that stays in the wallet to pay for the entry: four times its gas units at the current gas price (Ruling
+ * P17). MetaMask on Mezo mainnet sets a limit of 3 x the RPC estimate and a wallet needs balance >= limit x price
+ * + value, so the budget x 4 covers that limit (3 x the highest healthy estimate is below 3 x the budget) with room.
+ * BTC is both the asset and the gas, so spending the whole balance would leave the send unpayable. The gas price
+ * must be known: without it the caller blocks the entry (Ruling P18) instead of reserving nothing.
  */
-export function btcGasReserve(gasUnits: bigint, gasPrice: bigint | undefined): bigint {
-  return gasPrice === undefined ? 0n : gasUnits * 2n * gasPrice;
+export function btcGasReserve(gasUnits: bigint, gasPrice: bigint): bigint {
+  return gasUnits * 4n * gasPrice;
 }
 
 /** What "Use my balance" and Max may enter: the balance less the gas reserve, never below 0. */
