@@ -43,6 +43,7 @@ export type ErrorKind =
   | "no-lp"
   | "no-staked-lp"
   | "staking-closed"
+  | "gauge-read-failed"
   | "lp-changed"
   | "nothing-to-claim"
   | "sp-withdraw-blocked"

@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { gaugeAbi } from "@/lib/abi/gauge";
 import { networks } from "@/lib/config/networks";
 import { GAUGE_CLAIM_GAS, GAUGE_DEPOSIT_GAS, GAUGE_WITHDRAW_GAS } from "@/lib/quote/gas";
-import { encodeGaugeCall, findRewardEvent, gaugeActionBlock } from "./actions";
+import { BlockedError } from "@/lib/tx/errors";
+import { encodeGaugeCall, findRewardEvent, gaugeActionBlock, gaugeForAction } from "./actions";
 import type { GaugeState } from "./state";
 
 const testnet = networks.testnet;
@@ -26,6 +27,26 @@ const input = (action: "claim" | "stake" | "unstake", overrides: Partial<Paramet
   walletLp: 2n,
   lacksGas: false,
   ...overrides,
+});
+
+describe("gaugeForAction", () => {
+  it("returns the gauge's state", () => {
+    expect(gaugeForAction({ gauge: state(), gaugeReadFailed: false })).toEqual(state());
+  });
+
+  it("asks for a retry when the read failed, rather than say there is no gauge", () => {
+    expect.assertions(2);
+    try {
+      gaugeForAction({ gauge: null, gaugeReadFailed: true });
+    } catch (error) {
+      expect(error).toBeInstanceOf(BlockedError);
+      expect((error as BlockedError).outcome.recovery).toEqual(["retry"]);
+    }
+  });
+
+  it("is an error on a network with no gauge", () => {
+    expect(() => gaugeForAction({ gauge: null, gaugeReadFailed: false })).toThrow("This network has no gauge");
+  });
 });
 
 describe("gaugeActionBlock", () => {

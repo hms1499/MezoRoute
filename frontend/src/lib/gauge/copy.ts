@@ -7,6 +7,14 @@ const FEES_NOTE = "While staked, swap fees go to veBTC voters instead of you.";
 const NO_AMOUNT = "Enter an amount to see this week's rate.";
 const BETWEEN_WEEKS = "The new week's MEZO rate is not set yet. Staking still works.";
 
+// A failed gauge read is not a missing gauge: the LP may be staked, so nothing here may say there is none.
+export const GAUGE_READ_FAILED_POSITIONS = "Staked LP and pending MEZO could not be read right now, so they are not shown here. LP in your wallet can still exit.";
+export const GAUGE_READ_FAILED_EXPOSURE = "Staked LP could not be read right now, so this may leave it out.";
+export const GAUGE_READ_FAILED_ENTRY = "The gauge could not be read right now, so this deposit will not be staked. You can stake it later from Positions.";
+export const GAUGE_READ_FAILED_EXIT = "Staked LP could not be read right now, so this exit covers only the LP in your wallet.";
+export const GAUGE_READ_FAILED_RETRY = "Staked LP could not be read right now. Try again in a moment.";
+export const GAUGE_READ_FAILED_SUMMARY = "In your wallet only: staked LP could not be read";
+
 /** The lines under the stake switch. Rates are always "this week's"; swap fees to veBTC voters is always said. */
 export function stakeLines(availability: StakeAvailability, mezoPerWeek: bigint | null): string[] {
   if (availability === "unavailable") return [];

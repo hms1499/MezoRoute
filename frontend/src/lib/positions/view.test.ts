@@ -3,7 +3,7 @@ import type { EnteredEvent } from "@/lib/routes/musd-btc-lp/receipt";
 import type { HistoryEvent } from "./history";
 import type { GaugeState } from "@/lib/gauge/state";
 import { LIVE_EXIT_LIQUIDITY, LIVE_EXIT_POOL, ONE, positionsSnapshotWith } from "./test-fixtures";
-import { positionView } from "./view";
+import { positionView, showsNoPositions } from "./view";
 
 const ME = "0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49";
 
@@ -94,5 +94,21 @@ describe("positionView", () => {
     expect(positionView(positionsSnapshotWith({ ...base, gauge: gaugeState({ staked: 1n }) }), []).empty).toBe(false);
     expect(positionView(positionsSnapshotWith({ ...base, gauge: gaugeState({ earned: 1n }) }), []).empty).toBe(false);
     expect(positionView(positionsSnapshotWith({ ...base, gauge: gaugeState() }), []).empty).toBe(true);
+  });
+});
+
+describe("showsNoPositions", () => {
+  const empty = positionView(positionsSnapshotWith({ lpBalance: 0n }), null);
+  const pool = { empty: true };
+
+  it("is true only when the LP and the Stability Pool are both known to be empty", () => {
+    expect(showsNoPositions(empty, pool, false)).toBe(true);
+    expect(showsNoPositions(empty, { empty: false }, false)).toBe(false);
+    expect(showsNoPositions(empty, null, false)).toBe(false);
+    expect(showsNoPositions(positionView(positionsSnapshotWith(), null), pool, false)).toBe(false);
+  });
+
+  it("never reads as no positions when the gauge could not be read: the LP may all be staked", () => {
+    expect(showsNoPositions(empty, pool, true)).toBe(false);
   });
 });

@@ -65,6 +65,7 @@ export function exitPreview(input: {
       quote,
       lacksGas: lacksGas(input.data.gasBalance, input.data.gasPrice),
       quoteAgeMs: input.now - input.data.fetchedAt,
+      gaugeReadFailed: snapshot.gaugeReadFailed,
     }),
   };
 }

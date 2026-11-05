@@ -38,6 +38,16 @@ describe("exitPreview", () => {
     expect(preview.gasCost).toBeNull();
   });
 
+  it("plans a wallet-only exit while the gauge read fails, and says so when the wallet holds none", () => {
+    const failed = (wallet: bigint) => positionsDataWith({ snapshot: positionsSnapshotWith({ lpBalance: wallet, gauge: null, gaugeReadFailed: true }) });
+    const intent = { percent: 100, slippageBps: 100n } as const;
+    const inWallet = exitPreview({ ...base, data: failed(LIVE_EXIT_LIQUIDITY), intent, walletKind: "eoa" });
+    expect(inWallet.unstake).toBe(0n);
+    expect(inWallet.steps).not.toContain("unstake");
+    expect(inWallet.block).toBeNull();
+    expect(exitPreview({ ...base, data: failed(0n), intent, walletKind: "eoa" }).block?.reason).toBe("gauge-read-failed");
+  });
+
   describe("with LP staked in the gauge", () => {
     const gauge = (staked: bigint) => ({ alive: true, rewardRate: 0n, periodFinish: 0n, totalStaked: staked, staked, earned: 5n });
     const staked = (wallet: bigint, inGauge: bigint) =>

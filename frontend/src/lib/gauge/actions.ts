@@ -3,6 +3,7 @@ import { gaugeAbi } from "@/lib/abi/gauge";
 import type { NetworkConfig } from "@/lib/config/networks";
 import { writeBlocker } from "@/lib/config/write-gate";
 import {
+  GAUGE_READ_FAILED,
   needsGas,
   noExecutor,
   NO_PENDING_MEZO,
@@ -14,6 +15,7 @@ import {
 import type { Outcome } from "@/lib/errors/types";
 import { formatToken } from "@/lib/format";
 import type { LogLike } from "@/lib/routes/musd-btc-lp/receipt";
+import { BlockedError } from "@/lib/tx/errors";
 import type { GaugeState } from "./state";
 
 export type GaugeAction = "claim" | "stake" | "unstake";
@@ -21,6 +23,13 @@ export type GaugeActionBlock = {
   reason: "no-executor" | "wrong-network" | "nothing-to-do" | "needs-gas";
   outcome: Outcome;
 };
+
+/** The fresh gauge state a send acts on. A failed read asks for a retry; only a network without a gauge is an error. */
+export function gaugeForAction(snapshot: { gauge: GaugeState | null; gaugeReadFailed: boolean }): GaugeState {
+  if (snapshot.gaugeReadFailed) throw new BlockedError(GAUGE_READ_FAILED);
+  if (!snapshot.gauge) throw new Error("This network has no gauge");
+  return snapshot.gauge;
+}
 
 /**
  * Why a gauge button is disabled. Mainnet stays read-only like every other write, hence `writeBlocker`.

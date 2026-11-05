@@ -139,6 +139,14 @@ describe("entryPreview staking", () => {
     }
   });
 
+  it("sends stake=false when the gauge could not be read", () => {
+    const { snapshot } = lpRouteDataWith();
+    const data = lpRouteDataWith({ snapshot: { ...snapshot, gauge: null, dashboard: { ...snapshot.dashboard, gaugeReadFailed: true } } });
+    const result = preview("amount=100", { data });
+    expect(result.stake).toEqual({ availability: "unavailable", on: false });
+    expect(result.block).toBeNull();
+  });
+
   it("stakes between weeks: the box stays on", () => {
     const result = preview("amount=100", { data: withGauge(gauge({ periodFinish: now })) });
     expect(result.stake).toEqual({ availability: "between-weeks", on: true });

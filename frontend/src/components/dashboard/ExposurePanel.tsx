@@ -7,6 +7,7 @@ import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { drawdownScenarios, exposure, showsDoubleExposure, type Exposure, type Scenario } from "@/lib/exposure/exposure";
 import { breakdownSources, chartPlots, crossingLabel, type CrPlot } from "@/lib/exposure/plots";
 import { formatPercent, formatToken } from "@/lib/format";
+import { GAUGE_READ_FAILED_EXPOSURE } from "@/lib/gauge/copy";
 import { collateralRatio } from "@/lib/trove/health";
 
 const DOUBLE_EXPOSURE =
@@ -37,11 +38,16 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
   const hasSp = current.spDeposit > 0n || current.spBtcGain > 0n;
   const mcr = snapshot.protocol.mcr;
   const change = (pick: (e: Exposure) => bigint) => (prior ? `${btc(pick(prior))} → ${btc(pick(current))}` : btc(pick(current)));
+  const readNote = snapshot.gaugeReadFailed && (
+    <Notice tone="warning" role="status" className="mt-4">
+      {GAUGE_READ_FAILED_EXPOSURE}
+    </Notice>
+  );
 
   if (!hasTrove && !hasLp && !hasSp) {
     return (
       <Card id="exposure" level="section" title={title}>
-        <p className="mt-2 text-sm text-muted">No BTC exposure in a Trove, the LP, or the Stability Pool yet.</p>
+        {readNote || <p className="mt-2 text-sm text-muted">No BTC exposure in a Trove, the LP, or the Stability Pool yet.</p>}
       </Card>
     );
   }
@@ -84,6 +90,7 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
           )}
         </dl>
       )}
+      {readNote}
       {fromBtc ? <Notice className="mt-4">{FROM_BTC}</Notice> : showsDoubleExposure(current) && <Notice className="mt-4">{DOUBLE_EXPOSURE}</Notice>}
       <BtcMoveChart well plots={chart} ariaLabel={describeDrop(scenarios[scenarios.length - 1], { hasTrove, hasLp, hasSp })} className="mt-5">
         <details className="mt-3 text-sm">

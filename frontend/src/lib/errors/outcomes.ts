@@ -1,5 +1,6 @@
 import type { NetworkConfig } from "@/lib/config/networks";
 import { writeBlockerMessage } from "@/lib/config/write-gate";
+import { GAUGE_READ_FAILED_RETRY } from "@/lib/gauge/copy";
 import type { Outcome } from "./types";
 
 // Messages follow PRODUCT_SPEC.md §13.
@@ -218,6 +219,8 @@ export const STAKING_CLOSED: Outcome = {
   message: "Staking is closed; enter without staking",
   recovery: ["skip-stake"],
 };
+
+export const GAUGE_READ_FAILED: Outcome = { kind: "gauge-read-failed", message: GAUGE_READ_FAILED_RETRY, recovery: ["retry"] };
 
 // Gauge actions on Positions (G1).
 export const NO_PENDING_MEZO: Outcome = { kind: "nothing-to-claim", message: "You have no MEZO to claim yet.", recovery: [] };

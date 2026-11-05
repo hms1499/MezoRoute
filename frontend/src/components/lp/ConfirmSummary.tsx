@@ -4,6 +4,7 @@ import { Notice } from "@/components/ui/Notice";
 import { Stat } from "@/components/ui/Stat";
 import { Term } from "@/components/ui/Term";
 import { formatBps, formatPercent } from "@/lib/format";
+import { GAUGE_READ_FAILED_ENTRY } from "@/lib/gauge/copy";
 import { entryValue } from "@/lib/quote/entry";
 import { QUOTE_TTL_MS } from "@/lib/routes/musd-btc-lp/gate";
 import type { EntryPreview } from "@/lib/routes/musd-btc-lp/preview";
@@ -34,6 +35,11 @@ export function ConfirmSummary({
       {preview.stake.availability !== "unavailable" && (
         <Stat label="Staking" sub={preview.stake.on ? "swap fees go to veBTC voters while staked" : undefined}>
           {preview.stake.on ? "Staked in the MEZO gauge" : "Not staked"}
+        </Stat>
+      )}
+      {data.snapshot.dashboard.gaugeReadFailed && (
+        <Stat label="Staking" sub={GAUGE_READ_FAILED_ENTRY}>
+          Not staked
         </Stat>
       )}
       <Stat label="Slippage">{formatBps(slippageBps, 1)}</Stat>

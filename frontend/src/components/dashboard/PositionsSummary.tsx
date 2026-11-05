@@ -2,6 +2,7 @@
 
 import type { Address } from "viem";
 import { musd } from "@/components/lp/units";
+import { GAUGE_READ_FAILED_SUMMARY } from "@/lib/gauge/copy";
 import { usePositionsSnapshot } from "@/lib/positions/usePositionsSnapshot";
 import { positionView } from "@/lib/positions/view";
 import { ButtonLink } from "@/components/ui/Button";
@@ -25,7 +26,11 @@ export function PositionsSummary({ account, spValue }: { account: Address; spVal
       }
     >
       <dl className="mt-3 stat-list">
-        {!view.empty && <Stat label="MUSD/BTC LP (estimated)">{musd(view.lp.value)}</Stat>}
+        {!view.empty && (
+          <Stat label="MUSD/BTC LP (estimated)" sub={data.snapshot.gaugeReadFailed ? GAUGE_READ_FAILED_SUMMARY : undefined}>
+            {musd(view.lp.value)}
+          </Stat>
+        )}
         {!view.empty && <Stat label="Unclaimed pool fees (estimated)">{musd(view.fees.total)}</Stat>}
         {spValue > 0n && <Stat label="Stability Pool (estimated)">{musd(spValue)}</Stat>}
       </dl>

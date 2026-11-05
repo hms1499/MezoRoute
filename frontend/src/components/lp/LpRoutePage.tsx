@@ -197,6 +197,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
         onChange={(stake) => update({ ...intent, stake })}
         mezoPerWeek={weekly}
         aprLabel={apr === null ? null : formatPercent(apr, 1)}
+        readFailed={data.snapshot.dashboard.gaugeReadFailed}
       />
       {quote && <EntryPreviewCard quote={quote} feeBps={data.snapshot.executorFeeBps} borrowFee={preview.borrow?.effect?.fee} stake={preview.stake.on} />}
       {preview.borrow?.trove && preview.borrow.effect && (

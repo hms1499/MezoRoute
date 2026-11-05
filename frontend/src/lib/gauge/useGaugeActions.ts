@@ -14,7 +14,7 @@ import { APPROVE_GAS, GAUGE_CLAIM_GAS, GAUGE_DEPOSIT_GAS, GAUGE_WITHDRAW_GAS } f
 import { encodeApproveCall, needsApproval } from "@/lib/routes/musd-btc-lp/params";
 import { BlockedError } from "@/lib/tx/errors";
 import { sendCall, submitCall, type SendPin } from "@/lib/tx/send";
-import { encodeGaugeCall, gaugeActionBlock, type GaugeAction } from "./actions";
+import { encodeGaugeCall, gaugeActionBlock, gaugeForAction, type GaugeAction } from "./actions";
 
 /**
  * Direct gauge calls from Positions: claim MEZO, stake all wallet LP (an exact LP approval first when the
@@ -40,9 +40,9 @@ export function useGaugeActions(account: Address): {
     setPending(action);
     try {
       const gauge = network.gauge?.address;
+      if (!gauge) throw new Error("This network has no gauge");
       const fresh = await refresh();
-      const state = fresh.snapshot.gauge;
-      if (!gauge || !state) throw new Error("This network has no gauge");
+      const state = gaugeForAction(fresh.snapshot);
       const walletLp = fresh.snapshot.lpBalance;
       const block = gaugeActionBlock({
         network,

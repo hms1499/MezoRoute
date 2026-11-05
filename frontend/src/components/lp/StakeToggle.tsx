@@ -1,11 +1,12 @@
 import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
 import type { StakeAvailability } from "@/lib/gauge/availability";
-import { STAKE_TITLE, stakeLines } from "@/lib/gauge/copy";
+import { GAUGE_READ_FAILED_ENTRY, STAKE_TITLE, stakeLines } from "@/lib/gauge/copy";
 import { cx } from "@/lib/ui/cx";
 
 /**
  * "Stake to earn MEZO": stake the LP in the pool's gauge in the same transaction. Hidden when the gauge
- * is not alive. Between reward weeks the switch stays on and only the rate is missing. Rates here are
+ * is not alive; a gauge that could not be read says so instead, because the deposit then goes unstaked. Between reward weeks the switch stays on and only the rate is missing. Rates here are
  * always this week's, and the copy always says swap fees go to veBTC voters while staked.
  */
 export function StakeToggle({
@@ -14,6 +15,7 @@ export function StakeToggle({
   onChange,
   mezoPerWeek,
   aprLabel,
+  readFailed = false,
 }: {
   availability: StakeAvailability;
   on: boolean;
@@ -22,8 +24,15 @@ export function StakeToggle({
   mezoPerWeek: bigint | null;
   /** "12.3%" when a MEZO price is known (mainnet), else null. */
   aprLabel: string | null;
+  readFailed?: boolean;
 }) {
-  if (availability === "unavailable") return null;
+  if (availability === "unavailable") {
+    return readFailed ? (
+      <Notice tone="warning" role="status">
+        {GAUGE_READ_FAILED_ENTRY}
+      </Notice>
+    ) : null;
+  }
   const lines = stakeLines(availability, mezoPerWeek);
   return (
     <Card>

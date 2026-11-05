@@ -1,5 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { feesStakedNote, STAKE_TITLE, stakeLines } from "./copy";
+import {
+  feesStakedNote,
+  GAUGE_READ_FAILED_ENTRY,
+  GAUGE_READ_FAILED_EXIT,
+  GAUGE_READ_FAILED_EXPOSURE,
+  GAUGE_READ_FAILED_POSITIONS,
+  GAUGE_READ_FAILED_RETRY,
+  STAKE_TITLE,
+  stakeLines,
+} from "./copy";
+
+describe("a failed gauge read", () => {
+  const all = [GAUGE_READ_FAILED_ENTRY, GAUGE_READ_FAILED_EXIT, GAUGE_READ_FAILED_EXPOSURE, GAUGE_READ_FAILED_POSITIONS, GAUGE_READ_FAILED_RETRY];
+
+  it("says the read failed, never that there is no gauge or no staked LP", () => {
+    for (const line of all) {
+      expect(line).toMatch(/could not be read/);
+      expect(line).not.toMatch(/\bno (gauge|staked)\b|not staked yet|has no gauge/i);
+    }
+  });
+
+  it("tells Positions readers what is missing and that wallet LP can still exit", () => {
+    expect(GAUGE_READ_FAILED_POSITIONS).toMatch(/Staked LP and pending MEZO/);
+    expect(GAUGE_READ_FAILED_POSITIONS).toMatch(/wallet can still exit/);
+  });
+});
 
 describe("stake copy", () => {
   it("says the rate is this week's and that swap fees go to veBTC voters", () => {

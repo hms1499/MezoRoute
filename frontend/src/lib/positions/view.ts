@@ -54,3 +54,8 @@ export function positionView(snapshot: PositionsSnapshot, events: HistoryEvent[]
     empty: balance === 0n && snapshot.fees.musd === 0n && snapshot.fees.btc === 0n && (snapshot.gauge?.earned ?? 0n) === 0n,
   };
 }
+
+/** Whether Positions says "you have no positions": both sides known empty. A failed gauge read cannot tell, because the LP may all be staked. */
+export function showsNoPositions(view: PositionView, pool: { empty: boolean } | null, gaugeReadFailed: boolean): boolean {
+  return view.empty && pool?.empty === true && !gaugeReadFailed;
+}
