@@ -16,6 +16,12 @@ describe("stake copy", () => {
     expect(lines).not.toMatch(/≈|a week at/);
   });
 
+  it("asks for an amount in an open week without one, and does not claim the rate is unset", () => {
+    expect(stakeLines("open", null)).toEqual([
+      "Enter an amount to see this week's rate. While staked, swap fees go to veBTC voters instead of you.",
+    ]);
+  });
+
   it("has no copy when staking is unavailable", () => {
     expect(stakeLines("unavailable", null)).toEqual([]);
   });

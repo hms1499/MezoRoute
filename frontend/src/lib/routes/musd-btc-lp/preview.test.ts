@@ -124,7 +124,7 @@ describe("entryPreview staking", () => {
   it("stakes by default when the gauge is open, with the measured budget", () => {
     const result = preview("amount=100", { data: withGauge(gauge()) });
     expect(result.stake).toEqual({ availability: "open", on: true });
-    expect(result.gasUnits).toBe(445_000n);
+    expect(result.gasUnits).toBe(475_000n);
   });
 
   it("stakes=0 turns it off and uses the plain budget", () => {

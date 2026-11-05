@@ -1,10 +1,12 @@
 /** Gas units for `enter`; S1 measured 328,115–433,422 (5 Oct 2026). */
 export const ENTER_GAS = 450_000n;
 /**
- * `enter` that also stakes the LP in the gauge: 423,282 measured on V2 (testnet, §20), plus 5%,
- * rounded up to 5,000. The RPC estimate plus 20% still wins when it is higher (`gasLimit`).
+ * `enter` that also stakes the LP in the gauge: the highest measured use on V2 is 448,402 (testnet,
+ * earlier runs in §20; 423,282 in the latest), plus 5%, rounded up to 5,000. It is the floor that
+ * protects a send when the RPC answers `eth_estimateGas` with the bare intrinsic gas; the estimate
+ * plus 20% still wins when it is higher (`gasLimit`).
  */
-export const ENTER_STAKE_GAS = 445_000n;
+export const ENTER_STAKE_GAS = 475_000n;
 /** What the gauge deposit adds to an entry: 423,282 − 323,655 measured (§20), plus 5%, rounded up to 5,000. */
 export const STAKE_EXTRA_GAS = 105_000n;
 

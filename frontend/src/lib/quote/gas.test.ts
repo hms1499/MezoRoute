@@ -39,8 +39,9 @@ describe("Stability Pool gas budgets", () => {
 });
 
 describe("entryGasUnits with staking", () => {
-  it("uses the measured budget: 423,282 with the stake, plus 5%, up to a multiple of 5,000", () => {
-    expect(ENTER_STAKE_GAS).toBe(445_000n);
+  it("uses the measured budget: highest measured stake entry 448,402, plus 5%, up to a multiple of 5,000", () => {
+    expect(ENTER_STAKE_GAS).toBe(475_000n);
+    expect(ENTER_STAKE_GAS).toBeGreaterThan((448_402n * 105n) / 100n - 1n);
     expect(entryGasUnits({ approve: false, smartAccount: false, stake: true })).toBe(ENTER_STAKE_GAS);
     expect(entryGasUnits({ approve: false, smartAccount: false, stake: false })).toBe(ENTER_GAS);
   });
