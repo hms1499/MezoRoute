@@ -10,7 +10,7 @@ import type { ExitBlock } from "@/lib/positions/exit-gate";
 import type { ExitStepKind } from "@/lib/positions/exit-steps";
 import { hasStarted, type Stepper } from "@/lib/tx/stepper";
 
-function stepCopy(unstake: bigint): Record<ExitStepKind, StepCopy> {
+function stepCopy(plan: ExitStepKind[]): Record<ExitStepKind, StepCopy> {
   return {
     unstake: {
       title: "Unstake LP",
@@ -33,7 +33,7 @@ function stepCopy(unstake: bigint): Record<ExitStepKind, StepCopy> {
     },
     exit: {
       title: "Exit to MUSD",
-      detail: exitCopy(unstake).exitDetail,
+      detail: exitCopy(plan).exitDetail,
       action: "Send",
     },
   };
@@ -44,19 +44,19 @@ export function ExitStepper({
   run,
   restart,
   block,
-  unstake,
+  plan,
 }: {
   stepper: Stepper<ExitStepKind>;
   run: () => void;
   restart: () => void;
   block: ExitBlock | null;
-  unstake: bigint;
+  plan: ExitStepKind[];
 }) {
   // A failed step, or a block on the pinned amount (e.g. the LP balance changed), needs a way back.
   const stuck = hasStarted(stepper) && (block !== null || stepper.steps.some((step) => step.status === "failed"));
   return (
     <Card title="Confirm">
-      <StepList steps={stepper.steps} active={stepper.active} copy={stepCopy(unstake)} blocked={block !== null} onRun={run} />
+      <StepList steps={stepper.steps} active={stepper.active} copy={stepCopy(plan)} blocked={block !== null} onRun={run} />
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 empty:hidden">
         <BlockNotice block={block} />
         {stuck && (
