@@ -127,7 +127,7 @@ For Mezo, Borrow & Deploy mints new MUSD and deepens the MUSD/BTC pool, and the 
 MezoRoute integrates MUSD across three protocol surfaces: borrowing through `BorrowerOperationsSignatures`, the MUSD/BTC pool, and the Stability Pool. Wave 1 did not integrate MEZO: our 30 Sep 2026 research found gauges paying BTC and no gauge on the mainnet MUSD/BTC pool. That was out of date by 4 Nov 2026. The pool's gauge now pays MEZO to staked LP on both networks, so Wave 2 (G1, in progress) adds it:
 
 - **Stake in the same transaction.** The LP route has a "Stake to earn MEZO" switch (on by default when the gauge is live). `MezoRouteExecutorV2` deposits the new LP in the gauge for you inside the entry; MezoRoute never holds your LP or your MEZO.
-- **Positions** shows wallet and staked LP together, pending MEZO, and Claim, Stake, and Unstake. Exit unstakes first when it needs to, so exiting a staked position is **two transactions** (unstake, then exit), and it resumes if you reload in between.
+- **Positions** shows wallet and staked LP together, pending MEZO, and Claim, Stake, and Unstake. Exit unstakes first when it needs to, so exiting a staked position is **two transactions** (unstake, then exit; three when a Bitcoin wallet must also approve), and it resumes if you reload in between.
 - **Compare routes** shows pool fees and MEZO separately on your own amount.
 - **Enter from BTC.** Choose BTC instead of MUSD on the LP route; the executor swaps about half to MUSD and adds liquidity. A BTC entry is **capped per transaction** (12 BTC on testnet; 0.0125 BTC on mainnet) and the app keeps a gas reserve out of "Use my balance", because BTC pays for gas on Mezo.
 - **What staking costs you.** While LP is staked, its swap fees go to veBTC voters instead of you. The MEZO rate is this week's and changes weekly; it is not a promise, and MEZO can fall in price.
@@ -165,7 +165,7 @@ cd frontend
 npm install
 cp .env.example .env.local   # set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID (free at cloud.reown.com)
 npm run dev                  # http://localhost:3000
-npm test                     # 1120 Vitest tests + 1 expected failure (the pre-merge guard for mainnet V2)
+npm test                     # 1215 Vitest tests
 npm run build                # static export to out/, with lint and type check
 ```
 

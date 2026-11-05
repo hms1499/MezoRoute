@@ -15,7 +15,7 @@ Legend: ✅ holds, with evidence · ⚠️ accepted risk, see notes.
 
 | # | Invariant | Where enforced | Evidence |
 |---|---|---|---|
-| 1 | Only the fixed MUSD, BTC, Router, pool, and BorrowerOperationsSignatures are called | All targets are `immutable`; the only `.call`-like paths are typed calls on them | Code review: no `call`, `delegatecall`, `selfdestruct`, or user-supplied target ✅ |
+| 1 | Only the fixed MUSD, BTC, Router, pool, and BorrowerOperationsSignatures (V2: and the immutable gauge) are called | All targets are `immutable`; the only `.call`-like paths are typed calls on them | Code review: no `call`, `delegatecall`, `selfdestruct`, or user-supplied target ✅ |
 | 2 | No arbitrary call target, token, or route | `_route()` builds the single MUSD↔BTC volatile hop with the immutable factory; params carry no address except `recipient` and the Trove hints (passed only to BOS) | Code review ✅ |
 | 3 | All state-changing entry points are `nonReentrant` | `enter`, `borrowAndEnter`, `exit` | `test_enter_rejectsReentrantCall`, `test_borrowAndEnter_rejectsReentrantCall`, `test_exit_rejectsReentrantCall` ✅ |
 | 4 | All token transfers use `SafeERC20` | `using SafeERC20 for IERC20`; approvals use `forceApprove` | Code review ✅ |

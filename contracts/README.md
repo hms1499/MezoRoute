@@ -1,6 +1,6 @@
 # MezoRoute contracts
 
-`MezoRouteExecutor` — non-custodial, fixed-route executor for the Mezo MUSD/BTC volatile pool.
+`MezoRouteExecutorV2` — non-custodial, fixed-route executor for the Mezo MUSD/BTC volatile pool. It is `MezoRouteExecutor` (V1) plus an optional gauge stake on entry and `enterFromBtc`. `script/Deploy.s.sol` deploys V2.
 See `../PRODUCT_SPEC.md` Section 11 for the specification.
 
 ## Build and test
@@ -22,7 +22,8 @@ locally with mock MUSD/BTC. Mezo's BTC token is a chain precompile, so fork test
 
 | Network | Address | Fee |
 |---|---|---|
-| Mezo testnet (31611) | [`0xB36B2E012003840951CFf00fA6b1E3237A110920`](https://explorer.test.mezo.org/address/0xB36B2E012003840951CFf00fA6b1E3237A110920) (verified, current; cap 1,000,000 MUSD) | 10 bps |
+| Mezo testnet (31611) | [`0x1281cC769c136F9F4f291B390c8992a3Cd556288`](https://explorer.test.mezo.org/address/0x1281cC769c136F9F4f291B390c8992a3Cd556288) (V2, current; caps 1,000,000 MUSD and 12 BTC) | 10 bps |
+| Mezo testnet (31611) | [`0xB36B2E012003840951CFf00fA6b1E3237A110920`](https://explorer.test.mezo.org/address/0xB36B2E012003840951CFf00fA6b1E3237A110920) (V1, verified, legacy: its LP can still exit; cap 1,000,000 MUSD) | 10 bps |
 | Mezo testnet (31611) | [`0x10E6334d2716FDE5f2bEb418C66fD7C9c1021fB9`](https://explorer.test.mezo.org/address/0x10E6334d2716FDE5f2bEb418C66fD7C9c1021fB9) (superseded: no per-transaction cap or default-factory check) | 10 bps |
 | Mezo testnet (31611) | [`0x5AA6A335eFC1211f0D9554504C5C7B14c220c39e`](https://explorer.test.mezo.org/address/0x5AA6A335eFC1211f0D9554504C5C7B14c220c39e) (superseded: lacked the recipient guard) | 10 bps |
 
@@ -45,5 +46,5 @@ Contract development started on 30 Sep 2026, during the hackathon's pre-registra
 ## Limitations
 
 - `borrowAndEnter` supports EOA signers only (MUSD verifies with `ECDSA.recover`).
-- No gauge staking or MEZO rewards: no MEZO-paying gauge exists for this pool.
-- Unaudited (see the self-audit checklist in `SELF_AUDIT.md`). Entries are limited by an immutable per-transaction cap: 1,000 MUSD on mainnet, 1,000,000 MUSD on testnet. Exits are never capped.
+- V1 has no gauge staking or BTC entry. On mainnet V1 is still the live executor until V2 is deployed; the pool's gauge there pays MEZO to stakers, and neither executor ever holds or pays MEZO.
+- Unaudited (see the self-audit checklist in `SELF_AUDIT.md`). Entries are limited by immutable per-transaction caps: 1,000 MUSD on mainnet and 1,000,000 MUSD on testnet, and on V2's `enterFromBtc` 0.0125 BTC on mainnet and 12 BTC on testnet. Exits are never capped.
