@@ -100,7 +100,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     mezoAppUrl: "https://mezo.org",
     // M1, 15 Oct 2026: 1,000 MUSD cap per entry, source-verified on the explorer.
     executor: { address: "0x046449b1229C863e278f369869BA10e12bd80d9E", feeBps: 10n, deployBlock: 12_524_142n },
-    // Task 11 moves mainnet to V2 and lists this V1 under legacyExecutors; until then its ABI mismatch is recorded in networks.test.ts.
+    // Task 11 moves mainnet to V2 and lists this V1 under legacyExecutors; until then scripts/check-mainnet-pin.mjs fails production builds.
     legacyExecutors: [],
     entryCap: 1_000n * 10n ** 18n,
     entryCapBtc: 125n * 10n ** 14n,

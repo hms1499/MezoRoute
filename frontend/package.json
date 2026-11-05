@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "node scripts/icloud-ignore.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/icloud-ignore.mjs && node scripts/patch-relayer.mjs && node scripts/check-env.mjs",
+    "prebuild": "node scripts/icloud-ignore.mjs && node scripts/patch-relayer.mjs && node scripts/check-env.mjs && node scripts/check-mainnet-pin.mjs",
     "build": "next build",
     "postbuild": "node scripts/check-relayer-bundle.mjs",
     "lint": "next lint",

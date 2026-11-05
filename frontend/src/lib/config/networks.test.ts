@@ -95,10 +95,4 @@ describe("networks", () => {
     });
     expect(networks.testnet.legacyExecutors).toEqual([{ address: "0xB36B2E012003840951CFf00fA6b1E3237A110920", deployBlock: 15_903_010n }]);
   });
-
-  // Merge gate (Task 11): mainnet still runs V1 on this branch while the ABI is V2. Remove `.fails` once
-  // mainnet is on V2 and V1 sits in legacyExecutors.
-  it.fails("pins V2 on mainnet before merge", () => {
-    expect(networks.mainnet.legacyExecutors.length).toBeGreaterThan(0);
-  });
 });
