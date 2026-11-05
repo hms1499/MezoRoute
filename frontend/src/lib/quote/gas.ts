@@ -44,9 +44,9 @@ export function entryGasUnits(input: { approve: boolean; smartAccount: boolean; 
 export const EXIT_GAS = 495_000n;
 
 /** Estimated gas units for the whole exit flow, for the preview's network-fee line. */
-export function exitGasUnits(input: { approve: boolean; smartAccount: boolean }): bigint {
-  const calls = input.approve ? 2n : 1n;
-  const units = EXIT_GAS + (input.approve ? APPROVE_GAS : 0n);
+export function exitGasUnits(input: { approve: boolean; smartAccount: boolean; unstake?: boolean }): bigint {
+  const calls = 1n + (input.approve ? 1n : 0n) + (input.unstake ? 1n : 0n);
+  const units = EXIT_GAS + (input.approve ? APPROVE_GAS : 0n) + (input.unstake ? GAUGE_WITHDRAW_GAS : 0n);
   return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
 }
 
@@ -93,7 +93,7 @@ export function spGasUnits(input: { approve: boolean; smartAccount: boolean; act
  */
 /** `gauge.deposit`: estimate 154,522 (highest used 142,295). */
 export const GAUGE_DEPOSIT_GAS = 165_000n;
-/** `gauge.withdraw`: used 130,620 after an `enter` stake with accrued rewards (97,194 direct). */
-export const GAUGE_WITHDRAW_GAS = 140_000n;
+/** `gauge.withdraw`: highest estimate 147,097 (an exit's unstake, 5 Nov 2026; highest used 137,316), plus 5%, rounded up to 5,000. */
+export const GAUGE_WITHDRAW_GAS = 155_000n;
 /** `gauge.getReward`: estimate 67,949 (highest used 66,295). */
 export const GAUGE_CLAIM_GAS = 75_000n;

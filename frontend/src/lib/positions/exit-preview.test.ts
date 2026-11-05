@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
+import type { ExitIntent } from "./exit-intent";
 import { exitPreview } from "./exit-preview";
 import { LIVE_EXIT_LIQUIDITY, positionsDataWith, positionsSnapshotWith } from "./test-fixtures";
 
@@ -35,5 +36,38 @@ describe("exitPreview", () => {
   it("has no gas cost when the gas price failed to load", () => {
     const preview = exitPreview({ ...base, data: positionsDataWith({ gasPrice: undefined }), intent: { percent: 100, slippageBps: 100n }, walletKind: "eoa" });
     expect(preview.gasCost).toBeNull();
+  });
+
+  describe("with LP staked in the gauge", () => {
+    const gauge = (staked: bigint) => ({ alive: true, rewardRate: 0n, periodFinish: 0n, totalStaked: staked, staked, earned: 5n });
+    const staked = (wallet: bigint, inGauge: bigint) =>
+      positionsDataWith({ snapshot: positionsSnapshotWith({ lpBalance: wallet, gauge: gauge(inGauge) }) });
+    const intent: ExitIntent = { percent: 100, slippageBps: 100n };
+
+    it("plans an unstake of the shortfall, then the permit and the exit", () => {
+      const preview = exitPreview({ ...base, data: staked(0n, LIVE_EXIT_LIQUIDITY), intent, walletKind: "eoa" });
+      expect(preview.liquidityIn).toBe(LIVE_EXIT_LIQUIDITY);
+      expect(preview.unstake).toBe(LIVE_EXIT_LIQUIDITY);
+      expect(preview.steps).toEqual(["unstake", "permit", "exit"]);
+      expect(preview.block).toBeNull();
+    });
+
+    it("adds the unstake's gas", () => {
+      const withUnstake = exitPreview({ ...base, data: staked(0n, LIVE_EXIT_LIQUIDITY), intent, walletKind: "eoa" });
+      expect(withUnstake.gasUnits).toBe(495_000n + 155_000n);
+    });
+
+    it("pins liquidityIn, and re-quotes without the unstake once the LP is in the wallet", () => {
+      const reloaded = exitPreview({ ...base, data: staked(LIVE_EXIT_LIQUIDITY, 0n), intent, liquidityIn: LIVE_EXIT_LIQUIDITY, walletKind: "eoa" });
+      expect(reloaded.unstake).toBe(0n);
+      expect(reloaded.steps).toEqual(["permit", "exit"]);
+      expect(reloaded.quote?.liquidityIn).toBe(LIVE_EXIT_LIQUIDITY);
+    });
+
+    it("exits staked LP too: Max covers wallet plus gauge", () => {
+      const preview = exitPreview({ ...base, data: staked(10n, LIVE_EXIT_LIQUIDITY), intent, walletKind: "eoa" });
+      expect(preview.liquidityIn).toBe(LIVE_EXIT_LIQUIDITY + 10n);
+      expect(preview.unstake).toBe(LIVE_EXIT_LIQUIDITY);
+    });
   });
 });

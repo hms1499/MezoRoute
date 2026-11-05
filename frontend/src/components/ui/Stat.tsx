@@ -20,7 +20,7 @@ export function Stat({
       <dt className={strong ? "font-semibold" : "text-muted"}>{label}</dt>
       <dd className={cx("min-w-0 text-right [overflow-wrap:anywhere]", strong && "font-semibold", tone === "btc" && "text-btc")}>
         {children}
-        {sub && <span className="block text-xs font-normal text-muted">{sub}</span>}
+        {sub && <span className="ml-auto block max-w-44 text-xs font-normal text-muted">{sub}</span>}
       </dd>
     </>
   );

@@ -86,6 +86,7 @@ function ExitFlowView(props: {
     executor: props.executor,
     intent: props.intent,
     liquidityIn: unpinned.liquidityIn,
+    unstake: unpinned.unstake,
     walletKind: props.walletKind,
     plan: unpinned.steps,
     refresh: props.refresh,
@@ -101,14 +102,14 @@ function ExitFlowView(props: {
           title="Exit the MUSD/BTC pool to MUSD"
         />
       }
-      summary={<ExitStepper stepper={stepper} run={run} restart={restart} block={preview.block} />}
+      summary={<ExitStepper stepper={stepper} run={run} restart={restart} block={preview.block} unstake={preview.unstake} />}
     >
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <Card>
-        <ExitForm intent={props.intent} lpBalance={props.data.snapshot.lpBalance} amountLocked={hasStarted(stepper)} onChange={props.onIntent} />
+        <ExitForm intent={props.intent} walletLp={props.data.snapshot.lpBalance} stakedLp={props.data.snapshot.gauge?.staked ?? 0n} amountLocked={hasStarted(stepper)} onChange={props.onIntent} />
       </Card>
       {preview.quote && preview.minimums && (
-        <ExitPreviewCard quote={preview.quote} minimums={preview.minimums} gasCost={preview.gasCost} blockNumber={props.data.snapshot.blockNumber} />
+        <ExitPreviewCard quote={preview.quote} minimums={preview.minimums} unstake={preview.unstake} gasCost={preview.gasCost} blockNumber={props.data.snapshot.blockNumber} />
       )}
     </RouteLayout>
   );

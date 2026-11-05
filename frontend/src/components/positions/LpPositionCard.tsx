@@ -52,10 +52,10 @@ export function LpPositionCard({ lp, history }: { lp: LpView; history: History }
       )}
       {lp.stakedLp > 0n && (
         <p className="mt-2 text-xs text-muted">
-          {lp.walletLp > 0n ? "Exit uses the LP in your wallet. " : ""}Unstake first to exit staked LP.
+          Exit unstakes the staked LP it needs first. Your pending MEZO stays claimable.
         </p>
       )}
-      {lp.walletLp > 0n && (
+      {lp.balance > 0n && (
         <ButtonLink href={`/positions/lp/exit/${exitQuery(DEFAULT_EXIT_INTENT)}`} className="mt-4" arrow>
           Exit to MUSD
         </ButtonLink>
