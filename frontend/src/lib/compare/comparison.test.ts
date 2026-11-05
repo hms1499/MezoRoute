@@ -114,6 +114,13 @@ describe("compareRoutes gauge", () => {
     ({ ...snapshot, gauge, block: { number: 1n, timestamp } });
   const MEZO_PRICE = 6_038_609_436_909_955n; // 0.006 MUSD
 
+  it("has no gauge when nobody funds it, past the 8 days between weeks can explain", () => {
+    const late = compareRoutes({ snapshot: withGauge(gaugeState, gaugeState.periodFinish + 8n * 86_400n + 1n), amount: 20n * ONE, executorFeeBps: 10n, mezoPrice: MEZO_PRICE });
+    expect(late.lp.status === "ok" && late.lp.gauge).toBeNull();
+    const betweenWeeks = compareRoutes({ snapshot: withGauge(gaugeState, gaugeState.periodFinish + 8n * 86_400n), amount: 20n * ONE, executorFeeBps: 10n, mezoPrice: MEZO_PRICE });
+    expect(betweenWeeks.lp.status === "ok" && betweenWeeks.lp.gauge).toMatchObject({ open: false });
+  });
+
   it("has no gauge on a network without one, or when the voter no longer counts it alive", () => {
     expect(compareRoutes({ snapshot, amount: 20n * ONE, executorFeeBps: 10n }).lp).toMatchObject({ gauge: null });
     const dead = compareRoutes({ snapshot: withGauge({ ...gaugeState, alive: false }), amount: 20n * ONE, executorFeeBps: 10n, mezoPrice: MEZO_PRICE });

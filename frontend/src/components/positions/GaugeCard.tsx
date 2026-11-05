@@ -6,11 +6,14 @@ import { BlockNotice } from "@/components/lp/BlockNotice";
 import { lp as lpUnits, musd } from "@/components/lp/units";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
 import { Stat } from "@/components/ui/Stat";
 import { Term } from "@/components/ui/Term";
 import { useNetwork } from "@/lib/config/network-context";
 import { lacksGas } from "@/lib/dashboard/readiness";
 import { gaugeActionBlock, type GaugeAction } from "@/lib/gauge/actions";
+import { stakeAvailability } from "@/lib/gauge/availability";
+import { GAUGE_NOT_FUNDED, gaugeRateLine } from "@/lib/gauge/copy";
 import { emissionsApr, gaugeWeekOpen, mezoPerWeek } from "@/lib/gauge/maths";
 import type { GaugeState } from "@/lib/gauge/state";
 import { useGaugeActions } from "@/lib/gauge/useGaugeActions";
@@ -22,11 +25,6 @@ import type { LpView } from "@/lib/positions/view";
 const mezo = (value: bigint) => `${formatToken(value, 18, 4)} MEZO`;
 const FEES_NOTE = "While staked, swap fees go to veBTC voters instead of you.";
 
-/** Whether Positions shows the gauge card: something is staked or pending, or wallet LP could be staked. */
-export function showsGaugeCard(gauge: GaugeState | null, walletLp: bigint): gauge is GaugeState {
-  return gauge !== null && (gauge.staked > 0n || gauge.earned > 0n || (walletLp > 0n && gauge.alive));
-}
-
 /** Staked LP, pending MEZO, and the three direct gauge actions. Rates are always this week's; they are not a promise. */
 export function GaugeCard({ account, lp, data, gauge }: { account: Address; lp: LpView; data: PositionsData; gauge: GaugeState }) {
   const { network } = useNetwork();
@@ -35,6 +33,8 @@ export function GaugeCard({ account, lp, data, gauge }: { account: Address; lp: 
   const actions = useGaugeActions(account);
   const mezoPrice = useMezoPrice(network, snapshot.blockNumber);
   const open = gaugeWeekOpen(gauge, snapshot.blockTimestamp);
+  const availability = stakeAvailability(gauge, snapshot.blockTimestamp);
+  const stakeOffered = availability !== "unavailable";
 
   const blockFor = (action: GaugeAction) =>
     gaugeActionBlock({
@@ -44,6 +44,7 @@ export function GaugeCard({ account, lp, data, gauge }: { account: Address; lp: 
       state: gauge,
       walletLp: lp.walletLp,
       lacksGas: lacksGas(data.gasBalance, data.gasPrice),
+      now: snapshot.blockTimestamp,
     });
   const claim = blockFor("claim");
   const stake = blockFor("stake");
@@ -61,7 +62,7 @@ export function GaugeCard({ account, lp, data, gauge }: { account: Address; lp: 
   return (
     <Card
       title={<Term id="gauge">MEZO gauge</Term>}
-      subtitle="Staked LP earns MEZO instead of pool fees."
+      subtitle={stakeOffered ? "Staked LP earns MEZO instead of pool fees." : undefined}
       aside={
         <div className="text-right">
           <p className="text-xs text-muted">Pending MEZO</p>
@@ -77,7 +78,7 @@ export function GaugeCard({ account, lp, data, gauge }: { account: Address; lp: 
           {mezo(gauge.earned)}
         </Stat>
         <Stat label={<Term id="emissions">Emissions</Term>} sub="At this week's rate, which can change">
-          {!open ? "Not set for the new week yet" : weekly === null ? "—" : `≈ ${mezo(weekly)} a week`}
+          {gaugeRateLine(availability, weekly)}
         </Stat>
         {apr !== null && (
           <Stat label="Emissions APR" sub="At this week's rate only; not a promise">
@@ -86,6 +87,11 @@ export function GaugeCard({ account, lp, data, gauge }: { account: Address; lp: 
         )}
       </dl>
       <p className="mt-2 text-xs text-muted">{FEES_NOTE}</p>
+      {!stakeOffered && gauge.staked > 0n && (
+        <Notice tone="warning" role="status" className="mt-3">
+          {GAUGE_NOT_FUNDED}
+        </Notice>
+      )}
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <Button disabled={claim !== null || busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim}>
           Claim MEZO
@@ -95,7 +101,7 @@ export function GaugeCard({ account, lp, data, gauge }: { account: Address; lp: 
             Unstake all
           </Button>
         )}
-        {lp.walletLp > 0n && (
+        {lp.walletLp > 0n && stakeOffered && (
           <Button variant="secondary" disabled={stake !== null || busy} pending={actions.pending === "stake" ? "wallet" : null} onClick={actions.stakeAll}>
             Stake all
           </Button>

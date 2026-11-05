@@ -147,6 +147,11 @@ describe("entryPreview staking", () => {
     expect(result.block).toBeNull();
   });
 
+  it("does not stake on a gauge nobody has funded for more than 8 days", () => {
+    const result = preview("amount=100", { data: withGauge(gauge({ periodFinish: now - 8n * 86_400n - 1n })) });
+    expect(result.stake).toEqual({ availability: "unavailable", on: false });
+  });
+
   it("stakes between weeks: the box stays on", () => {
     const result = preview("amount=100", { data: withGauge(gauge({ periodFinish: now })) });
     expect(result.stake).toEqual({ availability: "between-weeks", on: true });

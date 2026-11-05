@@ -5,6 +5,7 @@ import { networks } from "@/lib/config/networks";
 import { GAUGE_CLAIM_GAS, GAUGE_DEPOSIT_GAS, GAUGE_WITHDRAW_GAS } from "@/lib/quote/gas";
 import { BlockedError } from "@/lib/tx/errors";
 import { encodeGaugeCall, findRewardEvent, gaugeActionBlock, gaugeForAction } from "./actions";
+import { UNFUNDED_AFTER_SECONDS } from "./availability";
 import type { GaugeState } from "./state";
 
 const testnet = networks.testnet;
@@ -26,6 +27,7 @@ const input = (action: "claim" | "stake" | "unstake", overrides: Partial<Paramet
   state: state(),
   walletLp: 2n,
   lacksGas: false,
+  now: 1_999_999_000n,
   ...overrides,
 });
 
@@ -50,6 +52,13 @@ describe("gaugeForAction", () => {
 });
 
 describe("gaugeActionBlock", () => {
+  it("offers no stake on an alive gauge nobody funds, while claim and unstake still work", () => {
+    const unfunded = input("stake", { now: 2_000_000_000n + UNFUNDED_AFTER_SECONDS + 1n });
+    expect(gaugeActionBlock(unfunded)?.outcome.kind).toBe("staking-closed");
+    expect(gaugeActionBlock({ ...unfunded, action: "claim" })).toBeNull();
+    expect(gaugeActionBlock({ ...unfunded, action: "unstake" })).toBeNull();
+  });
+
   it("lets each action through when it has something to do", () => {
     for (const action of ["claim", "stake", "unstake"] as const) expect(gaugeActionBlock(input(action))).toBeNull();
   });

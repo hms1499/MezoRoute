@@ -1,6 +1,7 @@
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { exposure, lpValueAfterDrop, type Drawdown } from "@/lib/exposure/exposure";
-import { emissionsApr, gaugeWeekOpen, mezoPerWeek } from "@/lib/gauge/maths";
+import { stakeAvailability } from "@/lib/gauge/availability";
+import { emissionsApr, mezoPerWeek } from "@/lib/gauge/maths";
 import { entryValue, quoteEntry } from "@/lib/quote/entry";
 import { afterEntry } from "@/lib/routes/musd-btc-lp/after-entry";
 import { afterSpDeposit } from "@/lib/stability-pool/after-deposit";
@@ -23,7 +24,7 @@ export type LpComparison =
       btcBefore: bigint;
       btcAfter: bigint;
       valueAfterDrop: bigint;
-      gauge: LpGauge | null; // null when the network has no gauge or the voter no longer counts it alive
+      gauge: LpGauge | null; // null when staking is unavailable: no gauge, not alive, or not funded
     }
   | { status: "unavailable" }; // empty pool: quoteEntry has nothing to quote
 
@@ -81,8 +82,10 @@ export function compareRoutes(input: {
 /** What staking this deposit would earn, diluted by the amount entered. The week's own clock is the snapshot's block. */
 function lpGauge(snapshot: DashboardSnapshot, liquidity: bigint, mezoPrice: bigint | null): LpGauge | null {
   const { gauge, block } = snapshot;
-  if (!gauge || !gauge.alive || !block) return null;
-  if (!gaugeWeekOpen(gauge, block.timestamp)) return { open: false, mezoPerWeek: 0n, apr: null };
+  if (!block) return null;
+  const availability = stakeAvailability(gauge, block.timestamp);
+  if (!gauge || availability === "unavailable") return null;
+  if (availability === "between-weeks") return { open: false, mezoPerWeek: 0n, apr: null };
   return {
     open: true,
     mezoPerWeek: mezoPerWeek(gauge.rewardRate, liquidity, gauge.totalStaked),

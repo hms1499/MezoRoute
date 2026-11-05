@@ -28,9 +28,10 @@ import { spClaimPreview } from "@/lib/stability-pool/preview";
 import { useSpActions } from "@/lib/stability-pool/useSpActions";
 import { useSpHistory } from "@/lib/stability-pool/useSpHistory";
 import { useSpSnapshot } from "@/lib/stability-pool/useSpSnapshot";
+import { showsGaugeCard } from "@/lib/gauge/availability";
 import { feesStakedNote, GAUGE_READ_FAILED_POSITIONS } from "@/lib/gauge/copy";
 import { FeesCard } from "./FeesCard";
-import { GaugeCard, showsGaugeCard } from "./GaugeCard";
+import { GaugeCard } from "./GaugeCard";
 import { LpPositionCard } from "./LpPositionCard";
 
 /** Spec §9 screen 5: LP, pool fees, and the Stability Pool. */
@@ -127,7 +128,7 @@ function Positions({ account }: { account: Address }) {
         </Notice>
       )}
       {view.lp.balance > 0n && <LpPositionCard lp={view.lp} history={history} />}
-      {showsGaugeCard(data.snapshot.gauge, view.lp.walletLp) && (
+      {showsGaugeCard(data.snapshot.gauge, view.lp.walletLp, data.snapshot.blockTimestamp) && (
         <GaugeCard account={account} lp={view.lp} data={data} gauge={data.snapshot.gauge} />
       )}
       {(view.lp.balance > 0n || view.fees.musd > 0n || view.fees.btc > 0n) && (

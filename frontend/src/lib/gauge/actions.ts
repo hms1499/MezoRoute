@@ -16,6 +16,7 @@ import type { Outcome } from "@/lib/errors/types";
 import { formatToken } from "@/lib/format";
 import type { LogLike } from "@/lib/routes/musd-btc-lp/receipt";
 import { BlockedError } from "@/lib/tx/errors";
+import { stakeAvailability } from "./availability";
 import type { GaugeState } from "./state";
 
 export type GaugeAction = "claim" | "stake" | "unstake";
@@ -33,7 +34,7 @@ export function gaugeForAction(snapshot: { gauge: GaugeState | null; gaugeReadFa
 
 /**
  * Why a gauge button is disabled. Mainnet stays read-only like every other write, hence `writeBlocker`.
- * Staking needs a live gauge; claiming and unstaking work even after the voter stops counting it.
+ * Staking needs a gauge that is alive and funded; claiming and unstaking always work.
  */
 export function gaugeActionBlock(input: {
   network: NetworkConfig;
@@ -42,6 +43,7 @@ export function gaugeActionBlock(input: {
   state: GaugeState;
   walletLp: bigint;
   lacksGas: boolean;
+  now: bigint; // the snapshot's block time
 }): GaugeActionBlock | null {
   const { action, state } = input;
   const blocker = writeBlocker(input.network, input.walletChainId);
@@ -49,7 +51,7 @@ export function gaugeActionBlock(input: {
   if (blocker === "wrong-network") return { reason: "wrong-network", outcome: wrongNetwork(input.network) };
   if (action === "claim" && state.earned === 0n) return { reason: "nothing-to-do", outcome: NO_PENDING_MEZO };
   if (action === "stake" && input.walletLp === 0n) return { reason: "nothing-to-do", outcome: NO_WALLET_LP };
-  if (action === "stake" && !state.alive) return { reason: "nothing-to-do", outcome: STAKING_CLOSED_NOW };
+  if (action === "stake" && stakeAvailability(state, input.now) === "unavailable") return { reason: "nothing-to-do", outcome: STAKING_CLOSED_NOW };
   if (action === "unstake" && state.staked === 0n) return { reason: "nothing-to-do", outcome: NO_STAKED_LP };
   if (input.lacksGas) return { reason: "needs-gas", outcome: needsGas(input.network) };
   return null;

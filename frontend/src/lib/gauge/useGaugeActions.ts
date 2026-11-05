@@ -51,6 +51,7 @@ export function useGaugeActions(account: Address): {
         state,
         walletLp,
         lacksGas: lacksGas(fresh.gasBalance, fresh.gasPrice),
+        now: fresh.snapshot.blockTimestamp,
       });
       if (block) throw new BlockedError(block.outcome);
 
