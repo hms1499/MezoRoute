@@ -3,7 +3,7 @@
 import type { Address } from "viem";
 import { useBalance, useGasPrice, useReadContracts } from "wagmi";
 import { useNetwork } from "@/lib/config/network-context";
-import { parseSnapshot, snapshotContracts, type DashboardSnapshot } from "./snapshot";
+import { dashboardContracts, parseDashboard, type DashboardSnapshot } from "./snapshot";
 
 const REFRESH_MS = 30_000;
 
@@ -22,7 +22,7 @@ export function useDashboardSnapshot(account: Address): {
 } {
   const { network } = useNetwork();
   const reads = useReadContracts({
-    contracts: snapshotContracts(network, account),
+    contracts: dashboardContracts(network, account),
     allowFailure: false,
     query: { refetchInterval: REFRESH_MS },
   });
@@ -31,7 +31,7 @@ export function useDashboardSnapshot(account: Address): {
 
   const data =
     reads.data && gas.data
-      ? { snapshot: parseSnapshot(network, reads.data), gasBalance: gas.data.value, gasPrice: gasPrice.data }
+      ? { snapshot: parseDashboard(network, reads.data), gasBalance: gas.data.value, gasPrice: gasPrice.data }
       : undefined;
   return {
     data,

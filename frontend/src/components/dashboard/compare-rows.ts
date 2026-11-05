@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { btc, musd } from "@/components/lp/units";
 import { STRESS_DROP, type ComparedRoutes } from "@/lib/compare/comparison";
-import { formatBps, formatPercent } from "@/lib/format";
+import { formatBps, formatPercent, formatToken } from "@/lib/format";
 
 export type Row = { label: string; title?: string; value: ReactNode; sub?: string };
 
@@ -42,4 +42,30 @@ export function spAmountRows(compared: ComparedRoutes | null): Row[] {
     { label: "BTC exposure", value: `${btc(sp.btcBefore)} → ${btc(sp.btcAfter)}` },
     { label: `If BTC drops ${STRESS_DROP}%`, value: musd(sp.valueAfterDrop), sub: "New liquidations not modelled" },
   ];
+}
+
+const MEZO_CAVEAT = "Changes weekly with veBTC votes; MEZO's price can fall.";
+
+/**
+ * The staked alternative to swap fees, as its own rows: never summed with fees, because staking sends
+ * swap fees to veBTC voters. Always this week's rate; between weeks there is no rate to show.
+ */
+export function lpGaugeRows(compared: ComparedRoutes | null): Row[] {
+  if (compared === null || compared.lp.status !== "ok" || compared.lp.gauge === null) return [];
+  const { gauge } = compared.lp;
+  const fees: Row = {
+    label: "Swap fees (unstaked)",
+    value: "Paid to LP held in your wallet",
+    sub: "Staking sends swap fees to veBTC voters instead",
+  };
+  const label = "MEZO, staked, this week's rate";
+  if (!gauge.open) return [fees, { label, value: "New week's rate not set yet", sub: "Staking still works." }];
+  const apr = gauge.apr === null ? "No APR shown: MEZO has no price here." : `≈ ${formatPercent(gauge.apr, 1)} APR at this week's rate.`;
+  return [fees, { label, value: `≈ ${formatToken(gauge.mezoPerWeek, 18, 4)} MEZO a week`, sub: `${apr} ${MEZO_CAVEAT}` }];
+}
+
+/** The Stability Pool's real source, with the live debt it can absorb; undefined until that is read. */
+export function spSourceNote(troveDebt: bigint | null): string | undefined {
+  if (troveDebt === null) return undefined;
+  return `Returns come only from liquidations. Open Trove debt today: ${formatToken(troveDebt, 18, 0)} MUSD.`;
 }

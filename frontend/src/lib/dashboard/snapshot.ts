@@ -1,7 +1,9 @@
 import { erc20Abi, type Address } from "viem";
-import { borrowerOperationsAbi, priceFeedAbi, stabilityPoolAbi, troveManagerAbi } from "@/lib/abi/musd";
+import { borrowerOperationsAbi, priceFeedAbi, stabilityPoolAbi, troveManagerAbi, troveSystemAbi } from "@/lib/abi/musd";
+import { multicall3BlockAbi } from "@/lib/abi/multicall3";
 import { poolAbi, poolFactoryAbi } from "@/lib/abi/pool";
 import type { NetworkConfig } from "@/lib/config/networks";
+import { gaugeContracts, GAUGE_READS, parseGaugeState, type GaugeResults, type GaugeState } from "@/lib/gauge/state";
 
 export type Trove = {
   collateral: bigint; // BTC, 1e18, including pending redistribution
@@ -21,6 +23,11 @@ export type DashboardSnapshot = {
   lp: LpPosition;
   sp: SpPosition;
   poolFeeBps: bigint; // the pool's swap fee in bps (PoolFactory.getFee)
+  // Read by the dashboard only (`dashboardContracts`); null in the route pages' own snapshots.
+  gauge: GaugeState | null; // null on a network without a gauge
+  block: { number: bigint; timestamp: bigint } | null; // the block the snapshot was read at
+  troveDebt: bigint | null; // MUSD owed by every open Trove: what liquidations can pay the Stability Pool
+  protocolOwnedSp: bigint | null; // MUSD the protocol (PCV) holds in the Stability Pool
 };
 
 /** The multicall results in `snapshotContracts` order (`allowFailure: false`). */
@@ -39,6 +46,9 @@ export type SnapshotResults = readonly [
   spBtcGain: bigint,
   poolFeeBps: bigint,
 ];
+
+/** How many reads `snapshotContracts` makes. */
+const BASE_READS = 13;
 
 /** TroveManager `Status.active`; none, closedByOwner, closedByLiquidation, and closedByRedemption mean no open Trove. */
 const TROVE_ACTIVE = 1;
@@ -92,5 +102,40 @@ export function parseSnapshot(network: NetworkConfig, results: SnapshotResults):
     },
     sp: { deposit: spDeposit, btcGain: spBtcGain },
     poolFeeBps,
+    gauge: null,
+    block: null,
+    troveDebt: null,
+    protocolOwnedSp: null,
+  };
+}
+
+/** The dashboard's extra reads after the base ones and the gauge's: block, open Trove debt, protocol-owned Stability Pool. */
+const DASHBOARD_TAIL = 4;
+
+type DashboardTail = readonly [blockNumber: bigint, blockTimestamp: bigint, troveDebt: bigint, protocolOwnedSp: bigint];
+
+/** `snapshotContracts` plus the gauge, the block, the open Trove debt, and the PCV's Stability Pool deposit (Compare, G1). */
+export function dashboardContracts(network: NetworkConfig, account: Address) {
+  const { addresses: a, chainId } = network;
+  return [
+    ...snapshotContracts(network, account),
+    ...gaugeContracts(network, account),
+    { chainId, address: a.multicall3, abi: multicall3BlockAbi, functionName: "getBlockNumber" },
+    { chainId, address: a.multicall3, abi: multicall3BlockAbi, functionName: "getCurrentBlockTimestamp" },
+    { chainId, address: a.troveManager, abi: troveSystemAbi, functionName: "getEntireSystemDebt" },
+    { chainId, address: a.stabilityPool, abi: stabilityPoolAbi, functionName: "getCompoundedMUSDDeposit", args: [a.pcv] },
+  ] as const;
+}
+
+export function parseDashboard(network: NetworkConfig, results: readonly unknown[]): DashboardSnapshot {
+  const base = parseSnapshot(network, results.slice(0, BASE_READS) as unknown as SnapshotResults);
+  const gaugeResults = results.slice(BASE_READS, results.length - DASHBOARD_TAIL);
+  const [blockNumber, blockTimestamp, troveDebt, protocolOwnedSp] = results.slice(results.length - DASHBOARD_TAIL) as unknown as DashboardTail;
+  return {
+    ...base,
+    gauge: network.gauge && gaugeResults.length === GAUGE_READS ? parseGaugeState(gaugeResults as unknown as GaugeResults) : null,
+    block: { number: blockNumber, timestamp: blockTimestamp },
+    troveDebt,
+    protocolOwnedSp,
   };
 }

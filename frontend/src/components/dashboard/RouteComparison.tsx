@@ -17,17 +17,18 @@ import { amountState, lpHistoryLine, REFERENCE_AMOUNT, signedChange, spHistoryLi
 import { useNetwork } from "@/lib/config/network-context";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { formatToken } from "@/lib/format";
+import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
 import type { TermId } from "@/lib/glossary";
 import { DEFAULT_SLIPPAGE } from "@/lib/quote/entry";
 import { LP_RETURN_SOURCE, LP_RISKS, SP_RETURN_SOURCE, SP_RISKS } from "@/lib/routes/copy";
 import { entryQuery } from "@/lib/routes/musd-btc-lp/intent";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
 import { cx } from "@/lib/ui/cx";
-import { lpAmountRows, lpFee, spAmountRows, type Row } from "./compare-rows";
+import { lpAmountRows, lpFee, lpGaugeRows, spAmountRows, spSourceNote, type Row } from "./compare-rows";
 import { Settle } from "@/components/ui/Settle";
 
 const FOOTNOTE =
-  "Past results, not a forecast. LP values use the pool's own price (before your trade), not the oracle; Stability Pool BTC gains use the oracle price. LP gauge rewards are not included; the −30% row uses the constant-product approximation and does not model new liquidations.";
+  "Past results, not a forecast. LP values use the pool's own price (before your trade), not the oracle; Stability Pool BTC gains use the oracle price. The 30-day LP rows are swap fees only: MEZO rewards are not backtested, and the MEZO figure is this week's rate. The −30% row uses the constant-product approximation and does not model new liquidations.";
 const GRID = "grid grid-cols-[minmax(7rem,0.7fr)_1fr_1fr] gap-x-6";
 
 type RouteId = "lp" | "sp";
@@ -43,7 +44,8 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
   const [tab, setTab] = useState<RouteId>("lp");
   const { amount, error: amountError } = amountState(text);
   const executorFeeBps = network.executor?.feeBps ?? null;
-  const compared = amount === null ? null : compareRoutes({ snapshot, amount, executorFeeBps });
+  const mezoPrice = useMezoPrice(network, snapshot.block?.number);
+  const compared = amount === null ? null : compareRoutes({ snapshot, amount, executorFeeBps, mezoPrice });
   const { history, error: historyError, retry } = useRouteHistory();
   const historyFailed = history === undefined && historyError !== null;
   const backtestAmount = amount ?? REFERENCE_AMOUNT;
@@ -52,10 +54,11 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
 
   const pending = (value: (b: RouteBacktests) => ReactNode): ReactNode =>
     backtests ? <Settle as="span">{value(backtests)}</Settle> : historyFailed ? "Unavailable" : <Skeleton className="h-4 w-28" />;
-  const historyRow = (line: (b: RouteBacktests) => string): Row => ({
+  const historyRow = (line: (b: RouteBacktests) => string, sub?: string): Row => ({
     label: backtests ? `Last ${windowDays(backtests.seconds)} days` : "Last 30 days",
     title: backtests ? `Blocks ${backtests.pastBlock} → ${backtests.headBlock}` : undefined,
     value: pending(line),
+    sub,
   });
   const backtestRow = (valueNow: (b: RouteBacktests) => bigint | null): Row => {
     const value = backtests ? valueNow(backtests) : null;
@@ -70,10 +73,11 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
     {
       id: "lp",
       title: "MUSD/BTC LP",
-      tagline: "Earn swap fees",
+      tagline: "Earn swap fees or MEZO",
       rows: [
         { label: "Return source", value: LP_RETURN_SOURCE },
-        historyRow((b) => (b.lp ? lpHistoryLine(b.lp) : "Unavailable")),
+        ...lpGaugeRows(compared),
+        historyRow((b) => (b.lp ? lpHistoryLine(b.lp) : "Unavailable"), "Swap fees only; MEZO is not backtested"),
         backtestRow((b) => b.lp?.valueNow ?? null),
         { label: "MezoRoute fee", value: lpFee(executorFeeBps, compared) },
         ...lpAmountRows(compared),
@@ -88,7 +92,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
       term: "stabilityPool",
       tagline: "Back the system",
       rows: [
-        { label: "Return source", value: SP_RETURN_SOURCE },
+        { label: "Return source", value: SP_RETURN_SOURCE, sub: spSourceNote(snapshot.troveDebt) },
         historyRow((b) => spHistoryLine(b.sp)),
         backtestRow((b) => b.sp.valueNow),
         { label: "MezoRoute fee", value: "None (direct to the pool)" },
@@ -145,13 +149,13 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
             </div>
           ))}
         </div>
-        {lp.rows.map((row, index) => (
+        {lp.rows.map((row) => (
           <div key={row.label} role="row" className={cx(GRID, "border-b border-line/60 py-3 text-sm")}>
             <span role="rowheader" title={row.title} className="text-muted">
               {row.label}
             </span>
             <Cell row={row} />
-            <Cell row={sp.rows[index]} />
+            <Cell row={sp.rows.find((candidate) => candidate.label === row.label)} />
           </div>
         ))}
         <div role="row" className={cx(GRID, "py-3")}>
@@ -230,7 +234,15 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
   );
 }
 
-function Cell({ row }: { row: Row }) {
+/** A route without the row (the Stability Pool has no gauge) shows a muted note, so the table still lines up. */
+function Cell({ row }: { row: Row | undefined }) {
+  if (!row) {
+    return (
+      <div role="cell" className="text-muted">
+        Not applicable
+      </div>
+    );
+  }
   return (
     <div role="cell" className="min-w-0 [overflow-wrap:anywhere]">
       {row.value}

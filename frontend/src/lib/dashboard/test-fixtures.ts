@@ -40,6 +40,10 @@ export function snapshotWith(overrides: Partial<DashboardSnapshot> = {}): Dashbo
     lp: { balance: 0n, totalSupply: 0n, reserveMusd: 0n, reserveBtc: 0n },
     sp: { deposit: 0n, btcGain: 0n },
     poolFeeBps: 30n,
+    gauge: null,
+    block: null,
+    troveDebt: null,
+    protocolOwnedSp: null,
     ...overrides,
   };
 }

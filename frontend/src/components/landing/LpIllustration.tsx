@@ -22,7 +22,7 @@ export function LpIllustration() {
         ≈ half MUSD
       </text>
       <text x="290" y="206" textAnchor="middle" fontSize={CHART_FONT_PX} style={{ fill: themeColor.muted }}>
-        earns swap fees
+        swap fees or MEZO
       </text>
     </svg>
   );

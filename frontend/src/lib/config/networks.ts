@@ -19,6 +19,8 @@ export type NetworkAddresses = {
   multicall3: Address;
   /** MEZO, the gauge's reward token. */
   mezo: Address;
+  /** The protocol's own Stability Pool depositor (`BorrowerOperations.pcv()`); the dashboard shows its share. */
+  pcv: Address;
 };
 
 export type NetworkConfig = {
@@ -84,6 +86,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
       // Multicall3 (same address on both networks; Passport's chains declare it).
       multicall3: "0xcA11bde05977b3631167028862bE2a173976CA11",
       mezo: "0x7B7c000000000000000000000000000000000001",
+      pcv: "0x4dDD70f4C603b6089c07875Be02fEdFD626b80Af",
     },
   },
   mainnet: {
@@ -119,6 +122,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
       // Multicall3 (same address on both networks; Passport's chains declare it).
       multicall3: "0xcA11bde05977b3631167028862bE2a173976CA11",
       mezo: "0x7B7c000000000000000000000000000000000001",
+      pcv: "0x391EcC7ffEFc48cff41D0F2Bb36e38b82180B993",
     },
   },
 };

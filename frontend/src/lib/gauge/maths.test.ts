@@ -14,6 +14,12 @@ const totalStaked = 171862531852085332718n;
 const mezoPrice = 6038609436909955n;
 
 describe("gauge maths", () => {
+  it("has no MEZO price from a zero sqrtPriceX96, and no APR from a zero price", () => {
+    expect(mezoPriceFromSlot0(0n, true)).toBeNull();
+    expect(mezoPriceFromSlot0(0n, false)).toBeNull();
+    expect(emissionsApr({ rewardRate, mezoPrice: 0n, userLp: 0n, totalStaked, pool })).toBeNull();
+  });
+
   it("derives the MEZO price from slot0", () => {
     expect(mezoPriceFromSlot0(6156700884057131831721326345n, true)).toBe(6038609436909955n);
   });
@@ -21,7 +27,7 @@ describe("gauge maths", () => {
   it("inverts the price when MEZO is token1", () => {
     const inverted = mezoPriceFromSlot0(6156700884057131831721326345n, false);
     // 1 / 0.006038...: about 165.6 MEZO per MUSD-side unit
-    expect(inverted / 10n ** 18n).toBe(165n);
+    expect(inverted! / 10n ** 18n).toBe(165n);
   });
 
   it("values LP at the pool's mid price", () => {

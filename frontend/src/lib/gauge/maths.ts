@@ -36,16 +36,17 @@ export function emissionsApr(input: {
   totalStaked: bigint;
   pool: GaugePool;
 }): bigint | null {
-  if (input.mezoPrice === null) return null;
+  if (input.mezoPrice === null || input.mezoPrice <= 0n) return null;
   const value = lpValueInMusd(input.totalStaked + input.userLp, input.pool);
   if (value === 0n) return null;
   const yearlyMusd = (input.rewardRate * SECONDS_PER_YEAR * input.mezoPrice) / E18;
   return (yearlyMusd * E18) / value;
 }
 
-/** MUSD per MEZO from a CL pool's `sqrtPriceX96` (token1 per token0 = (sqrtP / 2^96)^2). */
-export function mezoPriceFromSlot0(sqrtPriceX96: bigint, mezoIsToken0: boolean): bigint {
+/** MUSD per MEZO from a CL pool's `sqrtPriceX96` (token1 per token0 = (sqrtP / 2^96)^2); null when the pool has no price. */
+export function mezoPriceFromSlot0(sqrtPriceX96: bigint, mezoIsToken0: boolean): bigint | null {
   const squared = sqrtPriceX96 * sqrtPriceX96;
-  if (squared === 0n) return 0n;
-  return mezoIsToken0 ? (squared * E18) / Q192 : (Q192 * E18) / squared;
+  if (squared === 0n) return null;
+  const price = mezoIsToken0 ? (squared * E18) / Q192 : (Q192 * E18) / squared;
+  return price === 0n ? null : price;
 }

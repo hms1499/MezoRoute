@@ -143,7 +143,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
 
   return (
     <RouteLayout
-      header={<PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title="Earn swap fees in the MUSD/BTC pool" />}
+      header={<PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title="Earn swap fees or MEZO in the MUSD/BTC pool" />}
       summary={<SummaryPanel rows={rows} notice={notice} action={review("w-full")} />}
       mobileBar={<MobileBar figure={quote ? `≈ ${lp(quote.liquidity)}` : undefined} notice={notice} action={review()} />}
     >

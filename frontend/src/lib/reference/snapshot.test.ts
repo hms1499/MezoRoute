@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
 import { WAD } from "@/lib/math";
-import { parseReference, referenceContracts, referenceFooter, referenceView, type ReferenceResults } from "./snapshot";
+import { parseReference, referenceContracts, referenceFooter, protocolOwnedLine, referenceView, type ReferenceResults } from "./snapshot";
 
 const ONE = WAD;
 const network = networks.mainnet;
@@ -14,6 +14,8 @@ const RESULTS: ReferenceResults = [
   81_669_799_990_000_000_000_000n,
   29_871_966_506_620_911_511_760_946n,
   14_172_031_977_066_897_384_115_018n,
+  14_172_031_977_066_897_103_661_470n, // getCompoundedMUSDDeposit(PCV)
+  18_000_000_000_000_000_000_000_000n, // getEntireSystemDebt
 ];
 
 describe("referenceContracts", () => {
@@ -27,6 +29,8 @@ describe("referenceContracts", () => {
       "fetchPrice",
       "totalSupply",
       "getTotalMUSDDeposits",
+      "getCompoundedMUSDDeposit",
+      "getEntireSystemDebt",
     ]);
   });
 });
@@ -41,6 +45,8 @@ describe("parseReference", () => {
       price: 81_669_799_990_000_000_000_000n,
       musdSupply: 29_871_966_506_620_911_511_760_946n,
       spDeposits: 14_172_031_977_066_897_384_115_018n,
+      protocolOwnedSp: 14_172_031_977_066_897_103_661_470n,
+      troveDebt: 18_000_000_000_000_000_000_000_000n,
     });
   });
 });
@@ -50,7 +56,7 @@ describe("referenceView", () => {
 
   it("values the pool in MUSD at the oracle price and gives the Stability Pool's share of supply", () => {
     const view = referenceView({ ...base, reserveMusd: 100n * ONE, reserveBtc: ONE / 2n, price: 80_000n * ONE, spDeposits: 14n * ONE, musdSupply: 28n * ONE });
-    expect(view).toEqual({ poolTvl: 40_100n * ONE, spShare: ONE / 2n });
+    expect(view).toEqual({ poolTvl: 40_100n * ONE, spShare: ONE / 2n, protocolShare: base.protocolOwnedSp * ONE / (14n * ONE) });
   });
 
   it("reads the live mainnet share as 47.4%", () => {
@@ -73,5 +79,20 @@ describe("referenceFooter", () => {
     const text = referenceFooter({ address: "0x0000000000000000000000000000000000000001", feeBps: 10n, deployBlock: 1n });
     expect(text).toBe("Read from Mezo mainnet for reference. Switch to Mainnet to use MezoRoute there. Past results, not a forecast.");
     expect(text).not.toContain("until launch");
+  });
+});
+
+describe("protocolOwnedLine", () => {
+  it("marks the protocol's share of the Stability Pool with the read figure", () => {
+    expect(protocolOwnedLine(parseReference(network, RESULTS))).toEqual({
+      label: "Protocol-owned",
+      value: "14,172,031 MUSD",
+      sub: "99.9% of deposits",
+    });
+  });
+
+  it("says so when the protocol holds none", () => {
+    const line = protocolOwnedLine({ ...parseReference(network, RESULTS), spDeposits: 0n, protocolOwnedSp: 0n });
+    expect(line).toEqual({ label: "Protocol-owned", value: "0 MUSD", sub: "0% of deposits" });
   });
 });

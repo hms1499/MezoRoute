@@ -64,7 +64,7 @@ describe("simulatorRows", () => {
   it("marks numeric text as a figure (mono) and words as prose", () => {
     const withHistory = simulateRoutes({ reference, history, amount: 1_000n * ONE, executorFeeBps: 10n });
     const [source, last30, btc] = simulatorRows(withHistory);
-    expect(source.lp).toEqual({ kind: "text", text: "Swap fees" });
+    expect(source.lp).toEqual({ kind: "text", text: "Swap fees, or MEZO if staked" });
     expect(last30.lp).toMatchObject({ kind: "text", figure: true });
     expect(last30.sp).not.toHaveProperty("figure");
     expect(btc.sp).toEqual({ kind: "text", text: "0 BTC", figure: true });
