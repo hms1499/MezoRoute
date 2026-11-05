@@ -47,6 +47,16 @@ export const mezoRouteExecutorAbi = [
         "name": "maxMusdIn_",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "gauge_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "maxBtcIn_",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "nonpayable"
@@ -71,7 +81,7 @@ export const mezoRouteExecutorAbi = [
       {
         "name": "b",
         "type": "tuple",
-        "internalType": "struct IMezoRouteExecutor.Borrow",
+        "internalType": "struct IMezoRouteExecutorV2.Borrow",
         "components": [
           {
             "name": "amount",
@@ -103,7 +113,7 @@ export const mezoRouteExecutorAbi = [
       {
         "name": "musdPermit",
         "type": "tuple",
-        "internalType": "struct IMezoRouteExecutor.Permit",
+        "internalType": "struct IMezoRouteExecutorV2.Permit",
         "components": [
           {
             "name": "value",
@@ -135,7 +145,7 @@ export const mezoRouteExecutorAbi = [
       {
         "name": "p",
         "type": "tuple",
-        "internalType": "struct IMezoRouteExecutor.EnterParams",
+        "internalType": "struct IMezoRouteExecutorV2.EnterParams",
         "components": [
           {
             "name": "musdIn",
@@ -176,6 +186,11 @@ export const mezoRouteExecutorAbi = [
             "name": "recipient",
             "type": "address",
             "internalType": "address"
+          },
+          {
+            "name": "stake",
+            "type": "bool",
+            "internalType": "bool"
           }
         ]
       }
@@ -222,7 +237,7 @@ export const mezoRouteExecutorAbi = [
       {
         "name": "p",
         "type": "tuple",
-        "internalType": "struct IMezoRouteExecutor.EnterParams",
+        "internalType": "struct IMezoRouteExecutorV2.EnterParams",
         "components": [
           {
             "name": "musdIn",
@@ -263,13 +278,116 @@ export const mezoRouteExecutorAbi = [
             "name": "recipient",
             "type": "address",
             "internalType": "address"
+          },
+          {
+            "name": "stake",
+            "type": "bool",
+            "internalType": "bool"
           }
         ]
       },
       {
         "name": "musdPermit",
         "type": "tuple",
-        "internalType": "struct IMezoRouteExecutor.Permit",
+        "internalType": "struct IMezoRouteExecutorV2.Permit",
+        "components": [
+          {
+            "name": "value",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "v",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "r",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "s",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "liquidityOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "enterFromBtc",
+    "inputs": [
+      {
+        "name": "p",
+        "type": "tuple",
+        "internalType": "struct IMezoRouteExecutorV2.EnterFromBtcParams",
+        "components": [
+          {
+            "name": "btcIn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "btcToSwap",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minMusdFromSwap",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minMusdAdded",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minBtcAdded",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minLpOut",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "deadline",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "recipient",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "stake",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      },
+      {
+        "name": "btcPermit",
+        "type": "tuple",
+        "internalType": "struct IMezoRouteExecutorV2.Permit",
         "components": [
           {
             "name": "value",
@@ -315,7 +433,7 @@ export const mezoRouteExecutorAbi = [
       {
         "name": "p",
         "type": "tuple",
-        "internalType": "struct IMezoRouteExecutor.ExitParams",
+        "internalType": "struct IMezoRouteExecutorV2.ExitParams",
         "components": [
           {
             "name": "liquidityIn",
@@ -357,7 +475,7 @@ export const mezoRouteExecutorAbi = [
       {
         "name": "lpPermit",
         "type": "tuple",
-        "internalType": "struct IMezoRouteExecutor.Permit",
+        "internalType": "struct IMezoRouteExecutorV2.Permit",
         "components": [
           {
             "name": "value",
@@ -431,6 +549,32 @@ export const mezoRouteExecutorAbi = [
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "gauge",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IGaugeMinimal"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "maxBtcIn",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -568,6 +712,79 @@ export const mezoRouteExecutorAbi = [
   },
   {
     "type": "event",
+    "name": "EnteredFromBtc",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "recipient",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "btcIn",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "fee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "btcToSwap",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "musdFromSwap",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "musdAdded",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "btcAdded",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "liquidityOut",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "musdRefund",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "btcRefund",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Exited",
     "inputs": [
       {
@@ -622,6 +839,25 @@ export const mezoRouteExecutorAbi = [
     "anonymous": false
   },
   {
+    "type": "event",
+    "name": "Staked",
+    "inputs": [
+      {
+        "name": "recipient",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "liquidity",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
     "type": "error",
     "name": "AmountAboveCap",
     "inputs": []
@@ -644,6 +880,16 @@ export const mezoRouteExecutorAbi = [
   {
     "type": "error",
     "name": "FeeTooHigh",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "GaugeMismatch",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "GaugeUnavailable",
     "inputs": []
   },
   {
@@ -673,12 +919,27 @@ export const mezoRouteExecutorAbi = [
   },
   {
     "type": "error",
+    "name": "LiquidityNotReceived",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NotBorrower",
     "inputs": []
   },
   {
     "type": "error",
     "name": "PoolMismatch",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "StakeIncomplete",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "StakeNotCredited",
     "inputs": []
   },
   {

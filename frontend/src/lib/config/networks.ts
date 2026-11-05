@@ -17,6 +17,8 @@ export type NetworkAddresses = {
   sortedTroves: Address;
   stabilityPool: Address;
   multicall3: Address;
+  /** MEZO, the gauge's reward token. */
+  mezo: Address;
 };
 
 export type NetworkConfig = {
@@ -35,8 +37,16 @@ export type NetworkConfig = {
    * block (F7 scans its events from there); null until deployed.
    */
   executor: { address: Address; feeBps: bigint; deployBlock: bigint } | null;
+  /** Earlier executor deployments, scanned for history only (F7 cost basis); never called. */
+  legacyExecutors: { address: Address; deployBlock: bigint }[];
   /** The executor's per-transaction MUSD cap (`contracts/script/Deploy.s.sol` `maxMusdInFor`); the route pages read it from chain. */
   entryCap: bigint;
+  /** The executor's per-transaction BTC cap (`maxBtcInFor`). */
+  entryCapBtc: bigint;
+  /** The pool's Tigris gauge and the voter that says whether it is alive; null when the network has none. */
+  gauge: { address: Address; voter: Address } | null;
+  /** CL pool that prices MEZO in MUSD (display only); null when none exists (testnet). */
+  mezoPricePool: { address: Address; mezoIsToken0: boolean } | null;
   addresses: NetworkAddresses;
 };
 
@@ -51,8 +61,13 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     explorerApiUrl: "https://api.explorer.test.mezo.org",
     faucetUrl: "https://faucet.test.mezo.org",
     mezoAppUrl: "https://testnet.mezo.org",
-    executor: { address: "0xB36B2E012003840951CFf00fA6b1E3237A110920", feeBps: 10n, deployBlock: 15_903_010n },
+    // G1: V2 (stake flag, enterFromBtc), deployed at block 16,569,977.
+    executor: { address: "0x1281cC769c136F9F4f291B390c8992a3Cd556288", feeBps: 10n, deployBlock: 16_569_977n },
+    legacyExecutors: [{ address: "0xB36B2E012003840951CFf00fA6b1E3237A110920", deployBlock: 15_903_010n }],
     entryCap: 1_000_000n * 10n ** 18n,
+    entryCapBtc: 12n * 10n ** 18n,
+    gauge: { address: "0x72D88B0795373437E86792DEd8362D66dC43Cd2c", voter: "0x263F1Fd5fB7F866881e1B6cD7d5d6c40Fd985F0D" },
+    mezoPricePool: null,
     addresses: {
       musd: "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503",
       btc: "0x7b7C000000000000000000000000000000000000",
@@ -68,6 +83,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
       stabilityPool: "0x1CCA7E410eE41739792eA0A24e00349Dd247680e",
       // Multicall3 (same address on both networks; Passport's chains declare it).
       multicall3: "0xcA11bde05977b3631167028862bE2a173976CA11",
+      mezo: "0x7B7c000000000000000000000000000000000001",
     },
   },
   mainnet: {
@@ -81,7 +97,12 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     mezoAppUrl: "https://mezo.org",
     // M1, 15 Oct 2026: 1,000 MUSD cap per entry, source-verified on the explorer.
     executor: { address: "0x046449b1229C863e278f369869BA10e12bd80d9E", feeBps: 10n, deployBlock: 12_524_142n },
+    // Task 11 moves mainnet to V2 and lists this V1 under legacyExecutors; until then its ABI mismatch is recorded in networks.test.ts.
+    legacyExecutors: [],
     entryCap: 1_000n * 10n ** 18n,
+    entryCapBtc: 125n * 10n ** 14n,
+    gauge: { address: "0x8Be20a5fF57E381025aE5E3A121B697269569AaF", voter: "0x48233cCC97B87Ba93bCA212cbEe48e3210211f03" },
+    mezoPricePool: { address: "0x1D6e8D24c133535F2d00676F66a0e824f84765ff", mezoIsToken0: true },
     addresses: {
       musd: "0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186",
       btc: "0x7b7C000000000000000000000000000000000000",
@@ -97,6 +118,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
       stabilityPool: "0x73245Eff485aB3AAc1158B3c4d8f4b23797B0e32",
       // Multicall3 (same address on both networks; Passport's chains declare it).
       multicall3: "0xcA11bde05977b3631167028862bE2a173976CA11",
+      mezo: "0x7B7c000000000000000000000000000000000001",
     },
   },
 };

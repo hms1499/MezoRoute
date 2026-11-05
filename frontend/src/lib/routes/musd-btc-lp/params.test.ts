@@ -25,7 +25,7 @@ describe("entry params", () => {
     expect(netOfFee(MUSD_20, 10n)).toBe(19_980000000000000000n);
   });
 
-  it("encodes enter(params, zero permit) with the deployed selector", () => {
+  it("encodes enter(params, zero permit) with the deployed V2 selector", () => {
     const params: EnterParams = {
       musdIn: MUSD_20,
       musdToSwap: 9_990000000000000000n,
@@ -35,9 +35,10 @@ describe("entry params", () => {
       minLpOut: 0n,
       deadline: DEADLINE_SECONDS,
       recipient: ME,
+      stake: false,
     };
     const data = encodeEnterCall(params);
-    expect(data.slice(0, 10)).toBe("0x92359033");
+    expect(data.slice(0, 10)).toBe("0xc027e8cb");
     const decoded = decodeFunctionData({ abi: mezoRouteExecutorAbi, data });
     expect(decoded.functionName).toBe("enter");
     expect(decoded.args).toEqual([params, { value: 0n, deadline: 0n, v: 0, r: zeroHash, s: zeroHash }]);
@@ -68,6 +69,7 @@ describe("buildEnterParams", () => {
       ...minimums,
       deadline: 1_759_600_600n,
       recipient: ME,
+      stake: false,
     });
   });
 });
@@ -83,6 +85,7 @@ describe("encodeEnterCall with a permit", () => {
       minLpOut: 0n,
       deadline: DEADLINE_SECONDS,
       recipient: ME,
+      stake: false,
     };
     const permit = { value: MUSD_20, deadline: 99n, v: 27, r: `0x${"11".repeat(32)}`, s: `0x${"22".repeat(32)}` } as const;
     const decoded = decodeFunctionData({ abi: mezoRouteExecutorAbi, data: encodeEnterCall(params, permit) });
@@ -105,6 +108,7 @@ describe("borrowAndEnter call", () => {
       minLpOut: 0n,
       deadline: 99n,
       recipient: ME,
+      stake: false,
     };
     const decoded = decodeFunctionData({ abi: mezoRouteExecutorAbi, data: encodeBorrowAndEnterCall(borrow, params) });
     expect(decoded.functionName).toBe("borrowAndEnter");

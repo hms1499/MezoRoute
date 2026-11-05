@@ -112,6 +112,16 @@ export const tigrisErrorsAbi = [
   },
   {
     "type": "error",
+    "name": "NotAlive",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotAuthorized",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NotDeployer",
     "inputs": []
   },
@@ -122,12 +132,27 @@ export const tigrisErrorsAbi = [
   },
   {
     "type": "error",
+    "name": "NotTeam",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotVoter",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "PoolDoesNotExist",
     "inputs": []
   },
   {
     "type": "error",
     "name": "PoolFactoryDoesNotExist",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "RewardRateTooHigh",
     "inputs": []
   },
   {
@@ -159,6 +184,16 @@ export const tigrisErrorsAbi = [
   {
     "type": "error",
     "name": "ZeroAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroAmount",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroRewardRate",
     "inputs": []
   }
 ] as const;

@@ -1,4 +1,4 @@
-// Copies the MezoRouteExecutor ABI and the Tigris Router/Pool custom errors from the Foundry build
+// Copies the MezoRouteExecutorV2 and Gauge ABIs and the Tigris Router/Pool/Gauge custom errors from the Foundry build
 // into typed modules. Re-run after any contract change: `cd contracts && forge build`, then
 // `npm run sync-abi` in frontend/.
 import { readFileSync, writeFileSync } from "node:fs";
@@ -27,5 +27,6 @@ function uniqueErrors(abi) {
   return [...bySignature.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, item]) => item);
 }
 
-writeModule("mezoRouteExecutor.ts", "mezoRouteExecutorAbi", readAbi("MezoRouteExecutor"));
-writeModule("tigrisErrors.ts", "tigrisErrorsAbi", uniqueErrors([...readAbi("Router"), ...readAbi("Pool")]));
+writeModule("mezoRouteExecutor.ts", "mezoRouteExecutorAbi", readAbi("MezoRouteExecutorV2"));
+writeModule("gauge.ts", "gaugeAbi", readAbi("Gauge"));
+writeModule("tigrisErrors.ts", "tigrisErrorsAbi", uniqueErrors([...readAbi("Router"), ...readAbi("Pool"), ...readAbi("Gauge")]));

@@ -19,3 +19,11 @@ export const poolAbi = parseAbi([
 
 /** Tigris PoolFactory: the swap fee in bps (testnet 4, mainnet 30). */
 export const poolFactoryAbi = parseAbi(["function getFee(address pool, bool stable) view returns (uint256)"]);
+
+/** Tigris Voter: the gauge's liveness lives here, not on the gauge. */
+export const voterAbi = parseAbi(["function isAlive(address gauge) view returns (bool)"]);
+
+/** Concentrated-liquidity pool (the MEZO/MUSD price pool). Only the first slot0 fields are declared; the pool returns more. */
+export const clPoolAbi = parseAbi([
+  "function slot0() view returns (uint160 sqrtPriceX96, int24 tick)",
+]);
