@@ -8,17 +8,18 @@ import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
-import { MobileBar, RouteLayout } from "@/components/route/RouteLayout";
-import { SummaryPanel, type SummaryRow } from "@/components/route/SummaryPanel";
-import { ButtonLink } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { FlowColumn } from "@/components/flow/FlowColumn";
+import type { OverviewRow } from "@/components/flow/Overview";
+import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/lib/config/network-context";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import { emissionsApr, mezoPerWeek } from "@/lib/gauge/maths";
 import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
-import { btcRecoveries, type EntryAsset } from "@/lib/routes/musd-btc-lp/asset";
+import { exposure } from "@/lib/exposure/exposure";
+import { lpAmountField, lpHeaderFigure, lpRiskLine } from "@/lib/flow/lp-entry";
+import { btcRecoveries } from "@/lib/routes/musd-btc-lp/asset";
 import { entryQuery, parseEntryIntent, type EntryIntent } from "@/lib/routes/musd-btc-lp/intent";
 import { entryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import { useLpRouteSnapshot } from "@/lib/routes/musd-btc-lp/useLpRouteSnapshot";
@@ -26,20 +27,20 @@ import { balanceRecoveries } from "@/lib/routes/balance-recovery";
 import { borrowLimit, isRecoveryMode } from "@/lib/trove/borrow";
 import { walletCapabilities } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
-import { AmountForm } from "./AmountForm";
 import { balanceNoticeActions, BlockNotice } from "./BlockNotice";
 import { EntryPreviewCard } from "./EntryPreviewCard";
+import { LpEntryCard } from "./LpEntryCard";
 import { ModeToggle } from "./ModeToggle";
 import { NoExecutorCard } from "./NoExecutorCard";
 import { RisksCard } from "./RisksCard";
 import { StakeToggle } from "./StakeToggle";
-import { TroveChangeCard } from "./TroveChangeCard";
+import { troveChangeRows } from "./troveChange";
 import { btc, btcFine, lp, musd } from "./units";
 
 /** Below one unit of the eight decimals shown, the reserve line would only say "<0.00000001 BTC". */
 const MIN_SHOWN_RESERVE = 10n ** 10n;
 
-/** Spec §9 screen 2a: amount, preview, exposure before/after, risks, Review. */
+/** Spec §9 screen 2a; U11 §6.2: one action card (amount, receive, stake, overview, Review), then Details. */
 export default function LpRoutePage() {
   return <RequireWallet>{(account) => <LpRoute account={account} />}</RequireWallet>;
 }
@@ -90,13 +91,14 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
   const amount = (value: bigint) => (fromBtc ? btcFine(value) : musd(value));
   // This week's rate, only while the week pays: between weeks there is no rate to show.
   const { gauge } = data.snapshot;
-  const open = preview.stake.availability === "open" && gauge !== null && quote !== null;
-  const weekly = open ? mezoPerWeek(gauge.rewardRate, quote.liquidity, gauge.totalStaked) : null;
+  // The header's APR needs no amount (this week's rate on the staked value); the MEZO a week does.
+  const open = preview.stake.availability === "open" && gauge !== null;
+  const weekly = open && quote !== null ? mezoPerWeek(gauge.rewardRate, quote.liquidity, gauge.totalStaked) : null;
   const apr = open
     ? emissionsApr({
         rewardRate: gauge.rewardRate,
         mezoPrice,
-        userLp: quote.liquidity,
+        userLp: quote?.liquidity ?? 0n,
         totalStaked: gauge.totalStaked,
         pool: {
           reserveMusd: data.snapshot.pool.reserveMusd,
@@ -107,30 +109,33 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
         },
       })
     : null;
-  const rows: SummaryRow[] =
+  const { dashboard } = data.snapshot;
+  const exposureChange = preview.after ? exposure(preview.after).totalBtc - exposure(dashboard).totalBtc : null;
+  const overview: OverviewRow[] =
     quote && minLpOut !== undefined
       ? [
-          {
-            label: preview.borrow ? "You borrow and deposit" : "You deposit",
-            value: "btcIn" in quote ? btcFine(quote.btcIn) : musd(quote.musdIn),
-            strong: true,
-          },
-          { label: "You receive", value: `≈ ${lp(quote.liquidity)}`, sub: `at least ${lp(minLpOut)}`, strong: true },
           { label: "Deposited to the pool", value: musd(quote.musdAdded), sub: `+ ${fromBtc ? btcFine(quote.btcAdded) : btc(quote.btcAdded)}` },
           { label: "MezoRoute fee", value: amount(quote.fee), sub: formatBps(data.snapshot.executorFeeBps) },
           { label: "Price impact", value: formatPercent(quote.priceImpact, 2), sub: "includes the pool's swap fee" },
           ...(preview.stake.availability === "unavailable"
             ? []
             : [{ label: "Staking", value: preview.stake.on ? "In the MEZO gauge" : "Off", sub: preview.stake.on ? "swap fees go to veBTC voters" : undefined }]),
+          ...(exposureChange === null
+            ? []
+            : [
+                {
+                  label: "BTC exposure",
+                  value: `${exposureChange < 0n ? "−" : "+"}${btc(exposureChange < 0n ? -exposureChange : exposureChange)}`,
+                  sub: fromBtc ? "pool share only; the BTC you deposit leaves your wallet" : undefined,
+                  tone: "btc" as const,
+                },
+              ]),
+          ...(preview.borrow?.trove && preview.borrow.effect
+            ? troveChangeRows({ trove: preview.borrow.trove, effect: preview.borrow.effect, price: dashboard.price, mcr: dashboard.protocol.mcr })
+            : []),
           { label: "Network fee", value: preview.gasCost === null ? "—" : btc(preview.gasCost) },
         ]
       : [];
-  const review = (className?: string) => (
-    <ButtonLink href={`/route/lp/confirm/${entryQuery(intent)}`} disabled={preview.block !== null} className={className} arrow>
-      Review
-    </ButtonLink>
-  );
-  const { dashboard } = data.snapshot;
   // A shortfall offers Borrow & Deploy (same checks as F4's gate), the wallet's balance, or the Mezo app.
   const recoveries =
     fromBtc && preview.btc && intent.btcIn !== null && (preview.block?.reason === "insufficient-balance" || preview.block?.reason === "needs-gas")
@@ -163,53 +168,74 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           },
         )
       : [];
-  const notice = preview.block?.outcome ? <BlockNotice block={preview.block} actions={recoveries} /> : undefined;
+  const field = lpAmountField({ preview, mode: intent.mode, asset: intent.asset, walletMusd: dashboard.musd });
+  const reserve = preview.btc?.fillReserve;
+  const note =
+    preview.btc && reserve === null
+      ? "Max waits for the network fee"
+      : reserve != null && reserve >= MIN_SHOWN_RESERVE
+      ? `${formatToken(reserve, 18, 8)} BTC stays for the network fee`
+      : undefined;
+  const header = lpHeaderFigure({
+    stakeOn: preview.stake.on,
+    availability: preview.stake.availability,
+    apr,
+    weekly,
+    poolFeeBps: dashboard.poolFeeBps,
+  });
 
   return (
-    <RouteLayout
-      header={<PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title="Earn swap fees or MEZO in the MUSD/BTC pool" />}
-      summary={<SummaryPanel rows={rows} notice={notice} action={review("w-full")} />}
-      mobileBar={<MobileBar figure={quote ? `≈ ${lp(quote.liquidity)}` : undefined} notice={notice} action={review()} />}
-    >
+    <FlowColumn header={<PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title="Earn swap fees or MEZO in the MUSD/BTC pool" />}>
       {chainId !== network.chainId && <WrongNetworkAlert />}
-      <Card>
-        <ModeToggle
-          walletKind={walletKind}
-          hasTrove={data.snapshot.dashboard.trove !== null}
-          mode={intent.mode}
-          onChange={(mode) => update({ ...intent, mode, asset: mode === "borrow" ? "musd" : intent.asset })}
-        />
-        <AmountForm
-          amount={intent.amount}
-          slippageBps={intent.slippageBps}
-          max={preview.btc ? preview.btc.maxSpendable : preview.borrow ? preview.borrow.limit : data.snapshot.dashboard.musd}
-          balance={preview.btc ? preview.btc.walletBtc : undefined}
-          note={preview.btc?.fillReserve != null && preview.btc.fillReserve >= MIN_SHOWN_RESERVE ? `${formatToken(preview.btc.fillReserve, 18, 8)} BTC stays for the network fee` : undefined}
-          maxLabel={preview.borrow ? "You can borrow" : "In your wallet"}
-          asset={intent.asset}
-          onAsset={intent.mode === "borrow" ? undefined : (asset: EntryAsset) => update({ ...intent, asset, amount: "" })}
-          onChange={(next) => update({ ...next, mode: intent.mode, stake: intent.stake, asset: intent.asset })}
-        />
-      </Card>
-      <StakeToggle
-        availability={preview.stake.availability}
-        on={preview.stake.on}
-        onChange={(stake) => update({ ...intent, stake })}
-        mezoPerWeek={weekly}
-        aprLabel={apr === null ? null : formatPercent(apr, 1)}
-        readFailed={data.snapshot.dashboard.gaugeReadFailed}
+      <LpEntryCard
+        header={header}
+        tabs={
+          <ModeToggle
+            walletKind={walletKind}
+            hasTrove={dashboard.trove !== null}
+            mode={intent.mode}
+            onChange={(mode) => update({ ...intent, mode, asset: mode === "borrow" ? "musd" : intent.asset })}
+          />
+        }
+        slippageBps={intent.slippageBps}
+        onSlippage={(slippageBps) => update({ ...intent, slippageBps })}
+        field={{
+          ...field,
+          amount: intent.amount,
+          note,
+          onAmount: (next) => update({ ...intent, amount: next }),
+          onToken: intent.mode === "borrow" ? undefined : (token) => update({ ...intent, asset: token === "btc" ? "btc" : "musd", amount: "" }),
+        }}
+        receive={quote && minLpOut !== undefined ? { value: `≈ ${lp(quote.liquidity)}`, minimum: `At least ${lp(minLpOut)}` } : null}
+        stake={
+          <StakeToggle
+            availability={preview.stake.availability}
+            on={preview.stake.on}
+            onChange={(stake) => update({ ...intent, stake })}
+            mezoPerWeek={weekly}
+            aprLabel={apr === null ? null : formatPercent(apr, 1)}
+            readFailed={dashboard.gaugeReadFailed}
+          />
+        }
+        overview={overview}
+        notices={
+          <>
+            {intent.slippageBps === 200n && (
+              <Notice tone="warning">2% slippage lets this deposit fill up to 2% below the quote. Use it only if lower settings keep failing.</Notice>
+            )}
+            <BlockNotice block={preview.block} actions={recoveries} />
+          </>
+        }
+        risk={lpRiskLine({ borrow: intent.mode === "borrow", fromBtc })}
+        review={{ href: `/route/lp/confirm/${entryQuery(intent)}`, disabled: preview.block !== null }}
+        details={
+          <>
+            {quote && <EntryPreviewCard quote={quote} feeBps={data.snapshot.executorFeeBps} borrowFee={preview.borrow?.effect?.fee} stake={preview.stake.on} />}
+            {preview.after && <ExposurePanel snapshot={preview.after} before={dashboard} title="BTC exposure after this deposit" fromBtc={fromBtc} />}
+            <RisksCard borrow={intent.mode === "borrow"} fromBtc={fromBtc} />
+          </>
+        }
       />
-      {quote && <EntryPreviewCard quote={quote} feeBps={data.snapshot.executorFeeBps} borrowFee={preview.borrow?.effect?.fee} stake={preview.stake.on} />}
-      {preview.borrow?.trove && preview.borrow.effect && (
-        <TroveChangeCard
-          trove={preview.borrow.trove}
-          effect={preview.borrow.effect}
-          price={data.snapshot.dashboard.price}
-          mcr={data.snapshot.dashboard.protocol.mcr}
-        />
-      )}
-      {preview.after && <ExposurePanel snapshot={preview.after} before={data.snapshot.dashboard} title="BTC exposure after this deposit" fromBtc={fromBtc} />}
-      <RisksCard borrow={intent.mode === "borrow"} fromBtc={fromBtc} />
-    </RouteLayout>
+    </FlowColumn>
   );
 }

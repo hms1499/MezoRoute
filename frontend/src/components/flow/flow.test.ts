@@ -41,7 +41,8 @@ describe("TokenAmountInput", () => {
     const out = render({ note: "keeps gas" });
     expect(out).toMatch(/<input[^>]*inputMode="decimal"/);
     expect(out).toMatch(/<input[^>]*autoComplete="off"/);
-    expect(out).toMatch(/<input[^>]*aria-describedby="amount-help"/);
+    expect(out).toMatch(/<input[^>]*aria-describedby="amount-help amount-note"/);
+    expect(out).toContain('id="amount-note"');
     expect(out).toContain('id="amount-help"');
     expect(out).toContain("keeps gas");
   });

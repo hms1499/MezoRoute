@@ -1,0 +1,58 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+import { LpEntryCard } from "./LpEntryCard";
+
+// U11 §6.2: the LP amount page is one action card with Review as its only primary, and Details below it.
+
+const props = {
+  header: { label: "At this week's rate", value: "≈ 41.0% APR" },
+  tabs: createElement("div", null, "tabs"),
+  slippageBps: 100n as const,
+  onSlippage: () => undefined,
+  field: {
+    token: "btc" as const,
+    tokens: ["musd", "btc"] as ("musd" | "btc")[],
+    balance: 10n * 10n ** 18n,
+    max: 6n * 10n ** 18n,
+    label: "You deposit",
+    balanceLabel: "Balance",
+    amount: "",
+    onAmount: () => undefined,
+    onToken: () => undefined,
+  },
+  receive: { value: "≈ 0.017962 LP", minimum: "At least 0.017782 LP" },
+  stake: createElement("div", null, "stake row"),
+  overview: [{ label: "MezoRoute fee", value: "0.01 MUSD" }],
+  notices: null,
+  risk: "Impermanent loss and MEZO price risk",
+  review: { href: "/route/lp/confirm/?amount=1", disabled: false },
+  details: createElement("p", null, "What happens"),
+};
+
+describe("LpEntryCard", () => {
+  const out = renderToStaticMarkup(createElement(LpEntryCard, props));
+
+  it("has one primary button, Review", () => {
+    expect(out.match(/bg-accent(?![-\w])/g)).toHaveLength(1);
+    expect(out).toMatch(/bg-accent(?![-\w])[^>]*>[\s\S]*?Review/);
+  });
+
+  it("states this week's rate", () => {
+    expect(out).toContain("this week");
+  });
+
+  it("has no dollar figure", () => {
+    expect(out).not.toContain("$");
+  });
+
+  it("puts What happens behind Details and links the risk line to it", () => {
+    expect(out).toContain('id="details"');
+    expect(out).toContain('href="#details"');
+    expect(out).toContain("What happens");
+  });
+
+  it("opens the token menu for MUSD | BTC", () => {
+    expect(out).toContain('aria-haspopup="menu"');
+  });
+});

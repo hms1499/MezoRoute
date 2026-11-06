@@ -153,6 +153,8 @@ export function TokenAmountInput({
 }) {
   const unit = FLOW_TOKEN_UNIT[token];
   const helpId = `${id}-help`;
+  const noteId = `${id}-note`;
+  const describedBy = note ? `${helpId} ${noteId}` : helpId;
   const menu = token !== "lp" && tokens && tokens.length === 2 && onToken ? { token, tokens, onToken } : null;
 
   return (
@@ -165,14 +167,13 @@ export function TokenAmountInput({
           <span id={helpId} className="flex min-w-0 items-center gap-2">
             <span className="truncate">
               {balanceLabel} {formatToken(balance, 18, FLOW_TOKEN_DIGITS[token])}
-              {note ? <> · {note}</> : null}
             </span>
             {!percent && onAmount && <MaxButton onClick={() => max !== null && onAmount(formatUnits(max, 18))} disabled={max === null} />}
           </span>
         </div>
         <div className="mt-2 flex items-center gap-3">
           {percent ? (
-            <output id={id} aria-describedby={helpId} className="min-w-0 flex-1 truncate text-title font-semibold">
+            <output id={id} aria-describedby={describedBy} className="min-w-0 flex-1 truncate text-title font-semibold">
               {amount || "0"}
             </output>
           ) : (
@@ -182,7 +183,7 @@ export function TokenAmountInput({
               autoComplete="off"
               placeholder="0.0"
               value={amount}
-              aria-describedby={helpId}
+              aria-describedby={describedBy}
               aria-invalid={error ? true : undefined}
               onChange={(event) => onAmount?.(event.target.value)}
               className="min-w-0 flex-1 bg-transparent text-title font-semibold outline-none placeholder:text-muted/60"
@@ -197,6 +198,11 @@ export function TokenAmountInput({
             </span>
           )}
         </div>
+        {note && (
+          <p id={noteId} className="mt-1 text-xs text-muted">
+            {note}
+          </p>
+        )}
       </div>
       {percent && (
         <Segmented

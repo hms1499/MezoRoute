@@ -1,13 +1,10 @@
 import { formatUnits } from "viem";
 import { formatToken } from "@/lib/format";
 import type { EntryAsset } from "@/lib/routes/musd-btc-lp/asset";
-import { cx } from "@/lib/ui/cx";
 import { MaxButton } from "@/components/ui/MaxButton";
-import { AssetSwitch } from "./AssetSwitch";
 
 /**
- * An amount with Max; shared by the LP and Stability Pool routes. MUSD by default; the LP route passes `asset` and
- * `onAsset` to offer BTC too (the switch sits on the label row), and `note` for what the line under the input adds.
+ * The Stability Pool's amount with Max (U11 Task 16 replaces it with TokenAmountInput).
  */
 export function AmountInput({
   amount,
@@ -15,7 +12,6 @@ export function AmountInput({
   maxLabel,
   onAmount,
   asset = "musd",
-  onAsset,
   balance = max,
   note,
 }: {
@@ -24,7 +20,6 @@ export function AmountInput({
   maxLabel: string;
   onAmount: (amount: string) => void;
   asset?: EntryAsset;
-  onAsset?: (asset: EntryAsset) => void;
   /** The balance the line under the input shows; Max may fill in less (BTC keeps its gas reserve). */
   balance?: bigint;
   note?: string;
@@ -32,11 +27,10 @@ export function AmountInput({
   const unit = asset === "btc" ? "BTC" : "MUSD";
   return (
     <div className="space-y-3">
-      <div className={cx("flex items-center justify-between gap-3", onAsset && "min-h-11")}>
+      <div className="flex items-center justify-between gap-3">
         <label htmlFor="amount" className="block text-sm font-medium">
           Amount
         </label>
-        {onAsset && <AssetSwitch asset={asset} onChange={onAsset} />}
       </div>
       <div className="flex min-h-12 items-center gap-2 rounded-inset border border-line bg-well px-3 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20">
         <input

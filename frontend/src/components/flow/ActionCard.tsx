@@ -29,16 +29,16 @@ export function ActionCard({
 }) {
   return (
     <section className="card space-y-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="flex min-w-0 items-center gap-3">
           {icon}
           <div className="min-w-0">
-            <h2 className="text-base font-semibold">{title}</h2>
+            <h2 className="whitespace-nowrap text-base font-semibold">{title}</h2>
             {subtitle && <p className="text-xs text-muted">{subtitle}</p>}
           </div>
         </div>
         {figure && (
-          <div className="shrink-0 text-right">
+          <div className="flex items-baseline justify-between gap-2 sm:block sm:shrink-0 sm:text-right">
             {figureLabel && <p className="text-xs text-muted">{figureLabel}</p>}
             <p className="text-sm font-medium">{figure}</p>
           </div>
