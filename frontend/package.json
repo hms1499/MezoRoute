@@ -12,6 +12,7 @@
     "test": "vitest run",
     "quote-accuracy": "vitest run -c vitest.live.config.ts scripts/live/quote-accuracy.live.ts",
     "ui-audit": "vitest run -c vitest.live.config.ts scripts/live/ui-audit.live.ts",
+    "calldata-parity": "vitest run -c vitest.live.config.ts scripts/live/calldata-parity.live.ts",
     "postinstall": "node scripts/patch-relayer.mjs",
     "sync-abi": "node scripts/sync-abi.mjs"
   },
