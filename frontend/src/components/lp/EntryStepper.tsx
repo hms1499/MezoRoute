@@ -1,6 +1,5 @@
 "use client";
 
-import { Card } from "@/components/ui/Card";
 import { StepList, type StepCopy } from "@/components/ui/StepList";
 import { Term } from "@/components/ui/Term";
 import type { EntryBlock } from "@/lib/routes/musd-btc-lp/gate";
@@ -42,11 +41,14 @@ export function EntryStepper({ block, stake, ...flow }: EntryFlowInput & { block
   const { stepper, run } = useEntryFlow(flow);
   const copy = stepCopy(flow.intent.asset === "btc" ? "BTC" : "MUSD", enterStepDetail({ mode: flow.intent.mode, stake }));
   return (
-    <Card title="Confirm">
+    <section aria-labelledby="entry-steps">
+      <h3 id="entry-steps" className="text-sm font-semibold">
+        Steps
+      </h3>
       <StepList steps={stepper.steps} active={stepper.active} copy={copy} blocked={block !== null} onRun={run} />
       <div className="mt-4 empty:hidden">
         <BlockNotice block={block} />
       </div>
-    </Card>
+    </section>
   );
 }

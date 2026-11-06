@@ -30,7 +30,8 @@ export function Notice({
   return (
     <div role={role} className={cx("flex flex-wrap items-start gap-x-3 gap-y-2 rounded-inset px-4 py-3 text-sm", box, className)}>
       <Icon aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
-      <div className="min-w-0 flex-1">{children}</div>
+      {/* At least 12rem of text before the action wraps under it, so a narrow screen never squeezes the message. */}
+      <div className="min-w-0 flex-1 basis-48">{children}</div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
   );

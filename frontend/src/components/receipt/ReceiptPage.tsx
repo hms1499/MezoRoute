@@ -3,15 +3,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleCheck, CircleX, Clock } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import type { Address, Hash, TransactionReceipt } from "viem";
 import { useAccount, useConfig } from "wagmi";
-import { RouteLayout } from "@/components/route/RouteLayout";
-import { ButtonLink } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { FlowColumn } from "@/components/flow/FlowColumn";
+import { Overview } from "@/components/flow/Overview";
 import { DotWave } from "@/components/ui/DotWave";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Stat } from "@/components/ui/Stat";
+import { ReceiptCard } from "./ReceiptCard";
 import { useNetwork } from "@/lib/config/network-context";
 import { explorerTxUrl } from "@/lib/config/networks";
 import { decodeError } from "@/lib/errors/decode";
@@ -35,10 +34,9 @@ export default function ReceiptPage() {
   const hash = useSearchParams().get("hash");
   if (!isTxHash(hash)) {
     return (
-      <Card>
-        <p className="text-sm">This link has no valid transaction hash.</p>
-        <Actions />
-      </Card>
+      <FlowColumn header={<PageHeader back={{ href: "/", label: "Dashboard" }} />}>
+        <ReceiptCard icon={null} title="No transaction" message="This link has no valid transaction hash." />
+      </FlowColumn>
     );
   }
   return <Receipt hash={hash} />;
@@ -65,30 +63,21 @@ function Receipt({ hash }: { hash: Hash }) {
 
   const explorer = explorerTxUrl(network, receipt.data?.transactionHash ?? hash);
   const state = receiptState({ isSuccess: receipt.isSuccess, errorKind: receipt.error ? decodeError(receipt.error, network).kind : null });
+  const icon = <StatusIcon state={state} />;
   return (
-    // The same columns as the flow's other pages (U3 §5.3): status and details left, what to do next right.
-    <RouteLayout
-      header={<PageHeader back={{ href: "/", label: "Dashboard" }} {...receiptHeader(state)} labels={["Amount", "Confirm", "Done"]} />}
-      summary={
-        <Card title="What next">
-          <Actions explorer={explorer} />
-        </Card>
-      }
-    >
-      <Card>
-        <StatusIcon state={state} />
-        <div className="mt-4">
-          {receipt.isPending && (
-            <>
-              <h1 className="text-title">Confirming…</h1>
-              <p className="mt-1 text-sm text-muted">Transaction {shortAddress(hash)} is submitted. This usually takes a few seconds.</p>
-            </>
-          )}
-          {receipt.isError && <Failed error={receipt.error} />}
-          {receipt.isSuccess && <Confirmed receipt={receipt.data} />}
-        </div>
-      </Card>
-    </RouteLayout>
+    // U11 §6.2: the flow's column; the receipt is one centred card.
+    <FlowColumn header={<PageHeader back={{ href: "/", label: "Dashboard" }} {...receiptHeader(state)} labels={["Amount", "Confirm", "Done"]} />}>
+      {receipt.isPending && (
+        <ReceiptCard
+          icon={icon}
+          title="Confirming…"
+          message={`Transaction ${shortAddress(hash)} is submitted. This usually takes a few seconds.`}
+          explorer={explorer}
+        />
+      )}
+      {receipt.isError && <Failed error={receipt.error} icon={icon} explorer={explorer} />}
+      {receipt.isSuccess && <Confirmed receipt={receipt.data} icon={icon} explorer={explorer} />}
+    </FlowColumn>
   );
 }
 
@@ -104,16 +93,11 @@ const TITLES = {
   "sp-claim": "BTC gain claimed",
 } as const;
 
-function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
+function Confirmed({ receipt, icon, explorer }: { receipt: TransactionReceipt; icon: ReactNode; explorer: string }) {
   const { network } = useNetwork();
   const result = receiptKind(receipt.logs, network);
   if (!result) {
-    return (
-      <>
-        <h1 className="text-title">Transaction confirmed</h1>
-        <p className="mt-2 text-sm text-muted">This transaction has no MezoRoute action.</p>
-      </>
-    );
+    return <ReceiptCard icon={icon} title="Transaction confirmed" message="This transaction has no MezoRoute action." explorer={explorer} />;
   }
   const borrowed = result.kind === "entered" && result.event.musdBorrowed > 0n;
   const rows =
@@ -129,19 +113,17 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
             ? gaugeReceiptRows(result.gauge)
             : spReceiptRows(result.sp);
   return (
-    <>
-      <h1 className="text-title">{borrowed ? "Borrow & deposit confirmed" : result.kind === "gauge" ? GAUGE_TITLES[result.gauge.action] : TITLES[result.kind]}</h1>
-      <dl className="mt-3 stat-list">
-        {rows.map((row) => (
-          <Stat key={row.label} label={row.label}>
-            {row.value}
-          </Stat>
-        ))}
-        <Stat label="Gas used">{formatToken(receipt.gasUsed, 0, 0)}</Stat>
-        <Stat label="Block">{receipt.blockNumber.toString()}</Stat>
-      </dl>
-      {borrowed && <TroveNow />}
-    </>
+    <ReceiptCard
+      icon={icon}
+      title={borrowed ? "Borrow & deposit confirmed" : result.kind === "gauge" ? GAUGE_TITLES[result.gauge.action] : TITLES[result.kind]}
+      rows={[
+        ...rows.map((row) => ({ label: row.label, value: row.value })),
+        { label: "Gas used", value: formatToken(receipt.gasUsed, 0, 0) },
+        { label: "Block", value: receipt.blockNumber.toString() },
+      ]}
+      extra={borrowed && <TroveNow />}
+      explorer={explorer}
+    />
   );
 }
 
@@ -157,25 +139,24 @@ function TroveNowFor({ account }: { account: Address }) {
   if (!data || !trove) return null;
   const cr = collateralRatio(trove, data.snapshot.price);
   return (
-    <>
-      <h2 className="mt-4 text-sm font-semibold">Your Trove now</h2>
-      <dl className="mt-2 stat-list">
-        <Stat label="Debt">{`${formatToken(trove.debt, 18, 2)} MUSD`}</Stat>
-        <Stat label="Collateral ratio">{cr === null ? "—" : formatPercent(cr, 1)}</Stat>
-      </dl>
-    </>
+    <section aria-labelledby="trove-now" className="space-y-2">
+      <h2 id="trove-now" className="text-sm font-semibold">
+        Your Trove now
+      </h2>
+      <Overview
+        rows={[
+          { label: "Debt", value: `${formatToken(trove.debt, 18, 2)} MUSD` },
+          { label: "Collateral ratio", value: cr === null ? "—" : formatPercent(cr, 1) },
+        ]}
+      />
+    </section>
   );
 }
 
-function Failed({ error }: { error: Error }) {
+function Failed({ error, icon, explorer }: { error: Error; icon: ReactNode; explorer: string }) {
   const { network } = useNetwork();
   const decoded = decodeError(error, network);
-  return (
-    <>
-      <h1 className="text-title">{decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Transaction failed"}</h1>
-      <p className="mt-1 text-sm">{decoded.message}</p>
-    </>
-  );
+  return <ReceiptCard icon={icon} title={decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Transaction failed"} message={decoded.message} explorer={explorer} />;
 }
 
 function StatusIcon({ state }: { state: ReceiptState }) {
@@ -188,21 +169,5 @@ function StatusIcon({ state }: { state: ReceiptState }) {
     <span aria-hidden className={cx(shared, "flex items-center justify-center rounded-full border-2 border-accent text-accent")}>
       <DotWave size="lg" />
     </span>
-  );
-}
-
-function Actions({ explorer }: { explorer?: string }) {
-  return (
-    <div className="mt-4 flex flex-wrap gap-2">
-      <ButtonLink href="/positions/" arrow>View positions</ButtonLink>
-      {explorer && (
-        <ButtonLink href={explorer} external variant="secondary">
-          View on explorer
-        </ButtonLink>
-      )}
-      <ButtonLink href="/" variant="ghost">
-        Back to dashboard
-      </ButtonLink>
-    </div>
   );
 }

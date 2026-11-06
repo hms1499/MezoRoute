@@ -1,33 +1,24 @@
-import { Card } from "@/components/ui/Card";
-import { Stat } from "@/components/ui/Stat";
+import type { OverviewRow } from "@/components/flow/Overview";
 import { Term } from "@/components/ui/Term";
 import { btc, musd } from "@/components/lp/units";
 import type { SpDepositPreview } from "@/lib/stability-pool/preview";
 
-/** What the deposit does (Flow E step 1): estimated until the receipt. */
-export function SpDepositCard({ preview }: { preview: SpDepositPreview }) {
-  return (
-    <Card title="Review your deposit" headingLevel={1}>
-      <dl className="mt-3 stat-list">
-        <Stat label="Your deposit now">{musd(preview.depositNow)}</Stat>
-        <Stat
-          label={
-            <>
-              Pending <Term id="btcGain">BTC gain</Term>
-            </>
-          }
-          sub="Paid to your wallet with this deposit"
-        >
-          {btc(preview.gainPaid)}
-        </Stat>
-        {preview.depositAfter !== null && (
-          <Stat label="Deposit after (estimated)" strong>
-            {musd(preview.depositAfter)}
-          </Stat>
-        )}
-        <Stat label="MezoRoute fee">None (direct protocol call)</Stat>
-        <Stat label="Network fee (estimated)">{preview.gasCost === null ? "—" : btc(preview.gasCost)}</Stat>
-      </dl>
-    </Card>
-  );
+/** What the deposit does (Flow E step 1), estimated until the receipt: the Confirm card's overview (U11 §6.2). */
+export function spConfirmRows(preview: SpDepositPreview, musdIn: bigint): OverviewRow[] {
+  return [
+    { label: "You deposit", value: musd(musdIn) },
+    { label: "Your deposit now", value: musd(preview.depositNow) },
+    {
+      label: (
+        <>
+          Pending <Term id="btcGain">BTC gain</Term>
+        </>
+      ),
+      value: btc(preview.gainPaid),
+      sub: "Paid to your wallet with this deposit",
+    },
+    ...(preview.depositAfter !== null ? [{ label: "Deposit after (estimated)", value: musd(preview.depositAfter) }] : []),
+    { label: "MezoRoute fee", value: "None (direct protocol call)" },
+    { label: "Network fee (estimated)", value: preview.gasCost === null ? "—" : btc(preview.gasCost) },
+  ];
 }
