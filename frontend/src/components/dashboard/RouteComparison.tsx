@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { AmountInput } from "@/components/lp/AmountInput";
+import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
 import { musd } from "@/components/lp/units";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -111,7 +111,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
   return (
     <Card id="compare" title="Compare routes" subtitle="Where to put MUSD: both routes for the same amount.">
       <div className="mt-4 max-w-md">
-        <AmountInput amount={text} max={snapshot.musd} maxLabel="Wallet balance" onAmount={setText} />
+        <TokenAmountInput id="compare-amount" label="Amount" amount={text} onAmount={setText} token="musd" balance={snapshot.musd} balanceLabel="Wallet balance" max={snapshot.musd} />
         {amountError && (
           <p role="alert" className="mt-2 text-sm text-danger">
             {amountError}
