@@ -38,7 +38,7 @@ Tests at `main` (21 Oct): 962 Vitest and 75 Foundry. `npm run build` passes (Fir
 ## Next: Wave 2
 
 **U11 handover (6 Nov, evening):** Phase 1 (Tasks 1-11) is committed on `feat/u11-dapp-ui`. The user chose to merge later and continue in the next session. Left, in order:
-1. Read the last full `npm run ui-audit` result (13 pages × 360/768/1024/1440 × light/dark). The first full run had 51 of 51 loads clean before a test timeout; the audit is now one test per page. A served build is needed: `cd frontend && npm run build && npx serve out -l 4318 &`, then `PLAYWRIGHT_CHROMIUM_EXECUTABLE=<a local Chromium> npm run ui-audit` (Playwright 1.56.1's own browser is not installed; this machine used `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`).
+1. Done 6 Nov: full `npm run ui-audit` on a fresh build of `520a069` (13 pages × 360/768/1024/1440 × light/dark): 104 of 104 loads ok, 13/13 tests pass, 832 s. To re-run: A served build is needed: `cd frontend && npm run build && npx serve out -l 4318 &`, then `PLAYWRIGHT_CHROMIUM_EXECUTABLE=<a local Chromium> npm run ui-audit` (Playwright 1.56.1's own browser is not installed; this machine used `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`).
 2. Final whole-branch review of Phase 1 (fresh reviewer), one fix pass for Critical/Important.
 3. Merge Phase 1 into `main` and push **on the user's word** (a push deploys production).
 4. Phase 2 (Tasks 12-20): flow building blocks, LP/SP/Confirm/Exit/Withdraw/Receipt cards, Dashboard and Positions as tables, calldata parity. Then Unwind and Leverage (deadline 13 Nov).
