@@ -187,7 +187,7 @@ export const fontSize: Record<FontSizeKey, [size: string, meta: TypeMeta]> = {
   headline: ["24px", { lineHeight: "32px", fontWeight: "600", letterSpacing: TIGHT }],
   title: ["28px", { lineHeight: "34px", fontWeight: "600", letterSpacing: TIGHT }],
   figure: ["28px", { lineHeight: "32px", fontWeight: "500", letterSpacing: TIGHT }],
-  // U10: light display type, as on morpho.org (Inter is a variable font, so 300 costs no download).
+  // U10: light display type, as on morpho.org (Geist Mono is a variable font, so 300 costs no download).
   display: ["40px", { lineHeight: "48px", fontWeight: "300", letterSpacing: "-0.02em" }],
   "display-lg": ["48px", { lineHeight: "52px", fontWeight: "300", letterSpacing: "-0.02em" }],
 };

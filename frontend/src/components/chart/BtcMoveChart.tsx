@@ -140,7 +140,7 @@ function Plot({
             y={label.y}
             textAnchor={label.side === "right" ? "end" : "start"}
             fontSize={CHART_FONT_PX}
-            fontFamily="var(--font-mono)"
+            fontFamily="var(--font-geist-mono)"
             style={{ fill: STROKE[label.id], stroke: halo }}
             strokeWidth={3}
             strokeLinejoin="round"
@@ -149,7 +149,7 @@ function Plot({
             {plot.format(label.value)}
           </text>
         ))}
-        <g fontSize={CHART_FONT_PX} fontFamily="var(--font-mono)" style={{ fill: themeColor.muted }}>
+        <g fontSize={CHART_FONT_PX} fontFamily="var(--font-geist-mono)" style={{ fill: themeColor.muted }}>
           <text x={g.plot.left} y={height - 4}>
             −30%
           </text>

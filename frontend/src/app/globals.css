@@ -34,7 +34,7 @@
     outline: 2px solid rgb(var(--color-accent));
     outline-offset: 2px;
   }
-  /* Figures align in columns; set per element because Inter's tabular set also widens hyphens in prose. */
+  /* Figures align in columns. Geist Mono is monospaced, so this is already true; kept so a future face still aligns. */
   dd,
   td,
   th,
