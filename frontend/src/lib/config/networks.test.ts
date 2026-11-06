@@ -35,12 +35,13 @@ describe("networks", () => {
     expect(networks.testnet.executor?.feeBps).toBe(10n);
   });
 
-  it("pins the deployed mainnet executor and its 10 bps fee (M1)", () => {
+  it("runs V2 on mainnet and keeps the M1 V1 for history (G1)", () => {
     expect(networks.mainnet.executor).toEqual({
-      address: "0x046449b1229C863e278f369869BA10e12bd80d9E",
+      address: "0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915",
       feeBps: 10n,
-      deployBlock: 12_524_142n,
+      deployBlock: 13_031_359n,
     });
+    expect(networks.mainnet.legacyExecutors).toEqual([{ address: "0x046449b1229C863e278f369869BA10e12bd80d9E", deployBlock: 12_524_142n }]);
   });
 
   it("offers a faucet on testnet only", () => {

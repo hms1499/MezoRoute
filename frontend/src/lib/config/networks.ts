@@ -98,10 +98,10 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     explorerApiUrl: "https://api.explorer.mezo.org",
     faucetUrl: null,
     mezoAppUrl: "https://mezo.org",
-    // M1, 15 Oct 2026: 1,000 MUSD cap per entry, source-verified on the explorer.
-    executor: { address: "0x046449b1229C863e278f369869BA10e12bd80d9E", feeBps: 10n, deployBlock: 12_524_142n },
-    // Task 11 moves mainnet to V2 and lists this V1 under legacyExecutors; until then scripts/check-mainnet-pin.mjs fails production builds.
-    legacyExecutors: [],
+    // G1, 6 Nov 2026: V2 (stake flag, enterFromBtc), 1,000 MUSD and 0.0125 BTC caps per entry, source-verified on the explorer.
+    executor: { address: "0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915", feeBps: 10n, deployBlock: 13_031_359n },
+    // M1 V1 (15 Oct 2026): scanned for history only; its LP can still exit.
+    legacyExecutors: [{ address: "0x046449b1229C863e278f369869BA10e12bd80d9E", deployBlock: 12_524_142n }],
     entryCap: 1_000n * 10n ** 18n,
     entryCapBtc: 125n * 10n ** 14n,
     gauge: { address: "0x8Be20a5fF57E381025aE5E3A121B697269569AaF", voter: "0x48233cCC97B87Ba93bCA212cbEe48e3210211f03" },
