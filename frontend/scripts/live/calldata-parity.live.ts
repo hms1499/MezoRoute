@@ -116,7 +116,8 @@ function normalise(call: { method: string; params: unknown[] }): unknown {
 async function drive(browser: Browser, base: string, flow: Flow): Promise<{ status: string; calls: unknown[] }> {
   const context: BrowserContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   await context.route(HOSTS, onRoute);
-  await context.addInitScript(mockWallet, { theme: "light", network: flow.network, account: flow.account });
+  const wallet: MockConfig = { theme: "light", network: flow.network, account: flow.account };
+  await context.addInitScript(mockWallet, wallet);
   await context.addInitScript(captureWallet);
   const page = await context.newPage();
   try {
