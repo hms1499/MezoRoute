@@ -1,38 +1,22 @@
-import { Button, ButtonLink } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Stat } from "@/components/ui/Stat";
 import { btc, lp as lpUnits, musd, signedMusd } from "@/components/lp/units";
 import { formatPercent } from "@/lib/format";
-import { DEFAULT_EXIT_INTENT, exitQuery } from "@/lib/positions/exit-intent";
 import { showsExitGap } from "@/lib/positions/labels";
 import type { LpView } from "@/lib/positions/view";
 import { Settle } from "@/components/ui/Settle";
 
 type History = { events: unknown; error: Error | null; retry: () => void };
 
-/** Flow F: what the LP holds, what it would return now, and what it cost (estimates, never "profit"). */
-export function LpPositionCard({ lp, history }: { lp: LpView; history: History }) {
+/** Flow F: what the LP holds, what it would return now, and what it cost (estimates, never "profit"); U11 §6.4 shows it as the LP row's details. */
+export function LpDetails({ lp, history }: { lp: LpView; history: History }) {
   return (
-    <Card
-      title="MUSD/BTC pool"
-      aside={
-        <div className="text-right">
-          <p className="text-xs text-muted">Value at the BTC price</p>
-          <p className="font-mono text-xl font-medium">{musd(lp.value)}</p>
-        </div>
-      }
-    >
-      <dl className="mt-3 stat-list grid-cols-[minmax(8rem,1fr)_minmax(0,auto)]">
+    <div className="space-y-2">
+      <dl className="stat-list grid-cols-[minmax(8rem,1fr)_minmax(0,auto)]">
         <Stat label="LP balance" sub={`${formatPercent(lp.share, 4)} of the pool`}>
           {lpUnits(lp.balance)}
         </Stat>
-        {lp.stakedLp > 0n && (
-          <>
-            <Stat label="In your wallet">{lpUnits(lp.walletLp)}</Stat>
-            <Stat label="Staked in the gauge">{lpUnits(lp.stakedLp)}</Stat>
-          </>
-        )}
         <Stat label="Underlying MUSD">{musd(lp.musd)}</Stat>
         <Stat label="Underlying BTC" sub={`≈ ${musd(lp.btcValue)}`}>
           {btc(lp.btc)}
@@ -43,24 +27,13 @@ export function LpPositionCard({ lp, history }: { lp: LpView; history: History }
         <CostRows lp={lp} history={history} />
       </dl>
       {lp.exit && showsExitGap(lp.value, lp.exit.musdOut) && (
-        <p className="mt-2 text-xs text-muted">Exiting sells the BTC half at the pool price, which differs from the oracle.</p>
+        <p className="text-sm text-muted">Exiting sells the BTC half at the pool price, which differs from the oracle.</p>
       )}
       {lp.cost && lp.cost.unattributedLp > 0n && (
-        <p className="mt-2 text-xs text-muted">
-          {lpUnits(lp.cost.unattributedLp)} was not deposited through MezoRoute and has no cost basis.
-        </p>
+        <p className="text-sm text-muted">{lpUnits(lp.cost.unattributedLp)} was not deposited through MezoRoute and has no cost basis.</p>
       )}
-      {lp.stakedLp > 0n && (
-        <p className="mt-2 text-xs text-muted">
-          Exit unstakes the staked LP it needs first. Your pending MEZO stays claimable.
-        </p>
-      )}
-      {lp.balance > 0n && (
-        <ButtonLink href={`/positions/lp/exit/${exitQuery(DEFAULT_EXIT_INTENT)}`} className="mt-4" arrow>
-          Exit to MUSD
-        </ButtonLink>
-      )}
-    </Card>
+      {lp.stakedLp > 0n && <p className="text-sm text-muted">Exit unstakes the staked LP it needs first. Your pending MEZO stays claimable.</p>}
+    </div>
   );
 }
 

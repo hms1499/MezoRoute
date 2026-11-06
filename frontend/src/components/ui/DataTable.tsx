@@ -1,4 +1,7 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { ChevronDown } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { cx } from "@/lib/ui/cx";
 
 // U11 §5.6: the one table style. Header 12/500 muted, left for the first column and right for figures; rows 14/400
@@ -41,13 +44,34 @@ export function DataTable<R>({
   rows,
   empty,
   rowKey = (_row, index) => String(index),
+  expand,
 }: {
   caption: string;
   columns: DataColumn<R>[];
   rows: R[];
   empty: ReactNode;
   rowKey?: (row: R, index: number) => string;
+  /** A row's details, shown under it when its Details toggle is open (U11 §6.4). */
+  expand?: (row: R) => ReactNode;
 }) {
+  const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
+  const toggle = (key: string) =>
+    setOpen((was) => {
+      const next = new Set(was);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  const detailsButton = (key: string, className?: string) => (
+    <button
+      type="button"
+      aria-expanded={open.has(key)}
+      onClick={() => toggle(key)}
+      className={cx("hit inline-flex min-h-7 items-center gap-1 rounded-pill px-3 text-xs font-semibold text-accent hover:bg-well", className)}
+    >
+      Details
+      <ChevronDown aria-hidden className={cx("h-3.5 w-3.5 transition-transform", open.has(key) && "rotate-180")} />
+    </button>
+  );
   const [first, ...rest] = columns;
   const pairs = rest.filter((column) => !column.action);
   const actions = rest.filter((column) => column.action);
@@ -62,18 +86,25 @@ export function DataTable<R>({
                 {column.action && !column.header ? <span className="sr-only">Action</span> : column.header}
               </th>
             ))}
+            {expand && (
+              <th scope="col" className={thClass("right")}>
+                <span className="sr-only">Details</span>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr className={trClass}>
-              <td colSpan={columns.length} className={cx(tdClass("left"), "text-muted")}>
+              <td colSpan={columns.length + (expand ? 1 : 0)} className={cx(tdClass("left"), "text-muted")}>
                 {empty}
               </td>
             </tr>
           ) : (
-            rows.map((row, index) => (
-              <tr key={rowKey(row, index)} className={trClass}>
+            rows.flatMap((row, index) => {
+              const key = rowKey(row, index);
+              const line = (
+              <tr key={key} className={trClass}>
                 {columns.map((column, at) =>
                   at === 0 ? (
                     <th key={column.key} scope="row" className={cx(rowThClass(), "font-normal")}>
@@ -85,8 +116,20 @@ export function DataTable<R>({
                     </td>
                   ),
                 )}
+                {expand && <td className={cx(tdClass("right"), "pl-2")}>{detailsButton(key)}</td>}
               </tr>
-            ))
+              );
+              return expand && open.has(key)
+                ? [
+                    line,
+                    <tr key={`${key}-details`} className={trClass}>
+                      <td colSpan={columns.length + 1} className="pb-4">
+                        {expand(row)}
+                      </td>
+                    </tr>,
+                  ]
+                : [line];
+            })
           )}
         </tbody>
       </table>
@@ -112,6 +155,12 @@ export function DataTable<R>({
                   {column.cell(row)}
                 </div>
               ))}
+              {expand && (
+                <>
+                  {detailsButton(rowKey(row, index), "w-full justify-center")}
+                  {open.has(rowKey(row, index)) && <div className="border-t border-line pt-3">{expand(row)}</div>}
+                </>
+              )}
             </li>
           ))}
         </ul>
