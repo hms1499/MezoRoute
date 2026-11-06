@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CONTROL } from "./tokens";
-import { sourceFiles } from "./source-scan";
+import { scanSource, sourceFiles } from "./source-scan";
 
 // U11 §5.4: three control heights, and every target at least 24 px (44 px below 768 px) through `.hit`.
 
@@ -46,5 +46,12 @@ describe("control sizes", () => {
     const css = read("app/globals.css");
     expect(css).toMatch(/\.hit::after\s*\{[^}]*max\(100%, 24px\)/s);
     expect(css).toMatch(/@media \(max-width: 767px\)\s*\{\s*\.hit::after\s*\{[^}]*max\(100%, 44px\)/s);
+  });
+});
+
+describe("segmented controls", () => {
+  it("segmented roles live in Segmented only", () => {
+    // NetworkSwitch.tsx until Task 6 replaces it with the network menu.
+    expect(scanSource([["segmented role", /role="(radiogroup|tablist)"/]], { skip: ["components/ui/Segmented.tsx", "components/NetworkSwitch.tsx"] })).toEqual([]);
   });
 });

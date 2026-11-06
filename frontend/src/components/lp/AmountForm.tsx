@@ -1,13 +1,8 @@
 import { Notice } from "@/components/ui/Notice";
-import { formatBps } from "@/lib/format";
-import { SLIPPAGE_PRESETS, type SlippageBps } from "@/lib/quote/entry";
+import { SlippageChoice } from "@/components/ui/Presets";
+import type { SlippageBps } from "@/lib/quote/entry";
 import type { EntryAsset } from "@/lib/routes/musd-btc-lp/asset";
 import { AmountInput } from "./AmountInput";
-
-const chip = (on: boolean) =>
-  on
-    ? "min-h-9 rounded-full bg-accent px-4 text-sm font-semibold text-onAccent"
-    : "min-h-9 rounded-full border border-line px-4 text-sm font-semibold text-muted hover:text-ink";
 
 type Inputs = { amount: string; slippageBps: SlippageBps };
 
@@ -44,18 +39,8 @@ export function AmountForm({
       />
       <fieldset>
         <legend className="text-sm font-medium">Slippage</legend>
-        <div className="mt-1 flex gap-2">
-          {SLIPPAGE_PRESETS.map((bps) => (
-            <button
-              key={bps.toString()}
-              type="button"
-              aria-pressed={bps === slippageBps}
-              onClick={() => onChange({ amount, slippageBps: bps })}
-              className={chip(bps === slippageBps)}
-            >
-              {formatBps(bps, 1)}
-            </button>
-          ))}
+        <div className="mt-1">
+          <SlippageChoice value={slippageBps} onChange={(bps) => onChange({ amount, slippageBps: bps })} />
         </div>
         {slippageBps === 200n && (
           <Notice tone="warning" className="mt-2">

@@ -3,6 +3,7 @@
 import { Moon, Sun } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/Button";
+import { Segmented } from "@/components/ui/Segmented";
 import { applyTheme, currentTheme, subscribeTheme, type Theme } from "@/lib/ui/theme";
 
 /** The theme on `<html>`; the header and footer controls share it, so both show the same state. */
@@ -22,31 +23,20 @@ export function ThemeToggle() {
   );
 }
 
-const OPTIONS: { id: Theme; label: string }[] = [
-  { id: "light", label: "Light" },
-  { id: "dark", label: "Dark" },
-];
-
-/** Footer, below 768 px (the header has no room): a Light | Dark switch like the network one. */
+/** Footer, below 768 px (the header has no room): a Light | Dark switch. */
 export function ThemeSwitch() {
   const theme = useTheme();
   return (
-    <div role="radiogroup" aria-label="Theme" className="flex w-fit rounded-full bg-surface p-0.5 text-xs md:hidden">
-      {OPTIONS.map((option) => {
-        const active = option.id === theme;
-        return (
-          <button
-            key={option.id}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => active || applyTheme(option.id)}
-            className={active ? "rounded-full bg-selected px-3 py-1 font-semibold text-accent" : "rounded-full px-3 py-1 text-muted hover:text-ink"}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
+    <Segmented
+      label="Theme"
+      size="sm"
+      className="md:hidden"
+      options={[
+        { value: "light", label: "Light" },
+        { value: "dark", label: "Dark" },
+      ]}
+      value={theme}
+      onChange={(next: Theme) => applyTheme(next)}
+    />
   );
 }

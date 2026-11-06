@@ -7,6 +7,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { RiskList } from "@/components/ui/RiskList";
+import { Segmented } from "@/components/ui/Segmented";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
 import { compareRoutes } from "@/lib/compare/comparison";
@@ -180,22 +181,14 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
 
       {/* Below 640 px: one route at a time. */}
       <div className="mt-4 sm:hidden">
-        <div role="tablist" aria-label="Routes" className="flex rounded-full bg-well p-1 text-sm font-medium">
-          {routes.map((route) => (
-            <button
-              key={route.id}
-              type="button"
-              role="tab"
-              id={`tab-${route.id}`}
-              aria-selected={tab === route.id}
-              aria-controls={`panel-${route.id}`}
-              onClick={() => setTab(route.id)}
-              className={cx("min-h-10 flex-1 rounded-full px-3 transition-colors", tab === route.id ? "bg-line text-ink" : "text-muted")}
-            >
-              {route.title}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          label="Routes"
+          semantics="tabs"
+          fill
+          options={routes.map((route) => ({ value: route.id, label: route.title, id: `tab-${route.id}`, controls: `panel-${route.id}` }))}
+          value={tab}
+          onChange={setTab}
+        />
         {routes.map((route) => (
           <div key={route.id} role="tabpanel" id={`panel-${route.id}`} aria-labelledby={`tab-${route.id}`} hidden={tab !== route.id} className="mt-4">
             <p className="text-sm text-muted">

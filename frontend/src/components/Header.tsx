@@ -5,6 +5,7 @@ import { Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { segmentedItemClass, segmentedTrackClass } from "@/components/ui/Segmented";
 import { Logo } from "@/components/ui/Logo";
 import { cx } from "@/lib/ui/cx";
 import { isCurrentPath, onMobile } from "@/lib/ui/nav";
@@ -24,7 +25,8 @@ export function Header() {
       <Link href="/" aria-label="MezoRoute home" className="shrink-0 rounded-tip">
         <Logo />
       </Link>
-      <nav aria-label="Main" className="flex flex-1 items-center justify-center gap-1">
+      <div className="flex flex-1 justify-center">
+      <nav aria-label="Main" className={segmentedTrackClass("md")}>
         {NAV.map((item) => {
           const current = isCurrentPath(pathname, item.href);
           return (
@@ -32,17 +34,14 @@ export function Header() {
               key={item.href}
               href={item.href}
               aria-current={current ? "page" : undefined}
-              className={cx(
-                "min-h-9 items-center rounded-full px-2 text-sm font-medium transition-colors sm:px-3",
-                onMobile(item.href, pathname) ? "inline-flex" : "hidden sm:inline-flex",
-                current ? "bg-surface text-ink" : "text-muted hover:text-ink",
-              )}
+              className={cx(segmentedItemClass(current, "md"), !onMobile(item.href, pathname) && "max-sm:hidden")}
             >
               {item.label}
             </Link>
           );
         })}
       </nav>
+      </div>
       <NetworkSwitch />
       <ThemeToggle />
       {/* The app's own small buttons: RainbowKit's wider one pushed the header past 360 px, and its emoji
