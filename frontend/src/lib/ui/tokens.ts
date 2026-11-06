@@ -208,6 +208,18 @@ export const fontSize: Record<FontSizeKey, [size: string, meta: TypeMeta]> = {
 // (radius-guard.test.ts). `full` is an alias of `pill`.
 export const radius = { none: "0px", tip: "8px", inset: "12px", card: "16px", pill: "9999px", full: "9999px" } as const;
 
+// U11 §5.2: each type step's role, so one figure reads the same wherever it appears (DESIGN.md mirrors this).
+export const TYPE_ROLES = {
+  pageTitle: "text-title",
+  landingSection: "text-headline",
+  cardTitle: "text-base font-semibold",
+  keyFigure: "text-figure",
+  figure: "text-xl font-medium",
+  body: "text-sm",
+  label: "text-sm font-medium",
+  caption: "text-xs",
+} as const;
+
 // U11 §5.6: one shadow, for floating layers only (popovers, menus, toasts); cards stay flat (U3).
 export const boxShadow = { none: "none", overlay: "0 12px 32px -12px rgb(0 0 0 / 0.28)" } as const;
 

@@ -12,6 +12,7 @@ import { dashboardView } from "@/lib/dashboard/view";
 import { exposure } from "@/lib/exposure/exposure";
 import type { WalletKind } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
+import { DashboardHeader } from "./DashboardHeader";
 import { ExposurePanel } from "./ExposurePanel";
 import { MainnetReferenceCard } from "./MainnetReferenceCard";
 import { PositionsSummary } from "./PositionsSummary";
@@ -19,6 +20,7 @@ import { ReadinessCard } from "./ReadinessCard";
 import { RouteComparison } from "./RouteComparison";
 import { TroveCard } from "./TroveCard";
 import { TroveWarning } from "./TroveWarning";
+import { useWalletLine } from "./useWalletLine";
 import { Settle } from "@/components/ui/Settle";
 
 /** The connected home page (spec §9 screen 1): warning, readiness, Trove, exposure, route comparison, positions, mainnet reference (testnet only). */
@@ -43,8 +45,10 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
   const { snapshot, gasBalance, gasPrice } = data;
   const current = readiness({ snapshot, gasBalance, gasPrice, walletKind });
   const warning = troveWarning(current.health, snapshot.protocol.mcr);
+  const wallet = useWalletLine(walletKind, account);
   return (
     <>
+      <DashboardHeader wallet={wallet.line} title={wallet.title} />
       {warning && <TroveWarning warning={warning} />}
       {/* DOM order is the mobile order (the user's own Trove before the comparison), so keyboard order
           follows what is on screen. From 1024 px the side column spans both rows; its 1fr row keeps the

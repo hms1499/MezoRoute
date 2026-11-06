@@ -1,6 +1,8 @@
 import { TriangleAlert } from "lucide-react";
 import { BtcMoveChart, type MovePlot } from "@/components/chart/BtcMoveChart";
 import { Card } from "@/components/ui/Card";
+import { tableClass, thClass } from "@/components/ui/DataTable";
+import { cx } from "@/lib/ui/cx";
 import { Notice } from "@/components/ui/Notice";
 import { Stat } from "@/components/ui/Stat";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
@@ -97,28 +99,28 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
           <summary className="inline-flex min-h-9 cursor-pointer items-center rounded-full font-medium text-accent hover:underline">Show figures</summary>
           <div className="mt-2 overflow-x-auto">
             {/* One row per drop and one column per figure, so the table fits the dashboard's side column. */}
-            <table className="w-full text-xs">
+            <table className={tableClass(true)}>
               <caption className="sr-only">Values if the BTC price drops</caption>
               <thead>
-                <tr className="border-b border-line text-muted">
-                  <th scope="col" className="py-2 pr-2 text-left font-medium">
+                <tr>
+                  <th scope="col" className={cx(thClass("left", true), "pr-2")}>
                     BTC drop
                   </th>
-                  <th scope="col" className="px-2 py-2 text-right font-medium">
+                  <th scope="col" className={cx(thClass("right", true), "px-2")}>
                     BTC price
                   </th>
                   {hasTrove && (
-                    <th scope="col" className="px-2 py-2 text-right font-medium">
+                    <th scope="col" className={cx(thClass("right", true), "px-2")}>
                       Trove CR
                     </th>
                   )}
                   {hasLp && (
-                    <th scope="col" className="px-2 py-2 text-right font-medium">
+                    <th scope="col" className={cx(thClass("right", true), "px-2")}>
                       LP value
                     </th>
                   )}
                   {hasSp && (
-                    <th scope="col" className="py-2 pl-2 text-right font-medium">
+                    <th scope="col" className={cx(thClass("right", true), "pl-2")}>
                       SP value
                     </th>
                   )}

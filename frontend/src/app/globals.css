@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  /* U11 §5.6: tables never show the browser's bold, centred header; DataTable sets the rest. */
+  th {
+    @apply text-left font-medium;
+  }
   :root {
     --landing-space-section: 3.5rem;
     --landing-space-content: 1.5rem;
