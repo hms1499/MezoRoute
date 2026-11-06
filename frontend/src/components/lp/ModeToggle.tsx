@@ -1,3 +1,4 @@
+import { Segmented } from "@/components/ui/Segmented";
 import { Term } from "@/components/ui/Term";
 import type { EntryMode } from "@/lib/routes/musd-btc-lp/intent";
 import { borrowMode } from "@/lib/routes/musd-btc-lp/mode";
@@ -29,29 +30,18 @@ export function ModeToggle({
   onChange: (mode: EntryMode) => void;
 }) {
   const borrow = borrowMode(walletKind, hasTrove);
-  const option = (value: EntryMode, label: string, disabled = false) => (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={mode === value}
-      disabled={disabled}
-      onClick={() => onChange(value)}
-      className={
-        mode === value
-          ? "min-h-9 rounded-full bg-line px-3.5 text-ink"
-          : "min-h-9 rounded-full px-3.5 text-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
-      }
-    >
-      {label}
-    </button>
-  );
   return (
     <div>
-      <div role="radiogroup" aria-label="Funding" className="inline-flex rounded-full bg-well p-1 text-sm font-semibold">
-        {option("deposit", "Deposit")}
-        {option("borrow", BORROW_LABEL, borrow.disabled)}
-      </div>
-      {borrow.note && <p className="mt-1 text-sm text-muted">{withTerm(borrow.note)}</p>}
+      <Segmented
+        label="Funding"
+        options={[
+          { value: "deposit", label: "Deposit" },
+          { value: "borrow", label: BORROW_LABEL, disabled: borrow.disabled, describedBy: borrow.note ? "funding-note" : undefined },
+        ]}
+        value={mode}
+        onChange={onChange}
+      />
+      {borrow.note && <p id="funding-note" className="mt-1 text-sm text-muted">{withTerm(borrow.note)}</p>}
       {mode === "borrow" && !borrow.disabled && (
         <p className="mt-1 text-sm text-muted">Borrow MUSD against your Trove and deposit it in one transaction.</p>
       )}

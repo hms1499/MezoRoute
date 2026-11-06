@@ -3,7 +3,12 @@ import { btc, musd } from "@/components/lp/units";
 import { STRESS_DROP, type ComparedRoutes } from "@/lib/compare/comparison";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
 
-export type Row = { label: string; title?: string; value: ReactNode; sub?: string };
+export type Row = { label: string; title?: string; value: ReactNode; sub?: string; subTone?: "positive" | "negative" | null };
+
+/** U11 §5.5: a signed sub-line (the 30-day result) in positive or negative; every other sub-line muted. */
+export function subToneClass(tone: Row["subTone"]): string {
+  return tone === "positive" ? "text-positive" : tone === "negative" ? "text-negative" : "text-muted";
+}
 
 export function lpFee(executorFeeBps: bigint | null, compared: ComparedRoutes | null): string {
   if (executorFeeBps === null) return "Set at launch";

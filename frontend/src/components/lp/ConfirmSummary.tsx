@@ -121,7 +121,7 @@ export function ConfirmSummary({
         <div className="flex items-center justify-between gap-3 text-xs text-muted">
           <span>Quote from block {data.snapshot.blockNumber.toString()}</span>
           {timer.phase === "expired" ? (
-            <Button size="sm" variant="secondary" onClick={onRefresh}>
+            <Button size="md" variant="secondary" onClick={onRefresh}>
               Refresh quote
             </Button>
           ) : (

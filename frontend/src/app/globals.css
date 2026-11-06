@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  /* U11 §5.6: tables never show the browser's bold, centred header; DataTable sets the rest. */
+  th {
+    @apply text-left font-medium;
+  }
   :root {
     --landing-space-section: 3.5rem;
     --landing-space-content: 1.5rem;
@@ -34,7 +38,7 @@
     outline: 2px solid rgb(var(--color-accent));
     outline-offset: 2px;
   }
-  /* Figures align in columns; set per element because Inter's tabular set also widens hyphens in prose. */
+  /* Figures align in columns. Geist Mono is monospaced, so this is already true; kept so a future face still aligns. */
   dd,
   td,
   th,
@@ -52,9 +56,9 @@
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-line bg-surface p-5;
+    @apply rounded-card border border-line bg-surface p-5;
   }
-  /* A panel's key figure (U3 §3.2): the only place outside the landing that uses the mono face. */
+  /* A panel's key figure (U3 §3.2); since U11 every glyph is Geist Mono, so only its size sets it apart. */
   .figure {
     @apply font-mono text-figure;
   }
@@ -198,6 +202,29 @@
 .btn-roll.is-pending .btn-label {
   transform: translateY(-110%);
   opacity: 0;
+}
+/* U11 §5.4: every target is at least 24 × 24 px, and 44 × 44 px below 768 px, without growing what it looks like.
+   Inline targets (a Term or a link inside a sentence) do not take it. `.hit` sits in the components layer so an
+   `absolute`/`fixed`/`sticky` utility on the same element still wins over its `position: relative`. */
+@layer components {
+  .hit {
+    position: relative;
+  }
+}
+.hit::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 24px);
+  height: max(100%, 24px);
+  transform: translate(-50%, -50%);
+}
+@media (max-width: 767px) {
+  .hit::after {
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
 }
 .btn-circle {
   position: relative;

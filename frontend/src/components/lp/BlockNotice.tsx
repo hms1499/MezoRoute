@@ -1,4 +1,4 @@
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, Info } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import type { Outcome } from "@/lib/errors/types";
 import { formatToken } from "@/lib/format";
@@ -11,19 +11,24 @@ export function BlockNotice({ block, actions = [] }: { block: { outcome: Outcome
   if (!block?.outcome) return null;
   return (
     <div role="status" className="space-y-2">
-      <p className="flex items-start gap-1.5 text-sm text-danger">
-        <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+      {/* U11 §5.5: a "nothing to do" outcome reads neutral, not as an error. */}
+      <p className={block.outcome.tone === "neutral" ? "flex items-start gap-2 text-sm text-muted" : "flex items-start gap-2 text-sm text-danger"}>
+        {block.outcome.tone === "neutral" ? (
+          <Info aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+        ) : (
+          <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+        )}
         <span>{block.outcome.message}</span>
       </p>
       {actions.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {actions.map((action) =>
             action.href ? (
-              <ButtonLink key={action.label} href={action.href} external variant="secondary" size="sm">
+              <ButtonLink key={action.label} href={action.href} external variant="secondary" size="md">
                 {action.label}
               </ButtonLink>
             ) : (
-              <Button key={action.label} variant="secondary" size="sm" onClick={action.onClick}>
+              <Button key={action.label} variant="secondary" size="md" onClick={action.onClick}>
                 {action.label}
               </Button>
             ),

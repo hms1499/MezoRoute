@@ -20,7 +20,7 @@ export function PositionsSummary({ account, spValue }: { account: Address; spVal
       level="section"
       title="Your positions"
       aside={
-        <ButtonLink href="/positions/" variant="ghost" size="sm">
+        <ButtonLink href="/positions/" variant="ghost" size="md">
           View positions
         </ButtonLink>
       }

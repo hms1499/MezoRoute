@@ -8,7 +8,7 @@ describe("RainbowKit themes", () => {
     // Literal hex on purpose: this is what production renders (U9 keeps the dark modal unchanged).
     expect(darkRainbowTheme).toEqual({
       ...darkTheme({ accentColor: "#2DD4BF", accentColorForeground: "#062221", borderRadius: "large" }),
-      fonts: { body: "var(--font-inter), ui-sans-serif, system-ui, sans-serif" },
+      fonts: { body: "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace" },
     });
   });
 

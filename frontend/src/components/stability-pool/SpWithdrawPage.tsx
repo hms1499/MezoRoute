@@ -15,24 +15,20 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { PercentChoice } from "@/components/ui/Presets";
 import { LoadingCard } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
 import { stabilityPoolAbi } from "@/lib/abi/musd";
 import { useNetwork } from "@/lib/config/network-context";
 import { decodeError } from "@/lib/errors/decode";
 import { SP_WITHDRAW_BLOCKED } from "@/lib/errors/outcomes";
-import { EXIT_PERCENTS, type ExitPercent } from "@/lib/positions/exit-intent";
+import type { ExitPercent } from "@/lib/positions/exit-intent";
 import { parseSpWithdrawPercent, spWithdrawQuery } from "@/lib/stability-pool/intent";
 import { spClaimPreview, spWithdrawPreview } from "@/lib/stability-pool/preview";
 import type { SpData } from "@/lib/stability-pool/snapshot";
 import { useSpActions } from "@/lib/stability-pool/useSpActions";
 import { useSpSnapshot } from "@/lib/stability-pool/useSpSnapshot";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
-
-const chip = (on: boolean) =>
-  on
-    ? "min-h-9 rounded-full bg-accent px-3.5 text-sm font-semibold text-onAccent"
-    : "min-h-9 rounded-full border border-line px-3.5 text-sm font-semibold text-muted hover:text-ink";
 
 /** Spec §9 screen 6b: share or Max, simulated first; a paused pool shows the blocked state with Claim BTC gain. */
 export default function SpWithdrawPage() {
@@ -160,12 +156,8 @@ function WithdrawView(props: {
       <Card>
         <fieldset disabled={busy}>
           <legend className="text-sm font-medium">Amount to withdraw</legend>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {EXIT_PERCENTS.map((value) => (
-              <button key={value} type="button" aria-pressed={value === props.percent} onClick={() => props.onPercent(value)} className={chip(value === props.percent)}>
-                {value === 100 ? "Max" : `${value}%`}
-              </button>
-            ))}
+          <div className="mt-2">
+            <PercentChoice label="Amount to withdraw" value={props.percent} onChange={props.onPercent} />
           </div>
           <p className="mt-2 text-sm text-muted">Your deposit: {musd(props.data.snapshot.dashboard.sp.deposit)}</p>
         </fieldset>

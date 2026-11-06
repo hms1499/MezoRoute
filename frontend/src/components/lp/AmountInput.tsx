@@ -2,6 +2,7 @@ import { formatUnits } from "viem";
 import { formatToken } from "@/lib/format";
 import type { EntryAsset } from "@/lib/routes/musd-btc-lp/asset";
 import { cx } from "@/lib/ui/cx";
+import { MaxButton } from "@/components/ui/MaxButton";
 import { AssetSwitch } from "./AssetSwitch";
 
 /**
@@ -37,7 +38,7 @@ export function AmountInput({
         </label>
         {onAsset && <AssetSwitch asset={asset} onChange={onAsset} />}
       </div>
-      <div className="flex min-h-12 items-center gap-2 rounded-xl border border-line bg-well px-3 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20">
+      <div className="flex min-h-12 items-center gap-2 rounded-inset border border-line bg-well px-3 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20">
         <input
           id="amount"
           inputMode="decimal"
@@ -49,13 +50,7 @@ export function AmountInput({
           className="min-w-0 flex-1 bg-transparent py-2 text-xl font-semibold outline-none placeholder:text-muted/60"
         />
         <span className="text-sm text-muted">{unit}</span>
-        <button
-          type="button"
-          onClick={() => onAmount(formatUnits(max, 18))}
-          className="min-h-9 rounded-full bg-accent-soft px-3 text-xs font-semibold text-accent hover:bg-accent-tint"
-        >
-          Max
-        </button>
+        <MaxButton onClick={() => onAmount(formatUnits(max, 18))} />
       </div>
       <p id="amount-help" className="text-xs text-muted">
         {maxLabel}: {asset === "btc" ? formatToken(balance, 18, 6) : formatToken(balance, 18, 2)} {unit}

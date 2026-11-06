@@ -93,7 +93,7 @@ export function GaugeCard({ account, lp, data, gauge }: { account: Address; lp: 
         </Notice>
       )}
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button disabled={claim !== null || busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim}>
+        <Button variant="secondary" disabled={claim !== null || busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim}>
           Claim MEZO
         </Button>
         {gauge.staked > 0n && (

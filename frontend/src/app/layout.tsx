@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import type { ReactNode } from "react";
 import { THEME_INIT_SCRIPT } from "@/lib/ui/theme";
 import ClientProviders from "./client-providers";
 import "./globals.css";
 
-// Downloaded at build time and served from the export (no runtime request to Google).
-const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
-// The landing's figures and labels (U2); self-hosted by next/font like Inter.
-const mono = JetBrains_Mono({ subsets: ["latin"], display: "swap", variable: "--font-mono" });
+// U11: one font for the whole app, Geist Mono (OFL, src/fonts/OFL.txt), self-hosted because next/font/google in
+// Next 14.2.35 has no Geist Mono. The variable file carries every weight the type roles use (300 to 600).
+const geistMono = localFont({
+  src: "../fonts/GeistMono-Variable.woff2",
+  variable: "--font-geist-mono",
+  display: "swap",
+  weight: "100 900",
+});
 
 export const metadata: Metadata = {
   title: "MezoRoute",
@@ -18,7 +22,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     // The head script sets data-theme before React hydrates, hence suppressHydrationWarning (U9).
-    <html lang="en" className={`${inter.variable} ${mono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={geistMono.variable} suppressHydrationWarning>
       <head>
         {/* Before the body paints, so a stored dark theme never flashes light. Light is the CSS default. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />

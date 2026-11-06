@@ -12,8 +12,8 @@ export function MainnetBanner() {
   const { network } = useNetwork();
   if (network.id !== "mainnet") return null;
   return (
-    <p role="note" className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-warning-bg px-4 py-2 text-xs text-warning-ink">
-      <span className="inline-flex items-center gap-1.5 font-medium">
+    <p role="note" className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-inset bg-warning-bg px-4 py-2 text-xs text-warning-ink">
+      <span className="inline-flex items-center gap-2 font-medium">
         <ShieldAlert aria-hidden className="h-4 w-4" />
         Unaudited · max 1,000 MUSD per transaction
       </span>
@@ -22,7 +22,7 @@ export function MainnetBanner() {
           href={explorerAddressUrl(network, network.executor.address)}
           target="_blank"
           rel="noreferrer"
-          className="underline underline-offset-2 hover:no-underline"
+          className="hit underline underline-offset-2 hover:no-underline"
         >
           Verified contract
         </a>

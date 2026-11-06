@@ -21,6 +21,10 @@ export type Palette = {
   btc: string;
   danger: string;
   warning: string;
+  /** U11 §5.5: a signed gain (always with a + sign), kept apart from the accent. */
+  positive: string;
+  /** U11 §5.5: a signed loss; `danger`'s hue under its own name (danger stays for errors and destructive actions). */
+  negative: string;
   /** The landing's glow behind the hero and the final CTA. */
   glow: string;
   /** A selected option's pill (network, theme): `line` in dark, lighter in light so accent text passes. */
@@ -46,6 +50,8 @@ export const palettes: Record<Theme, Palette> = {
     btc: "#B03A0B",
     danger: "#B91C1C",
     warning: "#92400E",
+    positive: "#15803D",
+    negative: "#B91C1C",
     glow: "#D3EBE5",
     // U9 audit: accent on `line` is 4.08:1 and accent over a 10% accent wash 4.30:1 in light.
     selected: "#E2EFEE",
@@ -66,6 +72,8 @@ export const palettes: Record<Theme, Palette> = {
     btc: "#FB923C",
     danger: "#F87171",
     warning: "#FCD34D",
+    positive: "#4ADE80",
+    negative: "#F87171",
     glow: "#123B3A",
     selected: "#222B2D",
     accentTint: 0.1,
@@ -94,6 +102,8 @@ export const COLOR_VARS = {
   "btc-soft": (p: Palette) => soft(p.btc, p),
   danger: (p: Palette) => p.danger,
   "danger-soft": (p: Palette) => soft(p.danger, p),
+  positive: (p: Palette) => p.positive,
+  negative: (p: Palette) => p.negative,
   "warning-ink": (p: Palette) => p.warning,
   "warning-bg": (p: Palette) => soft(p.warning, p),
   glow: (p: Palette) => p.glow,
@@ -149,6 +159,8 @@ export const colors = {
   sp: { DEFAULT: tw("sp"), soft: tw("sp-soft") },
   warning: { bg: tw("warning-bg"), ink: tw("warning-ink") },
   danger: { DEFAULT: tw("danger"), soft: tw("danger-soft") },
+  positive: tw("positive"),
+  negative: tw("negative"),
   // Marks BTC-exposure figures and badges only; never a button colour.
   btc: { DEFAULT: tw("btc"), soft: tw("btc-soft") },
   // U2 landing names, kept as aliases of the same variables.
@@ -187,10 +199,41 @@ export const fontSize: Record<FontSizeKey, [size: string, meta: TypeMeta]> = {
   headline: ["24px", { lineHeight: "32px", fontWeight: "600", letterSpacing: TIGHT }],
   title: ["28px", { lineHeight: "34px", fontWeight: "600", letterSpacing: TIGHT }],
   figure: ["28px", { lineHeight: "32px", fontWeight: "500", letterSpacing: TIGHT }],
-  // U10: light display type, as on morpho.org (Inter is a variable font, so 300 costs no download).
+  // U10: light display type, as on morpho.org (Geist Mono is a variable font, so 300 costs no download).
   display: ["40px", { lineHeight: "48px", fontWeight: "300", letterSpacing: "-0.02em" }],
   "display-lg": ["48px", { lineHeight: "52px", fontWeight: "300", letterSpacing: "-0.02em" }],
 };
+
+// U11 §5.3: the one radius scale; it replaces Tailwind's, so an off-scale class such as `rounded-xl` does not exist
+// (radius-guard.test.ts). `full` is an alias of `pill`.
+export const radius = { none: "0px", tip: "8px", inset: "12px", card: "16px", pill: "9999px", full: "9999px" } as const;
+
+// U11 §5.2: each type step's role, so one figure reads the same wherever it appears (DESIGN.md mirrors this).
+export const TYPE_ROLES = {
+  pageTitle: "text-title",
+  landingSection: "text-headline",
+  cardTitle: "text-base font-semibold",
+  keyFigure: "text-figure",
+  figure: "text-xl font-medium",
+  body: "text-sm",
+  label: "text-sm font-medium",
+  caption: "text-xs",
+} as const;
+
+// U11 §5.6: one shadow, for floating layers only (popovers, menus, toasts); cards stay flat (U3).
+export const boxShadow = { none: "none", overlay: "0 12px 32px -12px rgb(0 0 0 / 0.28)" } as const;
+
+// U11 §5.4: the control table (visual height, horizontal padding, text step). Every control also carries `.hit`.
+export const CONTROL = {
+  lg: { h: 44, px: 20, text: "sm" },
+  md: { h: 36, px: 16, text: "sm" },
+  sm: { h: 28, px: 12, text: "xs" },
+  icon: { h: 36, w: 36 },
+} as const;
+
+// U11 §5.3: spacing steps in units of 4 px (0.5 = 2 px is the one half step). spacing-guard.test.ts holds padding,
+// margin, gap, and space-* to these; Tailwind's own spacing theme stays whole because sizing classes share it.
+export const SPACING_STEPS = [0, 0.5, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24] as const;
 
 /** SVG chart text (axis, values, bands): the scale's floor. */
 export const CHART_FONT_PX = 12;
@@ -209,6 +252,8 @@ export function textPairs(p: Palette): [name: string, foreground: string, backgr
     btc: p.btc,
     danger: p.danger,
     warning: p.warning,
+    positive: p.positive,
+    negative: p.negative,
   };
   return [
     ...Object.entries(foregrounds).flatMap(([fg, fgHex]) =>

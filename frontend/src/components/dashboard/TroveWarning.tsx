@@ -9,8 +9,8 @@ export function TroveWarning({ warning }: { warning: Warning }) {
       tone={warning.tone}
       role="alert"
       action={
-        <a href="#exposure" className={buttonClass("secondary", "sm")}>
-          <ButtonContent variant="secondary" size="sm">
+        <a href="#exposure" className={buttonClass("secondary", "md")}>
+          <ButtonContent variant="secondary" size="md">
             Review exposure
           </ButtonContent>
         </a>

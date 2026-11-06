@@ -1,6 +1,5 @@
 "use client";
 
-import { useBitcoinAccount } from "@mezo-org/passport";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { Badge } from "@/components/ui/Badge";
@@ -12,9 +11,9 @@ import { useNetwork } from "@/lib/config/network-context";
 import { writeBlocker, writeBlockerMessage } from "@/lib/config/write-gate";
 import { readinessCopy, type Readiness, type ReadinessCopy } from "@/lib/dashboard/readiness";
 import type { DashboardData } from "@/lib/dashboard/useDashboardSnapshot";
-import { formatToken, shortAddress } from "@/lib/format";
+import { formatToken } from "@/lib/format";
 import { isOrangeKitConnector, type WalletKind } from "@/lib/wallet/capabilities";
-import { walletKindLabel, walletKindNote } from "@/lib/wallet/labels";
+import { walletKindNote } from "@/lib/wallet/labels";
 
 const BADGE_TONE: Record<ReadinessCopy["tone"], "accent" | "warning" | "neutral"> = {
   positive: "accent",
@@ -36,7 +35,6 @@ export function ReadinessCard({
 }) {
   const { network } = useNetwork();
   const { connector, chainId } = useAccount();
-  const { btcAddress } = useBitcoinAccount();
   const bitcoinWallet = connector ? isOrangeKitConnector(connector) : false;
   const copy = readinessCopy(readiness, { musd: data.snapshot.musd, walletKind, network });
   // The wrong-chain case has its own alert above the dashboard.
@@ -60,9 +58,6 @@ export function ReadinessCard({
         {readiness.state === "can-borrow" && network.executor && <ButtonLink href="/route/lp/?mode=borrow" arrow>Borrow & Deploy</ButtonLink>}
       </div>
       <p className="mt-4 flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-line pt-3 text-xs text-muted">
-        <span title={btcAddress ?? account}>
-          {connector?.name ?? "Wallet"} · {walletKindLabel(walletKind, bitcoinWallet)} · {shortAddress(account)}
-        </span>
         <span className="flex flex-wrap gap-x-4">
           <span>
             <Term id="musd">MUSD</Term> in wallet {formatToken(data.snapshot.musd, 18, 2)}

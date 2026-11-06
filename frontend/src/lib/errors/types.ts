@@ -56,7 +56,13 @@ export type ErrorKind =
   | "unknown";
 
 /** A user-facing outcome: always one of the fixed messages, never raw error text. */
-export type Outcome = { kind: ErrorKind; message: string; recovery: Recovery[] };
+export type Outcome = {
+  kind: ErrorKind;
+  message: string;
+  recovery: Recovery[];
+  /** U11 §5.5: how the outcome reads; default danger. "Nothing to do" states are neutral. */
+  tone?: "neutral" | "danger";
+};
 
 /** `details` is what "Copy details" copies; `hash` is set when a transaction was submitted. */
 export type DecodedError = Outcome & { details?: string; hash?: Hash };

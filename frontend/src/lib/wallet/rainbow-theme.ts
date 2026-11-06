@@ -1,7 +1,7 @@
 import { cssStringFromTheme, darkTheme, lightTheme, type Theme } from "@rainbow-me/rainbowkit";
 import { palettes } from "@/lib/ui/tokens";
 
-const fonts = { body: "var(--font-inter), ui-sans-serif, system-ui, sans-serif" };
+const fonts = { body: "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace" };
 
 /**
  * Today's modal in dark mode, unchanged (U9): RainbowKit's own dark colours with the app's accent, radius,

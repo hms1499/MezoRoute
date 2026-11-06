@@ -157,7 +157,7 @@ export const LP_CHANGED: Outcome = {
   recovery: ["reduce-amount"],
 };
 
-export const NOTHING_TO_CLAIM: Outcome = { kind: "nothing-to-claim", message: "You have no fees to claim yet.", recovery: [] };
+export const NOTHING_TO_CLAIM: Outcome = { kind: "nothing-to-claim", message: "You have no fees to claim yet.", recovery: [], tone: "neutral" };
 
 // Stability Pool (F5); the blocked-withdrawal message is PRODUCT_SPEC §13's.
 export const SP_WITHDRAW_BLOCKED: Outcome = {

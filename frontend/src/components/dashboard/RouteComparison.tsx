@@ -7,6 +7,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { RiskList } from "@/components/ui/RiskList";
+import { Segmented } from "@/components/ui/Segmented";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
 import { compareRoutes } from "@/lib/compare/comparison";
@@ -24,7 +25,8 @@ import { LP_RETURN_SOURCE, LP_RISKS, SP_RETURN_SOURCE, SP_RISKS } from "@/lib/ro
 import { entryQuery } from "@/lib/routes/musd-btc-lp/intent";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
 import { cx } from "@/lib/ui/cx";
-import { lpAmountRows, lpFee, lpGaugeRows, spAmountRows, spSourceNote, type Row } from "./compare-rows";
+import { lpAmountRows, lpFee, lpGaugeRows, spAmountRows, spSourceNote, subToneClass, type Row } from "./compare-rows";
+import { signedTone } from "@/lib/ui/signed";
 import { Settle } from "@/components/ui/Settle";
 
 const FOOTNOTE =
@@ -66,6 +68,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
       label: `${formatToken(backtestAmount, 18, 2)} MUSD ${backtests ? `on ${windowDate(backtests.pastTime)}` : "30 days ago"}`,
       value: pending(() => (value === null ? "Unavailable" : `${musd(value)} today`)),
       sub: value === null ? undefined : signedChange(value, backtestAmount),
+      subTone: value === null ? null : signedTone(value - backtestAmount),
     };
   };
 
@@ -123,7 +126,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
         <Notice
           className="mt-4"
           action={
-            <Button size="sm" variant="secondary" onClick={retry}>
+            <Button size="md" variant="secondary" onClick={retry}>
               Retry
             </Button>
           }
@@ -172,7 +175,9 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
           <span aria-hidden />
           {routes.map((route) => (
             <div key={route.id} role="cell">
-              <ButtonLink href={route.href} arrow>{route.cta}</ButtonLink>
+              <ButtonLink href={route.href} variant="secondary" arrow>
+                {route.cta}
+              </ButtonLink>
             </div>
           ))}
         </div>
@@ -180,22 +185,15 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
 
       {/* Below 640 px: one route at a time. */}
       <div className="mt-4 sm:hidden">
-        <div role="tablist" aria-label="Routes" className="flex rounded-full bg-well p-1 text-sm font-medium">
-          {routes.map((route) => (
-            <button
-              key={route.id}
-              type="button"
-              role="tab"
-              id={`tab-${route.id}`}
-              aria-selected={tab === route.id}
-              aria-controls={`panel-${route.id}`}
-              onClick={() => setTab(route.id)}
-              className={cx("min-h-10 flex-1 rounded-full px-3 transition-colors", tab === route.id ? "bg-line text-ink" : "text-muted")}
-            >
-              {route.title}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          label="Routes"
+          semantics="tabs"
+          size="sm"
+          fill
+          options={routes.map((route) => ({ value: route.id, label: route.title, id: `tab-${route.id}`, controls: `panel-${route.id}` }))}
+          value={tab}
+          onChange={setTab}
+        />
         {routes.map((route) => (
           <div key={route.id} role="tabpanel" id={`panel-${route.id}`} aria-labelledby={`tab-${route.id}`} hidden={tab !== route.id} className="mt-4">
             <p className="text-sm text-muted">
@@ -215,7 +213,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
                   </dt>
                   <dd className="[overflow-wrap:anywhere]">
                     {row.value}
-                    {row.sub && <span className="block text-xs text-muted">{row.sub}</span>}
+                    {row.sub && <span className={cx("block text-sm", subToneClass(row.subTone))}>{row.sub}</span>}
                   </dd>
                 </div>
               ))}
@@ -223,13 +221,13 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
             <div className="mt-4">
               <RiskList risks={route.risks} />
             </div>
-            <ButtonLink href={route.href} className="mt-4 w-full" arrow>
+            <ButtonLink href={route.href} variant="secondary" className="mt-4 w-full" arrow>
               {route.cta}
             </ButtonLink>
           </div>
         ))}
       </div>
-      <p className="mt-4 text-xs leading-relaxed text-muted">{FOOTNOTE}</p>
+      <p className="mt-4 text-sm leading-relaxed text-muted">{FOOTNOTE}</p>
     </Card>
   );
 }
@@ -246,7 +244,7 @@ function Cell({ row }: { row: Row | undefined }) {
   return (
     <div role="cell" className="min-w-0 [overflow-wrap:anywhere]">
       {row.value}
-      {row.sub && <span className="block text-xs text-muted">{row.sub}</span>}
+      {row.sub && <span className={cx("block text-sm", subToneClass(row.subTone))}>{row.sub}</span>}
     </div>
   );
 }

@@ -37,7 +37,7 @@ export function HeroChart({ sim, highlight, className }: { sim: LandingSimulatio
 function Caption({ route, on, children }: { route: "lp" | "sp"; on: boolean; children: string }) {
   return (
     <li className={cx("flex items-start gap-2", on && "text-ink")}>
-      <span aria-hidden className={cx("mt-1.5 h-2 w-2 shrink-0 rounded-full", route === "lp" ? "bg-accent" : "bg-sp")} />
+      <span aria-hidden className={cx("mt-1 h-2 w-2 shrink-0 rounded-full", route === "lp" ? "bg-accent" : "bg-sp")} />
       {children}
     </li>
   );

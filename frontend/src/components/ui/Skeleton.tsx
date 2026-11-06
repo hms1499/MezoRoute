@@ -6,7 +6,7 @@ export function Skeleton({ className }: { className?: string }) {
     <span
       aria-hidden
       className={cx(
-        "block rounded-lg bg-line motion-safe:animate-breathe",
+        "block rounded-tip bg-line motion-safe:animate-breathe",
         className,
       )}
     />

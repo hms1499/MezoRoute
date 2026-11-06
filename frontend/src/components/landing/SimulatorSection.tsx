@@ -40,7 +40,7 @@ export function SimulatorSection({
   }
 
   return (
-    <section id="simulator" aria-label="Try an amount" className="grid grid-cols-1 pb-14 pt-10 items-start gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
+    <section id="simulator" aria-label="Try an amount" className="grid grid-cols-1 pb-16 pt-10 items-start gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
       <HeroChart sim={sim} highlight={highlight} className="order-2 lg:order-1" />
       <div className="order-1 lg:order-2">
         <Simulator text={text} onText={onText} amount={amount} amountError={amountError} sim={sim} error={error} onHighlight={onHighlight} />

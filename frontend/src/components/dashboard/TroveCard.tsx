@@ -39,7 +39,7 @@ export function TroveCard({
           </>
         }>
         <p className="mt-2 text-sm text-muted">No open Trove.</p>
-        <ButtonLink href={network.mezoAppUrl} external variant="secondary" size="sm" className="mt-4">
+        <ButtonLink href={network.mezoAppUrl} external variant="secondary" size="md" className="mt-4">
           Open Mezo app
         </ButtonLink>
       </Card>

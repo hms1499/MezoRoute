@@ -81,7 +81,7 @@ export function Simulator({
               aria-pressed={on}
               onClick={() => onText(preset.toString())}
               className={cx(
-                "landing-control landing-control--compact landing-control--pill px-3.5 font-mono text-xs",
+                "hit landing-control landing-control--compact landing-control--pill px-4 font-mono text-xs",
                 on ? "border-night-lp text-night-lp" : "border-night-line text-night-muted hover:text-night-ink",
               )}
             >
@@ -112,27 +112,27 @@ export function Simulator({
             <tbody>
               {simulatorRows(sim).map((row) => (
                 <tr key={row.label} className="border-t border-night-line max-sm:grid max-sm:grid-cols-2">
-                  <th scope="row" className="py-2.5 pr-2 text-left font-normal text-night-muted max-sm:col-span-2 max-sm:pb-0">
+                  <th scope="row" className="py-3 pr-2 text-left font-normal text-night-muted max-sm:col-span-2 max-sm:pb-0">
                     {row.label}
                   </th>
-                  <td className={cx("py-2.5 pl-2 text-right break-words max-sm:pl-0 max-sm:text-left max-sm:pt-1", row.lpTone === "btc" ? "text-btc" : "text-night-ink")} {...column("lp")}>
+                  <td className={cx("py-3 pl-2 text-right break-words max-sm:pl-0 max-sm:text-left max-sm:pt-1", row.lpTone === "btc" ? "text-btc" : "text-night-ink")} {...column("lp")}>
                     <Cell cell={row.lp} />
                   </td>
-                  <td className="py-2.5 pl-2 text-right text-night-ink break-words max-sm:pt-1" {...column("sp")}>
+                  <td className="py-3 pl-2 text-right text-night-ink break-words max-sm:pt-1" {...column("sp")}>
                     <Cell cell={row.sp} />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <ul id="simulator-notes" className="mt-3 space-y-1 text-xs leading-relaxed text-night-muted">
+          <ul id="simulator-notes" className="mt-3 space-y-1 text-sm leading-relaxed text-night-muted">
             {simulatorNotes(sim, network.id).map((note) => (
               <li key={note}>{note}</li>
             ))}
           </ul>
         </Settle>
       ) : error ? (
-        <div role="status" className="mt-4 flex min-h-[16rem] flex-col justify-center rounded-xl border border-night-line p-4 text-sm">
+        <div role="status" className="mt-4 flex min-h-[16rem] flex-col justify-center rounded-inset border border-night-line p-4 text-sm">
           <p className="font-semibold text-night-ink">Live data unavailable</p>
           <p id="simulator-notes" className="mt-1 text-night-muted">
             Mezo mainnet could not be read just now. Connect a wallet to compare the routes on your network.
@@ -175,7 +175,7 @@ function Cell({ cell }: { cell: SimCell }) {
 function CountingFigure({ value, format }: { value: bigint; format: (value: bigint) => string }) {
   const shown = useCountUp(value);
   return (
-    <span key={value.toString()} className="landing-flash rounded px-0.5 font-mono text-sm">
+    <span key={value.toString()} className="landing-flash rounded-tip px-0.5 font-mono text-sm">
       {format(shown)}
     </span>
   );

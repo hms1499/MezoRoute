@@ -42,7 +42,7 @@ export function RouteSection({ copy, onHighlight }: { copy: RouteSectionCopy; on
           ))}
         </div>
         <p className="mt-3 text-xs text-muted">{copy.txs}</p>
-        <a href="#simulator" className={buttonClass("secondary", "md", "mt-6", true)}>
+        <a href="#simulator" className={buttonClass("secondary", "lg", "mt-6", true)}>
           <ButtonContent variant="secondary" arrow>
             Compare routes
           </ButtonContent>

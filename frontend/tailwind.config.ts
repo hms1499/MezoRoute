@@ -1,21 +1,28 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 import { MOTION_ANIMATIONS, MOTION_KEYFRAMES, MOTION_MS, motionVariables } from "./src/lib/ui/motion";
-import { colors, fontSize, themeVariables } from "./src/lib/ui/tokens";
+import { boxShadow, colors, fontSize, radius, themeVariables } from "./src/lib/ui/tokens";
 
 // Two palettes (U9), U3 roles: teal for actions and the LP route, lavender for the Stability Pool, orange only for
 // BTC exposure. Colours are CSS variables that the plugin below writes from tokens.ts: light on :root, dark under
 // <html data-theme="dark">.
+const GEIST_MONO = ["var(--font-geist-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"];
+
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     // U6: replaces Tailwind's sizes, so an off-scale class such as `text-lg` does not exist (typography.test.ts names it).
     fontSize,
+    // U11: replaces Tailwind's radii (tip 8, inset 12, card 16, pill); radius-guard.test.ts names any other.
+    borderRadius: radius,
+    // U11: one shadow token for overlays; shadow-guard.test.ts names any other.
+    boxShadow,
     extend: {
       colors,
       fontFamily: {
-        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
+        // U11: one family; `font-sans` and `font-mono` stay as names so existing classes keep working.
+        sans: GEIST_MONO,
+        mono: GEIST_MONO,
       },
       backgroundImage: {
         "night-glow": "radial-gradient(1100px 520px at 25% -5%, rgb(var(--color-glow)) 0%, rgb(var(--color-canvas)) 62%)",

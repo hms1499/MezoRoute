@@ -1,6 +1,8 @@
 import { TriangleAlert } from "lucide-react";
 import { BtcMoveChart, type MovePlot } from "@/components/chart/BtcMoveChart";
 import { Card } from "@/components/ui/Card";
+import { tableClass, thClass } from "@/components/ui/DataTable";
+import { cx } from "@/lib/ui/cx";
 import { Notice } from "@/components/ui/Notice";
 import { Stat } from "@/components/ui/Stat";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
@@ -97,28 +99,28 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
           <summary className="inline-flex min-h-9 cursor-pointer items-center rounded-full font-medium text-accent hover:underline">Show figures</summary>
           <div className="mt-2 overflow-x-auto">
             {/* One row per drop and one column per figure, so the table fits the dashboard's side column. */}
-            <table className="w-full text-xs">
+            <table className={tableClass(true)}>
               <caption className="sr-only">Values if the BTC price drops</caption>
               <thead>
-                <tr className="border-b border-line text-muted">
-                  <th scope="col" className="py-2 pr-2 text-left font-medium">
+                <tr>
+                  <th scope="col" className={cx(thClass("left", true), "pr-2")}>
                     BTC drop
                   </th>
-                  <th scope="col" className="px-1.5 py-2 text-right font-medium">
+                  <th scope="col" className={cx(thClass("right", true), "px-2")}>
                     BTC price
                   </th>
                   {hasTrove && (
-                    <th scope="col" className="px-1.5 py-2 text-right font-medium">
+                    <th scope="col" className={cx(thClass("right", true), "px-2")}>
                       Trove CR
                     </th>
                   )}
                   {hasLp && (
-                    <th scope="col" className="px-1.5 py-2 text-right font-medium">
+                    <th scope="col" className={cx(thClass("right", true), "px-2")}>
                       LP value
                     </th>
                   )}
                   {hasSp && (
-                    <th scope="col" className="py-2 pl-1.5 text-right font-medium">
+                    <th scope="col" className={cx(thClass("right", true), "pl-2")}>
                       SP value
                     </th>
                   )}
@@ -130,10 +132,10 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
                     <th scope="row" className="py-2 pr-2 text-left font-normal text-muted">
                       {row.label}
                     </th>
-                    <td className="px-1.5 py-2 text-right">{price(row.price)}</td>
+                    <td className="px-2 py-2 text-right">{price(row.price)}</td>
                     {hasTrove && <CrCell cr={row.cr} liquidatable={row.liquidatable} />}
-                    {hasLp && <td className="px-1.5 py-2 text-right">{musd(row.lpValue)}</td>}
-                    {hasSp && <td className="py-2 pl-1.5 text-right">{musd(row.spValue)}</td>}
+                    {hasLp && <td className="px-2 py-2 text-right">{musd(row.lpValue)}</td>}
+                    {hasSp && <td className="py-2 pl-2 text-right">{musd(row.spValue)}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -142,20 +144,20 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
         </details>
       </BtcMoveChart>
       {rows.some((row) => row.liquidatable) && (
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-danger">
+        <p className="mt-2 flex items-center gap-2 text-xs text-danger">
           <TriangleAlert aria-hidden className="h-3.5 w-3.5 shrink-0" />
           Liquidatable: below the {formatPercent(mcr, 0)} minimum collateral ratio
         </p>
       )}
-      <p className="mt-3 text-xs leading-relaxed text-muted">{FOOTNOTE}</p>
+      <p className="mt-3 text-sm leading-relaxed text-muted">{FOOTNOTE}</p>
     </Card>
   );
 }
 
 function CrCell({ cr, liquidatable }: { cr: bigint | null; liquidatable: boolean }) {
-  if (cr === null) return <td className="px-1.5 py-2 text-right">—</td>;
+  if (cr === null) return <td className="px-2 py-2 text-right">—</td>;
   return (
-    <td className={liquidatable ? "bg-danger-soft px-1.5 py-2 text-right font-semibold text-danger" : "px-1.5 py-2 text-right"}>
+    <td className={liquidatable ? "bg-danger-soft px-2 py-2 text-right font-semibold text-danger" : "px-2 py-2 text-right"}>
       <span className="inline-flex items-center gap-1">
         {liquidatable && <TriangleAlert aria-hidden className="h-3.5 w-3.5 shrink-0" />}
         {formatPercent(cr)}
