@@ -52,13 +52,13 @@ export function Header() {
           account ? (
             // One line at 360 px: the header squeezed the label onto two (U7); tighter padding below 640 px
             // (here and in the nav and network switch) keeps that line inside the page.
-            <Button size="sm" variant="secondary" onClick={openAccountModal} className="shrink-0 whitespace-nowrap text-ink max-sm:px-2">
+            <Button size="md" variant="secondary" onClick={openAccountModal} className="shrink-0 whitespace-nowrap text-ink max-sm:px-2">
               <Wallet aria-hidden className="hidden h-3.5 w-3.5 text-accent sm:block" />
               <span className="sm:hidden">{`${account.address.slice(0, 4)}…${account.address.slice(-2)}`}</span>
               <span className="hidden sm:inline">{account.displayName}</span>
             </Button>
           ) : (
-            <Button size="sm" variant="nightOutline" disabled={!mounted} onClick={openConnectModal}>
+            <Button size="md" variant="nightOutline" disabled={!mounted} onClick={openConnectModal}>
               Connect
             </Button>
           )

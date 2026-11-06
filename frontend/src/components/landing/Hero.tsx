@@ -41,7 +41,7 @@ export function Hero({ data, error }: { data: MainnetReferenceData | undefined; 
             <div className="landing-rise mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center" style={delay(320)}>
               {/* With the arrow circle the full label wraps below 640 px. */}
               <ConnectCta variant="primary" className="w-full sm:w-auto" arrow label={<><span className="sm:hidden">Connect a wallet</span><span className="max-sm:hidden">Connect a Bitcoin or EVM wallet</span></>} />
-              <a href="#simulator" className={buttonClass("secondary", "md", "w-full sm:w-auto", true)}>
+              <a href="#simulator" className={buttonClass("secondary", "lg", "w-full sm:w-auto", true)}>
                 <ButtonContent variant="secondary" arrow>
                   Compare routes
                 </ButtonContent>

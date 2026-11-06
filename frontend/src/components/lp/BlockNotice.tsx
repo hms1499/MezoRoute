@@ -19,11 +19,11 @@ export function BlockNotice({ block, actions = [] }: { block: { outcome: Outcome
         <div className="flex flex-wrap gap-2">
           {actions.map((action) =>
             action.href ? (
-              <ButtonLink key={action.label} href={action.href} external variant="secondary" size="sm">
+              <ButtonLink key={action.label} href={action.href} external variant="secondary" size="md">
                 {action.label}
               </ButtonLink>
             ) : (
-              <Button key={action.label} variant="secondary" size="sm" onClick={action.onClick}>
+              <Button key={action.label} variant="secondary" size="md" onClick={action.onClick}>
                 {action.label}
               </Button>
             ),

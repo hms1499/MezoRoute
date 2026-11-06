@@ -28,9 +28,24 @@ describe("button style roles", () => {
     expect(buttonClass("nightGhost")).toContain("min-h-11");
   });
 
-  it("keeps compact buttons at least 36 px tall", () => {
-    expect(buttonClass("primary", "sm")).toContain("min-h-9");
-    expect(buttonClass("nightOutline", "sm")).toContain("min-h-9");
+  // U11 §5.4: three heights (44 / 36 / 28 px) and an icon size; lg is the default.
+  it("sizes are the spec's control table", () => {
+    expect(buttonClass("primary", "lg")).toContain("min-h-11 px-5 text-sm");
+    expect(buttonClass("primary")).toContain("min-h-11 px-5 text-sm");
+    expect(buttonClass("primary", "md")).toContain("min-h-9 px-4 text-sm");
+    expect(buttonClass("nightOutline", "md")).toContain("min-h-9 px-4 text-sm");
+    expect(buttonClass("primary", "sm")).toContain("min-h-7 px-3 text-xs");
+    expect(buttonClass("quiet", "icon")).toContain("h-9 w-9");
+  });
+
+  it("every button has a hit area", () => {
+    for (const size of ["lg", "md", "sm", "icon"] as const) expect(buttonClass("primary", size)).toMatch(/(^| )hit( |$)/);
+  });
+
+  it("only lg and md carry an arrow, in a 28 and a 24 px circle", () => {
+    expect(html(el(Button, { size: "sm", arrow: true }, "Go"))).not.toContain("btn-circle");
+    expect(html(el(Button, { size: "lg", arrow: true }, "Go"))).toContain("btn-circle h-7 w-7");
+    expect(html(el(Button, { size: "md", arrow: true }, "Go"))).toContain("btn-circle h-6 w-6");
   });
 });
 
@@ -131,7 +146,7 @@ describe("pending button (U10)", () => {
 
 describe("icon sizes in buttons (U10 §8)", () => {
   it("sizes the arrow to the button", () => {
-    expect(html(el(Button, { arrow: true, size: "sm" }, "Go")).match(/btn-arrow h-3\.5 w-3\.5/g)).toHaveLength(2);
+    expect(html(el(Button, { arrow: true, size: "md" }, "Go")).match(/btn-arrow h-4 w-4/g)).toHaveLength(2);
     expect(html(el(Button, { arrow: true }, "Go")).match(/btn-arrow h-4 w-4/g)).toHaveLength(2);
   });
 

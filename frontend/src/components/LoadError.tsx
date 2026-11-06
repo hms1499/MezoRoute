@@ -13,7 +13,7 @@ export function LoadError({ error, onRetry }: { error: Error; onRetry: () => voi
       tone="danger"
       role="alert"
       action={
-        <Button size="sm" variant="secondary" onClick={onRetry}>
+        <Button size="md" variant="secondary" onClick={onRetry}>
           Retry
         </Button>
       }

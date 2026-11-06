@@ -60,7 +60,7 @@ export function ExitStepper({
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 empty:hidden">
         <BlockNotice block={block} />
         {stuck && (
-          <Button variant="ghost" size="sm" onClick={restart} className="ml-auto">
+          <Button variant="ghost" size="md" onClick={restart} className="ml-auto">
             Start over
           </Button>
         )}

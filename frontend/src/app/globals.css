@@ -199,6 +199,26 @@
   transform: translateY(-110%);
   opacity: 0;
 }
+/* U11 §5.4: every target is at least 24 × 24 px, and 44 × 44 px below 768 px, without growing what it looks like.
+   Inline targets (a Term or a link inside a sentence) do not take it. */
+.hit {
+  position: relative;
+}
+.hit::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 24px);
+  height: max(100%, 24px);
+  transform: translate(-50%, -50%);
+}
+@media (max-width: 767px) {
+  .hit::after {
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+}
 .btn-circle {
   position: relative;
   display: inline-grid;

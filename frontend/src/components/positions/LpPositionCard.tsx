@@ -69,7 +69,7 @@ function CostRows({ lp, history }: { lp: LpView; history: History }) {
     return (
       <Stat label="Cost basis">
         Unavailable{" "}
-        <Button size="sm" variant="ghost" onClick={history.retry}>
+        <Button size="md" variant="ghost" onClick={history.retry}>
           Retry
         </Button>
       </Stat>

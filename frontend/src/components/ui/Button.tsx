@@ -6,11 +6,13 @@ import { type Pending, pendingText } from "@/lib/ui/pending";
 import { DotWave } from "./DotWave";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "night" | "nightOutline" | "nightGhost" | "quiet";
-type Size = "md" | "sm" | "icon";
+// U11 §5.4: lg 44 px (the default), md 36 px, sm 28 px, icon 36 × 36 px; `CONTROL` in tokens.ts.
+export type ButtonSize = "lg" | "md" | "sm" | "icon";
+type Size = ButtonSize;
 
 // `btn` hooks the U10 roll and arrow rules in globals.css; the press scales under motion-safe only.
 const BASE =
-  "btn inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-[color,background-color,box-shadow,transform] duration-base motion-safe:active:scale-[0.97] aria-disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-50 [&[aria-disabled=true]:not([data-pending])]:cursor-not-allowed [&[aria-disabled=true]:not([data-pending])]:opacity-50 data-[pending]:cursor-progress";
+  "btn hit inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-[color,background-color,box-shadow,transform] duration-base motion-safe:active:scale-[0.97] aria-disabled:active:scale-100 disabled:cursor-not-allowed disabled:opacity-50 [&[aria-disabled=true]:not([data-pending])]:cursor-not-allowed [&[aria-disabled=true]:not([data-pending])]:opacity-50 data-[pending]:cursor-progress";
 const PRIMARY = "bg-accent text-onAccent hover:bg-accent-hover active:bg-accent-pressed";
 const OUTLINE = "ring-1 ring-inset";
 const GHOST = "text-accent hover:bg-accent-soft";
@@ -27,14 +29,15 @@ const VARIANTS: Record<ButtonVariant, string> = {
   // An outlined control that is not an action: the header's theme toggle (U9).
   quiet: `${OUTLINE} text-muted ring-line hover:text-ink`,
 };
-const SIZES: Record<Size, string> = { md: "min-h-11 px-5 text-sm", sm: "min-h-9 px-4 text-xs", icon: "h-9 w-9 shrink-0" };
+const SIZES: Record<Size, string> = { lg: "min-h-11 px-5 text-sm", md: "min-h-9 px-4 text-sm", sm: "min-h-7 px-3 text-xs", icon: "h-9 w-9 shrink-0" };
 // With the arrow circle the trailing padding shrinks so the circle sits inside the pill's curve (Morpho).
-const ARROW_SIZES: Record<Size, string> = { md: "min-h-11 pl-5 pr-1 text-sm", sm: "min-h-9 pl-4 pr-1 text-xs", icon: SIZES.icon };
+// The 28 px circle sits 8 px inside lg; md's 24 px circle gets 8 px too (6 px is off the spacing steps). sm has no arrow.
+const ARROW_SIZES: Record<Size, string> = { lg: "min-h-11 pl-5 pr-2 text-sm", md: "min-h-9 pl-4 pr-2 text-sm", sm: SIZES.sm, icon: SIZES.icon };
 // Filled buttons carry a light circle with an accent arrow; outlined and ghost ones an accent circle.
 const FILLED: ReadonlySet<ButtonVariant> = new Set(["primary", "night"]);
 
-export function buttonClass(variant: ButtonVariant = "primary", size: Size = "md", className?: string, arrow = false): string {
-  return cx(BASE, VARIANTS[variant], (arrow ? ARROW_SIZES : SIZES)[size], className);
+export function buttonClass(variant: ButtonVariant = "primary", size: Size = "lg", className?: string, arrow = false): string {
+  return cx(BASE, VARIANTS[variant], (arrow && size !== "sm" ? ARROW_SIZES : SIZES)[size], className);
 }
 
 type Common = { variant?: ButtonVariant; size?: Size; className?: string; children: ReactNode; arrow?: boolean };
@@ -48,7 +51,7 @@ export function ButtonContent({
   arrow = false,
   pending = null,
   variant = "primary",
-  size = "md",
+  size = "lg",
   children,
 }: {
   arrow?: boolean;
@@ -59,8 +62,8 @@ export function ButtonContent({
   children: ReactNode;
 }) {
   if (size === "icon") return <>{children}</>;
-  // U10 §8: icons follow the label (16 px next to md's 14 px text, 14 px next to sm's 12 px), written inline so
-  // icon-guard.test.ts can read them.
+  // U10 §8: icons follow the label (16 px next to lg's and md's 14 px text; sm, at 12 px, has no arrow circle),
+  // written inline so icon-guard.test.ts can read them.
   const status = pending ? pendingText(pending) : null;
   return (
     <>
@@ -76,19 +79,19 @@ export function ButtonContent({
           </span>
         )}
       </span>
-      {(arrow || pending) && (
+      {(arrow || pending) && size !== "sm" && (
         <span
-          className={cx("btn-circle", size === "sm" ? "h-7 w-7" : "h-8 w-8", FILLED.has(variant) ? "bg-onAccent text-accent" : "bg-accent text-onAccent")}
+          className={cx("btn-circle", size === "md" ? "h-6 w-6" : "h-7 w-7", FILLED.has(variant) ? "bg-onAccent text-accent" : "bg-accent text-onAccent")}
           aria-hidden="true"
         >
           {pending === "done" ? (
-            <Check key="done" aria-hidden className={cx(size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4", "motion-safe:animate-roll-in")} />
+            <Check key="done" aria-hidden className="h-4 w-4 motion-safe:animate-roll-in" />
           ) : pending ? (
             <DotWave key="wave" />
           ) : (
             <>
-              <ArrowRight aria-hidden className={cx("btn-arrow", size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4")} />
-              <ArrowRight aria-hidden className={cx("btn-arrow", size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4")} />
+              <ArrowRight aria-hidden className="btn-arrow h-4 w-4" />
+              <ArrowRight aria-hidden className="btn-arrow h-4 w-4" />
             </>
           )}
         </span>

@@ -18,7 +18,7 @@ export function WrongNetworkAlert() {
       role="alert"
       action={
         <Button
-          size="sm"
+          size="md"
           pending={isPending ? "busy" : null}
           onClick={() => switchChain({ chainId: network.chainId }, { onError: (error) => showError(error) })}
         >

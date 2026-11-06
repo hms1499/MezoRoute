@@ -27,7 +27,7 @@ export function MainnetReferenceCard() {
         <Notice
           className="mt-3"
           action={
-            <Button size="sm" variant="secondary" onClick={retry}>
+            <Button size="md" variant="secondary" onClick={retry}>
               Retry
             </Button>
           }

@@ -123,7 +123,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
         <Notice
           className="mt-4"
           action={
-            <Button size="sm" variant="secondary" onClick={retry}>
+            <Button size="md" variant="secondary" onClick={retry}>
               Retry
             </Button>
           }

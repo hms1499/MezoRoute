@@ -22,7 +22,7 @@ export function MainnetBanner() {
           href={explorerAddressUrl(network, network.executor.address)}
           target="_blank"
           rel="noreferrer"
-          className="underline underline-offset-2 hover:no-underline"
+          className="hit underline underline-offset-2 hover:no-underline"
         >
           Verified contract
         </a>
