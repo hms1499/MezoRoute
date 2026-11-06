@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { GAUGE_READ_FAILED_POSITIONS } from "@/lib/gauge/copy";
+import { GAUGE_READ_FAILED_POSITIONS, GAUGE_READ_FAILED_RETRY, GAUGE_READ_FAILED_SUMMARY } from "@/lib/gauge/copy";
 import { PositionsTable } from "./PositionsTable";
 import { RewardsCard, type RewardsCardProps } from "./RewardsCard";
 
@@ -70,5 +70,26 @@ describe("PositionsTable", () => {
 
   it("lets each row expand to its details", () => {
     expect(out).toMatch(/aria-expanded="false"/);
+  });
+});
+
+// Final review: a failed gauge read must not state "0 staked" or "no positions" as a fact (Review Focus 3).
+describe("PositionsTable with a failed gauge read", () => {
+  it("captions the LP row as unreadable instead of 0 staked", () => {
+    const out = renderToStaticMarkup(
+      createElement(PositionsTable, {
+        lp: { amount: E18 / 1000n, staked: 0n, wallet: E18 / 1000n, value: E18, earning: "Swap fees", exitHref: "/x", details: null },
+        sp: null,
+        gaugeReadFailed: true,
+      }),
+    );
+    expect(out).toContain(GAUGE_READ_FAILED_SUMMARY);
+    expect(out).not.toContain("0 staked");
+  });
+
+  it("does not say there are no positions", () => {
+    const out = renderToStaticMarkup(createElement(PositionsTable, { lp: null, sp: null, gaugeReadFailed: true }));
+    expect(out).not.toMatch(/No positions/);
+    expect(out).toContain(GAUGE_READ_FAILED_RETRY);
   });
 });

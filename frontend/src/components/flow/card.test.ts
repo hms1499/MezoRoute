@@ -66,3 +66,12 @@ describe("FlowColumn", () => {
     expect(out).toContain("mx-auto");
   });
 });
+
+// Final review: the trigger wraps under the tabs at 360 px; it must stay at the card's right edge, or the right-anchored
+// panel opens past the left of the screen.
+describe("SlippagePopover placement", () => {
+  it("keeps its root right-aligned when the settings row wraps", () => {
+    const out = renderToStaticMarkup(createElement(SlippagePopover, { slippageBps: 100n, onChange: () => undefined }));
+    expect(out).toMatch(/^<div class="[^"]*\bml-auto\b/);
+  });
+});

@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { DataTable } from "@/components/ui/DataTable";
 import { PairIcon, TokenIcon } from "@/components/ui/TokenIcon";
 import { formatToken } from "@/lib/format";
+import { GAUGE_READ_FAILED_RETRY } from "@/lib/gauge/copy";
 
 // U11 §6.3: "Your positions". The LP is one row (wallet + staked, split in a caption), the Stability Pool and an open
 // Trove follow; each row's action is secondary. No positions gives one neutral row.
@@ -17,7 +18,10 @@ export function YourPositionsTable({
   lp,
   sp,
   trove,
+  gaugeReadFailed = false,
 }: {
+  /** Staked LP could not be read: an all-staked account then has no LP row, which must not read as "no positions". */
+  gaugeReadFailed?: boolean;
   /** null when the account holds no LP; `value` null while it loads. `note` replaces the caption (gauge unreadable). */
   lp: { value: bigint | null; staked: bigint; wallet: bigint; earning: string; note: string | null } | null;
   sp: { value: bigint } | null;
@@ -54,7 +58,7 @@ export function YourPositionsTable({
           caption="Your positions"
           rows={rows}
           rowKey={(row) => row.key}
-          empty="No positions yet. Pick a route to put your MUSD to work."
+          empty={gaugeReadFailed ? GAUGE_READ_FAILED_RETRY : "No positions yet. Pick a route to put your MUSD to work."}
           columns={[
             {
               key: "position",

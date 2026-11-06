@@ -160,6 +160,7 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
           lp={lpRow}
           sp={pool && !pool.empty ? { value: pool.value } : null}
           trove={snapshot.trove ? { debt: snapshot.trove.debt, manageHref: network.mezoAppUrl } : null}
+          gaugeReadFailed={positions.data?.snapshot.gaugeReadFailed ?? false}
         />
         <RoutesTable
           lpReturns={lpReturns({ availability, apr, poolFeeBps: snapshot.poolFeeBps })}

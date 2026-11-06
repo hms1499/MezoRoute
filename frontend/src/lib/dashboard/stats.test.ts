@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { RoutesTable } from "@/components/dashboard/RoutesTable";
+import { GAUGE_READ_FAILED_RETRY } from "@/lib/gauge/copy";
 import { YourPositionsTable } from "@/components/dashboard/YourPositionsTable";
 import { positionsSnapshotWith } from "@/lib/positions/test-fixtures";
 import { positionTotals } from "@/lib/positions/totals";
@@ -85,5 +86,14 @@ describe("dashboard tables", () => {
     expect(positions).toContain("in wallet");
     expect(routes).toContain("20");
     expect(routes).toContain('href="#compare"');
+  });
+});
+
+// Final review: an all-staked account whose gauge read failed has no LP row, and must not read "No positions yet".
+describe("YourPositionsTable with a failed gauge read", () => {
+  it("does not say there are no positions", () => {
+    const out = renderToStaticMarkup(createElement(YourPositionsTable, { lp: null, sp: null, trove: null, gaugeReadFailed: true }));
+    expect(out).not.toMatch(/No positions/);
+    expect(out).toContain(GAUGE_READ_FAILED_RETRY);
   });
 });

@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { DataTable } from "@/components/ui/DataTable";
 import { PairIcon, TokenIcon } from "@/components/ui/TokenIcon";
 import { formatToken } from "@/lib/format";
+import { GAUGE_READ_FAILED_RETRY, GAUGE_READ_FAILED_SUMMARY } from "@/lib/gauge/copy";
 
 // U11 §6.4: one LP row (wallet + staked together, split in a caption) with the combined Exit, and the Stability Pool
 // row with Withdraw. Each row expands to what its card showed before (underlying amounts, share, cost basis).
@@ -16,7 +17,10 @@ const lpAmount = (value: bigint) => formatToken(value, 18, 6);
 export function PositionsTable({
   lp,
   sp,
+  gaugeReadFailed = false,
 }: {
+  /** The gauge could not be read: staked LP is unknown, so nothing here may say 0 staked or no positions. */
+  gaugeReadFailed?: boolean;
   lp: { amount: bigint; staked: bigint; wallet: bigint; value: bigint; earning: string; exitHref: string; details: ReactNode } | null;
   sp: { deposit: bigint; value: bigint; withdrawHref: string; details: ReactNode } | null;
 }) {
@@ -27,7 +31,7 @@ export function PositionsTable({
             key: "lp",
             icon: <PairIcon tokens={["musd", "btc"]} size={20} />,
             name: "MUSD/BTC LP",
-            caption: `${lpAmount(lp.staked)} staked · ${lpAmount(lp.wallet)} in wallet`,
+            caption: gaugeReadFailed ? GAUGE_READ_FAILED_SUMMARY : `${lpAmount(lp.staked)} staked · ${lpAmount(lp.wallet)} in wallet`,
             amount: `${lpAmount(lp.amount)} LP`,
             value: musd(lp.value),
             earning: lp.earning,
@@ -66,7 +70,7 @@ export function PositionsTable({
           caption="Your positions"
           rows={rows}
           rowKey={(row) => row.key}
-          empty="No positions here."
+          empty={gaugeReadFailed ? GAUGE_READ_FAILED_RETRY : "No positions here."}
           expand={(row) => row.details}
           columns={[
             {

@@ -129,6 +129,7 @@ function Positions({ account }: { account: Address }) {
       <Settle index={1} className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
         <div className="space-y-4 lg:col-span-2">
           <PositionsTable
+            gaugeReadFailed={gaugeReadFailed}
             lp={
               view.lp.balance > 0n
                 ? {
