@@ -71,3 +71,29 @@ describe("icon sizes (U10 §8)", () => {
     expect(hits).toEqual([]);
   });
 });
+
+// U11 §5.8: token icons at 16 / 20 / 24 px only, and one indicator-circle size (24 px).
+describe("token icons and indicators (U11 §5.8)", () => {
+  it("token icons use 16, 20, or 24 px", () => {
+    const hits = tsxFiles().flatMap((file) =>
+      [...readFileSync(join(SRC, file), "utf8").matchAll(/<(?:TokenIcon|PairIcon)\b[^>]*\bsize=\{(\d+)\}/g)]
+        .filter((match) => !["16", "20", "24"].includes(match[1]))
+        .map((match) => `${file}: size ${match[1]}`),
+    );
+    expect(hits).toEqual([]);
+  });
+
+  it("indicator circles are 24 px", () => {
+    /** Not indicators: the button's arrow circle, the logo, and the loading square. */
+    const skip = new Set(["components/ui/Button.tsx", "components/ui/Logo.tsx", "app/client-providers.tsx"]);
+    const hits = tsxFiles()
+      .filter((file) => !skip.has(file))
+      .flatMap((file) =>
+        readFileSync(join(SRC, file), "utf8")
+          .split("\n")
+          .filter((line) => /\brounded-(?:full|pill)\b/.test(line) && /\bh-(?:7|8|10) w-(?:7|8|10)\b/.test(line))
+          .map((line) => `${file}: ${line.trim().slice(0, 80)}`),
+      );
+    expect(hits).toEqual([]);
+  });
+});

@@ -66,7 +66,7 @@ export function StepList<K extends string>({
         return (
           <li key={step.kind} className="relative flex gap-4 pb-6 last:pb-0">
             {index < steps.length - 1 && (
-              <span aria-hidden className={cx("absolute bottom-0 left-4 top-9 w-px", visual === "done" ? "bg-accent" : "bg-line")} />
+              <span aria-hidden className={cx("absolute bottom-0 left-3 top-7 w-px", visual === "done" ? "bg-accent" : "bg-line")} />
             )}
             <StepNode visual={visual} />
             {/* Upcoming steps read muted, not faded: faded text would fall below 4.5:1. */}
@@ -103,31 +103,31 @@ function pendingFor(visual: StepVisual, flashing: boolean): "wallet" | "confirmi
 
 /** Status glyphs only: the page header's Amount → Confirm → Done is the one numbered sequence (U3 §5.5). */
 function StepNode({ visual }: { visual: StepVisual }) {
-  const base = "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold";
+  const base = "relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold";
   const ring = "border-2 border-accent bg-surface text-accent";
   switch (visual) {
     case "done":
       return (
         <span className={cx(base, "bg-accent text-onAccent")}>
-          <Check aria-hidden className="h-4 w-4" />
+          <Check aria-hidden className="h-3.5 w-3.5" />
         </span>
       );
     case "failed":
       return (
         <span className={cx(base, "bg-danger text-canvas")}>
-          <X aria-hidden className="h-4 w-4" />
+          <X aria-hidden className="h-3.5 w-3.5" />
         </span>
       );
     case "wallet":
       return (
         <span className={cx(base, ring)}>
-          <Wallet aria-hidden className="h-4 w-4" />
+          <Wallet aria-hidden className="h-3.5 w-3.5" />
         </span>
       );
     case "confirming":
       return (
         <span className={cx(base, ring)}>
-          <LoaderCircle aria-hidden className="h-4 w-4 motion-safe:animate-spin" />
+          <LoaderCircle aria-hidden className="h-3.5 w-3.5 motion-safe:animate-spin" />
         </span>
       );
     case "current":

@@ -35,7 +35,7 @@ export function HowItWorks() {
         {STEPS.map((step) => (
           <li key={step.n}>
             <p className="flex items-center gap-3 text-base font-semibold text-ink">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full border border-accent text-sm text-accent">{step.n}</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full border border-accent text-sm text-accent">{step.n}</span>
               {step.title}
             </p>
             <p className="mt-2 text-sm leading-relaxed text-night-muted">{step.detail}</p>
