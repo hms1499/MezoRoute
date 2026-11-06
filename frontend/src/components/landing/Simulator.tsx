@@ -81,7 +81,7 @@ export function Simulator({
               aria-pressed={on}
               onClick={() => onText(preset.toString())}
               className={cx(
-                "landing-control landing-control--compact landing-control--pill px-4 font-mono text-xs",
+                "hit landing-control landing-control--compact landing-control--pill px-4 font-mono text-xs",
                 on ? "border-night-lp text-night-lp" : "border-night-line text-night-muted hover:text-night-ink",
               )}
             >
@@ -125,7 +125,7 @@ export function Simulator({
               ))}
             </tbody>
           </table>
-          <ul id="simulator-notes" className="mt-3 space-y-1 text-xs leading-relaxed text-night-muted">
+          <ul id="simulator-notes" className="mt-3 space-y-1 text-sm leading-relaxed text-night-muted">
             {simulatorNotes(sim, network.id).map((note) => (
               <li key={note}>{note}</li>
             ))}

@@ -10,7 +10,8 @@
     "postbuild": "node scripts/check-relayer-bundle.mjs",
     "lint": "next lint",
     "test": "vitest run",
-    "quote-accuracy": "vitest run -c vitest.live.config.ts",
+    "quote-accuracy": "vitest run -c vitest.live.config.ts scripts/live/quote-accuracy.live.ts",
+    "ui-audit": "vitest run -c vitest.live.config.ts scripts/live/ui-audit.live.ts",
     "postinstall": "node scripts/patch-relayer.mjs",
     "sync-abi": "node scripts/sync-abi.mjs"
   },
@@ -32,6 +33,7 @@
     "autoprefixer": "10.6.1",
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.35",
+    "playwright": "1.56.1",
     "postcss": "8.5.28",
     "tailwindcss": "3.4.19",
     "typescript": "5.9.3",

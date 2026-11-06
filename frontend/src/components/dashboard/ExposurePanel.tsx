@@ -149,7 +149,7 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
           Liquidatable: below the {formatPercent(mcr, 0)} minimum collateral ratio
         </p>
       )}
-      <p className="mt-3 text-xs leading-relaxed text-muted">{FOOTNOTE}</p>
+      <p className="mt-3 text-sm leading-relaxed text-muted">{FOOTNOTE}</p>
     </Card>
   );
 }

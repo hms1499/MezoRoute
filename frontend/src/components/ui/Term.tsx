@@ -73,6 +73,8 @@ export function Term({ id, children }: { id: TermId; children: ReactNode }) {
           setPinned(!pinned);
           setOpen(!pinned);
         }}
+        // U11 §5.4: an inline target, inside a label or heading; it keeps its text size and takes no hit area.
+        data-inline-target=""
         className="cursor-help rounded-tip text-left underline decoration-accent decoration-dotted underline-offset-4"
       >
         {children}

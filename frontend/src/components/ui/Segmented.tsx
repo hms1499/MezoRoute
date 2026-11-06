@@ -25,7 +25,7 @@ const ITEM: Record<SegmentedSize, string> = { md: "min-h-9 px-4 text-sm", sm: "m
 /** One item's classes; the header nav uses it on its links so the header shows one selected style. */
 export function segmentedItemClass(selected: boolean, size: SegmentedSize): string {
   return cx(
-    "hit inline-flex items-center justify-center rounded-pill font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+    "hit inline-flex items-center justify-center whitespace-nowrap rounded-pill font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
     ITEM[size],
     selected ? "bg-surface text-ink ring-1 ring-line" : "text-muted hover:text-ink",
   );

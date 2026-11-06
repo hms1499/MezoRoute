@@ -175,7 +175,9 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
           <span aria-hidden />
           {routes.map((route) => (
             <div key={route.id} role="cell">
-              <ButtonLink href={route.href} arrow>{route.cta}</ButtonLink>
+              <ButtonLink href={route.href} variant="secondary" arrow>
+                {route.cta}
+              </ButtonLink>
             </div>
           ))}
         </div>
@@ -186,6 +188,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
         <Segmented
           label="Routes"
           semantics="tabs"
+          size="sm"
           fill
           options={routes.map((route) => ({ value: route.id, label: route.title, id: `tab-${route.id}`, controls: `panel-${route.id}` }))}
           value={tab}
@@ -210,7 +213,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
                   </dt>
                   <dd className="[overflow-wrap:anywhere]">
                     {row.value}
-                    {row.sub && <span className={cx("block text-xs", subToneClass(row.subTone))}>{row.sub}</span>}
+                    {row.sub && <span className={cx("block text-sm", subToneClass(row.subTone))}>{row.sub}</span>}
                   </dd>
                 </div>
               ))}
@@ -218,13 +221,13 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
             <div className="mt-4">
               <RiskList risks={route.risks} />
             </div>
-            <ButtonLink href={route.href} className="mt-4 w-full" arrow>
+            <ButtonLink href={route.href} variant="secondary" className="mt-4 w-full" arrow>
               {route.cta}
             </ButtonLink>
           </div>
         ))}
       </div>
-      <p className="mt-4 text-xs leading-relaxed text-muted">{FOOTNOTE}</p>
+      <p className="mt-4 text-sm leading-relaxed text-muted">{FOOTNOTE}</p>
     </Card>
   );
 }
@@ -241,7 +244,7 @@ function Cell({ row }: { row: Row | undefined }) {
   return (
     <div role="cell" className="min-w-0 [overflow-wrap:anywhere]">
       {row.value}
-      {row.sub && <span className={cx("block text-xs", subToneClass(row.subTone))}>{row.sub}</span>}
+      {row.sub && <span className={cx("block text-sm", subToneClass(row.subTone))}>{row.sub}</span>}
     </div>
   );
 }

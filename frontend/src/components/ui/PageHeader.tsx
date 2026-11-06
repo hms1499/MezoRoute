@@ -24,7 +24,7 @@ export function PageHeader({
 }) {
   return (
     <div className="space-y-3">
-      <Link href={back.href} className="inline-flex min-h-9 items-center gap-2 rounded-full text-sm font-medium text-muted hover:text-accent">
+      <Link href={back.href} className="hit inline-flex min-h-9 items-center gap-2 rounded-full text-sm font-medium text-muted hover:text-accent">
         <ArrowLeft aria-hidden className="h-4 w-4" />
         {back.label}
       </Link>

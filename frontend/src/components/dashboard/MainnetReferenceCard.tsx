@@ -71,7 +71,7 @@ export function MainnetReferenceCard() {
             </dl>
           </div>
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-muted">{referenceFooter(networks.mainnet.executor)}</p>
+        <p className="mt-3 text-sm leading-relaxed text-muted">{referenceFooter(networks.mainnet.executor)}</p>
       </Card>
     </Settle>
   );

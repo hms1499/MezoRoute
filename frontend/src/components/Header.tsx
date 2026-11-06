@@ -22,7 +22,7 @@ export function Header() {
   const pathname = usePathname();
   return (
     <header className="flex items-center gap-1 py-4 sm:gap-4">
-      <Link href="/" aria-label="MezoRoute home" className="shrink-0 rounded-tip">
+      <Link href="/" aria-label="MezoRoute home" className="hit shrink-0 rounded-tip">
         <Logo />
       </Link>
       <div className="flex flex-1 justify-center">

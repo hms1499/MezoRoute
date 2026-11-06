@@ -55,7 +55,7 @@ export function Hero({ data, error }: { data: MainnetReferenceData | undefined; 
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4 text-xs text-muted">
-        <a href="#simulator" className="inline-flex min-h-9 items-center gap-2 font-medium text-accent underline-offset-4 hover:underline">
+        <a href="#simulator" className="hit inline-flex min-h-9 items-center gap-2 font-medium text-accent underline-offset-4 hover:underline">
           Try an amount
           <ArrowDown aria-hidden className="h-3.5 w-3.5" />
         </a>
