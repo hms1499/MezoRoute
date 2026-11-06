@@ -9,7 +9,7 @@ import { segmentedItemClass, segmentedTrackClass } from "@/components/ui/Segment
 import { Logo } from "@/components/ui/Logo";
 import { cx } from "@/lib/ui/cx";
 import { isCurrentPath, onMobile } from "@/lib/ui/nav";
-import { NetworkSwitch } from "./NetworkSwitch";
+import { NetworkMenu } from "./NetworkMenu";
 import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
@@ -17,7 +17,7 @@ const NAV = [
   { href: "/positions/", label: "Positions" },
 ];
 
-/** Shared header (spec §9): logo, nav with the current page marked, Testnet/Mainnet switch, theme toggle (from 768 px), wallet button. */
+/** Shared header (spec §9): logo, nav with the current page marked, the network chip (U11), theme toggle (from 768 px), wallet button. */
 export function Header() {
   const pathname = usePathname();
   return (
@@ -26,7 +26,8 @@ export function Header() {
         <Logo />
       </Link>
       <div className="flex flex-1 justify-center">
-      <nav aria-label="Main" className={segmentedTrackClass("md")}>
+      {/* Below 640 px one link shows (the other main page), so the track drops its padding and fill (U11). */}
+      <nav aria-label="Main" className={cx(segmentedTrackClass("md"), "max-sm:bg-transparent max-sm:p-0")}>
         {NAV.map((item) => {
           const current = isCurrentPath(pathname, item.href);
           return (
@@ -42,18 +43,24 @@ export function Header() {
         })}
       </nav>
       </div>
-      <NetworkSwitch />
+      <NetworkMenu />
       <ThemeToggle />
       {/* The app's own small buttons: RainbowKit's wider one pushed the header past 360 px, and its emoji
           avatar did not fit the product (U3 §6). The account button opens RainbowKit's account modal. */}
       <ConnectButton.Custom>
         {({ account, openAccountModal, openConnectModal, mounted }) =>
           account ? (
-            // One line at 360 px: the header squeezed the label onto two (U7); tighter padding below 640 px
-            // (here and in the nav and network switch) keeps that line inside the page.
-            <Button size="md" variant="secondary" onClick={openAccountModal} className="shrink-0 whitespace-nowrap text-ink max-sm:px-2">
-              <Wallet aria-hidden className="hidden h-3.5 w-3.5 text-accent sm:block" />
-              <span className="sm:hidden">{`${account.address.slice(0, 4)}…${account.address.slice(-2)}`}</span>
+            // One line at 360 px (U7). Below 400 px the button keeps only the wallet icon (U11 §5.6, the one give the
+            // Geist Mono header needed); its name still says which account it is.
+            <Button
+              size="md"
+              variant="secondary"
+              onClick={openAccountModal}
+              aria-label={`Account ${account.displayName}`}
+              className="shrink-0 whitespace-nowrap text-ink"
+            >
+              <Wallet aria-hidden className="h-4 w-4 text-accent min-[400px]:max-sm:hidden" />
+              <span className="hidden min-[400px]:inline sm:hidden">{`${account.address.slice(0, 4)}…${account.address.slice(-2)}`}</span>
               <span className="hidden sm:inline">{account.displayName}</span>
             </Button>
           ) : (

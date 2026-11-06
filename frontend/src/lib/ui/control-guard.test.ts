@@ -9,8 +9,8 @@ import { scanSource, sourceFiles } from "./source-scan";
 const SRC = join(__dirname, "../..");
 const read = (file: string) => readFileSync(join(SRC, file), "utf8");
 
-/** Buttons whose size a caller overrides from outside; the header's account button until Task 6 reworks the header. */
-const OUTSIDE_SIZING_EXCEPTIONS = new Set(["components/Header.tsx"]);
+/** Buttons whose size a caller overrides from outside: none. */
+const OUTSIDE_SIZING_EXCEPTIONS = new Set<string>();
 const SIZING = /(?<![\w-])(?:[\w-]+:)?(?:min-h-|h-\d|px-|py-|p-\d|pl-|pr-|text-(?:xs|sm|base)\b)/;
 
 describe("control sizes", () => {
@@ -51,7 +51,6 @@ describe("control sizes", () => {
 
 describe("segmented controls", () => {
   it("segmented roles live in Segmented only", () => {
-    // NetworkSwitch.tsx until Task 6 replaces it with the network menu.
-    expect(scanSource([["segmented role", /role="(radiogroup|tablist)"/]], { skip: ["components/ui/Segmented.tsx", "components/NetworkSwitch.tsx"] })).toEqual([]);
+    expect(scanSource([["segmented role", /role="(radiogroup|tablist)"/]], { skip: ["components/ui/Segmented.tsx"] })).toEqual([]);
   });
 });
