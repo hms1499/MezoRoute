@@ -9,20 +9,22 @@ import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { BlockNotice } from "@/components/lp/BlockNotice";
 import { btc, musd } from "@/components/lp/units";
-import { MobileBar, RouteLayout } from "@/components/route/RouteLayout";
-import { SummaryPanel } from "@/components/route/SummaryPanel";
+import { ActionCard } from "@/components/flow/ActionCard";
+import { FlowColumn } from "@/components/flow/FlowColumn";
+import { Overview } from "@/components/flow/Overview";
+import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { PercentChoice } from "@/components/ui/Presets";
+import { TokenIcon } from "@/components/ui/TokenIcon";
 import { LoadingCard } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
 import { stabilityPoolAbi } from "@/lib/abi/musd";
 import { useNetwork } from "@/lib/config/network-context";
 import { decodeError } from "@/lib/errors/decode";
 import { SP_WITHDRAW_BLOCKED } from "@/lib/errors/outcomes";
-import type { ExitPercent } from "@/lib/positions/exit-intent";
+import { formatToken } from "@/lib/format";
+import { EXIT_PERCENTS, type ExitPercent } from "@/lib/positions/exit-intent";
 import { parseSpWithdrawPercent, spWithdrawQuery } from "@/lib/stability-pool/intent";
 import { spClaimPreview, spWithdrawPreview } from "@/lib/stability-pool/preview";
 import type { SpData } from "@/lib/stability-pool/snapshot";
@@ -30,7 +32,7 @@ import { useSpActions } from "@/lib/stability-pool/useSpActions";
 import { useSpSnapshot } from "@/lib/stability-pool/useSpSnapshot";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 
-/** Spec §9 screen 6b: share or Max, simulated first; a paused pool shows the blocked state with Claim BTC gain. */
+/** Spec §9 screen 6b: share or Max, simulated first; a paused pool shows the blocked state with Claim BTC gain. U11 §6.2: one action card. */
 export default function SpWithdrawPage() {
   return <RequireWallet>{(account) => <SpWithdraw account={account} />}</RequireWallet>;
 }
@@ -87,42 +89,73 @@ function WithdrawView(props: {
   const paused = check.error !== null && decodeError(check.error, network).kind === SP_WITHDRAW_BLOCKED.kind;
   const busy = actions.pending !== null;
 
-  const withdrawButton = (className?: string) => (
-    <Button
-      disabled={preview.block !== null || busy || check.isPending}
-      pending={actions.pending === "withdraw" ? "wallet" : null}
-      onClick={() => actions.withdraw(props.percent)}
-      className={className}
-    >
-      Withdraw
-    </Button>
-  );
-  const notice = preview.block?.outcome ? <BlockNotice block={preview.block} /> : undefined;
   const rows = [
-    { label: "MUSD to withdraw (estimated)", value: musd(preview.amount), strong: true },
     { label: "Deposit after", value: musd(preview.depositAfter) },
     { label: "BTC gain paid with it", value: btc(preview.gainPaid) },
     { label: "MezoRoute fee", value: "None" },
     { label: "Network fee (estimated)", value: preview.gasCost === null ? "—" : btc(preview.gasCost) },
   ];
+  const claimOnly = claimBlock === null && (
+    // A pending gain can be taken without touching the deposit, even when nothing is left to withdraw.
+    <Button variant="secondary" disabled={busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim} className="w-full">
+      Claim BTC gain only
+    </Button>
+  );
 
   return (
-    <RouteLayout
-      header={<PageHeader back={{ href: "/positions/", label: "Positions" }} title={
+    <FlowColumn
+      header={
+        <PageHeader
+          back={{ href: "/positions/", label: "Positions" }}
+          title={
             <>
               Withdraw from the <Term id="stabilityPool">Stability Pool</Term>
             </>
           }
         />
       }
-      summary={
-        paused ? (
-          <Card title="Withdrawals are paused">
-            <Notice tone="danger" role="status" className="mt-3">
-              {SP_WITHDRAW_BLOCKED.message}
+    >
+      {chainId !== network.chainId && <WrongNetworkAlert />}
+      <ActionCard
+        icon={<TokenIcon token="musd" size={24} />}
+        title="Withdraw MUSD"
+        subtitle="Stability Pool"
+        figure="No MezoRoute fee"
+        action={
+          paused ? undefined : (
+            <div className="grid gap-2">
+              <Button
+                disabled={preview.block !== null || busy || check.isPending}
+                pending={actions.pending === "withdraw" ? "wallet" : null}
+                onClick={() => actions.withdraw(props.percent)}
+                className="w-full"
+              >
+                Withdraw
+              </Button>
+              {claimOnly}
+            </div>
+          )
+        }
+      >
+        <TokenAmountInput
+          id="withdraw-amount"
+          label="You withdraw (estimated)"
+          amount={formatToken(preview.amount, 18, 4)}
+          token="musd"
+          balance={props.data.snapshot.dashboard.sp.deposit}
+          balanceLabel="Your deposit"
+          max={null}
+          percent={{ value: props.percent, presets: EXIT_PERCENTS, label: "Amount to withdraw", disabled: busy, onPreset: (next) => props.onPercent(next as ExitPercent) }}
+        />
+        {/* The paused state keeps the summary: what the deposit and its gain are, and that Claim still works. */}
+        <Overview rows={rows} />
+        {paused ? (
+          <div className="space-y-3">
+            <Notice tone="danger" role="status">
+              <span className="font-semibold">Withdrawals are paused.</span> {SP_WITHDRAW_BLOCKED.message}
             </Notice>
-            <p className="mt-3 text-sm text-muted">Claiming your BTC gain still works while withdrawals are paused.</p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <p className="text-sm text-muted">Claiming your BTC gain still works while withdrawals are paused.</p>
+            <div className="flex flex-wrap gap-2">
               <Button disabled={claimBlock !== null || busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim}>
                 Claim BTC gain
               </Button>
@@ -130,45 +163,11 @@ function WithdrawView(props: {
                 Retry
               </Button>
             </div>
-          </Card>
-        ) : (
-          <SummaryPanel
-            title="Summary"
-            rows={rows}
-            notice={notice}
-            action={
-              <div className="space-y-2">
-                {withdrawButton("w-full")}
-                {/* A pending gain can be taken without touching the deposit, even when nothing is left to withdraw. */}
-                {claimBlock === null && (
-                  <Button variant="secondary" disabled={busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim} className="w-full">
-                    Claim BTC gain only
-                  </Button>
-                )}
-              </div>
-            }
-          />
-        )
-      }
-      mobileBar={paused ? undefined : <MobileBar figure={musd(preview.amount)} notice={notice} action={withdrawButton()} />}
-    >
-      {chainId !== network.chainId && <WrongNetworkAlert />}
-      <Card>
-        <fieldset disabled={busy}>
-          <legend className="text-sm font-medium">Amount to withdraw</legend>
-          <div className="mt-2">
-            <PercentChoice label="Amount to withdraw" value={props.percent} onChange={props.onPercent} />
           </div>
-          <p className="mt-2 text-sm text-muted">Your deposit: {musd(props.data.snapshot.dashboard.sp.deposit)}</p>
-        </fieldset>
-      </Card>
-      {claimBlock === null && !paused && (
-        <div className="lg:hidden">
-          <Button variant="secondary" disabled={busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim} className="w-full">
-            Claim BTC gain only
-          </Button>
-        </div>
-      )}
-    </RouteLayout>
+        ) : (
+          <BlockNotice block={preview.block} />
+        )}
+      </ActionCard>
+    </FlowColumn>
   );
 }

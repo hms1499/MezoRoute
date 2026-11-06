@@ -2,7 +2,6 @@
 
 import { BlockNotice } from "@/components/lp/BlockNotice";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { StepList, type StepCopy } from "@/components/ui/StepList";
 import { Term } from "@/components/ui/Term";
 import { exitCopy } from "@/lib/positions/exit-copy";
@@ -55,7 +54,10 @@ export function ExitStepper({
   // A failed step, or a block on the pinned amount (e.g. the LP balance changed), needs a way back.
   const stuck = hasStarted(stepper) && (block !== null || stepper.steps.some((step) => step.status === "failed"));
   return (
-    <Card title="Confirm">
+    <section aria-labelledby="exit-steps">
+      <h3 id="exit-steps" className="text-sm font-semibold">
+        Steps
+      </h3>
       <StepList steps={stepper.steps} active={stepper.active} copy={stepCopy(plan)} blocked={block !== null} onRun={run} />
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 empty:hidden">
         <BlockNotice block={block} />
@@ -65,6 +67,6 @@ export function ExitStepper({
           </Button>
         )}
       </div>
-    </Card>
+    </section>
   );
 }

@@ -15,7 +15,7 @@ import { PairIcon, TokenIcon, type Token } from "@/components/ui/TokenIcon";
 // figure with a token chip. Two tokens turn the chip into a menu (it replaces the U11 Phase 1 AssetSwitch). Percent
 // mode (exit, withdraw) shows the amount the preset picks and the 25/50/75/Max presets under the field.
 
-export type PercentMode = { value: number; presets: readonly number[]; onPreset: (percent: number) => void; label?: string };
+export type PercentMode = { value: number; presets: readonly number[]; onPreset: (percent: number) => void; label?: string; disabled?: boolean };
 
 function FlowTokenIcon({ token }: { token: FlowToken }) {
   return token === "lp" ? <PairIcon tokens={["musd", "btc"]} size={20} /> : <TokenIcon token={token} size={20} />;
@@ -205,12 +205,15 @@ export function TokenAmountInput({
         )}
       </div>
       {percent && (
-        <Segmented
-          label={percent.label ?? "Share"}
-          options={percent.presets.map((value) => ({ value: String(value), label: value === 100 ? "Max" : `${value}%` }))}
-          value={String(percent.value)}
-          onChange={(next) => percent.onPreset(Number(next))}
-        />
+        // Locked once a flow pins the amount ("Start over" unlocks it).
+        <fieldset disabled={percent.disabled}>
+          <Segmented
+            label={percent.label ?? "Share"}
+            options={percent.presets.map((value) => ({ value: String(value), label: value === 100 ? "Max" : `${value}%`, disabled: percent.disabled }))}
+            value={String(percent.value)}
+            onChange={(next) => percent.onPreset(Number(next))}
+          />
+        </fieldset>
       )}
       {error && (
         <p className="flex items-start gap-2 text-sm text-danger">
