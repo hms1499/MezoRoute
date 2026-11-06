@@ -39,10 +39,11 @@ describe("Stability Pool gas budgets", () => {
 });
 
 describe("entryGasUnits with staking", () => {
-  it("uses the measured budget: max(used 448,402, estimate 548,483) plus 5%, up to a multiple of 5,000", () => {
-    expect(ENTER_STAKE_GAS).toBe(580_000n);
-    expect(ENTER_STAKE_GAS).toBeGreaterThanOrEqual((548_483n * 105n) / 100n);
-    expect(STAKE_EXTRA_GAS).toBe(150_000n);
+  it("uses the measured budget: the mainnet estimate 682,215 plus 5%, up to a multiple of 5,000", () => {
+    expect(ENTER_STAKE_GAS).toBe(720_000n);
+    expect(ENTER_STAKE_GAS).toBeGreaterThanOrEqual((682_215n * 105n) / 100n); // mainnet V2, first stake (6 Nov 2026)
+    expect(STAKE_EXTRA_GAS).toBe(200_000n);
+    expect(STAKE_EXTRA_GAS).toBeGreaterThanOrEqual(((682_215n - 496_365n) * 105n) / 100n); // same mainnet entry, stake on vs off
     expect(entryGasUnits({ approve: false, smartAccount: false, stake: true })).toBe(ENTER_STAKE_GAS);
     expect(entryGasUnits({ approve: false, smartAccount: false, stake: false })).toBe(ENTER_GAS);
   });
@@ -56,8 +57,8 @@ describe("BTC entry gas budgets", () => {
   it("budgets enterFromBtc: max(used 383,737, estimate 439,723) plus 5%, up to a multiple of 5,000", () => {
     expect(ENTER_BTC_GAS).toBe(465_000n);
     expect(ENTER_BTC_GAS).toBeGreaterThanOrEqual((439_723n * 105n) / 100n);
-    expect(ENTER_BTC_STAKE_GAS).toBe(525_000n);
-    expect(ENTER_BTC_STAKE_GAS).toBeGreaterThanOrEqual((497_277n * 105n) / 100n);
+    expect(ENTER_BTC_STAKE_GAS).toBe(540_000n);
+    expect(ENTER_BTC_STAKE_GAS).toBeGreaterThanOrEqual((511_863n * 105n) / 100n); // mainnet V2 (6 Nov 2026)
   });
 
   it("estimates the whole BTC flow by asset", () => {
@@ -68,9 +69,9 @@ describe("BTC entry gas budgets", () => {
 });
 
 describe("mainnet-measured budgets (Ruling P19)", () => {
-  it("covers the real mainnet estimates plus 5%: enter 479,120 and exit 491,297", () => {
-    expect(ENTER_GAS).toBe(505_000n);
-    expect(ENTER_GAS).toBeGreaterThanOrEqual((479_120n * 105n) / 100n);
+  it("covers the real mainnet estimates plus 5%: V2 enter 496,365 and exit 491,297", () => {
+    expect(ENTER_GAS).toBe(525_000n);
+    expect(ENTER_GAS).toBeGreaterThanOrEqual((496_365n * 105n) / 100n);
     expect(EXIT_GAS).toBe(520_000n);
     expect(EXIT_GAS).toBeGreaterThanOrEqual((491_297n * 105n) / 100n);
   });

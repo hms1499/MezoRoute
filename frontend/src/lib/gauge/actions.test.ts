@@ -97,7 +97,7 @@ describe("gauge gas budgets", () => {
   it("are max(highest gasUsed, highest healthy estimate) plus 5%, rounded up to 5,000 (Ruling P15)", () => {
     expect(GAUGE_DEPOSIT_GAS).toBe(165_000n); // estimate 154,522
     expect(GAUGE_WITHDRAW_GAS).toBe(155_000n); // estimate 147,097, used 137,316
-    expect(GAUGE_CLAIM_GAS).toBe(75_000n); // estimate 67,949, used 66,295
+    expect(GAUGE_CLAIM_GAS).toBe(90_000n); // mainnet estimate 85,049 (6 Nov 2026)
   });
 });
 

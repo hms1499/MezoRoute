@@ -29,8 +29,8 @@ describe("entryPreview", () => {
     expect(result.quote?.musdIn).toBe(100n * ONE);
     expect(result.minimums?.minLpOut).toBe((result.quote!.liquidity * 9_900n) / 10_000n);
     expect(result.steps).toEqual(["permit", "enter"]);
-    expect(result.gasUnits).toBe(505_000n);
-    expect(result.gasCost).toBe(505_000n * 146n);
+    expect(result.gasUnits).toBe(525_000n);
+    expect(result.gasCost).toBe(525_000n * 146n);
     expect(result.deadline).toBe(1_759_600_000n + 600n);
     expect(result.block).toBeNull();
   });
@@ -38,7 +38,7 @@ describe("entryPreview", () => {
   it("adds the approval and the relayer overhead for a smart account", () => {
     const result = preview("amount=100", { walletKind: "smart-account" });
     expect(result.steps).toEqual(["approve", "enter"]);
-    expect(result.gasUnits).toBe(505_000n + 60_000n + 2n * 197_471n);
+    expect(result.gasUnits).toBe(525_000n + 60_000n + 2n * 197_471n);
   });
 
   it("has no quote and a silent block without an amount", () => {
@@ -124,13 +124,13 @@ describe("entryPreview staking", () => {
   it("stakes by default when the gauge is open, with the measured budget", () => {
     const result = preview("amount=100", { data: withGauge(gauge()) });
     expect(result.stake).toEqual({ availability: "open", on: true });
-    expect(result.gasUnits).toBe(580_000n);
+    expect(result.gasUnits).toBe(720_000n);
   });
 
   it("stakes=0 turns it off and uses the plain budget", () => {
     const result = preview("amount=100&stake=0", { data: withGauge(gauge()) });
     expect(result.stake).toEqual({ availability: "open", on: false });
-    expect(result.gasUnits).toBe(505_000n);
+    expect(result.gasUnits).toBe(525_000n);
   });
 
   it("never stakes without a live gauge, whatever the URL says", () => {
@@ -177,7 +177,7 @@ describe("entryPreview from BTC", () => {
     const now = 1_759_600_000n;
     const gauge = { alive: true, rewardRate: 1n, periodFinish: now + 3_600n, totalStaked: ONE, staked: 0n, earned: 0n };
     const staked = lpRouteDataWith({ gasBalance: ONE / 20n, snapshot: lpRouteSnapshotWith({ gauge }) });
-    expect(preview(BTC_URL, { data: staked }).gasUnits).toBe(525_000n);
+    expect(preview(BTC_URL, { data: staked }).gasUnits).toBe(540_000n);
   });
 
   it("keeps four times the entry's gas units at the gas price in the wallet", () => {
