@@ -1,3 +1,4 @@
+import { subToneClass } from "./compare-rows";
 import { describe, expect, it } from "vitest";
 import { compareRoutes } from "@/lib/compare/comparison";
 import { ONE, snapshotWith } from "@/lib/dashboard/test-fixtures";
@@ -73,5 +74,14 @@ describe("comparison rows", () => {
     expect(lpFee(null, null)).toBe("Set at launch");
     expect(lpFee(10n, null)).toBe("0.1%");
     expect(lpFee(10n, compared)).toBe("0.1% (0.02 MUSD)");
+  });
+});
+
+describe("signed sub-lines (U11 §5.5)", () => {
+  it("colours a gain positive, a loss negative, and anything else muted", () => {
+    expect(subToneClass("positive")).toBe("text-positive");
+    expect(subToneClass("negative")).toBe("text-negative");
+    expect(subToneClass(null)).toBe("text-muted");
+    expect(subToneClass(undefined)).toBe("text-muted");
   });
 });

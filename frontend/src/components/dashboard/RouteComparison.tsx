@@ -25,7 +25,8 @@ import { LP_RETURN_SOURCE, LP_RISKS, SP_RETURN_SOURCE, SP_RISKS } from "@/lib/ro
 import { entryQuery } from "@/lib/routes/musd-btc-lp/intent";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
 import { cx } from "@/lib/ui/cx";
-import { lpAmountRows, lpFee, lpGaugeRows, spAmountRows, spSourceNote, type Row } from "./compare-rows";
+import { lpAmountRows, lpFee, lpGaugeRows, spAmountRows, spSourceNote, subToneClass, type Row } from "./compare-rows";
+import { signedTone } from "@/lib/ui/signed";
 import { Settle } from "@/components/ui/Settle";
 
 const FOOTNOTE =
@@ -67,6 +68,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
       label: `${formatToken(backtestAmount, 18, 2)} MUSD ${backtests ? `on ${windowDate(backtests.pastTime)}` : "30 days ago"}`,
       value: pending(() => (value === null ? "Unavailable" : `${musd(value)} today`)),
       sub: value === null ? undefined : signedChange(value, backtestAmount),
+      subTone: value === null ? null : signedTone(value - backtestAmount),
     };
   };
 
@@ -208,7 +210,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
                   </dt>
                   <dd className="[overflow-wrap:anywhere]">
                     {row.value}
-                    {row.sub && <span className="block text-xs text-muted">{row.sub}</span>}
+                    {row.sub && <span className={cx("block text-xs", subToneClass(row.subTone))}>{row.sub}</span>}
                   </dd>
                 </div>
               ))}
@@ -239,7 +241,7 @@ function Cell({ row }: { row: Row | undefined }) {
   return (
     <div role="cell" className="min-w-0 [overflow-wrap:anywhere]">
       {row.value}
-      {row.sub && <span className="block text-xs text-muted">{row.sub}</span>}
+      {row.sub && <span className={cx("block text-xs", subToneClass(row.subTone))}>{row.sub}</span>}
     </div>
   );
 }

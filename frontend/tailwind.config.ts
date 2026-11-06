@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 import { MOTION_ANIMATIONS, MOTION_KEYFRAMES, MOTION_MS, motionVariables } from "./src/lib/ui/motion";
-import { colors, fontSize, radius, themeVariables } from "./src/lib/ui/tokens";
+import { boxShadow, colors, fontSize, radius, themeVariables } from "./src/lib/ui/tokens";
 
 // Two palettes (U9), U3 roles: teal for actions and the LP route, lavender for the Stability Pool, orange only for
 // BTC exposure. Colours are CSS variables that the plugin below writes from tokens.ts: light on :root, dark under
@@ -15,6 +15,8 @@ const config: Config = {
     fontSize,
     // U11: replaces Tailwind's radii (tip 8, inset 12, card 16, pill); radius-guard.test.ts names any other.
     borderRadius: radius,
+    // U11: one shadow token for overlays; shadow-guard.test.ts names any other.
+    boxShadow,
     extend: {
       colors,
       fontFamily: {

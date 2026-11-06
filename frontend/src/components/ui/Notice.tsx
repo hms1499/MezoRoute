@@ -1,16 +1,20 @@
-import { CircleAlert, Info, TriangleAlert } from "lucide-react";
+import { CircleAlert, CircleCheck, Info, TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { cx } from "@/lib/ui/cx";
 
+// U11 §5.5: four tones. Neutral is for information and empty states; danger only for errors.
 const TONES = {
-  info: { box: "bg-accent-soft text-accent", Icon: Info },
+  neutral: { box: "bg-well text-ink", Icon: Info },
   warning: { box: "bg-warning-bg text-warning-ink", Icon: TriangleAlert },
   danger: { box: "bg-danger-soft text-danger", Icon: CircleAlert },
+  success: { box: "bg-accent-soft text-accent", Icon: CircleCheck },
 } as const;
+
+export type NoticeTone = keyof typeof TONES;
 
 /** An inline message with an icon (colour never carries the meaning alone) and an optional action. */
 export function Notice({
-  tone = "info",
+  tone = "neutral",
   role,
   action,
   className,

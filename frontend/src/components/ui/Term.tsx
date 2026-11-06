@@ -84,7 +84,7 @@ export function Term({ id, children }: { id: TermId; children: ReactNode }) {
         style={open ? { transform: `translateX(${shift}px)` } : undefined}
         className={
           open
-            ? "absolute left-0 top-full z-40 mt-2 block w-64 max-w-[calc(100vw-2rem)] rounded-tip border border-line bg-well p-3 text-left text-xs font-normal normal-case leading-relaxed text-ink"
+            ? "absolute left-0 top-full z-40 mt-2 block w-64 max-w-[calc(100vw-2rem)] rounded-tip border border-line bg-well shadow-overlay p-3 text-left text-xs font-normal normal-case leading-relaxed text-ink"
             : "sr-only"
         }
       >
