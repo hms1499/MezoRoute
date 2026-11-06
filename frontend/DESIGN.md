@@ -255,7 +255,7 @@ The landing's framed grid (`.landing-frame`, 4 px) is the one named exception (`
 
 ## Components
 
-All shared components live in `src/components/ui/`. U11 Phase 2 adds the flow building blocks (action card, token amount input, receive row, overview, details, slippage popover, stats strip, responsive table) here when it lands.
+Shared components live in `src/components/ui/`; the flow building blocks (U11 Phase 2) live in `src/components/flow/`.
 
 ### Button / ButtonLink
 - Variants: `primary` (filled accent), `secondary` (inset ring), `ghost`, `danger`, `quiet` (an outlined non-action, such as the theme icon); the `night*` aliases keep the same geometry.
@@ -270,14 +270,35 @@ The only segmented control: a `well` track, items as pills, the selected item a 
 ### MaxButton
 The one Max: an `sm` pill, accent text on `accent-soft`, inside the amount field on the right.
 
-### Amount field
-A `well` box with a 1 px `line` border and `rounded-inset`; the amount at `text-xl`/600; the unit and Max on the right; the balance as a caption under it. Focus shows an accent border and ring.
+### TokenAmountInput (amount field)
+A `well` box (`rounded-inset`). Top row: the label ("You deposit", "You borrow", "You exit") on the left, "Balance x" and `Max` on the right. Second row: the amount at `text-title`/600 and a token chip (`TokenIcon` 20 + symbol). A note (the BTC gas reserve) sits on a caption line inside the box. Two tokens (MUSD | BTC outside Borrow & Deploy) turn the chip into a menu (`menuKeys`, an overlay); otherwise it is static. `max: null` disables Max (BTC while the gas price is unknown; `tokenAmountMax` keeps the reserve). Errors sit under the box in `danger` with an icon. Percent mode (exit, withdraw) shows the amount the preset picks and the 25 / 50 / 75 / Max `Segmented` under the box.
+
+### ActionCard
+A flow's one card: icon (`PairIcon` or `TokenIcon` 24) and route name, one figure on the right (this week's APR, the pool's swap fee, "No fee · BTC from liquidations", "No MezoRoute fee"); then tabs and settings, the inputs, the overview, the page's only primary (`lg`, full width, `arrow`), and one risk line linking to `#details`. Below 640 px the figure moves under the title.
+
+### ReceiveRow
+A `well` box: "You receive", the `xl`/500 figure, its token or pair icon, and the minimum on a caption line.
+
+### Overview
+A bordered `rounded-inset` box of `dl` rows: label `sm`/500 muted, value right-aligned (500), an optional caption under the value, `tone` `btc` | `positive` | `negative`. It holds fees, price impact, staking, BTC exposure change, network fee, the Trove change, and on Confirm every amount and minimum.
+
+### Details
+A `<details>` under the action card (closed by default on amount pages) with What happens, the "If BTC moves" chart, and the full risk list. Confirm pages show the full risk list in the card, always open (`ConfirmCard`).
+
+### SlippagePopover
+"Slippage 1%" with a gear (`quiet sm`) in the card's top-right; the overlay (`rounded-tip`, `shadow-overlay`) holds the 0.5 / 1 / 2% `Segmented`, closes on Escape or a click outside, and returns focus to the trigger. A 2% setting also shows the warning notice in the card.
+
+### FlowColumn
+Every flow page (amount, confirm, exit, withdraw, receipt): `PageHeader` plus one centred column, `max-w-[520px]`, so the left edge never moves within a flow. It replaced `RouteLayout` and `MobileBar`.
+
+### StatsStrip
+A panel of 3–4 stats (`xs` label, `xl`/500 value, optional caption), split by hairlines from 768 px, a 2 × 2 grid below. A value that could not be read says "Not readable", never 0.
 
 ### Card
 `level="panel"` is a boxed surface (`rounded-card`, 20 px padding, `line` border); `level="section"` is unboxed under a hairline. Card titles are `text-base font-semibold`.
 
 ### DataTable
-`tableClass`, `thClass`, `rowThClass`, `tdClass`: header 12/500 muted, first column left and figures right; rows 14/400 with 12 px padding (a `dense` mode, 12/400 with 8 px, for side panels); a `line` divider; no zebra striping.
+`tableClass`, `thClass`, `rowThClass`, `tdClass`: header 12/500 muted, first column left and figures right; rows 14/400 with 12 px padding (a `dense` mode, 12/400 with 8 px, for side panels); a `line` divider; no zebra striping. The `DataTable` component renders a `<table>` with a visually hidden caption from 768 px and a list of cards below (the first column as the title, the rest as label/value pairs, the `action` column full width). `empty` is one neutral row; `expand` adds a Details toggle per row (Positions).
 
 ### Stat
 A label/value pair in a `stat-list` `<dl>`; `figure` gives the value the figure role.
@@ -312,7 +333,8 @@ One curve and three durations (`motion`), from U10: `ease-smooth` for everything
 - Widths checked: 360, 390, 768, 1024, 1440 px. Never a horizontal scroll at 360 px; one-column grids that grow at `lg` need `grid-cols-1`.
 - Every target is at least 24 × 24 px, and 44 × 44 px below 768 px, through the `.hit` area, without growing what it looks like. Inline targets (a `Term` or a link inside a sentence) are exempt.
 - The header keeps the logo, one nav link below 640 px, the network chip, and the wallet button; the theme switch moves to the footer below 768 px.
-- Flow pages keep their left edge within a flow; below 1024 px the action sits in reach.
+- Flow pages keep their left edge within a flow (`FlowColumn`); the action sits in the card, so no page needs a fixed bottom bar.
+- Below 768 px tables become card lists and stats strips a 2 × 2 grid.
 
 ## Do's and Don'ts
 
