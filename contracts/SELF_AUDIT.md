@@ -190,3 +190,10 @@ Survivors, all equivalent:
    equal `pool`; the BTC cap is pinned per chain in the deploy script (mainnet 0.0125 BTC, testnet 12 BTC);
    then run one small `enterFromBtc` with `stake = true` and confirm the executor holds no LP,
    MUSD, or BTC afterwards.
+
+### Deployment record
+
+| Deployment | Steps 1-7 | Evidence |
+|---|---|---|
+| V2 mainnet `0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915` (block 13,031,359, 6 Nov 2026) | ✅ all | Source verified (Blockscout). All 11 immutables read back and match spec 11.1, including `gauge` `0x8Be2…9AaF` (`stakingToken() == pool`, `voter.gauges(pool)`, alive) and `maxBtcIn` 0.0125 BTC. Real round trip through the UI with MetaMask: enter 10 MUSD with stake, `getReward`, unstake, exit, then `enterFromBtc` 0.00003 BTC with `stake = true`. Afterwards the executor holds 0 BTC, MUSD, LP, MEZO, has no gauge stake, and every allowance it sets is 0. Hashes in `PRODUCT_SPEC.md` §20. |
+| V2 testnet `0x1281cC769c136F9F4f291B390c8992a3Cd556288` (block 16,569,977, 4 Nov 2026) | ✅ all | `script/smoke-testnet.sh` PASS; see `PRODUCT_SPEC.md` §20. |

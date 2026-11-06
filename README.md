@@ -5,7 +5,7 @@
 MezoRoute shows Mezo borrowers where to put their MUSD (the MUSD/BTC liquidity pool or the MUSD Stability Pool) by what each choice does to their BTC exposure, then executes the choice safely. Borrow → swap → add liquidity happens in **one transaction and two off-chain signatures**, and every number on a receipt comes from on-chain events, not wallet balance changes.
 
 - **Live app:** https://mezoroute.vercel.app (testnet by default; switch to mainnet in the header)
-- **Mainnet executor:** [`0x046449b1229C863e278f369869BA10e12bd80d9E`](https://explorer.mezo.org/address/0x046449b1229C863e278f369869BA10e12bd80d9E) (verified, capped at 1,000 MUSD per entry)
+- **Mainnet executor:** [`0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915`](https://explorer.mezo.org/address/0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915) (V2, verified, capped at 1,000 MUSD or 0.0125 BTC per entry)
 - **Hackathon:** Build with MUSD and MEZO, AKINDO WaveHack, Wave 1. Track 2 (Access and Distribution) and Track 1 (DeFi)
 - **Demo video:** https://www.youtube.com/watch?v=wDJtaaEwrnk
 - **Deck:** [docs/submission/mezoroute-wave1-deck.pdf](docs/submission/mezoroute-wave1-deck.pdf)
@@ -73,7 +73,7 @@ flowchart LR
   - `enter(params, musdPermit)`: MUSD → optimal swap to BTC → add liquidity → LP to the recipient, refunding leftovers.
   - `borrowAndEnter(borrow, musdPermit, params)`: borrows MUSD to the caller with their EIP-712 authorisation, then the same entry.
   - `exit(params, lpPermit)`: LP → remove liquidity → swap BTC back → MUSD to the recipient.
-  - `MezoRouteExecutorV2` ([`contracts/src/MezoRouteExecutorV2.sol`](contracts/src/MezoRouteExecutorV2.sol), testnet `0x1281cC769c136F9F4f291B390c8992a3Cd556288`) adds a `stake` flag to `enter` and `borrowAndEnter` and `enterFromBtc(params, btcPermit)`, with its own immutable BTC cap. It keeps every V1 safety property and adds: no LP or MEZO is ever held, the gauge allowance is reset to 0, and staked LP is credited only to the recipient.
+  - `MezoRouteExecutorV2` ([`contracts/src/MezoRouteExecutorV2.sol`](contracts/src/MezoRouteExecutorV2.sol), mainnet `0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915`, testnet `0x1281cC769c136F9F4f291B390c8992a3Cd556288`) adds a `stake` flag to `enter` and `borrowAndEnter` and `enterFromBtc(params, btcPermit)`, with its own immutable BTC cap. It keeps every V1 safety property and adds: no LP or MEZO is ever held, the gauge allowance is reset to 0, and staked LP is credited only to the recipient.
 
 ### Safety properties
 
@@ -93,7 +93,8 @@ Each invariant is mapped to its tests in [`contracts/SELF_AUDIT.md`](contracts/S
 
 | Contract | Mezo mainnet (31612) | Mezo testnet (31611) |
 |---|---|---|
-| **MezoRouteExecutor** | [`0x046449b1229C863e278f369869BA10e12bd80d9E`](https://explorer.mezo.org/address/0x046449b1229C863e278f369869BA10e12bd80d9E) (cap 1,000 MUSD, fee 10 bps) | [`0xB36B2E012003840951CFf00fA6b1E3237A110920`](https://explorer.test.mezo.org/address/0xB36B2E012003840951CFf00fA6b1E3237A110920) (cap 1,000,000 MUSD, fee 10 bps) |
+| **MezoRouteExecutorV2** | [`0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915`](https://explorer.mezo.org/address/0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915) (caps 1,000 MUSD and 0.0125 BTC, fee 10 bps) | [`0x1281cC769c136F9F4f291B390c8992a3Cd556288`](https://explorer.test.mezo.org/address/0x1281cC769c136F9F4f291B390c8992a3Cd556288) (caps 1,000,000 MUSD and 12 BTC, fee 10 bps) |
+| MezoRouteExecutor (V1, legacy: its LP can still exit) | [`0x046449b1229C863e278f369869BA10e12bd80d9E`](https://explorer.mezo.org/address/0x046449b1229C863e278f369869BA10e12bd80d9E) (cap 1,000 MUSD, fee 10 bps) | [`0xB36B2E012003840951CFf00fA6b1E3237A110920`](https://explorer.test.mezo.org/address/0xB36B2E012003840951CFf00fA6b1E3237A110920) (cap 1,000,000 MUSD, fee 10 bps) |
 | MUSD | `0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186` | `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503` |
 | BTC (ERC-20 interface) | `0x7b7C000000000000000000000000000000000000` | `0x7b7C000000000000000000000000000000000000` |
 | MUSD/BTC pool (volatile) | `0x52e604c44417233b6CcEDDDc0d640A405Caacefb` | `0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9` |
@@ -101,7 +102,7 @@ Each invariant is mapped to its tests in [`contracts/SELF_AUDIT.md`](contracts/S
 | BorrowerOperationsSignatures | `0xB57ab578BF20b3e318f3EFAA587C51DBccE5df7a` | `0xD757e3646AF370b15f32EB557F0F8380Df7D639e` |
 | StabilityPool | `0x73245Eff485aB3AAc1158B3c4d8f4b23797B0e32` | `0x1CCA7E410eE41739792eA0A24e00349Dd247680e` |
 
-Both executors are verified on the Mezo explorer. Every address the app uses lives in [`frontend/src/lib/config/networks.ts`](frontend/src/lib/config/networks.ts).
+Every executor is verified on the Mezo explorer. Every address the app uses lives in [`frontend/src/lib/config/networks.ts`](frontend/src/lib/config/networks.ts).
 
 ### Mainnet round trip through the UI (15 Oct 2026)
 
@@ -132,7 +133,7 @@ MezoRoute integrates MUSD across three protocol surfaces: borrowing through `Bor
 - **Enter from BTC.** Choose BTC instead of MUSD on the LP route; the executor swaps about half to MUSD and adds liquidity. A BTC entry is **capped per transaction** (12 BTC on testnet; 0.0125 BTC on mainnet) and the app keeps a gas reserve out of "Use my balance", because BTC pays for gas on Mezo.
 - **What staking costs you.** While LP is staked, its swap fees go to veBTC voters instead of you. The MEZO rate is this week's and changes weekly; it is not a promise, and MEZO can fall in price.
 
-Status: V2 is live on testnet. Mainnet still runs the V1 executor, and the G1 branch is not merged (so the live site is unchanged) until the mainnet V2 deploy is pinned (Task 11). veBTC and veMEZO features, bribes, and voting stay out of scope.
+Status: V2 is live on testnet and mainnet (6 Nov 2026). A real mainnet round trip passed through the app: 10 MUSD in with stake, claim MEZO, unstake and exit, then 0.00003 BTC in with stake (hashes in `PRODUCT_SPEC.md` §20); the executor held nothing afterwards. veBTC and veMEZO features, bribes, and voting stay out of scope.
 
 ## Limitations
 
@@ -142,7 +143,7 @@ Status: V2 is live on testnet. Mainnet still runs the V1 executor, and the G1 br
 - **Thin mainnet pool.** The mainnet MUSD/BTC basic pool is small, so the app blocks any entry whose swap would move the price by more than 5%.
 - **Stability Pool withdrawals pause** while any Trove is below the minimum collateral ratio (a Mezo rule). The app shows that state and still offers claiming BTC gains.
 - **Mainnet funding.** Mezo's native BTC bridge-in closed on 13 Oct 2026; BTC now arrives as tBTC from Ethereum through the Mezo app.
-- **Gauge staking and BTC entry are testnet-only until the mainnet V2 deploy.** MEZO emissions are this week's rate and can change; staked LP gives up its swap fees to veBTC voters.
+- **Gauge staking and BTC entry are new on mainnet** (6 Nov 2026) and capped like every entry. MEZO emissions are this week's rate and can change; staked LP gives up its swap fees to veBTC voters.
 
 ## Run it locally
 

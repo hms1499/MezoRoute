@@ -22,6 +22,8 @@ locally with mock MUSD/BTC. Mezo's BTC token is a chain precompile, so fork test
 
 | Network | Address | Fee |
 |---|---|---|
+| Mezo mainnet (31612) | [`0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915`](https://explorer.mezo.org/address/0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915) (V2, verified, current; caps 1,000 MUSD and 0.0125 BTC; block 13,031,359) | 10 bps |
+| Mezo mainnet (31612) | [`0x046449b1229C863e278f369869BA10e12bd80d9E`](https://explorer.mezo.org/address/0x046449b1229C863e278f369869BA10e12bd80d9E) (V1, verified, legacy: its LP can still exit; cap 1,000 MUSD) | 10 bps |
 | Mezo testnet (31611) | [`0x1281cC769c136F9F4f291B390c8992a3Cd556288`](https://explorer.test.mezo.org/address/0x1281cC769c136F9F4f291B390c8992a3Cd556288) (V2, current; caps 1,000,000 MUSD and 12 BTC) | 10 bps |
 | Mezo testnet (31611) | [`0xB36B2E012003840951CFf00fA6b1E3237A110920`](https://explorer.test.mezo.org/address/0xB36B2E012003840951CFf00fA6b1E3237A110920) (V1, verified, legacy: its LP can still exit; cap 1,000,000 MUSD) | 10 bps |
 | Mezo testnet (31611) | [`0x10E6334d2716FDE5f2bEb418C66fD7C9c1021fB9`](https://explorer.test.mezo.org/address/0x10E6334d2716FDE5f2bEb418C66fD7C9c1021fB9) (superseded: no per-transaction cap or default-factory check) | 10 bps |
@@ -46,5 +48,5 @@ Contract development started on 30 Sep 2026, during the hackathon's pre-registra
 ## Limitations
 
 - `borrowAndEnter` supports EOA signers only (MUSD verifies with `ECDSA.recover`).
-- V1 has no gauge staking or BTC entry. On mainnet V1 is still the live executor until V2 is deployed; the pool's gauge there pays MEZO to stakers, and neither executor ever holds or pays MEZO.
+- V1 has no gauge staking or BTC entry. V2 replaced it on both networks (mainnet on 6 Nov 2026); the pool's gauge pays MEZO to stakers, and neither executor ever holds or pays MEZO.
 - Unaudited (see the self-audit checklist in `SELF_AUDIT.md`). Entries are limited by immutable per-transaction caps: 1,000 MUSD on mainnet and 1,000,000 MUSD on testnet, and on V2's `enterFromBtc` 0.0125 BTC on mainnet and 12 BTC on testnet. Exits are never capped.
