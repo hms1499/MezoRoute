@@ -1,7 +1,6 @@
 "use client";
 
 import { BlockNotice } from "@/components/lp/BlockNotice";
-import { Card } from "@/components/ui/Card";
 import { StepList } from "@/components/ui/StepList";
 import type { SpBlock } from "@/lib/stability-pool/gate";
 import type { SpStepKind } from "@/lib/stability-pool/steps";
@@ -23,12 +22,15 @@ const COPY: Record<SpStepKind, { title: string; detail: string; action: string }
 export function SpDepositStepper({ block, ...flow }: SpDepositFlowInput & { block: SpBlock | null }) {
   const { stepper, run } = useSpDepositFlow(flow);
   return (
-    <Card title="Confirm">
+    <section aria-labelledby="sp-steps">
+      <h3 id="sp-steps" className="text-sm font-semibold">
+        Steps
+      </h3>
       <StepList steps={stepper.steps} active={stepper.active} copy={COPY} blocked={block !== null} onRun={run} />
       <p className="mt-4 text-sm text-muted">MezoRoute never holds your MUSD: you call the Stability Pool directly.</p>
       <div className="mt-4 empty:hidden">
         <BlockNotice block={block} />
       </div>
-    </Card>
+    </section>
   );
 }

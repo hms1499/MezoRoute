@@ -4,19 +4,22 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
-import { RouteLayout } from "@/components/route/RouteLayout";
+import { ConfirmCard } from "@/components/flow/ConfirmCard";
+import { FlowColumn } from "@/components/flow/FlowColumn";
+import { TokenIcon } from "@/components/ui/TokenIcon";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { useNetwork } from "@/lib/config/network-context";
+import { SP_RISKS } from "@/lib/routes/copy";
 import { parseMusdAmount } from "@/lib/quote/amount";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
 import { spDepositPreview } from "@/lib/stability-pool/preview";
 import { useSpSnapshot } from "@/lib/stability-pool/useSpSnapshot";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
-import { SpDepositCard } from "./SpDepositCard";
+import { spConfirmRows } from "./SpDepositCard";
 import { SpDepositStepper } from "./SpDepositStepper";
 
 /** Spec §9 screen 3b: exact approval (skipped if the allowance suffices) → provideToSP. */
@@ -48,17 +51,22 @@ function SpConfirm({ account }: { account: Address }) {
 
   const preview = spDepositPreview({ network, data, musdIn, walletKind, walletChainId: chainId });
   return (
-    // The same columns as the amount page (U3 §5.3): the review on the left, the steps where the summary was.
-    <RouteLayout
+    // U11 §6.2: the same column as the amount page; the full risk list is always visible before signing.
+    <FlowColumn
       header={
         <>
-          <PageHeader back={{ href: `/route/stability-pool/${spDepositQuery(amount)}`, label: "Change amount" }} step={2} />
+          <PageHeader back={{ href: `/route/stability-pool/${spDepositQuery(amount)}`, label: "Change amount" }} step={2} title="Review your deposit" />
           {chainId !== network.chainId && <WrongNetworkAlert />}
         </>
       }
-      summary={<SpDepositStepper account={account} musdIn={musdIn} walletKind={walletKind} plan={preview.steps} refresh={refresh} block={preview.block} />}
     >
-      <SpDepositCard preview={preview} />
-    </RouteLayout>
+      <ConfirmCard
+        icon={<TokenIcon token="musd" size={24} />}
+        title="Stability Pool"
+        overview={spConfirmRows(preview, musdIn)}
+        risks={SP_RISKS}
+        steps={<SpDepositStepper account={account} musdIn={musdIn} walletKind={walletKind} plan={preview.steps} refresh={refresh} block={preview.block} />}
+      />
+    </FlowColumn>
   );
 }
