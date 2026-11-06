@@ -112,7 +112,7 @@ function ErrorToast({
   });
 
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink motion-safe:animate-toast-in">
+    <div className="flex items-start gap-3 rounded-tip border border-line bg-surface px-4 py-3 text-sm text-ink motion-safe:animate-toast-in">
       <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
       <div className="min-w-0 flex-1">
         <p>{decoded.message}</p>

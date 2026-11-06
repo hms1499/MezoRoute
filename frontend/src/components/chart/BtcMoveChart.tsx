@@ -63,7 +63,7 @@ export function BtcMoveChart({
 
   return (
     <div ref={ref} className={cx("w-full", className)}>
-      <div role="img" aria-label={ariaLabel} className={cx("space-y-3", well && "rounded-xl bg-well p-3")}>
+      <div role="img" aria-label={ariaLabel} className={cx("space-y-3", well && "rounded-inset bg-well p-3")}>
         {plots.map((plot) => (
           <Plot key={plot.title} plot={plot} width={width} height={height} highlight={highlight} drawIn={drawIn} halo={well ? themeColor.well : themeColor.surface} />
         ))}

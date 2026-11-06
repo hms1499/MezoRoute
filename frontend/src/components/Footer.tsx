@@ -9,7 +9,7 @@ import { ThemeSwitch } from "./ThemeToggle";
 /** Brand and project links on top, the standing disclaimer underneath; the hairlines span the viewport. */
 export function Footer() {
   const { network } = useNetwork();
-  const link = "rounded hover:text-accent hover:underline underline-offset-4";
+  const link = "rounded-tip hover:text-accent hover:underline underline-offset-4";
   return (
     <footer className="mt-12 w-full border-t border-line">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">

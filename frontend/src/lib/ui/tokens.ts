@@ -192,6 +192,10 @@ export const fontSize: Record<FontSizeKey, [size: string, meta: TypeMeta]> = {
   "display-lg": ["48px", { lineHeight: "52px", fontWeight: "300", letterSpacing: "-0.02em" }],
 };
 
+// U11 §5.3: the one radius scale; it replaces Tailwind's, so an off-scale class such as `rounded-xl` does not exist
+// (radius-guard.test.ts). `full` is an alias of `pill`.
+export const radius = { none: "0px", tip: "8px", inset: "12px", card: "16px", pill: "9999px", full: "9999px" } as const;
+
 /** SVG chart text (axis, values, bands): the scale's floor. */
 export const CHART_FONT_PX = 12;
 

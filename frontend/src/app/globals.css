@@ -52,7 +52,7 @@
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-line bg-surface p-5;
+    @apply rounded-card border border-line bg-surface p-5;
   }
   /* A panel's key figure (U3 §3.2): the only place outside the landing that uses the mono face. */
   .figure {

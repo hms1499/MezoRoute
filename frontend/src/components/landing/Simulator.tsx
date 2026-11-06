@@ -132,7 +132,7 @@ export function Simulator({
           </ul>
         </Settle>
       ) : error ? (
-        <div role="status" className="mt-4 flex min-h-[16rem] flex-col justify-center rounded-xl border border-night-line p-4 text-sm">
+        <div role="status" className="mt-4 flex min-h-[16rem] flex-col justify-center rounded-inset border border-night-line p-4 text-sm">
           <p className="font-semibold text-night-ink">Live data unavailable</p>
           <p id="simulator-notes" className="mt-1 text-night-muted">
             Mezo mainnet could not be read just now. Connect a wallet to compare the routes on your network.
@@ -175,7 +175,7 @@ function Cell({ cell }: { cell: SimCell }) {
 function CountingFigure({ value, format }: { value: bigint; format: (value: bigint) => string }) {
   const shown = useCountUp(value);
   return (
-    <span key={value.toString()} className="landing-flash rounded px-0.5 font-mono text-sm">
+    <span key={value.toString()} className="landing-flash rounded-tip px-0.5 font-mono text-sm">
       {format(shown)}
     </span>
   );
