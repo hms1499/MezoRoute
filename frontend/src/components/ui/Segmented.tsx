@@ -5,7 +5,8 @@ import { cx } from "@/lib/ui/cx";
 
 // U11 §5.6: the app's one segmented control. A well track; the selected item is a surface chip with a line ring, the
 // others muted text. Radio semantics for a choice, tab semantics for the mobile Compare tabs; arrow keys move the
-// selection (and wrap), and only the selected item sits in the tab order.
+// selection (and wrap), and only one item sits in the tab order: the selected one, or the first enabled one when the
+// selected item is disabled or missing (a disabled button cannot take focus, which would leave the group unreachable).
 
 export type SegmentedSize = "md" | "sm";
 
@@ -74,6 +75,7 @@ export function Segmented<T extends string>({
 }) {
   const refs = useRef(new Map<T, HTMLButtonElement>());
   const tabs = semantics === "tabs";
+  const focusable = options.find((option) => option.value === value && !option.disabled) ?? options.find((option) => !option.disabled);
 
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     const next = segmentedKey(
@@ -106,7 +108,7 @@ export function Segmented<T extends string>({
             aria-checked={tabs ? undefined : selected}
             aria-selected={tabs ? selected : undefined}
             aria-describedby={option.describedBy}
-            tabIndex={selected ? 0 : -1}
+            tabIndex={option === focusable ? 0 : -1}
             disabled={option.disabled}
             onClick={() => selected || onChange(option.value)}
             onKeyDown={onKeyDown}

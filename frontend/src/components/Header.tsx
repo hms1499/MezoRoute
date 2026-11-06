@@ -21,7 +21,7 @@ const NAV = [
 export function Header() {
   const pathname = usePathname();
   return (
-    <header className="flex items-center gap-1 py-4 sm:gap-4">
+    <header className="flex items-center gap-1 py-4 sm:gap-3 md:gap-4">
       <Link href="/" aria-label="MezoRoute home" className="hit shrink-0 rounded-tip">
         <Logo />
       </Link>
@@ -51,7 +51,8 @@ export function Header() {
         {({ account, openAccountModal, openConnectModal, mounted }) =>
           account ? (
             // One line at 360 px (U7). Below 400 px the button keeps only the wallet icon (U11 §5.6, the one give the
-            // Geist Mono header needed); its name still says which account it is.
+            // Geist Mono header needed); its name still says which account it is. The short address runs to 767 px:
+            // the display name from 640 px pushed the connected header past the page at 640-686 px (U11 review).
             <Button
               size="md"
               variant="secondary"
@@ -59,9 +60,9 @@ export function Header() {
               aria-label={`Account ${account.displayName}`}
               className="shrink-0 whitespace-nowrap text-ink"
             >
-              <Wallet aria-hidden className="h-4 w-4 text-accent min-[400px]:max-sm:hidden" />
-              <span className="hidden min-[400px]:inline sm:hidden">{`${account.address.slice(0, 4)}…${account.address.slice(-2)}`}</span>
-              <span className="hidden sm:inline">{account.displayName}</span>
+              <Wallet aria-hidden className="h-4 w-4 text-accent min-[400px]:max-md:hidden" />
+              <span className="hidden min-[400px]:inline md:hidden">{`${account.address.slice(0, 4)}…${account.address.slice(-2)}`}</span>
+              <span className="hidden md:inline">{account.displayName}</span>
             </Button>
           ) : (
             <Button size="md" variant="nightOutline" disabled={!mounted} onClick={openConnectModal}>

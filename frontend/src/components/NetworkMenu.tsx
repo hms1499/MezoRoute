@@ -6,7 +6,7 @@ import { buttonClass } from "@/components/ui/Button";
 import { useNetwork } from "@/lib/config/network-context";
 import type { NetworkId } from "@/lib/config/networks";
 import { cx } from "@/lib/ui/cx";
-import { menuKeys } from "@/lib/ui/menu";
+import { menuKeys, triggerKey } from "@/lib/ui/menu";
 import { themeColor } from "@/lib/ui/tokens";
 
 const OPTIONS: { id: NetworkId; label: string; short: string; dot: string }[] = [
@@ -61,8 +61,8 @@ export function NetworkMenu() {
     else setFocus(result.index);
   }
 
-  function openMenu() {
-    setFocus(OPTIONS.findIndex((option) => option.id === network.id));
+  function openMenu(at = OPTIONS.findIndex((option) => option.id === network.id)) {
+    setFocus(at);
     setOpen(true);
   }
 
@@ -77,10 +77,10 @@ export function NetworkMenu() {
         aria-label={`Network: ${current.label}`}
         onClick={() => (open ? close(false) : openMenu())}
         onKeyDown={(event) => {
-          if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            openMenu();
-          }
+          const at = triggerKey(event.key, OPTIONS.findIndex((option) => option.id === network.id), OPTIONS.length);
+          if (at === null) return;
+          event.preventDefault();
+          openMenu(at);
         }}
         // Below 400 px a disconnected header (Connect, not the account icon) has no room for the full name.
         className={buttonClass("quiet", "sm", "max-[399px]:gap-1")}

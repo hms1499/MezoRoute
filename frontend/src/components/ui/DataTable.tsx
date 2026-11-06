@@ -9,8 +9,9 @@ export function tableClass(dense = false): string {
   return cx("w-full border-collapse", dense ? "text-xs" : "text-sm");
 }
 
-export function thClass(align: Align, dense = false): string {
-  return cx("border-b border-line text-xs font-medium text-muted", dense ? "py-2" : "py-2", align === "right" ? "text-right" : "text-left");
+/** A column header: 12/500 muted with 8 px vertical padding in both densities. `dense` is accepted for symmetry. */
+export function thClass(align: Align, _dense = false): string {
+  return cx("border-b border-line py-2 text-xs font-medium text-muted", align === "right" ? "text-right" : "text-left");
 }
 
 /** A row header (`th scope="row"`): body weight, left-aligned. */

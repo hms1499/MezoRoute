@@ -125,4 +125,42 @@ describe("UI audit (U11 §7)", () => {
       }
     expect(failures).toEqual([]);
   });
+
+  // The page widths above skip the sm (640 px) breakpoint, where the connected header once ran past the page (U11
+  // review). This sweeps every width below 768 px with an account connected, on both networks, and opens the network
+  // menu at 360 px: the header's content and the menu must stay inside the page gutter.
+  it.each(["mainnet", "testnet"] as const)("the %s header fits every width from 360 to 767 px", async (network) => {
+    const failures: string[] = [];
+    const account = network === "mainnet" ? ACCOUNTS.mainnet : ACCOUNTS.testnetBorrower;
+    const context = await browser.newContext({ viewport: { width: 360, height: 900 } });
+    const config: MockConfig = { theme: "light", network, account };
+    await context.addInitScript(mockWallet, config);
+    const tab = await context.newPage();
+    await tab.goto(BASE + "/positions/");
+    await tab.waitForTimeout(8000);
+    const overflow = () =>
+      tab.evaluate(() => {
+        const header = document.querySelector("header");
+        if (!header) return "no header";
+        const box = header.getBoundingClientRect();
+        const right = Math.max(...[...header.querySelectorAll("*")].map((el) => el.getBoundingClientRect().right));
+        if (document.documentElement.scrollWidth > window.innerWidth) return `horizontal scroll ${document.documentElement.scrollWidth}px`;
+        return right > box.right + 0.5 ? `header content ends at ${Math.round(right)} past ${Math.round(box.right)}` : null;
+      });
+    for (let width = 360; width < 768; width += 1) {
+      await tab.setViewportSize({ width, height: 900 });
+      const found = await overflow();
+      if (found) failures.push(`${network}@${width}: ${found}`);
+    }
+    await tab.setViewportSize({ width: 360, height: 900 });
+    await tab.getByRole("button", { name: /^Network:/ }).click();
+    const menu = await tab.getByRole("menu", { name: "Network" }).boundingBox();
+    const gutter = await tab.evaluate(() => document.querySelector("header")!.getBoundingClientRect());
+    if (!menu) failures.push(`${network}: the network menu did not open`);
+    else if (menu.x < gutter.left - 0.5 || menu.x + menu.width > gutter.right + 0.5)
+      failures.push(`${network}: menu ${Math.round(menu.x)}–${Math.round(menu.x + menu.width)} outside ${Math.round(gutter.left)}–${Math.round(gutter.right)}`);
+    process.stdout.write(`header-sweep/${network}: ${failures.length === 0 ? "ok" : failures.join(" | ")}\n`);
+    await context.close();
+    expect(failures).toEqual([]);
+  });
 });

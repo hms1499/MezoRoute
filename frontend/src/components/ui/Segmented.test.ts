@@ -22,6 +22,19 @@ describe("Segmented", () => {
     expect(out).toMatch(/aria-checked="true"[^>]*class="[^"]*bg-surface[^"]*ring-line/);
   });
 
+  it("keeps one enabled item in the tab order when the selected item is disabled", () => {
+    const out = render({ value: "b", options: [{ value: "a", label: "One" }, { value: "b", label: "Two", disabled: true }] });
+    const tabbable = out.match(/<button[^>]*tabindex="0"[^>]*>/g) ?? [];
+    expect(tabbable).toHaveLength(1);
+    expect(tabbable[0]).not.toMatch(/\sdisabled=""/);
+    expect(tabbable[0]).toContain('aria-checked="false"');
+  });
+
+  it("keeps the first enabled item in the tab order when no option matches the value", () => {
+    const out = render({ value: "z" });
+    expect(out.match(/tabindex="0"/g)).toHaveLength(1);
+  });
+
   it("renders tab semantics", () => {
     const out = render({ semantics: "tabs", options: [{ value: "a", label: "One", id: "tab-a", controls: "panel-a" }, { value: "b", label: "Two" }] });
     expect(out).toContain('role="tablist"');

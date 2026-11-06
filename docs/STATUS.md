@@ -39,7 +39,7 @@ Tests at `main` (21 Oct): 962 Vitest and 75 Foundry. `npm run build` passes (Fir
 
 **U11 handover (6 Nov, evening):** Phase 1 (Tasks 1-11) is committed on `feat/u11-dapp-ui`. The user chose to merge later and continue in the next session. Left, in order:
 1. Done 6 Nov: full `npm run ui-audit` on a fresh build of `520a069` (13 pages × 360/768/1024/1440 × light/dark): 104 of 104 loads ok, 13/13 tests pass, 832 s. To re-run: A served build is needed: `cd frontend && npm run build && npx serve out -l 4318 &`, then `PLAYWRIGHT_CHROMIUM_EXECUTABLE=<a local Chromium> npm run ui-audit` (Playwright 1.56.1's own browser is not installed; this machine used `~/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell`).
-2. Final whole-branch review of Phase 1 (fresh reviewer), one fix pass for Critical/Important.
+2. Done 6 Nov: final whole-branch review of Phase 1 (fresh reviewer): 0 Critical, 2 Important fixed (see "U11 Phase 1 review" under Decisions still open).
 3. Merge Phase 1 into `main` and push **on the user's word** (a push deploys production).
 4. Phase 2 (Tasks 12-20): flow building blocks, LP/SP/Confirm/Exit/Withdraw/Receipt cards, Dashboard and Positions as tables, calldata parity. Then Unwind and Leverage (deadline 13 Nov).
 
@@ -122,6 +122,11 @@ Optional prep that needs no funds:
 ## Decisions still open / deferred minors
 
 **Deck (19 Oct, user's decision):** no Discord user quotes (there are no real users yet); the deck's problem slide uses the measured borrow → LP step count in the Mezo app (the agent measures it on testnet.mezo.org) and on-chain figures instead.
+
+**U11 Phase 1 review (6 Nov, fresh reviewer, e73b5bf..96fcb64):** 0 Critical; 2 Important fixed: the connected header scrolled sideways at 640–686 px (the account's display name now shows from 768 px, and the header gap is 12 px from 640 to 767 px; `ui-audit` gained a header sweep of every width from 360 to 767 px on both networks plus the open network menu at 360 px), and a disabled selected `Segmented` item left the group unreachable by keyboard (the first enabled item now takes the tab stop). Minors fixed: the control guard reads `className` with brace depth (an `onClick={() => …}` no longer hides it), `.hit` sits in the components layer, the `ErrorToast` Dismiss has a hit area, the network chip opens on the last item with ArrowUp, the `thClass` ternary, a stale `.figure` comment. Spec §5.6 now says exit/withdraw Max stays a preset item. After the fixes: 1279 Vitest, build pass, the header sweep passes on both networks; the full audit re-run was stopped at the user's request at 31 of 104 loads (all ok). **User decision (6 Nov): `npm run ui-audit` is no longer a gate or a routine step; build to `frontend/DESIGN.md` and let the guard tests in `npm test` hold it. The script stays for a run on request.** Deferred:
+- The guards are narrower than they read: the radius guard misses `border-*-radius` longhands and inline `borderRadius`; the indicator guard only matches `h-(7|8|10)` circles; the segmented-role guard only a double-quoted `role="…"`; the spacing guard leaves out positioning (`top/left/inset`) on purpose, against plan Task 2's list.
+- `signedTone` is not on the LP/SP position cards' "Estimated position value change" (plan Task 7, spec §5.5); DESIGN.md narrows the role to a 30-day result. Phase 2 (Task 19, Positions) decides.
+- `DataTable` is used only by `ExposurePanel`'s headers: `rowThClass`/`tdClass`/`trClass` are unused, and the landing Simulator table and the Compare grid do not use it yet (Phase 2 Task 14).
 
 **D1 video deferred minors (confirmCall review, 19 Oct):**
 - An explorer-confirmed approval can be followed by a stale-node allowance read ("approval does not cover this amount") until the node catches up.

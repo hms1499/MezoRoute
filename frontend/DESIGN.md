@@ -265,7 +265,7 @@ All shared components live in `src/components/ui/`. U11 Phase 2 adds the flow bu
 - Never size a button from outside (`control-guard.test.ts`).
 
 ### Segmented
-The only segmented control: a `well` track, items as pills, the selected item a `surface` chip with a `line` ring. Radio semantics for a choice, tab semantics for tabs; the arrow keys move the selection; only the selected item is in the tab order. Used for funding mode, deposit asset, slippage, exit and withdraw shares, the mobile Compare tabs, and the footer theme switch. The header nav uses the same chip.
+The only segmented control: a `well` track, items as pills, the selected item a `surface` chip with a `line` ring. Radio semantics for a choice, tab semantics for tabs; the arrow keys move the selection; one item is in the tab order: the selected one, or the first enabled one when the selected item is disabled. Used for funding mode, deposit asset, slippage, exit and withdraw shares, the mobile Compare tabs, and the footer theme switch. The header nav uses the same chip.
 
 ### MaxButton
 The one Max: an `sm` pill, accent text on `accent-soft`, inside the amount field on the right.
@@ -292,7 +292,7 @@ An inline message with an icon, in one of four tones: `neutral` (ink on well; in
 The header's network chip: a dot in the network's colour, the name (Test/Main below 400 px), a chevron; it opens a two-item menu (`menuKeys`: arrows, Home/End, Escape and Tab close, Enter and Space choose). Choosing the other network stores it and reloads.
 
 ### Wallet button
-The app's own Connect and account buttons (`md`). Below 400 px the account button shows only the wallet icon; from 640 px it adds the display name.
+The app's own Connect and account buttons (`md`). Below 400 px the account button shows only the wallet icon, the short address from 400 px, and the display name from 768 px (at 640 px the name pushed the connected header past the page). The header gap is 12 px from 640 to 767 px.
 
 ### TokenIcon / PairIcon
 The MUSD, BTC, and MEZO icons (`public/tokens/`), cropped to a circle, at 16 px inline, 20 px in chips and table rows, 24 px in card headers. `PairIcon` overlaps two by a third, the second on a `surface` ring.

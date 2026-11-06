@@ -24,3 +24,9 @@ export function menuKeys(key: string, index: number, count: number): MenuKeyResu
       return null;
   }
 }
+
+/** Which item a key on the closed menu's trigger opens on (the checked one, or the last for ArrowUp); null keeps it shut. */
+export function triggerKey(key: string, checked: number, count: number): number | null {
+  if (key === "ArrowUp") return count - 1;
+  return key === "ArrowDown" || key === "Enter" || key === " " ? checked : null;
+}
