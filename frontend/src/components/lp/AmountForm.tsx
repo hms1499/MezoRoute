@@ -6,8 +6,8 @@ import { AmountInput } from "./AmountInput";
 
 const chip = (on: boolean) =>
   on
-    ? "min-h-9 rounded-full bg-accent px-3.5 text-sm font-semibold text-onAccent"
-    : "min-h-9 rounded-full border border-line px-3.5 text-sm font-semibold text-muted hover:text-ink";
+    ? "min-h-9 rounded-full bg-accent px-4 text-sm font-semibold text-onAccent"
+    : "min-h-9 rounded-full border border-line px-4 text-sm font-semibold text-muted hover:text-ink";
 
 type Inputs = { amount: string; slippageBps: SlippageBps };
 

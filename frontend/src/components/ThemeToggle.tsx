@@ -41,7 +41,7 @@ export function ThemeSwitch() {
             role="radio"
             aria-checked={active}
             onClick={() => active || applyTheme(option.id)}
-            className={active ? "rounded-full bg-selected px-3 py-1.5 font-semibold text-accent" : "rounded-full px-3 py-1.5 text-muted hover:text-ink"}
+            className={active ? "rounded-full bg-selected px-3 py-1 font-semibold text-accent" : "rounded-full px-3 py-1 text-muted hover:text-ink"}
           >
             {option.label}
           </button>

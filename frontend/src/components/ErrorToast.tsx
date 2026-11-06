@@ -126,7 +126,7 @@ function ErrorToast({
           </div>
         )}
       </div>
-      <button type="button" aria-label="Dismiss" onClick={onDismiss} className="-m-1 rounded-full p-1.5 text-muted hover:text-ink">
+      <button type="button" aria-label="Dismiss" onClick={onDismiss} className="-m-1 rounded-full p-2 text-muted hover:text-ink">
         <X aria-hidden className="h-4 w-4" />
       </button>
     </div>

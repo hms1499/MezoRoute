@@ -38,7 +38,7 @@ export function Hero({ data, error }: { data: MainnetReferenceData | undefined; 
               back to MUSD. Non-custodial.
             </p>
             {/* Below 640 px the two actions stack at full width. */}
-            <div className="landing-rise mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center" style={delay(320)}>
+            <div className="landing-rise mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center" style={delay(320)}>
               {/* With the arrow circle the full label wraps below 640 px. */}
               <ConnectCta variant="primary" className="w-full sm:w-auto" arrow label={<><span className="sm:hidden">Connect a wallet</span><span className="max-sm:hidden">Connect a Bitcoin or EVM wallet</span></>} />
               <a href="#simulator" className={buttonClass("secondary", "md", "w-full sm:w-auto", true)}>
@@ -55,7 +55,7 @@ export function Hero({ data, error }: { data: MainnetReferenceData | undefined; 
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4 text-xs text-muted">
-        <a href="#simulator" className="inline-flex min-h-9 items-center gap-1.5 font-medium text-accent underline-offset-4 hover:underline">
+        <a href="#simulator" className="inline-flex min-h-9 items-center gap-2 font-medium text-accent underline-offset-4 hover:underline">
           Try an amount
           <ArrowDown aria-hidden className="h-3.5 w-3.5" />
         </a>

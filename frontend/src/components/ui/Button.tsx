@@ -27,9 +27,9 @@ const VARIANTS: Record<ButtonVariant, string> = {
   // An outlined control that is not an action: the header's theme toggle (U9).
   quiet: `${OUTLINE} text-muted ring-line hover:text-ink`,
 };
-const SIZES: Record<Size, string> = { md: "min-h-11 px-5 text-sm", sm: "min-h-9 px-3.5 text-xs", icon: "h-9 w-9 shrink-0" };
+const SIZES: Record<Size, string> = { md: "min-h-11 px-5 text-sm", sm: "min-h-9 px-4 text-xs", icon: "h-9 w-9 shrink-0" };
 // With the arrow circle the trailing padding shrinks so the circle sits inside the pill's curve (Morpho).
-const ARROW_SIZES: Record<Size, string> = { md: "min-h-11 pl-5 pr-1.5 text-sm", sm: "min-h-9 pl-3.5 pr-1 text-xs", icon: SIZES.icon };
+const ARROW_SIZES: Record<Size, string> = { md: "min-h-11 pl-5 pr-1 text-sm", sm: "min-h-9 pl-4 pr-1 text-xs", icon: SIZES.icon };
 // Filled buttons carry a light circle with an accent arrow; outlined and ghost ones an accent circle.
 const FILLED: ReadonlySet<ButtonVariant> = new Set(["primary", "night"]);
 

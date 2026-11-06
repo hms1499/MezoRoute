@@ -5,7 +5,7 @@ const DELAYS_MS = [0, 150, 300];
 /** Three dots rising in turn (U10): waiting on a wallet or a confirmation. Still under reduced motion. */
 export function DotWave({ size = "sm", className }: { size?: "sm" | "lg"; className?: string }) {
   return (
-    <span aria-hidden className={cx("inline-flex items-center", size === "lg" ? "gap-1.5" : "gap-[3px]", className)}>
+    <span aria-hidden className={cx("inline-flex items-center", size === "lg" ? "gap-2" : "gap-1", className)}>
       {DELAYS_MS.map((delay) => (
         <span
           key={delay}

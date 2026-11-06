@@ -7,7 +7,7 @@ export function RisksCard({ borrow = false, fromBtc = false }: { borrow?: boolea
   const risks = borrow ? [BORROW_RISK, ...LP_RISKS] : fromBtc ? LP_BTC_RISKS : LP_RISKS;
   return (
     <Card level="section" title="Risks">
-      <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-muted">
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted">
         {risks.map((risk) => (
           <li key={risk}>{risk}</li>
         ))}

@@ -196,6 +196,10 @@ export const fontSize: Record<FontSizeKey, [size: string, meta: TypeMeta]> = {
 // (radius-guard.test.ts). `full` is an alias of `pill`.
 export const radius = { none: "0px", tip: "8px", inset: "12px", card: "16px", pill: "9999px", full: "9999px" } as const;
 
+// U11 §5.3: spacing steps in units of 4 px (0.5 = 2 px is the one half step). spacing-guard.test.ts holds padding,
+// margin, gap, and space-* to these; Tailwind's own spacing theme stays whole because sizing classes share it.
+export const SPACING_STEPS = [0, 0.5, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24] as const;
+
 /** SVG chart text (axis, values, bands): the scale's floor. */
 export const CHART_FONT_PX = 12;
 

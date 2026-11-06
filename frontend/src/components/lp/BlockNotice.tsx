@@ -11,7 +11,7 @@ export function BlockNotice({ block, actions = [] }: { block: { outcome: Outcome
   if (!block?.outcome) return null;
   return (
     <div role="status" className="space-y-2">
-      <p className="flex items-start gap-1.5 text-sm text-danger">
+      <p className="flex items-start gap-2 text-sm text-danger">
         <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
         <span>{block.outcome.message}</span>
       </p>

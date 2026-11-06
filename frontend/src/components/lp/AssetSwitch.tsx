@@ -10,8 +10,8 @@ export function AssetSwitch({ asset, onChange }: { asset: EntryAsset; onChange: 
       onClick={() => onChange(value)}
       className={
         asset === value
-          ? "min-h-9 rounded-full bg-line px-3.5 text-ink"
-          : "min-h-9 rounded-full px-3.5 text-muted hover:text-ink"
+          ? "min-h-9 rounded-full bg-line px-4 text-ink"
+          : "min-h-9 rounded-full px-4 text-muted hover:text-ink"
       }
     >
       {label}
