@@ -43,7 +43,7 @@ The project already has a strong base: two palettes with contrast tests, a type 
 
 ## 4. Audit findings (6 Nov 2026)
 
-The audit ran Playwright with the keyless mock wallet on the local `main` build. It covered 13 screens at 360 and 1440 px (26 light-theme page loads, plus dark screenshots), using the user's mainnet account (staked LP) and the testnet "can borrow" account. There was no horizontal scroll and no app console error. Screenshots are in `.playwright-mcp/u11-audit/shots/` (git-ignored); the script is `.playwright-mcp/u11-audit/run.js`.
+The audit ran Playwright with the keyless mock wallet on the local `main` build. It covered 13 screens at 360 and 1440 px (26 light-theme page loads, plus dark screenshots), using the user's mainnet account (staked LP) and the testnet "can borrow" account. There was no horizontal scroll and no app console error. The screenshots and the throwaway script were deleted on 6 Nov at the user's request; the repeatable check is `npm run ui-audit` (`frontend/scripts/live/ui-audit.live.ts`, §7).
 
 **Already consistent:**
 - Cards: 62 of them, all 16 px radius, 20 px padding, 1 px border.
