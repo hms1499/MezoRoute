@@ -17,8 +17,9 @@ import { explorerTxUrl } from "@/lib/config/networks";
 import { decodeError } from "@/lib/errors/decode";
 import { useDashboardSnapshot } from "@/lib/dashboard/useDashboardSnapshot";
 import { formatPercent, formatToken, shortAddress } from "@/lib/format";
+import { gaugeReceiptRows } from "@/lib/gauge/actions";
 import { claimRows } from "@/lib/positions/claim";
-import { enteredRows, exitedRows } from "@/lib/routes/musd-btc-lp/receipt";
+import { enteredFromBtcRows, enteredRows, exitedRows } from "@/lib/routes/musd-btc-lp/receipt";
 import { spReceiptRows } from "@/lib/stability-pool/receipt";
 import { collateralRatio } from "@/lib/trove/health";
 import { receiptKind } from "@/lib/tx/receipt-kind";
@@ -91,8 +92,11 @@ function Receipt({ hash }: { hash: Hash }) {
   );
 }
 
+const GAUGE_TITLES = { claim: "MEZO claimed", stake: "LP staked", unstake: "LP unstaked" } as const;
+
 const TITLES = {
   entered: "Deposit confirmed",
+  enteredBtc: "Deposit confirmed",
   exited: "Exit confirmed",
   claim: "Fees claimed",
   "sp-deposit": "Stability Pool deposit confirmed",
@@ -114,15 +118,19 @@ function Confirmed({ receipt }: { receipt: TransactionReceipt }) {
   const borrowed = result.kind === "entered" && result.event.musdBorrowed > 0n;
   const rows =
     result.kind === "entered"
-      ? enteredRows(result.event)
-      : result.kind === "exited"
+      ? enteredRows(result.event, result.staked)
+      : result.kind === "enteredBtc"
+        ? enteredFromBtcRows(result.event, result.staked)
+        : result.kind === "exited"
         ? exitedRows(result.event)
         : result.kind === "claim"
           ? claimRows(result.fees)
-          : spReceiptRows(result.sp);
+          : result.kind === "gauge"
+            ? gaugeReceiptRows(result.gauge)
+            : spReceiptRows(result.sp);
   return (
     <>
-      <h1 className="text-title">{borrowed ? "Borrow & deposit confirmed" : TITLES[result.kind]}</h1>
+      <h1 className="text-title">{borrowed ? "Borrow & deposit confirmed" : result.kind === "gauge" ? GAUGE_TITLES[result.gauge.action] : TITLES[result.kind]}</h1>
       <dl className="mt-3 stat-list">
         {rows.map((row) => (
           <Stat key={row.label} label={row.label}>

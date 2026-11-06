@@ -4,7 +4,7 @@ import { lpHistoryLine, spHistoryLine } from "@/lib/compare/view";
 import { useNetwork } from "@/lib/config/network-context";
 import { networks } from "@/lib/config/networks";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
-import { referenceFooter, referenceView } from "@/lib/reference/snapshot";
+import { protocolOwnedLine, referenceFooter, referenceView } from "@/lib/reference/snapshot";
 import { useMainnetReference } from "@/lib/reference/useMainnetReference";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -41,13 +41,14 @@ export function MainnetReferenceCard() {
 
   const { reference: r, backtests } = data;
   const view = referenceView(r);
+  const owned = protocolOwnedLine(r);
   return (
     <Settle>
       <Card id="mainnet-reference" variant="reference" title="Mainnet today" aside={<Badge>Mainnet · reference only</Badge>}>
         <div className="mt-3 grid gap-5 sm:grid-cols-2">
           <div>
             <h3 className="text-sm font-semibold">MUSD/BTC pool</h3>
-            <dl className="stat-list mt-2">
+            <dl className="stat-list mt-2 grid-cols-[minmax(8rem,1fr)_minmax(0,auto)]">
               <Stat label="Reserves" sub={`+ ${formatToken(r.reserveBtc, 18, 4)} BTC`}>
                 {formatToken(r.reserveMusd, 18, 0)} MUSD
               </Stat>
@@ -58,10 +59,13 @@ export function MainnetReferenceCard() {
           </div>
           <div>
             <h3 className="text-sm font-semibold">Stability Pool</h3>
-            <dl className="stat-list mt-2">
+            <dl className="stat-list mt-2 grid-cols-[minmax(8rem,1fr)_minmax(0,auto)]">
               <Stat label="Deposits">{formatToken(r.spDeposits, 18, 0)} MUSD</Stat>
               <Stat label="Share of MUSD supply" sub={`of ${formatToken(r.musdSupply, 18, 0)} MUSD`}>
                 {formatPercent(view.spShare, 1)}
+              </Stat>
+              <Stat label={owned.label} sub={owned.sub}>
+                {owned.value}
               </Stat>
               <Stat label="Last 30 days">{backtests ? spHistoryLine(backtests.sp) : "Unavailable"}</Stat>
             </dl>

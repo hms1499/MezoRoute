@@ -38,7 +38,9 @@ export function BlockNotice({ block, actions = [] }: { block: { outcome: Outcome
 export function balanceNoticeActions(
   actions: BalanceAction[],
   handlers: { onBorrow?: (amount: bigint) => void; onUseBalance: (amount: bigint) => void },
+  unit: "MUSD" | "BTC" = "MUSD",
 ): NoticeAction[] {
+  const digits = unit === "BTC" ? 6 : 2;
   return actions.flatMap((action): NoticeAction[] => {
     switch (action.kind) {
       case "borrow-instead":
@@ -46,12 +48,16 @@ export function balanceNoticeActions(
       case "use-balance":
         return [
           {
-            label: action.capped ? `Use the ${formatToken(action.amount, 18, 0)} MUSD cap` : `Use my balance (${formatToken(action.amount, 18, 2)} MUSD)`,
+            label: action.capped
+              ? `Use the ${formatToken(action.amount, 18, unit === "BTC" ? 4 : 0)} ${unit} cap`
+              : `Use my balance (${formatToken(action.amount, 18, digits)} ${unit})`,
             onClick: () => handlers.onUseBalance(action.amount),
           },
         ];
       case "get-musd":
         return [{ label: "Get MUSD in the Mezo app", href: action.href }];
+      case "get-btc":
+        return [{ label: action.href.includes("faucet") ? "Get test BTC" : "Get BTC in the Mezo app", href: action.href }];
     }
   });
 }

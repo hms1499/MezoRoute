@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { checkEntry, earlierPoolActivity, summarise, type CheckResult, type EnteredEvent, type EntryCheck } from "./accuracy";
+import {
+  checkEntry,
+  checkEntryFromBtc,
+  earlierPoolActivity,
+  summarise,
+  type CheckResult,
+  type EnteredEvent,
+  type EnteredFromBtcEvent,
+  type EntryCheck,
+} from "./accuracy";
 import { DEFAULT_SLIPPAGE, quoteEntry, type PoolState } from "./entry";
 
 // S1's first live entry (tx 0xb7c0780b…, 5 Oct 2026): 1 MUSD in, 10 bps fee, a naive half swapped.
@@ -113,5 +122,57 @@ describe("summarise", () => {
 
   it("fails an empty run: with an executor, no events means the scan proved nothing (review, 15 Oct 2026)", () => {
     expect(summarise([]).passed).toBe(false);
+  });
+});
+
+// Task 3's live EnteredFromBtc (tx 0xf0378a9d…cf5, block 16,570,227) against the pool at block 16,570,226.
+const BTC_POOL: PoolState = {
+  reserveMusd: 102510355910841854805827690n,
+  reserveBtc: 1304018023912565731526n,
+  totalSupply: 365609032746488322770813n,
+  feeBps: 4n,
+};
+const BTC_EVENT: EnteredFromBtcEvent = {
+  blockNumber: 16_570_227n,
+  logIndex: 3,
+  txHash: "0xf0378a9d",
+  btcIn: 300000000000000n,
+  fee: 300000000000n,
+  btcToSwap: 149850000000000n,
+  musdFromSwap: 11775167457143114855n,
+  musdAdded: 11775167457143114855n,
+  btcAdded: 149790077206098n,
+  liquidityOut: 41996811353360838n,
+  musdRefund: 0n,
+  btcRefund: 59922793902n,
+};
+const checkBtc = (event: EnteredFromBtcEvent) => checkEntryFromBtc({ event, pool: BTC_POOL, feeBps: 10n, slippageBps: DEFAULT_SLIPPAGE });
+
+describe("checkEntryFromBtc", () => {
+  it("reproduces the live BTC entry to the wei and finds it within slippage of the optimal quote", () => {
+    const result = checkBtc(BTC_EVENT);
+    expect(result.feeOk).toBe(true);
+    expect(result.simulation).toEqual({ ok: true, mismatches: [] });
+    expect(result.quote?.optimal).toBe(false);
+    expect(result.quote?.withinSlippage).toBe(true);
+  });
+
+  it("names every field the simulation gets wrong", () => {
+    const result = checkBtc({ ...BTC_EVENT, musdFromSwap: BTC_EVENT.musdFromSwap + 1n });
+    expect(result.simulation.ok).toBe(false);
+    expect(result.simulation.mismatches[0]).toBe(
+      `musdFromSwap: simulated ${BTC_EVENT.musdFromSwap}, event ${BTC_EVENT.musdFromSwap + 1n}`,
+    );
+  });
+
+  it("takes the fee in BTC: btcIn × feeBps / 10,000", () => {
+    expect(checkBtc({ ...BTC_EVENT, fee: BTC_EVENT.fee + 1n }).feeOk).toBe(false);
+  });
+});
+
+describe("summarise over BTC results", () => {
+  it("counts BTC entries like MUSD ones", () => {
+    const results: CheckResult<EnteredFromBtcEvent>[] = [{ event: BTC_EVENT, status: "checked", check: checkBtc(BTC_EVENT) }];
+    expect(summarise(results)).toMatchObject({ total: 1, checked: 1, passed: true });
   });
 });

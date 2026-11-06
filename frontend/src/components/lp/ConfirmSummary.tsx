@@ -4,6 +4,7 @@ import { Notice } from "@/components/ui/Notice";
 import { Stat } from "@/components/ui/Stat";
 import { Term } from "@/components/ui/Term";
 import { formatBps, formatPercent } from "@/lib/format";
+import { GAUGE_READ_FAILED_ENTRY } from "@/lib/gauge/copy";
 import { entryValue } from "@/lib/quote/entry";
 import { QUOTE_TTL_MS } from "@/lib/routes/musd-btc-lp/gate";
 import type { EntryPreview } from "@/lib/routes/musd-btc-lp/preview";
@@ -11,7 +12,7 @@ import type { LpRouteData } from "@/lib/routes/musd-btc-lp/snapshot";
 import { QUOTE_REFRESH_MS } from "@/lib/routes/musd-btc-lp/useLpRouteSnapshot";
 import { cx } from "@/lib/ui/cx";
 import { quoteTimer } from "@/lib/ui/countdown";
-import { btc, lp, musd } from "./units";
+import { btc, btcFine, lp, musd } from "./units";
 
 /** Exact amounts, minimums, deadline, and the quote's age (spec §9 screen 3a). */
 export function ConfirmSummary({
@@ -27,12 +28,52 @@ export function ConfirmSummary({
   now: number;
   onRefresh: () => void;
 }) {
-  const { quote, minimums } = preview;
+  const { quote, minimums, btcQuote, btcMinimums } = preview;
+  // The rows every entry ends with, whichever token it brings.
+  const tail = (
+    <>
+      {preview.stake.availability !== "unavailable" && (
+        <Stat label="Staking" sub={preview.stake.on ? "swap fees go to veBTC voters while staked" : undefined}>
+          {preview.stake.on ? "Staked in the MEZO gauge" : "Not staked"}
+        </Stat>
+      )}
+      {data.snapshot.dashboard.gaugeReadFailed && (
+        <Stat label="Staking" sub={GAUGE_READ_FAILED_ENTRY}>
+          Not staked
+        </Stat>
+      )}
+      <Stat label="Slippage">{formatBps(slippageBps, 1)}</Stat>
+      <Stat label="Deadline" sub="10 minutes after this quote's block">
+        {new Date(Number(preview.deadline) * 1000).toLocaleTimeString()}
+      </Stat>
+    </>
+  );
   const timer = quoteTimer(now, data.fetchedAt, QUOTE_REFRESH_MS, QUOTE_TTL_MS);
   return (
     <Card title={preview.borrow ? "Review your borrow and deposit" : "Review your deposit"} headingLevel={1}>
+      {btcQuote && btcMinimums && (
+        <dl className="mt-3 stat-list grid-cols-[minmax(8rem,1fr)_minmax(0,auto)]">
+          <Stat label="You deposit" strong>
+            {btcFine(btcQuote.btcIn)}
+          </Stat>
+          <Stat label="MezoRoute fee" sub={formatBps(data.snapshot.executorFeeBps)}>
+            {btcFine(btcQuote.fee)}
+          </Stat>
+          <Stat label="Swapped to MUSD" sub={`at least ${musd(btcMinimums.minMusdFromSwap)}`}>
+            {btcFine(btcQuote.btcToSwap)}
+          </Stat>
+          <Stat label="Deposited to the pool" sub={`at least ${musd(btcMinimums.minMusdAdded)} + ${btcFine(btcMinimums.minBtcAdded)}`}>
+            <span className="block">{musd(btcQuote.musdAdded)}</span>
+            <span className="block">+ {btcFine(btcQuote.btcAdded)}</span>
+          </Stat>
+          <Stat label="LP tokens" sub={`≈ ${musd(entryValue(data.snapshot.pool, btcQuote))} at the pool price · at least ${lp(btcMinimums.minLpOut)}`}>
+            {lp(btcQuote.liquidity)}
+          </Stat>
+          {tail}
+        </dl>
+      )}
       {quote && minimums && (
-        <dl className="mt-3 stat-list">
+        <dl className="mt-3 stat-list grid-cols-[minmax(8rem,1fr)_minmax(0,auto)]">
           <Stat label={preview.borrow ? "You borrow and deposit" : "You deposit"} strong>
             {musd(quote.musdIn)}
           </Stat>
@@ -67,15 +108,13 @@ export function ConfirmSummary({
             {musd(quote.musdToSwap)}
           </Stat>
           <Stat label="Deposited to the pool" sub={`at least ${musd(minimums.minMusdAdded)} + ${btc(minimums.minBtcAdded)}`}>
-            {musd(quote.musdAdded)} + {btc(quote.btcAdded)}
+            <span className="block">{musd(quote.musdAdded)}</span>
+            <span className="block">+ {btc(quote.btcAdded)}</span>
           </Stat>
           <Stat label="LP tokens" sub={`≈ ${musd(entryValue(data.snapshot.pool, quote))} at the pool price · at least ${lp(minimums.minLpOut)}`}>
             {lp(quote.liquidity)}
           </Stat>
-          <Stat label="Slippage">{formatBps(slippageBps, 1)}</Stat>
-          <Stat label="Deadline" sub="10 minutes after this quote's block">
-            {new Date(Number(preview.deadline) * 1000).toLocaleTimeString()}
-          </Stat>
+          {tail}
         </dl>
       )}
       <div className="mt-4">

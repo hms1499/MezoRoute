@@ -2,20 +2,25 @@ import { Card } from "@/components/ui/Card";
 import { Stat } from "@/components/ui/Stat";
 import { btc, lp, musd } from "@/components/lp/units";
 import { formatPercent } from "@/lib/format";
+import { exitCopy } from "@/lib/positions/exit-copy";
+import type { ExitStepKind } from "@/lib/positions/exit-steps";
 import type { ExitMinimums, ExitQuote } from "@/lib/quote/exit";
 
 /** FR-09: removal amounts, swap output, expected and minimum MUSD, gas; no fee on exit. */
 export function ExitPreviewCard({
   quote,
   minimums,
+  steps,
   gasCost,
   blockNumber,
 }: {
   quote: ExitQuote;
   minimums: ExitMinimums;
+  steps: ExitStepKind[];
   gasCost: bigint | null;
   blockNumber: bigint;
 }) {
+  const note = exitCopy(steps).unstakeNote;
   return (
     <Card title="Estimated result">
       <dl className="mt-3 stat-list">
@@ -32,6 +37,7 @@ export function ExitPreviewCard({
         <Stat label="Network fee (estimated)">{gasCost === null ? "—" : btc(gasCost)}</Stat>
       </dl>
       <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-muted">
+        {note && <li>{note}</li>}
         <li>Unclaimed pool fees stay claimable after you exit.</li>
         <li>The BTC half is sold for MUSD at the pool price; the minimum protects you from a worse fill.</li>
         <li>Quote from block {blockNumber.toString()}; it refreshes every 15 seconds and again before sending.</li>

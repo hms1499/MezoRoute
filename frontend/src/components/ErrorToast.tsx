@@ -14,6 +14,7 @@ export type RecoveryHandlers = {
   refreshQuote?: () => void;
   reduceAmount?: () => void;
   useDeposit?: () => void;
+  skipStake?: () => void;
 };
 
 type ErrorToastApi = { showError: (error: unknown, handlers?: RecoveryHandlers) => void; dismiss: () => void };
@@ -29,6 +30,7 @@ const LABELS: Record<Recovery, string> = {
   "copy-details": "Copy details",
   "view-transaction": "View transaction",
   "use-deposit": "Deposit MUSD",
+  "skip-stake": "Enter without staking",
 };
 
 export function ErrorToastProvider({ children }: { children: ReactNode }) {
@@ -89,6 +91,8 @@ function ErrorToast({
         return thenDismiss(handlers.reduceAmount);
       case "use-deposit":
         return thenDismiss(handlers.useDeposit);
+      case "skip-stake":
+        return thenDismiss(handlers.skipStake);
       case "switch-network":
         return thenDismiss(() => switchChain({ chainId: network.chainId }));
       case "add-gas":

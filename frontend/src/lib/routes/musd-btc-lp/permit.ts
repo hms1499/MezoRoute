@@ -15,6 +15,19 @@ export function musdPermitDomain(network: NetworkConfig) {
   } as const;
 }
 
+/**
+ * The BTC token's EIP-712 domain: name "BTC", version "1" (its `DOMAIN_SEPARATOR()` on testnet equals the hash of
+ * this domain, G1 smoke 4 Nov 2026). The token is the chain's BTC precompile at the same address on both networks.
+ */
+export function btcPermitDomain(network: NetworkConfig) {
+  return {
+    name: "BTC",
+    version: "1",
+    chainId: network.chainId,
+    verifyingContract: network.addresses.btc,
+  } as const;
+}
+
 export const PERMIT_TYPES = {
   Permit: [
     { name: "owner", type: "address" },
@@ -25,9 +38,10 @@ export const PERMIT_TYPES = {
   ],
 } as const;
 
-/** EIP-2612 permit for exactly `value` MUSD to the executor (FR-06). */
+/** EIP-2612 permit for exactly `value` of the entry's token (MUSD, or BTC for a BTC entry) to the executor (FR-06). */
 export function permitTypedData(input: {
   network: NetworkConfig;
+  asset?: "musd" | "btc";
   owner: Address;
   spender: Address;
   value: bigint;
@@ -35,7 +49,7 @@ export function permitTypedData(input: {
   deadline: bigint;
 }) {
   return {
-    domain: musdPermitDomain(input.network),
+    domain: input.asset === "btc" ? btcPermitDomain(input.network) : musdPermitDomain(input.network),
     types: PERMIT_TYPES,
     primaryType: "Permit" as const,
     message: {

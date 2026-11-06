@@ -1,5 +1,6 @@
 import type { NetworkConfig } from "@/lib/config/networks";
 import { writeBlockerMessage } from "@/lib/config/write-gate";
+import { GAUGE_READ_FAILED_RETRY } from "@/lib/gauge/copy";
 import type { Outcome } from "./types";
 
 // Messages follow PRODUCT_SPEC.md §13.
@@ -53,6 +54,20 @@ export const ALLOWANCE: Outcome = {
 export const INSUFFICIENT_BALANCE: Outcome = {
   kind: "insufficient-balance",
   message: "Amount exceeds your available MUSD.",
+  recovery: ["reduce-amount"],
+};
+
+/** A BTC entry: BTC is also the gas, so a BTC amount can fail on the wallet's own balance. */
+export const INSUFFICIENT_BTC: Outcome = {
+  kind: "insufficient-balance",
+  message: "Amount exceeds your available BTC.",
+  recovery: ["reduce-amount"],
+};
+
+/** The amount fits the balance but leaves too little BTC to pay for the transaction. */
+export const KEEP_GAS_BTC: Outcome = {
+  kind: "needs-gas",
+  message: "Keep some BTC in your wallet to pay for the network fee. Enter a little less.",
   recovery: ["reduce-amount"],
 };
 
@@ -187,3 +202,52 @@ export function aboveCap(network: NetworkConfig): Outcome {
     recovery: ["reduce-amount"],
   };
 }
+
+export function aboveCapBtc(network: NetworkConfig): Outcome {
+  return {
+    kind: "above-cap",
+    message:
+      network.id === "mainnet"
+        ? "Mainnet deposits are limited to 0.0125 BTC per transaction while unaudited."
+        : "Amount is above the per-transaction cap.",
+    recovery: ["reduce-amount"],
+  };
+}
+
+export const STAKING_CLOSED: Outcome = {
+  kind: "staking-closed",
+  message: "Staking is closed; enter without staking",
+  recovery: ["skip-stake"],
+};
+
+/** The executor's stake check tripped (`StakeNotCredited`, `StakeIncomplete`); the revert undoes the whole entry. */
+export const STAKE_FAILED: Outcome = {
+  kind: "stake-failed",
+  message: "Staking did not go through, so nothing moved. Try again or enter without staking.",
+  recovery: ["retry", "skip-stake"],
+};
+
+export const BORROW_MISMATCH: Outcome = {
+  kind: "borrow-mismatch",
+  message: "The borrow does not match this deposit. Review it again.",
+  recovery: ["reduce-amount"],
+};
+
+/** A safety check of the executor refused the call; the app's own calls should never reach these. */
+export const ROUTE_REFUSED: Outcome = {
+  kind: "route-refused",
+  message: "MezoRoute refused this transaction, so nothing moved.",
+  recovery: ["retry", "copy-details"],
+};
+
+export const GAUGE_READ_FAILED: Outcome = { kind: "gauge-read-failed", message: GAUGE_READ_FAILED_RETRY, recovery: ["retry"] };
+
+// Gauge actions on Positions (G1).
+export const NO_PENDING_MEZO: Outcome = { kind: "nothing-to-claim", message: "You have no MEZO to claim yet.", recovery: [] };
+export const NO_WALLET_LP: Outcome = { kind: "no-lp", message: "You have no LP in your wallet to stake.", recovery: [] };
+export const NO_STAKED_LP: Outcome = { kind: "no-staked-lp", message: "You have no staked LP.", recovery: [] };
+export const STAKING_CLOSED_NOW: Outcome = {
+  kind: "staking-closed",
+  message: "Staking is closed right now. You can still claim and unstake.",
+  recovery: [],
+};

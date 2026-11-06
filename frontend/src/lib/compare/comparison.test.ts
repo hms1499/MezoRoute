@@ -99,3 +99,66 @@ describe("compareRoutes", () => {
     expect(compareRoutes({ snapshot: empty, amount: 20n * ONE, executorFeeBps: 10n }).lp).toEqual({ status: "unavailable" });
   });
 });
+
+describe("compareRoutes gauge", () => {
+  const NOW = 1_790_000_000n;
+  const gaugeState = {
+    alive: true,
+    rewardRate: 481_122_999_331_598_803n,
+    periodFinish: NOW + 400_000n,
+    totalStaked: TESTNET_POOL.totalSupply / 2n,
+    staked: 0n,
+    earned: 0n,
+  };
+  const withGauge = (gauge: typeof gaugeState | null, timestamp = NOW) =>
+    ({ ...snapshot, gauge, block: { number: 1n, timestamp } });
+  const MEZO_PRICE = 6_038_609_436_909_955n; // 0.006 MUSD
+
+  it("has no gauge when nobody funds it, past the 8 days between weeks can explain", () => {
+    const late = compareRoutes({ snapshot: withGauge(gaugeState, gaugeState.periodFinish + 8n * 86_400n + 1n), amount: 20n * ONE, executorFeeBps: 10n, mezoPrice: MEZO_PRICE });
+    expect(late.lp.status === "ok" && late.lp.gauge).toBeNull();
+    const betweenWeeks = compareRoutes({ snapshot: withGauge(gaugeState, gaugeState.periodFinish + 8n * 86_400n), amount: 20n * ONE, executorFeeBps: 10n, mezoPrice: MEZO_PRICE });
+    expect(betweenWeeks.lp.status === "ok" && betweenWeeks.lp.gauge).toMatchObject({ open: false });
+  });
+
+  it("has no gauge on a network without one, or when the voter no longer counts it alive", () => {
+    expect(compareRoutes({ snapshot, amount: 20n * ONE, executorFeeBps: 10n }).lp).toMatchObject({ gauge: null });
+    const dead = compareRoutes({ snapshot: withGauge({ ...gaugeState, alive: false }), amount: 20n * ONE, executorFeeBps: 10n, mezoPrice: MEZO_PRICE });
+    expect(dead.lp.status === "ok" && dead.lp.gauge).toBeNull();
+  });
+
+  it("gives this week's MEZO and an APR while the week pays", () => {
+    const result = compareRoutes({ snapshot: withGauge(gaugeState), amount: 20n * ONE, executorFeeBps: 10n, mezoPrice: MEZO_PRICE });
+    if (result.lp.status !== "ok" || !result.lp.gauge) throw new Error("expected a gauge");
+    expect(result.lp.gauge.open).toBe(true);
+    expect(result.lp.gauge.mezoPerWeek).toBeGreaterThan(0n);
+    expect(result.lp.gauge.apr).toBeGreaterThan(0n);
+  });
+
+  it("has MEZO amounts and no APR when the price is null or zero", () => {
+    for (const mezoPrice of [null, 0n]) {
+      const result = compareRoutes({ snapshot: withGauge(gaugeState), amount: 20n * ONE, executorFeeBps: 10n, mezoPrice });
+      if (result.lp.status !== "ok" || !result.lp.gauge) throw new Error("expected a gauge");
+      expect(result.lp.gauge.apr).toBeNull();
+      expect(result.lp.gauge.mezoPerWeek).toBeGreaterThan(0n);
+    }
+  });
+
+  it("shows no rate between weeks", () => {
+    const result = compareRoutes({
+      snapshot: withGauge(gaugeState, gaugeState.periodFinish),
+      amount: 20n * ONE,
+      executorFeeBps: 10n,
+      mezoPrice: MEZO_PRICE,
+    });
+    expect(result.lp.status === "ok" && result.lp.gauge).toEqual({ open: false, mezoPerWeek: 0n, apr: null });
+  });
+
+  it("dilutes by the amount entered: a larger amount gives a lower APR", () => {
+    const apr = (amount: bigint) => {
+      const result = compareRoutes({ snapshot: withGauge(gaugeState), amount, executorFeeBps: 10n, mezoPrice: MEZO_PRICE });
+      return result.lp.status === "ok" && result.lp.gauge ? result.lp.gauge.apr! : 0n;
+    };
+    expect(apr(1_000_000n * ONE)).toBeLessThan(apr(20n * ONE));
+  });
+});

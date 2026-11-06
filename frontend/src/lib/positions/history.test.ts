@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
 import type { EnteredEvent } from "@/lib/routes/musd-btc-lp/receipt";
 import {
+  historyExecutors,
   historyKey,
+  loadAllHistory,
   loadHistory,
   mergeHistory,
   parseHistory,
@@ -149,9 +151,9 @@ describe("visibleHistory", () => {
 });
 
 describe("history storage", () => {
-  it("keys the cache by network, executor, and account, lower-cased", () => {
+  it("keys the cache by network, executor, and account, lower-cased; v2 because caches from before BTC entries lack those events", () => {
     expect(historyKey(networks.testnet, "0xB36B2E012003840951CFf00fA6b1E3237A110920", ME)).toBe(
-      "mezoroute.testnet.history.0xb36b2e012003840951cff00fa6b1e3237a110920.0xd74f60bb70d2a8b412ff12d8ef0ffdaae81b2b49",
+      "mezoroute.testnet.history-v2.0xb36b2e012003840951cff00fa6b1e3237a110920.0xd74f60bb70d2a8b412ff12d8ef0ffdaae81b2b49",
     );
   });
 
@@ -161,5 +163,83 @@ describe("history storage", () => {
     expect(parseHistory(null)).toBeNull();
     expect(parseHistory("not json")).toBeNull();
     expect(parseHistory('{"scannedTo":1,"events":[]}')).toBeNull();
+  });
+});
+
+describe("historyExecutors", () => {
+  it("lists the current executor first, then the older ones, each with its own deploy block", () => {
+    expect(historyExecutors(networks.testnet)).toEqual([
+      { address: networks.testnet.executor!.address, deployBlock: 16_569_977n },
+      { address: "0xB36B2E012003840951CFf00fA6b1E3237A110920", deployBlock: 15_903_010n },
+    ]);
+  });
+
+  it("keeps the legacy executors when the network has no current one", () => {
+    const network = { ...networks.testnet, executor: null };
+    expect(historyExecutors(network).map((item) => item.address)).toEqual(["0xB36B2E012003840951CFf00fA6b1E3237A110920"]);
+  });
+});
+
+describe("loadAllHistory", () => {
+  const V2 = { address: "0x1281cC769c136F9F4f291B390c8992a3Cd556288" as const, deployBlock: 16_569_977n };
+  const V1 = { address: "0xB36B2E012003840951CFf00fA6b1E3237A110920" as const, deployBlock: 15_903_010n };
+  const noSleep = async () => undefined;
+
+  it("scans each executor from its own deploy block", async () => {
+    const firstBlocks = new Map<string, bigint>();
+    await loadAllHistory({
+      executors: [V2, V1],
+      readFor: (address) => async (range) => {
+        const seen = firstBlocks.get(address);
+        if (seen === undefined || range.fromBlock < seen) firstBlocks.set(address, range.fromBlock);
+        return [];
+      },
+      readCache: () => null,
+      writeCache: () => undefined,
+      head: 16_600_000n,
+      sleep: noSleep,
+    });
+    expect(firstBlocks.get(V2.address)).toBe(16_569_977n);
+    expect(firstBlocks.get(V1.address)).toBe(15_903_010n);
+  });
+
+  it("merges V1 and V2 events in chain order: by block, then log index", async () => {
+    const byExecutor: Record<string, HistoryEvent[]> = {
+      [V1.address]: [entered(16_000_000n, 4), entered(16_580_000n, 1)],
+      [V2.address]: [entered(16_580_000n, 0), entered(16_590_000n, 2)],
+    };
+    const events = await loadAllHistory({
+      executors: [V2, V1],
+      readFor: (address) => async (range) =>
+        byExecutor[address].filter((item) => item.blockNumber >= range.fromBlock && item.blockNumber <= range.toBlock),
+      readCache: () => null,
+      writeCache: () => undefined,
+      head: 16_600_000n,
+      sleep: noSleep,
+    });
+    expect(events.map((item) => [item.blockNumber, item.logIndex])).toEqual([
+      [16_000_000n, 4],
+      [16_580_000n, 0],
+      [16_580_000n, 1],
+      [16_590_000n, 2],
+    ]);
+  });
+
+  it("keeps a separate cache per executor and writes none when a scan fails", async () => {
+    const written: string[] = [];
+    await expect(
+      loadAllHistory({
+        executors: [V2, V1],
+        readFor: (address) => async () => {
+          if (address === V1.address) throw new Error("rpc");
+          return [];
+        },
+        readCache: () => null,
+        writeCache: (address) => void written.push(address),
+        head: 16_600_000n,
+        sleep: noSleep,
+      }),
+    ).rejects.toThrow("rpc");
+    expect(written).toEqual([]);
   });
 });

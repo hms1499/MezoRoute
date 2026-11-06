@@ -31,20 +31,17 @@ describe("networks", () => {
     expect(networks.mainnet.entryCap).toBe(1_000n * 10n ** 18n);
   });
 
-  it("pins the deployed testnet executor and its 10 bps fee (spec 11.1)", () => {
-    expect(networks.testnet.executor).toEqual({
-      address: "0xB36B2E012003840951CFf00fA6b1E3237A110920",
-      feeBps: 10n,
-      deployBlock: 15_903_010n,
-    });
+  it("pins the testnet executor's 10 bps fee (spec 11.1)", () => {
+    expect(networks.testnet.executor?.feeBps).toBe(10n);
   });
 
-  it("pins the deployed mainnet executor and its 10 bps fee (M1)", () => {
+  it("runs V2 on mainnet and keeps the M1 V1 for history (G1)", () => {
     expect(networks.mainnet.executor).toEqual({
-      address: "0x046449b1229C863e278f369869BA10e12bd80d9E",
+      address: "0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915",
       feeBps: 10n,
-      deployBlock: 12_524_142n,
+      deployBlock: 13_031_359n,
     });
+    expect(networks.mainnet.legacyExecutors).toEqual([{ address: "0x046449b1229C863e278f369869BA10e12bd80d9E", deployBlock: 12_524_142n }]);
   });
 
   it("offers a faucet on testnet only", () => {
@@ -64,5 +61,39 @@ describe("networks", () => {
     expect(explorerAddressUrl(networks.testnet, "0xB36B2E012003840951CFf00fA6b1E3237A110920")).toBe(
       "https://explorer.test.mezo.org/address/0xB36B2E012003840951CFf00fA6b1E3237A110920",
     );
+  });
+
+  it("pins the gauge and voter per network (G1 spec chain facts)", () => {
+    expect(networks.testnet.gauge).toEqual({
+      address: "0x72D88B0795373437E86792DEd8362D66dC43Cd2c",
+      voter: "0x263F1Fd5fB7F866881e1B6cD7d5d6c40Fd985F0D",
+    });
+    expect(networks.mainnet.gauge).toEqual({
+      address: "0x8Be20a5fF57E381025aE5E3A121B697269569AaF",
+      voter: "0x48233cCC97B87Ba93bCA212cbEe48e3210211f03",
+    });
+  });
+
+  it("prices MEZO only on mainnet, from the CL pool where MEZO is token0", () => {
+    expect(networks.testnet.mezoPricePool).toBeNull();
+    expect(networks.mainnet.mezoPricePool).toEqual({
+      address: "0x1D6e8D24c133535F2d00676F66a0e824f84765ff",
+      mezoIsToken0: true,
+    });
+    expect(networks.mainnet.addresses.mezo).toBe("0x7B7c000000000000000000000000000000000001");
+  });
+
+  it("pins the BTC entry cap per network (Deploy.s.sol maxBtcInFor)", () => {
+    expect(networks.testnet.entryCapBtc).toBe(12n * 10n ** 18n);
+    expect(networks.mainnet.entryCapBtc).toBe(125n * 10n ** 14n);
+  });
+
+  it("runs V2 on testnet and keeps V1 for history", () => {
+    expect(networks.testnet.executor).toEqual({
+      address: "0x1281cC769c136F9F4f291B390c8992a3Cd556288",
+      feeBps: 10n,
+      deployBlock: 16_569_977n,
+    });
+    expect(networks.testnet.legacyExecutors).toEqual([{ address: "0xB36B2E012003840951CFf00fA6b1E3237A110920", deployBlock: 15_903_010n }]);
   });
 });

@@ -10,9 +10,11 @@ import { LoadError } from "@/components/LoadError";
 import { NoExecutorCard } from "@/components/lp/NoExecutorCard";
 import { RouteLayout } from "@/components/route/RouteLayout";
 import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
 import { useNetwork } from "@/lib/config/network-context";
+import { GAUGE_READ_FAILED_EXIT } from "@/lib/gauge/copy";
 import { exitQuery, parseExitIntent, type ExitIntent } from "@/lib/positions/exit-intent";
 import { exitPreview } from "@/lib/positions/exit-preview";
 import type { PositionsData } from "@/lib/positions/snapshot";
@@ -101,14 +103,19 @@ function ExitFlowView(props: {
           title="Exit the MUSD/BTC pool to MUSD"
         />
       }
-      summary={<ExitStepper stepper={stepper} run={run} restart={restart} block={preview.block} />}
+      summary={<ExitStepper stepper={stepper} run={run} restart={restart} block={preview.block} plan={preview.steps} />}
     >
       {chainId !== network.chainId && <WrongNetworkAlert />}
+      {props.data.snapshot.gaugeReadFailed && (
+        <Notice tone="warning" role="status">
+          {GAUGE_READ_FAILED_EXIT}
+        </Notice>
+      )}
       <Card>
-        <ExitForm intent={props.intent} lpBalance={props.data.snapshot.lpBalance} amountLocked={hasStarted(stepper)} onChange={props.onIntent} />
+        <ExitForm intent={props.intent} walletLp={props.data.snapshot.lpBalance} stakedLp={props.data.snapshot.gauge?.staked ?? 0n} amountLocked={hasStarted(stepper)} onChange={props.onIntent} />
       </Card>
       {preview.quote && preview.minimums && (
-        <ExitPreviewCard quote={preview.quote} minimums={preview.minimums} gasCost={preview.gasCost} blockNumber={props.data.snapshot.blockNumber} />
+        <ExitPreviewCard quote={preview.quote} minimums={preview.minimums} steps={preview.steps} gasCost={preview.gasCost} blockNumber={props.data.snapshot.blockNumber} />
       )}
     </RouteLayout>
   );

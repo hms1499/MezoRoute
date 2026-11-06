@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { enteredRows, exitedRows, findEnteredEvent, findExitedEvent } from "./receipt";
+import { encodeAbiParameters, encodeEventTopics } from "viem";
+import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
+import {
+  enteredFromBtcRows,
+  enteredRows,
+  exitedRows,
+  findEnteredEvent,
+  findEnteredFromBtcEvent,
+  findExitedEvent,
+  findStakedEvent,
+} from "./receipt";
 
 const EXECUTOR = "0xB36B2E012003840951CFf00fA6b1E3237A110920";
 const ME = "0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49";
@@ -112,6 +122,84 @@ describe("exitedRows", () => {
       { label: "MUSD from selling the BTC", value: "19.96401 MUSD" },
       { label: "MUSD received", value: "39.936013 MUSD" },
       { label: "BTC returned", value: "0 BTC" },
+    ]);
+  });
+});
+
+const stakedLog = {
+  address: EXECUTOR,
+  topics: encodeEventTopics({ abi: mezoRouteExecutorAbi, eventName: "Staked", args: { recipient: ME } }) as [`0x${string}`, ...`0x${string}`[]],
+  data: encodeAbiParameters([{ type: "uint256" }], [35_582_000_000_000_000n]),
+} as const;
+
+describe("findStakedEvent", () => {
+  it("finds the Staked event and shows both receipt rows", () => {
+    const staked = findStakedEvent([enteredLog, stakedLog], EXECUTOR);
+    expect(staked).toEqual({ recipient: ME, liquidity: 35_582_000_000_000_000n });
+    const entered = findEnteredEvent([enteredLog], EXECUTOR)!;
+    // The whole mint is staked: the event carries what the contract staked.
+    const rows = enteredRows(entered, { ...staked!, liquidity: entered.liquidityOut });
+    expect(rows).toContainEqual({ label: "Staked in the gauge", value: "0.035582 LP" });
+    expect(rows).toContainEqual({ label: "LP left in your wallet", value: "0 LP" });
+  });
+
+  it("adds no staking rows without the event, and ignores a spoofed contract", () => {
+    expect(findStakedEvent([enteredLog], EXECUTOR)).toBeNull();
+    expect(findStakedEvent([{ ...stakedLog, address: ME }], EXECUTOR)).toBeNull();
+    const entered = findEnteredEvent([enteredLog], EXECUTOR)!;
+    expect(enteredRows(entered, null).map((row) => row.label)).not.toContain("Staked in the gauge");
+  });
+});
+
+// Task 3's live EnteredFromBtc event (tx 0xf0378a9d…cf5, block 16,570,227).
+const btcEnteredLog = {
+  address: EXECUTOR,
+  topics: encodeEventTopics({ abi: mezoRouteExecutorAbi, eventName: "EnteredFromBtc", args: { caller: ME, recipient: ME } }) as [
+    `0x${string}`,
+    ...`0x${string}`[],
+  ],
+  data: encodeAbiParameters(
+    Array.from({ length: 9 }, () => ({ type: "uint256" as const })),
+    [300000000000000n, 300000000000n, 149850000000000n, 11775167457143114855n, 11775167457143114855n, 149790077206098n, 41996811353360838n, 0n, 59922793902n],
+  ),
+} as const;
+
+describe("findEnteredFromBtcEvent", () => {
+  it("decodes the live EnteredFromBtc event", () => {
+    expect(findEnteredFromBtcEvent([btcEnteredLog], EXECUTOR)).toEqual({
+      caller: ME,
+      recipient: ME,
+      btcIn: 300000000000000n,
+      fee: 300000000000n,
+      btcToSwap: 149850000000000n,
+      musdFromSwap: 11775167457143114855n,
+      musdAdded: 11775167457143114855n,
+      btcAdded: 149790077206098n,
+      liquidityOut: 41996811353360838n,
+      musdRefund: 0n,
+      btcRefund: 59922793902n,
+    });
+  });
+
+  it("ignores another contract and the MUSD event, and is not mistaken for it", () => {
+    expect(findEnteredFromBtcEvent([{ ...btcEnteredLog, address: ME }], EXECUTOR)).toBeNull();
+    expect(findEnteredFromBtcEvent([enteredLog], EXECUTOR)).toBeNull();
+    expect(findEnteredEvent([btcEnteredLog], EXECUTOR)).toBeNull();
+  });
+});
+
+describe("enteredFromBtcRows", () => {
+  it("lists the realised values, BTC to eight decimals (a BTC entry is a fraction of a coin)", () => {
+    expect(enteredFromBtcRows(findEnteredFromBtcEvent([btcEnteredLog], EXECUTOR)!)).toEqual([
+      { label: "BTC in", value: "0.0003 BTC" },
+      { label: "MezoRoute fee", value: "0.0000003 BTC" },
+      { label: "BTC swapped", value: "0.00014985 BTC" },
+      { label: "MUSD from the swap", value: "11.775167 MUSD" },
+      { label: "MUSD deposited", value: "11.775167 MUSD" },
+      { label: "BTC deposited", value: "0.00014979 BTC" },
+      { label: "LP received", value: "0.041996 LP" },
+      { label: "MUSD returned", value: "0 MUSD" },
+      { label: "BTC returned", value: "0.00000005 BTC" },
     ]);
   });
 });

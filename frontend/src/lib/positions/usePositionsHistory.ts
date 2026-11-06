@@ -5,8 +5,9 @@ import type { Address } from "viem";
 import { usePublicClient } from "wagmi";
 import { useNetwork } from "@/lib/config/network-context";
 import {
+  historyExecutors,
   historyKey,
-  loadHistory,
+  loadAllHistory,
   parseHistory,
   serializeHistory,
   visibleHistory,
@@ -34,8 +35,8 @@ function writeStored(key: string, cache: HistoryCache): void {
 }
 
 /**
- * The account's executor events for the cost basis (spec §12 "Positions data"). The cache is a
- * convenience: a failed scan reports an error and writes nothing. Without an executor there is no history.
+ * The account's events from the current and older executors for the cost basis (spec §12 "Positions data"). The
+ * cache is a convenience: a failed scan reports an error and writes nothing. Without an executor there is no history.
  */
 export function usePositionsHistory(account: Address): {
   events: HistoryEvent[] | undefined;
@@ -44,25 +45,23 @@ export function usePositionsHistory(account: Address): {
 } {
   const { network } = useNetwork();
   const client = usePublicClient({ chainId: network.chainId });
-  const executor = network.executor;
+  const executors = historyExecutors(network);
   const query = useQuery({
-    queryKey: ["positions-history", network.chainId, executor?.address, account],
-    enabled: client !== undefined && executor !== null,
+    queryKey: ["positions-history", network.chainId, executors.map((item) => item.address).join(), account],
+    enabled: client !== undefined && executors.length > 0,
     refetchInterval: HISTORY_REFRESH_MS,
     retry: false,
     queryFn: async () => {
-      if (!client || !executor) return [];
-      const key = historyKey(network, executor.address, account);
-      const { events, cache } = await loadHistory({
-        read: (range) => readExecutorEvents(client as unknown as LogsClient, executor.address, account, range),
+      if (!client) return [];
+      return loadAllHistory({
+        executors,
+        readFor: (executor) => (range) => readExecutorEvents(client as unknown as LogsClient, executor, account, range),
+        readCache: (executor) => readStored(historyKey(network, executor, account)),
+        writeCache: (executor, cache) => writeStored(historyKey(network, executor, account), cache),
         head: await client.getBlockNumber({ cacheTime: 0 }),
-        deployBlock: executor.deployBlock,
-        cache: readStored(key),
       });
-      if (cache) writeStored(key, cache);
-      return events;
     },
   });
-  if (!executor) return { events: [], error: null, retry: () => undefined };
+  if (executors.length === 0) return { events: [], error: null, retry: () => undefined };
   return { ...visibleHistory(query.data, query.error), retry: () => void query.refetch() };
 }

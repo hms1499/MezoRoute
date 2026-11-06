@@ -11,7 +11,7 @@ import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { useNetwork } from "@/lib/config/network-context";
-import { entryQuery, parseEntryIntent } from "@/lib/routes/musd-btc-lp/intent";
+import { entryQuery, intentAmount, parseEntryIntent } from "@/lib/routes/musd-btc-lp/intent";
 import { entryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import { useLpRouteSnapshot } from "@/lib/routes/musd-btc-lp/useLpRouteSnapshot";
 import { useNow } from "@/lib/useNow";
@@ -42,10 +42,10 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
   const now = useNow(1_000);
 
   useEffect(() => {
-    if (intent.musdIn === null) router.replace(`/route/lp/${entryQuery(intent)}`);
+    if (intentAmount(intent) === null) router.replace(`/route/lp/${entryQuery(intent)}`);
   }, [intent, router]);
 
-  if (intent.musdIn === null) return null;
+  if (intentAmount(intent) === null) return null;
   if (!data || !walletKind) {
     return error ? (
       <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
@@ -73,6 +73,7 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
           plan={preview.steps}
           refresh={refresh}
           block={preview.block}
+          stake={preview.stake.on}
         />
       }
     >

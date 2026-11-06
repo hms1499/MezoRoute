@@ -1,32 +1,34 @@
 "use client";
 
 import type { Address } from "viem";
-import { useBalance, useGasPrice, useReadContracts } from "wagmi";
+import { useBalance, useGasPrice } from "wagmi";
 import { useNetwork } from "@/lib/config/network-context";
-import { lpRouteContracts, parseLpRouteSnapshot, type LpRouteData, type LpRouteResults } from "./snapshot";
+import { useSnapshotReads, type SnapshotReads } from "@/lib/gauge/snapshot-reads";
+import { LP_ROUTE_GAUGE_START, lpRouteContracts, parseLpRouteSnapshot, type LpRouteData, type LpRouteResults } from "./snapshot";
 
 /** New quote every 15 s; a quote older than 60 s is blocked (gate). */
 export const QUOTE_REFRESH_MS = 15_000;
 
 /**
  * The LP route's reads on the selected network: one multicall snapshot, plus gas balance and price.
- * `refresh` refetches all three and resolves with the fresh data (the send step re-quotes from it).
+ * A failed gauge read only sets `gaugeReadFailed`, so staking is off for that snapshot. `refresh` refetches all three and resolves with the fresh data (the send step re-quotes from it).
  */
 export function useLpRouteSnapshot(
   account: Address,
   executor: Address,
 ): { data: LpRouteData | undefined; error: Error | null; refresh: () => Promise<LpRouteData> } {
   const { network } = useNetwork();
-  const reads = useReadContracts({
+  const reads = useSnapshotReads({
+    network,
     contracts: lpRouteContracts(network, executor, account),
-    allowFailure: false,
-    query: { refetchInterval: QUOTE_REFRESH_MS },
+    gaugeStart: LP_ROUTE_GAUGE_START,
+    refetchInterval: QUOTE_REFRESH_MS,
   });
   const gas = useBalance({ address: account, chainId: network.chainId, query: { refetchInterval: QUOTE_REFRESH_MS } });
   const gasPrice = useGasPrice({ chainId: network.chainId, query: { refetchInterval: QUOTE_REFRESH_MS } });
 
-  const toData = (results: unknown, gasBalance: bigint, price: bigint | undefined, fetchedAt: number): LpRouteData => ({
-    snapshot: parseLpRouteSnapshot(network, results as LpRouteResults),
+  const toData = (read: SnapshotReads, gasBalance: bigint, price: bigint | undefined, fetchedAt: number): LpRouteData => ({
+    snapshot: parseLpRouteSnapshot(network, read.results as unknown as LpRouteResults, read.gaugeReadFailed),
     gasBalance,
     gasPrice: price,
     fetchedAt,

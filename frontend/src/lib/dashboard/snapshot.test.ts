@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
-import { parseSnapshot, snapshotContracts, type SnapshotResults } from "./snapshot";
+import { GAUGE_READS } from "@/lib/gauge/state";
+import { DASHBOARD_GAUGE_START, dashboardContracts, parseDashboard, parseSnapshot, snapshotContracts, type SnapshotResults } from "./snapshot";
 import { BORROWING_RATE, deployerTrove, FIXTURE_PRICE, MCR, ONE } from "./test-fixtures";
 
 const ACCOUNT = "0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8";
@@ -69,6 +70,11 @@ describe("parseSnapshot", () => {
       lp: { balance: 100n * ONE, totalSupply: 1_000n * ONE, reserveMusd: 520n * ONE, reserveBtc: 6_000_000_000_000_000n },
       sp: { deposit: 50n * ONE, btcGain: 20_000_000_000_000n },
       poolFeeBps: 30n,
+      gauge: null,
+      gaugeReadFailed: false,
+      block: null,
+      troveDebt: null,
+      protocolOwnedSp: null,
     });
   });
 
@@ -80,5 +86,68 @@ describe("parseSnapshot", () => {
     const snapshot = parseSnapshot(networks.mainnet, raw(1, [6_000_000_000_000_000n, 520n * ONE, 1n]));
     expect(snapshot.lp.reserveBtc).toBe(6_000_000_000_000_000n);
     expect(snapshot.lp.reserveMusd).toBe(520n * ONE);
+  });
+});
+
+describe("dashboardContracts", () => {
+  it("adds the gauge, the block, the open Trove debt, and the protocol-owned Stability Pool to the base reads", () => {
+    const testnet = dashboardContracts(networks.testnet, ACCOUNT);
+    expect(testnet).toHaveLength(13 + GAUGE_READS + 4);
+    const names = testnet.slice(13 + GAUGE_READS).map((call) => call.functionName);
+    expect(names).toEqual(["getBlockNumber", "getCurrentBlockTimestamp", "getEntireSystemDebt", "getCompoundedMUSDDeposit"]);
+    expect(testnet[testnet.length - 1]).toMatchObject({ address: networks.testnet.addresses.stabilityPool, args: [networks.testnet.addresses.pcv] });
+  });
+
+  it("reads only the selected network's contracts", () => {
+    for (const network of [networks.testnet, networks.mainnet]) {
+      const allowed: string[] = [...Object.values(network.addresses), network.gauge!.address, network.gauge!.voter];
+      for (const call of dashboardContracts(network, ACCOUNT)) expect(allowed).toContain(call.address);
+    }
+  });
+
+  it("pins the protocol's PCV on both networks", () => {
+    expect(networks.mainnet.addresses.pcv).toBe("0x391EcC7ffEFc48cff41D0F2Bb36e38b82180B993");
+    expect(networks.testnet.addresses.pcv).toBe("0x4dDD70f4C603b6089c07875Be02fEdFD626b80Af");
+  });
+});
+
+describe("parseDashboard", () => {
+  const gauge = [true, 481_122_999_331_598_803n, 1_800_000_000n, 171n * ONE, 5n * ONE, 2n * ONE] as const;
+  const tail = [12_000_000n, 1_790_000_000n, 3_000_000n * ONE, 14_000_000n * ONE] as const;
+
+  it("parses the gauge, the block, the open Trove debt, and the protocol-owned share", () => {
+    const results = [...raw(1, [520n * ONE, 6_000_000_000_000_000n, 1n]), ...gauge, ...tail];
+    const snapshot = parseDashboard(networks.testnet, results as never);
+    expect(snapshot.gauge).toEqual({
+      alive: true,
+      rewardRate: 481_122_999_331_598_803n,
+      periodFinish: 1_800_000_000n,
+      totalStaked: 171n * ONE,
+      staked: 5n * ONE,
+      earned: 2n * ONE,
+    });
+    expect(snapshot.block).toEqual({ number: 12_000_000n, timestamp: 1_790_000_000n });
+    expect(snapshot.troveDebt).toBe(3_000_000n * ONE);
+    expect(snapshot.protocolOwnedSp).toBe(14_000_000n * ONE);
+    expect(snapshot.trove).toEqual(deployerTrove);
+  });
+
+  it("reports a failed gauge read: no gauge, wallet LP only, the rest parsed", () => {
+    const results = [...raw(1, [520n * ONE, 6_000_000_000_000_000n, 1n]), ...tail];
+    const snapshot = parseDashboard(networks.testnet, results as never, true);
+    expect(snapshot.gauge).toBeNull();
+    expect(snapshot.gaugeReadFailed).toBe(true);
+    expect(snapshot.lp.balance).toBe(100n * ONE);
+    expect(snapshot.block).toEqual({ number: 12_000_000n, timestamp: 1_790_000_000n });
+    expect(snapshot.protocolOwnedSp).toBe(14_000_000n * ONE);
+  });
+
+  it("names where the gauge's reads start", () => {
+    expect(dashboardContracts(networks.testnet, ACCOUNT)[DASHBOARD_GAUGE_START]).toMatchObject({ functionName: "isAlive" });
+  });
+
+  it("counts staked LP in lp.balance: wallet + gauge", () => {
+    const results = [...raw(1, [520n * ONE, 6_000_000_000_000_000n, 1n]), ...gauge, ...tail];
+    expect(parseDashboard(networks.testnet, results as never).lp.balance).toBe(100n * ONE + 5n * ONE);
   });
 });

@@ -12,12 +12,14 @@ const chip = (on: boolean) =>
 /** Share of the LP (locked once the first step pins it; "Start over" unlocks it) and slippage (read again at send). */
 export function ExitForm({
   intent,
-  lpBalance,
+  walletLp,
+  stakedLp,
   amountLocked,
   onChange,
 }: {
   intent: ExitIntent;
-  lpBalance: bigint;
+  walletLp: bigint;
+  stakedLp: bigint;
   amountLocked: boolean;
   onChange: (next: ExitIntent) => void;
 }) {
@@ -38,7 +40,10 @@ export function ExitForm({
             </button>
           ))}
         </div>
-        <p className="mt-1 text-xs text-muted">Your LP: {lp(lpBalance)}</p>
+        <p className="mt-1 text-xs text-muted">
+          Your LP: {lp(walletLp + stakedLp)}
+          {stakedLp > 0n && (walletLp === 0n ? ", all staked in the gauge" : `, ${lp(stakedLp)} of it staked in the gauge`)}
+        </p>
       </fieldset>
       <fieldset>
         <legend className="text-sm font-medium">Slippage</legend>

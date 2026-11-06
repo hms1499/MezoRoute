@@ -6,11 +6,12 @@ import type { Address } from "viem";
 import { useConfig } from "wagmi";
 import { getAccount, signTypedData, simulateContract } from "wagmi/actions";
 import { useErrorToast } from "@/components/ErrorToast";
+import { gaugeAbi } from "@/lib/abi/gauge";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { useNetwork } from "@/lib/config/network-context";
 import { decodeError, toastsInStepper } from "@/lib/errors/decode";
-import { AMOUNT_TOO_SMALL, PERMIT_EXPIRED } from "@/lib/errors/outcomes";
-import { APPROVE_GAS, EXIT_GAS } from "@/lib/quote/gas";
+import { AMOUNT_TOO_SMALL, LP_CHANGED, PERMIT_EXPIRED } from "@/lib/errors/outcomes";
+import { APPROVE_GAS, EXIT_GAS, GAUGE_WITHDRAW_GAS } from "@/lib/quote/gas";
 import { DEADLINE_SECONDS, encodeApproveCall, NO_PERMIT } from "@/lib/routes/musd-btc-lp/params";
 import { permitState, toExecutorPermit, type SignedPermit } from "@/lib/routes/musd-btc-lp/permit";
 import { BlockedError } from "@/lib/tx/errors";
@@ -18,9 +19,11 @@ import { confirmCall, submitCall, type SendPin } from "@/lib/tx/send";
 import { createStepper, hasStarted, stepperReducer, type Stepper } from "@/lib/tx/stepper";
 import type { WalletKind } from "@/lib/wallet/capabilities";
 import type { ExitIntent } from "./exit-intent";
+import { encodeGaugeCall } from "@/lib/gauge/actions";
 import { buildExitParams, encodeExitCall } from "./exit-params";
 import { exitPreview } from "./exit-preview";
 import type { ExitStepKind } from "./exit-steps";
+import { unstakeNeeded } from "./exit-unstake";
 import { lpPermitTypedData } from "./lp-permit";
 import type { PositionsData } from "./snapshot";
 
@@ -37,7 +40,7 @@ export type ExitFlowInput = {
 const nowSeconds = () => BigInt(Math.floor(Date.now() / 1000));
 
 /**
- * The exit stepper (spec §9 screen 6a): LP permit (EOA) or exact LP approval (smart account), then
+ * The exit stepper (spec §9 screen 6a): Unstake (only for LP in the gauge), LP permit (EOA) or exact LP approval (smart account), then
  * `exit`. The account, chain, and LP amount are pinned on the first step; the send re-quotes,
  * re-gates, simulates, submits, and hands the hash to the receipt page. `restart` drops the pins and
  * the signature ("Start over" / "Change amount"); `pinnedLiquidity` lets the page preview what is sent.
@@ -66,6 +69,31 @@ export function useExitFlow(input: ExitFlowInput): {
   }, [planKey]);
 
   const liquidityIn = () => pinnedLiquidity.current ?? input.liquidityIn;
+
+  /** `gauge.withdraw`, confirmed here; the permit is signed after, so its deadline does not run while this waits. */
+  async function unstake(sendPin: SendPin) {
+    const gauge = network.gauge?.address;
+    if (!gauge) throw new Error("This network has no gauge");
+    const fresh = await input.refresh();
+    const amount = unstakeNeeded(fresh.snapshot, liquidityIn());
+    // A retry after a withdraw that was mined but never confirmed: the wallet already holds the LP.
+    if (amount === 0n) {
+      dispatch({ type: "skipped" });
+      return;
+    }
+    await simulateContract(config, {
+      address: gauge,
+      abi: gaugeAbi,
+      functionName: "withdraw",
+      args: [amount],
+      account: sendPin.account,
+      chainId: sendPin.chainId,
+    });
+    const hash = await submitCall(config, { to: gauge, data: encodeGaugeCall({ action: "unstake", amount }) }, sendPin, GAUGE_WITHDRAW_GAS);
+    dispatch({ type: "submitted", hash });
+    await confirmCall(config, hash, sendPin.chainId);
+    dispatch({ type: "confirmed" });
+  }
 
   async function signPermit(sendPin: SendPin) {
     const fresh = await input.refresh();
@@ -102,6 +130,8 @@ export function useExitFlow(input: ExitFlowInput): {
       dispatch({ type: "signature-expired" });
       throw new BlockedError(PERMIT_EXPIRED);
     }
+    // The LP must be in the wallet now: the unstake confirmed, or it was never needed.
+    if (fresh.snapshot.lpBalance < liquidityIn()) throw new BlockedError(LP_CHANGED);
     const preview = exitPreview({
       network,
       data: fresh,
@@ -140,7 +170,8 @@ export function useExitFlow(input: ExitFlowInput): {
     const sendPin = pin.current;
     dispatch({ type: "start" });
     try {
-      if (step.kind === "permit") await signPermit(sendPin);
+      if (step.kind === "unstake") await unstake(sendPin);
+      else if (step.kind === "permit") await signPermit(sendPin);
       else if (step.kind === "approve") await approve(sendPin);
       else await exit(sendPin);
     } catch (error) {

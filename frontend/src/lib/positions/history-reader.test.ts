@@ -5,11 +5,12 @@ const EXECUTOR = "0xB36B2E012003840951CFf00fA6b1E3237A110920";
 const ME = "0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49";
 
 describe("readExecutorEvents", () => {
-  it("asks for Entered by recipient and Exited by caller, and tags each log", async () => {
+  it("asks for Entered and EnteredFromBtc by recipient and Exited by caller, and tags each log", async () => {
     const calls: { event: string; args: unknown; fromBlock: unknown; toBlock: unknown }[] = [];
     const client = {
       getLogs: async (request: { event: { name: string }; args: unknown; fromBlock: bigint; toBlock: bigint }) => {
         calls.push({ event: request.event.name, args: request.args, fromBlock: request.fromBlock, toBlock: request.toBlock });
+        if (request.event.name === "EnteredFromBtc") return [{ blockNumber: 8n, logIndex: 1, args: { btcIn: 3n } }];
         return request.event.name === "Entered"
           ? [{ blockNumber: 7n, logIndex: 2, args: { liquidityOut: 1n } }]
           : [{ blockNumber: 9n, logIndex: 0, args: { liquidityIn: 1n } }];
@@ -19,10 +20,12 @@ describe("readExecutorEvents", () => {
     const events = await readExecutorEvents(client, EXECUTOR, ME, { fromBlock: 1n, toBlock: 10n });
     expect(calls).toEqual([
       { event: "Entered", args: { recipient: ME }, fromBlock: 1n, toBlock: 10n },
+      { event: "EnteredFromBtc", args: { recipient: ME }, fromBlock: 1n, toBlock: 10n },
       { event: "Exited", args: { caller: ME }, fromBlock: 1n, toBlock: 10n },
     ]);
     expect(events).toEqual([
       { kind: "entered", blockNumber: 7n, logIndex: 2, event: { liquidityOut: 1n } },
+      { kind: "enteredBtc", blockNumber: 8n, logIndex: 1, event: { btcIn: 3n } },
       { kind: "exited", blockNumber: 9n, logIndex: 0, event: { liquidityIn: 1n } },
     ]);
   });

@@ -1,5 +1,39 @@
-/** Gas units for `enter`; S1 measured 328,115–433,422 (5 Oct 2026). */
-export const ENTER_GAS = 450_000n;
+/**
+ * `enter` (Ruling P15 and P19): the highest figure is Mezo mainnet V2, `cast estimate` 496,365 for the G1 round
+ * trip's permit entry with `stake` false, at the block before tx 0x415b…1445 (6 Nov 2026); plus 5% is 521,184,
+ * rounded up to 5,000. V1's mainnet entry estimated 479,120 (15 Oct 2026). Testnet is lower: S1 used 328,115 to
+ * 433,422, and a permit entry estimated 411,686 to 424,887 (5 Nov 2026).
+ */
+export const ENTER_GAS = 525_000n;
+/**
+ * `enter` that also stakes the LP in the gauge (Ruling P15): the highest healthy estimate is mainnet's 682,215, the
+ * G1 round trip's MUSD-permit entry with stake (tx 0x415b…1445, 6 Nov 2026, `cast estimate` at the block before),
+ * the account's first stake in the gauge; plus 5% is 716,326, rounded up to 5,000. Testnet: highest gasUsed
+ * 448,402, estimate 548,483 (5 Nov 2026). `gasUsed` is net of refunds, so it understates the limit a call needs,
+ * and on Mezo a receipt's `gasUsed` is at least half the limit. The estimate plus 20% still wins when it is higher
+ * (`gasLimit`).
+ */
+export const ENTER_STAKE_GAS = 720_000n;
+/**
+ * `enterFromBtc` (Ruling P15): max(highest gasUsed 383,737, highest healthy estimate 439,723) plus 5% is
+ * 461,709, rounded up to 5,000. Figures: the Task 9 drive without a permit (5 Nov 2026, tx 0x5942…2b59,
+ * estimate 439,723, used 383,737) and with a real BTC permit (tx 0x7fa6…e3ae, estimate 365,530, used 309,544);
+ * the G1 smoke measured used 299,498 and estimate 355,484.
+ */
+export const ENTER_BTC_GAS = 465_000n;
+/**
+ * `enterFromBtc` that also stakes: the highest healthy estimate is mainnet's 511,863 (the G1 round trip's BTC-permit
+ * entry, tx 0xeac5…3caa, 6 Nov 2026; 377,312 with `stake` false) plus 5%, 537,457, rounded up to 5,000. Testnet:
+ * a real BTC permit with stake (tx 0xb924…fe75, 5 Nov 2026, estimates 484,076 and 497,277, used 398,691); without
+ * a permit estimate 487,483, used 388,897; the G1 smoke used 402,945.
+ */
+export const ENTER_BTC_STAKE_GAS = 540_000n;
+/**
+ * What the gauge deposit adds to an entry: mainnet's first stake, the same permit entry estimated with `stake` on
+ * and off at one block, 682,215 − 496,365 = 185,850 (6 Nov 2026), plus 5%, rounded up to 5,000. A later stake by
+ * the same account added 134,551 (BTC entry) and testnet 139,009: the first deposit writes fresh gauge storage.
+ */
+export const STAKE_EXTRA_GAS = 200_000n;
 
 /**
  * `borrowAndEnter` with Trove hints: 754,103 measured on testnet (12 Oct 2026, 242 Troves), rounded
@@ -9,8 +43,8 @@ export const BORROW_ENTER_GAS = 880_000n;
 /** `borrowAndEnter` with zero hints: 2,178,863 measured (2 Oct 2026), rounded up to 2,200,000 plus 10%. */
 export const BORROW_ENTER_NO_HINTS_GAS = 2_420_000n;
 
-export function borrowEnterGas(hintsFound: boolean): bigint {
-  return hintsFound ? BORROW_ENTER_GAS : BORROW_ENTER_NO_HINTS_GAS;
+export function borrowEnterGas(hintsFound: boolean, stake = false): bigint {
+  return (hintsFound ? BORROW_ENTER_GAS : BORROW_ENTER_NO_HINTS_GAS) + (stake ? STAKE_EXTRA_GAS : 0n);
 }
 /** An ERC-20 approval. */
 export const APPROVE_GAS = 60_000n;
@@ -18,22 +52,38 @@ export const APPROVE_GAS = 60_000n;
 export const RELAYED_CALL_GAS = 197_471n;
 
 /** Estimated gas units for the whole entry flow, for the preview's network-fee line. */
-export function entryGasUnits(input: { approve: boolean; smartAccount: boolean; borrow?: boolean }): bigint {
+export function entryGasUnits(input: {
+  approve: boolean;
+  smartAccount: boolean;
+  borrow?: boolean;
+  stake?: boolean;
+  asset?: "musd" | "btc";
+}): bigint {
   const calls = input.approve ? 2n : 1n;
-  const units = (input.borrow ? BORROW_ENTER_GAS : ENTER_GAS) + (input.approve ? APPROVE_GAS : 0n);
+  const enter = input.asset === "btc"
+    ? input.stake
+      ? ENTER_BTC_STAKE_GAS
+      : ENTER_BTC_GAS
+    : input.borrow
+    ? BORROW_ENTER_GAS + (input.stake ? STAKE_EXTRA_GAS : 0n)
+    : input.stake
+      ? ENTER_STAKE_GAS
+      : ENTER_GAS;
+  const units = enter + (input.approve ? APPROVE_GAS : 0n);
   return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
 }
 
 /**
- * `exit`: 417,468 measured on testnet with an LP permit (tx 0x05ae…dad0, 12 Oct 2026; 350,049 with an
- * approval on 2 Oct), rounded up to 450,000 plus 10%.
+ * `exit` (Ruling P15 and P19): Mezo mainnet's real exit, `cast estimate` 491,297 at the block before the 15 Oct
+ * 2026 transaction, plus 5% is 515,862, rounded up to 5,000. Testnet is lower: 417,468 with an LP permit (tx
+ * 0x05ae…dad0, 12 Oct 2026) and 350,049 with an approval (2 Oct).
  */
-export const EXIT_GAS = 495_000n;
+export const EXIT_GAS = 520_000n;
 
 /** Estimated gas units for the whole exit flow, for the preview's network-fee line. */
-export function exitGasUnits(input: { approve: boolean; smartAccount: boolean }): bigint {
-  const calls = input.approve ? 2n : 1n;
-  const units = EXIT_GAS + (input.approve ? APPROVE_GAS : 0n);
+export function exitGasUnits(input: { approve: boolean; smartAccount: boolean; unstake?: boolean }): bigint {
+  const calls = 1n + (input.approve ? 1n : 0n) + (input.unstake ? 1n : 0n);
+  const units = EXIT_GAS + (input.approve ? APPROVE_GAS : 0n) + (input.unstake ? GAUGE_WITHDRAW_GAS : 0n);
   return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
 }
 
@@ -71,3 +121,16 @@ export function spGasUnits(input: { approve: boolean; smartAccount: boolean; act
   const units = (input.action === "deposit" ? SP_DEPOSIT_GAS : SP_WITHDRAW_GAS) + (input.approve ? APPROVE_GAS : 0n);
   return input.smartAccount ? units + calls * RELAYED_CALL_GAS : units;
 }
+
+/**
+ * Direct gauge calls. Each budget is max(highest `gasUsed`, highest healthy `eth_estimateGas`) + 5%, rounded
+ * up to 5,000 (Ruling P15): `gasUsed` is net of refunds, and a deposit that used about 140,000 ran out of gas
+ * at a 145,000 limit (5 Nov 2026). It is the floor that protects a send when the RPC answers
+ * `eth_estimateGas` with the bare intrinsic gas.
+ */
+/** `gauge.deposit`: estimate 154,522 (highest used 142,295). */
+export const GAUGE_DEPOSIT_GAS = 165_000n;
+/** `gauge.withdraw`: highest estimate 147,097 (an exit's unstake, 5 Nov 2026; highest used 137,316), plus 5%, rounded up to 5,000. Mainnet estimated 141,867 (6 Nov 2026). */
+export const GAUGE_WITHDRAW_GAS = 155_000n;
+/** `gauge.getReward`: mainnet estimate 85,049 (tx 0x093b…bd59, 6 Nov 2026), plus 5%, rounded up to 5,000; testnet estimated 67,949 (highest used 66,295). */
+export const GAUGE_CLAIM_GAS = 90_000n;

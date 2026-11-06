@@ -1,12 +1,21 @@
 // Route copy shared by the comparison card and the route pages (Flow B), so they never disagree.
 
-export const LP_RETURN_SOURCE = "Swap fees paid by traders";
+export const LP_RETURN_SOURCE = "Swap fees from traders, or MEZO from the gauge if you stake";
 export const SP_RETURN_SOURCE = "BTC from liquidations, bought below the debt it repays";
 
 export const LP_RISKS = [
   "Impermanent loss: if the BTC price moves, your pool share can be worth less than holding MUSD.",
   "About half of your deposit becomes BTC. If this MUSD is borrowed against BTC, a BTC drop hits your Trove and this position at the same time.",
+  "MEZO rewards change weekly and are paid in a token whose price can fall.",
   "MezoRoute is unaudited software.",
+];
+
+/** The BTC entry swaps about half of the BTC to MUSD, so the second risk differs from the MUSD route's. */
+export const LP_BTC_RISKS = [
+  LP_RISKS[0],
+  "About half of your BTC is swapped to MUSD before it is deposited. Your pool share still moves with the BTC price, and the swap pays the pool's fee.",
+  LP_RISKS[2],
+  LP_RISKS[3],
 ];
 
 export const SP_RISKS = [

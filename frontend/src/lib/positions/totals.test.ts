@@ -5,7 +5,7 @@ import type { PositionView } from "./view";
 
 const ONE = 10n ** 18n;
 const view = {
-  lp: { balance: 1n, share: 0n, musd: 5n * ONE, btc: 60_000_000_000_000n, btcValue: 5n * ONE, value: 10n * ONE, exit: null, cost: null, valueChange: null },
+  lp: { balance: 1n, walletLp: 1n, stakedLp: 0n, share: 0n, musd: 5n * ONE, btc: 60_000_000_000_000n, btcValue: 5n * ONE, value: 10n * ONE, exit: null, cost: null, valueChange: null },
   fees: { musd: ONE / 100n, btc: 1_000_000_000n, btcValue: ONE / 100n, total: ONE / 50n },
   empty: false,
 } satisfies PositionView;
@@ -21,6 +21,10 @@ describe("positionTotals", () => {
 
   it("ignores an empty Stability Pool position", () => {
     expect(positionTotals(view, { ...pool, empty: true })).toEqual({ value: 10n * ONE + ONE / 50n, btc: 60_001_000_000_000n });
+  });
+
+  it("has no total while the gauge read failed, rather than a total that leaves staked LP out", () => {
+    expect(positionTotals(view, pool, true)).toBeNull();
   });
 
   it("has no total while the Stability Pool read failed, rather than a total that leaves it out", () => {

@@ -52,7 +52,7 @@ export function simulatorRows(sim: LandingSimulation): SimRow[] {
   const bt = sim.backtests;
   const quoteMissing = text("Pool quote unavailable");
   return [
-    { label: "Return source", lp: text("Swap fees"), sp: text("Liquidation BTC") },
+    { label: "Return source", lp: text("Swap fees, or MEZO if staked"), sp: text("Liquidation BTC") },
     {
       label: "Last 30 days",
       lp: bt?.lp ? figureText(signedChange(bt.lp.valueNow, sim.amount)) : text("Unavailable"),

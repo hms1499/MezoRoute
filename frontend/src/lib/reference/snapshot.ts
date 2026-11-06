@@ -1,8 +1,9 @@
 import { erc20Abi } from "viem";
-import { priceFeedAbi, stabilityPoolAbi } from "@/lib/abi/musd";
+import { priceFeedAbi, stabilityPoolAbi, troveSystemAbi } from "@/lib/abi/musd";
 import { poolAbi, poolFactoryAbi } from "@/lib/abi/pool";
 import type { NetworkConfig } from "@/lib/config/networks";
 import { musdIsToken0 } from "@/lib/dashboard/snapshot";
+import { formatPercent, formatToken } from "@/lib/format";
 import { WAD } from "@/lib/math";
 
 /** Mainnet today, for the testnet reference card (spec F8 §1). */
@@ -14,6 +15,8 @@ export type MainnetReference = {
   price: bigint; // oracle, MUSD per BTC
   musdSupply: bigint;
   spDeposits: bigint;
+  protocolOwnedSp: bigint; // the PCV's own Stability Pool deposit
+  troveDebt: bigint; // MUSD owed by every open Trove
 };
 
 export type ReferenceResults = readonly [
@@ -23,6 +26,8 @@ export type ReferenceResults = readonly [
   price: bigint,
   musdSupply: bigint,
   spDeposits: bigint,
+  protocolOwnedSp: bigint,
+  troveDebt: bigint,
 ];
 
 /** One multicall at the head; no chainId, because the card's own mainnet client sends it. */
@@ -35,11 +40,13 @@ export function referenceContracts(network: NetworkConfig) {
     { address: a.priceFeed, abi: priceFeedAbi, functionName: "fetchPrice" },
     { address: a.musd, abi: erc20Abi, functionName: "totalSupply" },
     { address: a.stabilityPool, abi: stabilityPoolAbi, functionName: "getTotalMUSDDeposits" },
+    { address: a.stabilityPool, abi: stabilityPoolAbi, functionName: "getCompoundedMUSDDeposit", args: [a.pcv] },
+    { address: a.troveManager, abi: troveSystemAbi, functionName: "getEntireSystemDebt" },
   ] as const;
 }
 
 export function parseReference(network: NetworkConfig, results: ReferenceResults): MainnetReference {
-  const [reserves, lpSupply, feeBps, price, musdSupply, spDeposits] = results;
+  const [reserves, lpSupply, feeBps, price, musdSupply, spDeposits, protocolOwnedSp, troveDebt] = results;
   const musdFirst = musdIsToken0(network);
   return {
     reserveMusd: musdFirst ? reserves[0] : reserves[1],
@@ -49,14 +56,26 @@ export function parseReference(network: NetworkConfig, results: ReferenceResults
     price,
     musdSupply,
     spDeposits,
+    protocolOwnedSp,
+    troveDebt,
   };
 }
 
 /** Pool value in MUSD at the oracle price, and the Stability Pool's share of MUSD supply (1e18 = 100%). */
-export function referenceView(reference: MainnetReference): { poolTvl: bigint; spShare: bigint } {
+export function referenceView(reference: MainnetReference): { poolTvl: bigint; spShare: bigint; protocolShare: bigint } {
   return {
     poolTvl: reference.reserveMusd + (reference.reserveBtc * reference.price) / WAD,
     spShare: reference.musdSupply === 0n ? 0n : (reference.spDeposits * WAD) / reference.musdSupply,
+    protocolShare: reference.spDeposits === 0n ? 0n : (reference.protocolOwnedSp * WAD) / reference.spDeposits,
+  };
+}
+
+/** The protocol's own slice of the Stability Pool: its depositors share liquidation gains with this deposit. */
+export function protocolOwnedLine(reference: MainnetReference): { label: string; value: string; sub: string } {
+  return {
+    label: "Protocol-owned",
+    value: `${formatToken(reference.protocolOwnedSp, 18, 0)} MUSD`,
+    sub: `${formatPercent(referenceView(reference).protocolShare, 1)} of deposits`,
   };
 }
 

@@ -8,7 +8,7 @@ const STEPS = [
   {
     n: "3",
     title: "Sign and exit",
-    detail: "One transaction each way after an approval where your wallet needs one; exit back to MUSD from Positions.",
+    detail: "One transaction in after any approval your wallet needs; unstake if staked, then exit to MUSD.",
   },
 ];
 

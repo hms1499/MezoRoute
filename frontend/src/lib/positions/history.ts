@@ -1,6 +1,6 @@
 import type { Address } from "viem";
 import type { NetworkConfig } from "@/lib/config/networks";
-import type { EnteredEvent, ExitedEvent } from "@/lib/routes/musd-btc-lp/receipt";
+import type { EnteredEvent, EnteredFromBtcEvent, ExitedEvent } from "@/lib/routes/musd-btc-lp/receipt";
 
 /** Mezo's public RPC serves eth_getLogs over at most 10,000 blocks. */
 export const LOG_RANGE = 10_000n;
@@ -17,6 +17,7 @@ const wait: Sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 export type BlockRange = { fromBlock: bigint; toBlock: bigint };
 export type HistoryEvent =
   | { kind: "entered"; blockNumber: bigint; logIndex: number; event: EnteredEvent }
+  | { kind: "enteredBtc"; blockNumber: bigint; logIndex: number; event: EnteredFromBtcEvent }
   | { kind: "exited"; blockNumber: bigint; logIndex: number; event: ExitedEvent };
 /** Every event up to `scannedTo`; the scan resumes after it. */
 export type HistoryCache = { scannedTo: bigint; events: HistoryEvent[] };
@@ -32,7 +33,8 @@ export function scanRanges(from: bigint, head: bigint, size: bigint = LOG_RANGE)
   return ranges;
 }
 
-function sortEvents(events: HistoryEvent[]): HistoryEvent[] {
+/** Chain order: by block, then log index. */
+export function sortEvents(events: HistoryEvent[]): HistoryEvent[] {
   return [...events].sort((a, b) =>
     a.blockNumber === b.blockNumber ? a.logIndex - b.logIndex : a.blockNumber < b.blockNumber ? -1 : 1,
   );
@@ -121,9 +123,12 @@ export function visibleHistory(
   return { events, error: events ? null : error };
 }
 
-/** One cache per network, executor, and account (spec §12: a convenience only). */
+/**
+ * One cache per network, executor, and account (spec §12: a convenience only). `history-v2`: caches written before
+ * BTC entries existed hold no `EnteredFromBtc` events for the blocks they cover, so they are not reused.
+ */
 export function historyKey(network: NetworkConfig, executor: Address, account: Address): string {
-  return `mezoroute.${network.id}.history.${executor.toLowerCase()}.${account.toLowerCase()}`;
+  return `mezoroute.${network.id}.history-v2.${executor.toLowerCase()}.${account.toLowerCase()}`;
 }
 
 export function serializeHistory(cache: HistoryCache): string {
@@ -144,4 +149,38 @@ export function parseHistory(text: string | null): HistoryCache | null {
   } catch {
     return null;
   }
+}
+
+/** The executors whose events make up the cost basis: the current one, then the older ones, each scanned from its own deploy block. */
+export function historyExecutors(network: NetworkConfig): { address: Address; deployBlock: bigint }[] {
+  const { executor, legacyExecutors } = network;
+  return [...(executor ? [{ address: executor.address, deployBlock: executor.deployBlock }] : []), ...legacyExecutors];
+}
+
+/**
+ * Every executor's events in chain order. Each executor has its own cache and its own scan from its
+ * deploy block; caches are written only after every scan has succeeded.
+ */
+export async function loadAllHistory(input: {
+  executors: { address: Address; deployBlock: bigint }[];
+  readFor: (executor: Address) => ReadChunk;
+  readCache: (executor: Address) => HistoryCache | null;
+  writeCache: (executor: Address, cache: HistoryCache) => void;
+  head: bigint;
+  sleep?: Sleep;
+}): Promise<HistoryEvent[]> {
+  const loaded = await Promise.all(
+    input.executors.map(async (executor) => ({
+      executor,
+      ...(await loadHistory({
+        read: input.readFor(executor.address),
+        head: input.head,
+        deployBlock: executor.deployBlock,
+        cache: input.readCache(executor.address),
+        sleep: input.sleep,
+      })),
+    })),
+  );
+  for (const item of loaded) if (item.cache) input.writeCache(item.executor.address, item.cache);
+  return sortEvents(loaded.flatMap((item) => item.events));
 }

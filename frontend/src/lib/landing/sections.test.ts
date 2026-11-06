@@ -6,17 +6,24 @@ describe("landing route sections (U10)", () => {
   it("tells the LP route, then the Stability Pool", () => {
     expect(ROUTE_SECTIONS.map((section) => section.route)).toEqual(["lp", "sp"]);
     expect(ROUTE_SECTIONS.map((section) => section.pill)).toEqual(["MUSD/BTC LP", "Stability Pool"]);
-    expect(ROUTE_SECTIONS.map((section) => section.title)).toEqual(["Earn swap fees", "Back the system"]);
+    expect(ROUTE_SECTIONS.map((section) => section.title)).toEqual(["Earn swap fees or MEZO", "Back the system"]);
   });
 
   it("alternates the illustration's side, as morpho.org does", () => {
     expect(ROUTE_SECTIONS.map((section) => section.illustration)).toEqual(["right", "left"]);
   });
 
+  it("copy no longer claims LP pays only fees", () => {
+    expect(LP_RETURN_SOURCE).toBe("Swap fees from traders, or MEZO from the gauge if you stake");
+    expect(LP_RISKS).toContain("MEZO rewards change weekly and are paid in a token whose price can fall.");
+    expect(ROUTE_SECTIONS[0].title).toBe("Earn swap fees or MEZO");
+    expect(ROUTE_SECTIONS[0].body.join(" ")).toContain("MEZO");
+  });
+
   it("takes its copy from the one route copy source", () => {
     expect(ROUTE_SECTIONS[0].body).toEqual([LP_RETURN_SOURCE, LP_RISKS[0]]);
     expect(ROUTE_SECTIONS[1].body).toEqual([SP_RETURN_SOURCE, SP_RISKS[0]]);
-    expect(ROUTE_SECTIONS[0].txs).toBe("One transaction in, after a permit or approval; one transaction out, back to MUSD.");
+    expect(ROUTE_SECTIONS[0].txs).toBe("One transaction in, after a permit or approval; unstake if staked, exit to MUSD.");
     expect(ROUTE_SECTIONS[1].txs).toBe("Approve, then deposit; withdraw to exit.");
   });
 });

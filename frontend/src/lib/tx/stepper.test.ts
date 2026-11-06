@@ -105,3 +105,18 @@ describe("stepper", () => {
     expect(run(failed, { type: "restart", kinds: ["exit"] })).toEqual(createStepper(["exit"]));
   });
 });
+
+describe("stepperReducer: skipped", () => {
+  const started = stepperReducer(createStepper<"unstake" | "exit">(["unstake", "exit"]), { type: "start" });
+
+  it("finishes the active step without a transaction and moves on", () => {
+    const next = stepperReducer(started, { type: "skipped" });
+    expect(next.steps[0]).toEqual({ kind: "unstake", status: "done" });
+    expect(next.active).toBe(1);
+  });
+
+  it("ignores it unless the step just started", () => {
+    const idle = createStepper<"unstake" | "exit">(["unstake", "exit"]);
+    expect(stepperReducer(idle, { type: "skipped" })).toBe(idle);
+  });
+});

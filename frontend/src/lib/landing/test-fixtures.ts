@@ -11,6 +11,8 @@ export const reference = {
   price: 80_000n * ONE,
   musdSupply: 29_871_966n * ONE,
   spDeposits: 14_172_031n * ONE,
+  protocolOwnedSp: 14_172_031n * ONE,
+  troveDebt: 18_000_000n * ONE,
 };
 const pool = { reserveMusd: reference.reserveMusd, reserveBtc: reference.reserveBtc, totalSupply: reference.lpSupply, feeBps: 30n };
 

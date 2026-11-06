@@ -8,8 +8,8 @@ export type Drawdown = (typeof DRAWDOWNS)[number];
 
 export type Exposure = {
   troveBtc: bigint;
-  lpBtc: bigint; // the wallet's LP share of the pool's BTC
-  lpMusd: bigint; // the wallet's LP share of the pool's MUSD
+  lpBtc: bigint; // the account's LP share (wallet + gauge) of the pool's BTC
+  lpMusd: bigint; // the account's LP share (wallet + gauge) of the pool's MUSD
   spBtcGain: bigint;
   spDeposit: bigint;
   totalBtc: bigint; // troveBtc + lpBtc + spBtcGain

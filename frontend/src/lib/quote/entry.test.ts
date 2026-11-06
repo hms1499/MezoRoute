@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  btcEntryMinimums,
+  depositLiquidity,
   entryMinimums,
   entryValue,
   optimalSwap,
   priceImpact,
   quoteEntry,
+  quoteEntryFromBtc,
   simulateEntry,
+  simulateEntryFromBtc,
   type EntrySimulation,
   type PoolState,
 } from "./entry";
@@ -183,5 +187,121 @@ describe("entryMinimums", () => {
       minBtcAdded: 989n,
       minLpOut: 9_900n,
     });
+  });
+});
+
+// Task 3's replay fixture (PRODUCT_SPEC §20): the live EnteredFromBtc of tx 0xf0378a9d…cf5, block
+// 16,570,227, index 0 (nothing moved the pool earlier in the block), against the pool at block 16,570,226.
+const BTC_POOL: PoolState = {
+  reserveMusd: 102510355910841854805827690n,
+  reserveBtc: 1304018023912565731526n,
+  totalSupply: 365609032746488322770813n,
+  feeBps: 4n,
+};
+const BTC_EVENT = {
+  btcIn: 300000000000000n,
+  fee: 300000000000n,
+  btcToSwap: 149850000000000n,
+  musdFromSwap: 11775167457143114855n,
+  musdAdded: 11775167457143114855n,
+  btcAdded: 149790077206098n,
+  liquidityOut: 41996811353360838n,
+  musdRefund: 0n,
+  btcRefund: 59922793902n,
+};
+
+describe("simulateEntryFromBtc", () => {
+  it("replays the live EnteredFromBtc event to the wei", () => {
+    const simulation = simulateEntryFromBtc(BTC_POOL, BTC_EVENT.btcIn - BTC_EVENT.fee, BTC_EVENT.btcToSwap);
+    expect(simulation).toMatchObject({
+      btcToSwap: BTC_EVENT.btcToSwap,
+      musdFromSwap: BTC_EVENT.musdFromSwap,
+      musdAdded: BTC_EVENT.musdAdded,
+      btcAdded: BTC_EVENT.btcAdded,
+      liquidity: BTC_EVENT.liquidityOut,
+      musdRefund: BTC_EVENT.musdRefund,
+      btcRefund: BTC_EVENT.btcRefund,
+    });
+  });
+
+  it("uses the same deposit rounding as the MUSD route", () => {
+    // Both routes size the deposit with depositLiquidity against the post-swap reserves.
+    const net = 999_000_000_000_000_000n;
+    const swap = 499_500_000_000_000_000n;
+    const musd = simulateEntry(TESTNET, net, swap);
+    const swapIn = swap - (swap * 4n) / 10_000n;
+    const musdAfter = TESTNET.reserveMusd + swapIn;
+    const btcAfter = TESTNET.reserveBtc - musd.btcFromSwap;
+    expect(
+      depositLiquidity({ reserveMusd: musdAfter, reserveBtc: btcAfter, totalSupply: TESTNET.totalSupply }, net - swap, musd.btcFromSwap),
+    ).toEqual({ musdAdded: musd.musdAdded, btcAdded: musd.btcAdded, liquidity: musd.liquidity });
+
+    const btc = simulateEntryFromBtc(BTC_POOL, BTC_EVENT.btcIn - BTC_EVENT.fee, BTC_EVENT.btcToSwap);
+    const swapInBtc = BTC_EVENT.btcToSwap - (BTC_EVENT.btcToSwap * 4n) / 10_000n;
+    expect(
+      depositLiquidity(
+        {
+          reserveMusd: BTC_POOL.reserveMusd - btc.musdFromSwap,
+          reserveBtc: BTC_POOL.reserveBtc + swapInBtc,
+          totalSupply: BTC_POOL.totalSupply,
+        },
+        btc.musdFromSwap,
+        BTC_EVENT.btcIn - BTC_EVENT.fee - BTC_EVENT.btcToSwap,
+      ),
+    ).toEqual({ musdAdded: btc.musdAdded, btcAdded: btc.btcAdded, liquidity: btc.liquidity });
+  });
+
+  it("deposits BTC-limited when the MUSD side is in excess", () => {
+    const simulation = simulateEntryFromBtc(BTC_POOL, 1_000_000_000_000_000n, 600_000_000_000_000n);
+    expect(simulation.musdRefund).toBeGreaterThan(0n);
+    expect(simulation.btcRefund).toBe(0n);
+  });
+});
+
+describe("quoteEntryFromBtc", () => {
+  it("takes the fee in BTC before splitting", () => {
+    const quote = quoteEntryFromBtc(BTC_POOL, BTC_EVENT.btcIn, 10n);
+    expect(quote?.fee).toBe(BTC_EVENT.fee);
+    expect(quote?.net).toBe(BTC_EVENT.btcIn - BTC_EVENT.fee);
+    expect(quote?.btcIn).toBe(BTC_EVENT.btcIn);
+  });
+
+  it("swaps the optimal share, leaving at most dust", () => {
+    for (const btcIn of [10n ** 14n, 3n * 10n ** 15n, 10n ** 18n, 5n * 10n ** 19n]) {
+      const quote = quoteEntryFromBtc(BTC_POOL, btcIn, 10n)!;
+      expect(quote.btcToSwap > 0n && quote.btcToSwap < quote.net).toBe(true);
+      const leftover = quote.btcRefund + (quote.musdRefund * BTC_POOL.reserveBtc) / BTC_POOL.reserveMusd;
+      expect(leftover <= btcIn / 1_000_000_000n + 2n).toBe(true);
+    }
+  });
+
+  it("measures the loss against the pre-trade mid price, rounded up", () => {
+    const quote = quoteEntryFromBtc(BTC_POOL, BTC_EVENT.btcIn, 10n)!;
+    const atMid = quote.btcToSwap * BTC_POOL.reserveMusd;
+    const received = quote.musdFromSwap * BTC_POOL.reserveBtc;
+    expect(quote.priceImpact).toBe(((atMid - received) * ONE + atMid - 1n) / atMid);
+    expect(quote.priceImpact).toBeGreaterThan(0n);
+  });
+
+  it("returns null without an amount or with an empty pool", () => {
+    expect(quoteEntryFromBtc(BTC_POOL, 0n, 10n)).toBeNull();
+    expect(quoteEntryFromBtc({ ...BTC_POOL, reserveBtc: 0n }, ONE, 10n)).toBeNull();
+  });
+
+  it("floors the four minimums by the slippage", () => {
+    const quote = quoteEntryFromBtc(BTC_POOL, BTC_EVENT.btcIn, 10n)!;
+    expect(btcEntryMinimums(quote, 100n)).toEqual({
+      minMusdFromSwap: (quote.musdFromSwap * 9_900n) / 10_000n,
+      minMusdAdded: (quote.musdAdded * 9_900n) / 10_000n,
+      minBtcAdded: (quote.btcAdded * 9_900n) / 10_000n,
+      minLpOut: (quote.liquidity * 9_900n) / 10_000n,
+    });
+  });
+
+  it("values the new share at the pool's price before the entry, like the MUSD route", () => {
+    const quote = quoteEntryFromBtc(BTC_POOL, 10n ** 18n, 10n)!;
+    const value = entryValue(BTC_POOL, quote);
+    expect(value).toBeLessThanOrEqual((10n ** 18n * BTC_POOL.reserveMusd) / BTC_POOL.reserveBtc);
+    expect(value).toBeGreaterThan(0n);
   });
 });

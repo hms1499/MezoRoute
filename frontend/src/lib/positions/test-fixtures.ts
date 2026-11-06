@@ -25,6 +25,8 @@ export function positionsSnapshotWith(overrides: Partial<PositionsSnapshot> = {}
     fees: { musd: 0n, btc: 0n },
     allowance: 0n,
     permitNonce: 0n,
+    gauge: null,
+    gaugeReadFailed: false,
     blockNumber: 15903030n,
     blockTimestamp: 1_790_903_700n,
     ...overrides,

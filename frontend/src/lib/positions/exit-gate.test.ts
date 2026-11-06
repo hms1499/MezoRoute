@@ -22,6 +22,16 @@ function input(overrides: Partial<ExitGateInput> = {}): ExitGateInput {
 }
 
 describe("exitBlock", () => {
+  it("never says no LP or LP changed when it is the gauge read that failed", () => {
+    expect(exitBlock(input({ lpBalance: 0n, gaugeReadFailed: true }))?.reason).toBe("gauge-read-failed");
+    expect(exitBlock(input({ lpBalance: 1n, gaugeReadFailed: true }))?.reason).toBe("gauge-read-failed");
+    expect(exitBlock(input({ lpBalance: 0n, gaugeReadFailed: true }))?.outcome?.message).toMatch(/could not be read/);
+  });
+
+  it("lets wallet LP exit while the gauge read fails", () => {
+    expect(exitBlock(input({ gaugeReadFailed: true }))).toBeNull();
+  });
+
   it("lets a valid exit through", () => {
     expect(exitBlock(input())).toBeNull();
   });

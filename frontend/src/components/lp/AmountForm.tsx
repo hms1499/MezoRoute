@@ -1,6 +1,7 @@
 import { Notice } from "@/components/ui/Notice";
 import { formatBps } from "@/lib/format";
 import { SLIPPAGE_PRESETS, type SlippageBps } from "@/lib/quote/entry";
+import type { EntryAsset } from "@/lib/routes/musd-btc-lp/asset";
 import { AmountInput } from "./AmountInput";
 
 const chip = (on: boolean) =>
@@ -16,10 +17,31 @@ export function AmountForm({
   max,
   maxLabel,
   onChange,
-}: Inputs & { max: bigint; maxLabel: string; onChange: (next: Inputs) => void }) {
+  asset,
+  onAsset,
+  balance,
+  note,
+}: Inputs & {
+  max: bigint;
+  maxLabel: string;
+  onChange: (next: Inputs) => void;
+  asset?: EntryAsset;
+  onAsset?: (asset: EntryAsset) => void;
+  balance?: bigint;
+  note?: string;
+}) {
   return (
     <div className="mt-4 space-y-3">
-      <AmountInput amount={amount} max={max} maxLabel={maxLabel} onAmount={(next) => onChange({ amount: next, slippageBps })} />
+      <AmountInput
+        amount={amount}
+        max={max}
+        maxLabel={maxLabel}
+        asset={asset}
+        onAsset={onAsset}
+        balance={balance}
+        note={note}
+        onAmount={(next) => onChange({ amount: next, slippageBps })}
+      />
       <fieldset>
         <legend className="text-sm font-medium">Slippage</legend>
         <div className="mt-1 flex gap-2">

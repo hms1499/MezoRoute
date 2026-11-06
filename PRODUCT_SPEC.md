@@ -30,9 +30,9 @@ Non-negotiable product rules:
 - User funds never rest in MezoRoute contracts between transactions.
 - The only revenue is a disclosed execution fee on executor entries, fixed at deployment and shown before signing (Section 19.1).
 
-### Integration scope: MUSD, not MEZO
+### Integration scope: MUSD, and MEZO since Wave 2
 
-MezoRoute integrates **MUSD** deeply (borrowing via `BorrowerOperationsSignatures`, the MUSD/BTC pool, and the Stability Pool). It does **not** integrate MEZO. On-chain research (Section 4) shows that no Mezo gauge pays MEZO, veMEZO is not deployed, and mainnet MUSD/BTC pools have no gauge. The hackathon requires "MUSD and/or MEZO"; we choose a deep MUSD integration over a superficial MEZO one and state this openly in the submission.
+MezoRoute integrates **MUSD** deeply (borrowing via `BorrowerOperationsSignatures`, the MUSD/BTC pool, and the Stability Pool). Wave 2 (G1, 4 Nov 2026) adds **MEZO** as well: the MUSD/BTC pool's gauge pays MEZO to staked LP, and the LP route can stake the new LP in the same transaction, show the pending MEZO, and claim, stake, and unstake from Positions. MezoRoute never pays or holds MEZO; the gauge pays it straight to the staker. The Wave 1 research below (30 Sep: no gauge pays MEZO, no mainnet MUSD/BTC gauge) was out of date by 4 Nov and is superseded by the re-scan in `docs/wave2/2026-11-04-wave1-feedback.md` and the G1 spec. veMEZO and veBTC voting stay out of scope.
 
 ## 2. Problem
 
@@ -70,8 +70,8 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 | The borrow signature binds `amount`, `borrower`, `recipient`, `nonce`, `deadline`; anyone may submit it; verification is `ECDSA.recover` | `_verifySignature` source | Borrowed MUSD is always sent to the **user** (Section 11.4). EOA signers only |
 | MUSD and the pool LP token implement EIP-2612 `permit` | `MUSD is ERC20Permit`; LP exposes `DOMAIN_SEPARATOR` and `nonces` | Permit replaces approval transactions for entry and exit |
 | MUSD/BTC basic LP supports a full entry and exit | 20 MUSD round trip returned `19.988002574284855609 MUSD` | Executable LP route; show attributable execution cost |
-| Gauges pay **BTC**, not MEZO | Testnet gauge `rewardToken = 0x7b7C…` (BTC); `Voter.rewardToken = ve.token()`; only `VeBTCVoter` is deployed | No gauge staking and no MEZO claims in scope |
-| Testnet MUSD/BTC gauge exists but `rewardRate = 0`; mainnet MUSD/BTC basic and CL pools have **no gauge** | Voter `gauges(pool)` reads | Gauge staking cannot be demonstrated or carried to mainnet |
+| *Superseded 4 Nov 2026:* the 30 Sep read found gauges paying BTC; the current voters' gauges for the MUSD/BTC pool pay **MEZO** (`rewardRate` 1.281 MEZO/s testnet, 0.481 mainnet; staked LP 171.86 of 208.28 on mainnet) | G1 spec, Chain facts | Gauge staking and MEZO claims are in scope (G1) |
+| *Superseded 4 Nov 2026:* both networks have a live gauge for the basic MUSD/BTC pool (`voter.gauges(pool)`, `voter.isAlive`); the testnet one the 30 Sep read found sat on an older voter at rate 0 | G1 spec, Chain facts | Gauge staking can be demonstrated on testnet and carried to mainnet (mainnet V2 pending, Task 11) |
 | Mainnet MUSD Stability Pool holds ≈ 14.17M of ≈ 19.79M MUSD supply (≈ 72%) | `getTotalMUSDDeposits`, `totalSupply` | The Stability Pool is the dominant MUSD destination → offered as the second route |
 | Testnet Stability Pool is active: ≈ 86.2M MUSD deposits and ≈ 176 BTC collateral gains | Contract reads | Stability Pool route is demonstrable on testnet with real gains |
 | `provideToSP` / `withdrawFromSP` act only for `msg.sender`; `withdrawFromSP` reverts while any Trove is under-collateralised | `StabilityPool.sol` | Stability Pool actions are called by the user directly, not through the executor; the blocked-withdrawal case is an explicit error state |
@@ -154,6 +154,7 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 - Invariant suite and self-audit checklist for `MezoRouteLeverage`.
 - Mainnet deployment of `MezoRouteLeverage` with an immutable per-transaction cap.
 - Changes driven by Wave 1 judge feedback.
+- **G1 (first Wave 2 item, 4 Nov):** `MezoRouteExecutorV2` with a `stake` flag and `enterFromBtc`; gauge staking, MEZO claims, unstake, and exit-unstakes-first in Positions; gauge rows in Compare; entry from BTC. Spec `docs/superpowers/specs/2026-11-04-g1-gauge-route-design.md`. V2 is live on testnet and, since 6 Nov 2026, on mainnet (`0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915`, round trip in §20).
 
 ### Wave 2 — Could
 
@@ -161,7 +162,7 @@ Research performed on testnet and mainnet on 30 Sep 2026.
 
 ### Out of scope
 
-- Gauge staking and MEZO rewards (no MEZO-paying gauge exists; Section 4).
+- veBTC and veMEZO features, bribes, and voting; auto-compounding or selling MEZO for the user; concentrated pools. (Gauge staking and MEZO claims are in scope since G1.)
 - Opening a new Trove through the executor.
 - Borrow → Stability Pool in one transaction (Stability Pool deposits are keyed to `msg.sender`).
 - Smart-account / ERC-1271 signers for `borrowAndEnter` and permits (smart accounts use approvals; Borrow & Deploy is unavailable to them).
@@ -326,7 +327,7 @@ Precondition: user has a Trove and uses an EOA wallet.
 - Use "estimated" for all pre-transaction values and "realised" only after confirmation.
 - Explain impermanent loss, the double BTC exposure, and Stability Pool deposit loss in one sentence each before linking to detail.
 - Visually and textually separate testnet execution data from mainnet reference data.
-- Never imply that MezoRoute pays MEZO or gauge rewards.
+- Never imply that MezoRoute pays MEZO or gauge rewards: the gauge pays them. Always say a gauge APR is this week's rate and can change, and that while LP is staked its swap fees go to veBTC voters.
 
 ## 10. System architecture
 
@@ -388,7 +389,8 @@ All dependencies are immutable constructor arguments; the executor accepts no us
 | PoolFactory | `0x4947243CC818b627A5D06d14C4eCe7398A23Ce1A` | `0x83FE469C636C4081b87bA5b3Ae9991c6Ed104248` |
 | MUSD/BTC pool (volatile) | `0xd16A5Df82120ED8D626a1a15232bFcE2366d6AA9` | `0x52e604c44417233b6CcEDDDc0d640A405Caacefb` |
 | BorrowerOperationsSignatures | `0xD757e3646AF370b15f32EB557F0F8380Df7D639e` | `0xB57ab578BF20b3e318f3EFAA587C51DBccE5df7a` |
-| **MezoRouteExecutor (deployed, verified)** | `0xB36B2E012003840951CFf00fA6b1E3237A110920` (cap 1,000,000 MUSD; deployed 2 Oct 2026) | `0x046449b1229C863e278f369869BA10e12bd80d9E` (cap 1,000 MUSD, fee 10 bps; block 12,524,142, 15 Oct 2026) |
+| **MezoRouteExecutorV2 (deployed, verified, current)** | `0x1281cC769c136F9F4f291B390c8992a3Cd556288` (caps 1,000,000 MUSD and 12 BTC; block 16,569,977, 4 Nov 2026) | `0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915` (caps 1,000 MUSD and 0.0125 BTC, fee 10 bps; block 13,031,359, 6 Nov 2026) |
+| MezoRouteExecutor V1 (deployed, verified, legacy: history and exits only) | `0xB36B2E012003840951CFf00fA6b1E3237A110920` (cap 1,000,000 MUSD; deployed 2 Oct 2026) | `0x046449b1229C863e278f369869BA10e12bd80d9E` (cap 1,000 MUSD, fee 10 bps; block 12,524,142, 15 Oct 2026) |
 
 Frontend-only reads and direct calls:
 
@@ -557,6 +559,14 @@ event Exited(
 11. The fee is charged only on entry, equals `musdIn × feeBps / 10_000`, never exceeds `MAX_FEE_BPS`, and is only ever sent to the immutable `feeRecipient`.
 12. An immutable per-transaction `musdIn` cap on entry (Wave 1, required before mainnet).
 
+`MezoRouteExecutorV2` (G1, `docs/superpowers/specs/2026-11-04-g1-gauge-route-design.md`) keeps 1-12 (the immutable gauge joins the fixed targets of invariant 1) and adds an immutable `maxBtcIn` cap on `enterFromBtc` (the fee is then `btcIn × feeBps / 10_000` in BTC). It also holds five more:
+
+13. The executor holds no LP after any call (staked LP is deposited in the gauge inside the call).
+14. The gauge allowance is 0 after any call.
+15. Staked LP is credited only to `recipient`, and the gauge must credit exactly the deposited amount (`StakeNotCredited`); the gauge, like the executor and the pool, is never a valid recipient.
+16. BTC held before a call is never paid out: `enterFromBtc` measures the same deltas as `enter`.
+17. The executor never touches MEZO.
+
 ### 11.9 Wave 2 — `MezoRouteLeverage`
 
 A second immutable executor; `MezoRouteExecutor` is not modified.
@@ -601,7 +611,7 @@ Wallet balance deltas are never the source for entry cost, LP minted, gains, or 
 
 ### Cost basis
 
-- LP: cost basis = `Entered.musdIn − Entered.musdRefund` (plus BTC refund valued at entry price, shown separately); the fee is part of cost basis and shown as its own line. Partial exits reduce cost basis pro rata by LP exited. Reconstructed client-side from the user's `Entered`/`Exited` logs.
+- LP: cost basis = `Entered.musdIn − Entered.musdRefund` (plus BTC refund valued at entry price, shown separately); the fee is part of cost basis and shown as its own line. Partial exits reduce cost basis pro rata by LP exited. Reconstructed client-side from the user's `Entered`/`Exited` logs. A BTC entry (`EnteredFromBtc`) costs `(btcIn − btcRefund) × musdFromSwap / btcToSwap − musdRefund`, priced at its own swap. Exit is pro rata whether the LP was staked or not.
 - Stability Pool: cost basis = deposits added, and each withdrawal removes cost pro rata to the share of the compounded deposit it takes (`basis × amount / before`, the LP-exit rule; a plain "deposits − withdrawals" sum goes wrong once the deposit has absorbed liquidated debt), rebuilt from `UserDepositChanged`/`CollateralGainWithdrawn` history; BTC gains received and MUSD absorbed by liquidations are shown separately. All of it describes the current position: a deposit that starts from zero (after a full withdrawal or a wipe-out) opens a new one. (Updated in F5, 14 Oct 2026.)
 - This is a UX estimate, not tax accounting.
 
@@ -630,7 +640,7 @@ The exposure module is pure TypeScript with unit tests; it is reused by the Wave
 
 ### Positions data
 
-- Cost basis history: `Entered`/`Exited` logs filtered by the indexed `recipient`, queried in block chunks from the executor's deployment block and cached in `localStorage` as a convenience only. Stability Pool `UserDepositChanged`/`CollateralGainWithdrawn` logs by depositor come from the explorer's Blockscout API (`api.explorer.test.mezo.org`, `api.explorer.mezo.org`; one request per event), because the pool was deployed millions of blocks before the head (≈1,160 RPC chunks on testnet); a history that does not end at `deposits(account)` is treated as indexer lag and fetched again.
+- Cost basis history: `Entered` and `EnteredFromBtc` logs by the indexed `recipient` and `Exited` logs by `caller`, from V2 and each legacy executor, merged in chain order, queried in block chunks from each executor's deployment block and cached in `localStorage` as a convenience only. Stability Pool `UserDepositChanged`/`CollateralGainWithdrawn` logs by depositor come from the explorer's Blockscout API (`api.explorer.test.mezo.org`, `api.explorer.mezo.org`; one request per event), because the pool was deployed millions of blocks before the head (≈1,160 RPC chunks on testnet); a history that does not end at `deposits(account)` is treated as indexer lag and fetched again.
 - Claimable LP fees: computed in the positions snapshot as `claimable + balance × (index − supplyIndex) / 1e18` per token (mirroring `Pool._updateFor`), so they come from the snapshot's block; QA checks them against an `eth_call` of `Pool.claimFees()` with `from = user`.
 - `eth_getLogs` on Mezo serves at most 10,000 blocks per request, and a range whose `toBlock` is above the head returns an empty list **without an error** (12 Oct 2026); every range is clamped to the head. The cache keeps only events at least 50 blocks below the head, and a failed chunk fails the whole scan (no partial history, no cache write). `Exited` is filtered by the indexed `caller` (whose LP is pulled).
 - Stability Pool: `getCompoundedMUSDDeposit`, `getDepositorCollateralGain`.
@@ -717,7 +727,7 @@ A `cast`-based script runs against the deployed executor: approve → `enter` �
 - Frontend deployed on Vercel; every page in Section 9 works on testnet with an EOA wallet and with a Bitcoin wallet through Passport.
 - Mainnet: at least one real LP round trip (enter → claim fees → exit) and one Stability Pool deposit/withdraw through the UI.
 - Frontend unit tests pass; quote-accuracy check within slippage tolerance.
-- README includes setup, architecture, deployed addresses, limitations (including why MEZO is not integrated and the unaudited cap), and demo links.
+- README includes setup, architecture, deployed addresses, limitations (Wave 1 text: including why MEZO is not integrated and the unaudited cap; G1 integrates MEZO), and demo links.
 - 2-minute video recorded from the production deployment.
 - Repository tagged `wave1`; submission sent before 26 Oct 22:00 with one day of buffer.
 - Submission form: Project readiness = "mainnet deployment".
@@ -830,7 +840,7 @@ Wave 2 work must not be included in the Wave 1 submission.
 | Permit front-run | `try/catch` permit, fall back to existing allowance |
 | Low liquidity (mainnet pool ≈ 117k MUSD) | Hard price-impact gate; conservative mainnet cap |
 | Router, pool, or MUSD contract risk | Fixed allowlist, narrow calls, transparent dependencies |
-| No MEZO integration lowers the Integration score | Deep MUSD integration across three protocol surfaces; rationale stated in submission; revisit if Mezo announces MEZO utility |
+| No MEZO integration lowers the Integration score (Wave 1; G1 adds the gauge) | Deep MUSD integration across three protocol surfaces; rationale stated in submission; revisit if Mezo announces MEZO utility |
 | Incorrect profit display | Event-based accounting |
 | Pre-existing contract residues | Before/after delta isolation |
 | Unaudited contract on mainnet (Wave 2) | Invariant suite, self-audit, immutable per-transaction cap |
@@ -859,7 +869,7 @@ Wave 2 work must not be included in the Wave 1 submission.
 - **Tracks:** Track 2 (primary story: discover, compare, and access MUSD destinations) and Track 1 (borrow → deploy strategy; Wave 2 looping)
 - **Chain:** Mezo mainnet (capped) and Mezo testnet
 - **Business model:** disclosed execution fee in bps on LP entry; no exit fee (Section 19.1).
-- **MUSD/MEZO usage:** borrows MUSD through `BorrowerOperationsSignatures`, deploys it into the MUSD/BTC pool, and supports Stability Pool deposits; MEZO is not integrated because no MEZO-paying surface exists for this use case (Section 1).
+- **MUSD/MEZO usage:** borrows MUSD through `BorrowerOperationsSignatures`, deploys it into the MUSD/BTC pool, and supports Stability Pool deposits; MEZO is not integrated because no MEZO-paying surface exists for this use case (Section 1). (Wave 1 text, kept until the Wave 2 submission text replaces it; G1 integrates the gauge.)
 - **Future milestones:**
   1. Wave 2 (by 15 Nov): one-transaction BTC leverage and unwind on MUSD Troves, on testnet and capped mainnet.
   2. After the hackathon: additional routes as separate executors, and Trove opening in the same flow.
@@ -891,6 +901,25 @@ Wave 2 work must not be included in the Wave 1 submission.
 - LP exit (Max, permit → 9.9636 MUSD): `0x48c1cb0d720b319d8e82055e0d02a0425b24182308bd22123e248c5c6ef97147`
 - Net cost of the LP round trip: 0.0264 MUSD on 10 MUSD (both pool swap fees and impact; the 0.01 MUSD MezoRoute fee went to the fee recipient, the same wallet). The executor holds no MUSD, BTC, or LP afterwards.
 
+### G1 mainnet: `MezoRouteExecutorV2` and real round trip (6 Nov 2026, user's MetaMask `0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8`)
+
+- Executor V2 `0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915`, block 13,031,359, deployed from the keystore `mezo-mainnet` (deployer `0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49`): `https://explorer.mezo.org/tx/0x4338b6c8024f0516d66bbe5a96ec8e30b012c30be8e5e397673f279cb167bbe8` (2,604,455 gas, 0.0000034 BTC). Source-verified on the explorer (Blockscout). Every immutable read back with `cast` matches: MUSD, BTC, router, factory, pool, BorrowerOperationsSignatures, fee 10 bps to `0x375a…d6e8`, `maxMusdIn` 1,000 MUSD, gauge `0x8Be20a5fF57E381025aE5E3A121B697269569AaF` (`voter.gauges(pool)` and `stakingToken() == pool`, alive), `maxBtcIn` 0.0125 BTC. V1 `0x0464…0d9E` stays deployed as `legacyExecutors` (history; its LP can still exit).
+- LP entry with MUSD permit and stake, 10 MUSD → 0.017962 LP staked in the gauge: `0x415b5af4db1f5e0415d7802f7f0cf468b5b3ab3556c43e59746243685b4a1445`
+- Claim MEZO (`gauge.getReward`), 0.001037 MEZO: `0x093bbf3f5c032fdf07164f1f589e83f12c4fca4761a217c028216d54bb49bd59`
+- Unstake (`gauge.withdraw`, the exit's first step): `0x9f3574418177a0d08526a79bf07e9fa29cd197096c05c8e6b02da0951997c14b`
+- LP exit (Max, LP permit) → 9.9600 MUSD: `0x730c33bd37f80af48eed682bc9c66469189a9c6fcc9729c7417a783c828b89c2`
+- `enterFromBtc` with BTC permit and stake, 0.00003 BTC → 0.004154 LP staked (the first BTC permit a wallet signed through the app, and the first on mainnet): `0xeac5130ec010da98fd221204c5f3625c2b49b3d40da0cf6ab4030bf4d5463caa`
+- Afterwards the executor holds 0 BTC, MUSD, LP, and MEZO, has no gauge stake, and every allowance it set (MUSD, BTC, and LP to the router, LP to the gauge) is 0. `QUOTE_NETWORK=mainnet npm run quote-accuracy`: the MUSD entry and the BTC entry both simulate exactly, 0 bps from the optimal swap.
+- Gas paid for the five transactions: 0.0000059 BTC. MetaMask set every limit to exactly 3 × the RPC estimate (as in M1), and Mezo charged half of each limit. Real gas, `cast estimate` at the block before each transaction: enter with stake 682,215 (the same calldata with `stake` false 496,365, so the first stake adds 185,850), `getReward` 85,049, `gauge.withdraw` 141,867, exit 428,893, `enterFromBtc` with stake 511,863 (377,312 with `stake` false). The app's budgets were raised to cover them (`frontend/src/lib/quote/gas.ts`).
+- Net cost of the MUSD round trip: 0.0400 MUSD on 10 MUSD (pool swap fees and impact on both legs; the 0.01 MUSD MezoRoute fee went to the fee recipient, the same wallet), against 0.001037 MEZO earned in the few minutes staked.
+
+### G1 testnet: `MezoRouteExecutorV2` (4 Nov 2026)
+
+- Address `0x1281cC769c136F9F4f291B390c8992a3Cd556288`, deployed in block 16,569,977 (`https://explorer.test.mezo.org/tx/0x5346cb0a04fcc4d86e63a1a133ec53f1d7a7f1064fea9c5c397cbbfd695f9fb9`), source-verified on the explorer (Blockscout). Immutables read back with `cast`: gauge `0x72D88B0795373437E86792DEd8362D66dC43Cd2c`, `maxMusdIn` 1,000,000 MUSD, `maxBtcIn` 12 BTC, fee 10 bps to `0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49` (same as V1), MUSD/BTC/pool/router/factory/BOS as in V1. Mainnet caps (not deployed): `maxBtcIn` 0.0125 BTC, gauge `0x8Be20a5fF57E381025aE5E3A121B697269569AaF`.
+- `script/smoke-testnet.sh` passes against it: the testnet gauge (source unverified) behaves like `Gauge.sol` (`deposit(uint256,address)`, `earned`, `getReward`, `withdraw`, MEZO reward), the real BTC token's `DOMAIN_SEPARATOR()` equals the hash of ("BTC", "1", 31611, token), and the executor holds no MUSD, BTC, LP, or gauge stake afterwards.
+- Measured gas, one run of `cd contracts && set -a && source .env && set +a && EXECUTOR=0x1281cC769c136F9F4f291B390c8992a3Cd556288 GAS_MULT=1.3 bash script/smoke-testnet.sh` (receipt `gasUsed`; the script prints it with the estimate and limit for each transaction; no transaction ran out of gas): `enter` without stake 323,655; `enter` with stake 423,282 (the gauge deposit adds about 100,000); `enterFromBtc` without stake 299,498; `enterFromBtc` with stake 388,645; `gauge.deposit` (direct) 127,995; `gauge.withdraw` 97,194 (direct), 130,620 (after the `enter` stake, with accrued rewards), 105,357 (after the `enterFromBtc` stake); `gauge.getReward` 58,168; `exit` 322,766, 318,286, 316,046. Gas varies with first-touch storage slots between runs (earlier runs: `enter` with stake 434,722 to 448,402, `gauge.deposit` 142,295). Mezo charges at least half the gas limit, so at the script default `GAS_MULT=2` (the testnet RPC once under-estimated a `gauge.withdraw`, so the default stays safe) `gasUsed` is floor-inflated, for example `enterFromBtc` 355,484 instead of 299,498; use `GAS_MULT=1.3` to measure.
+- Replay fixture for the `EnteredFromBtc` quote (Task 9): transaction `0xf0378a9d16a3e07147fd6a316786e11ff458a9aeeae1347ef0d6834f3b6c3cf5`, block 16,570,227, transaction index 0 (no other transaction touched the pool earlier in the block). Pre-state at block 16,570,226: pool reserves MUSD 102510355910841854805827690 and BTC 1304018023912565731526 (equal to the pool's token balances), LP total supply 365609032746488322770813, `PoolFactory.getFee` 4 bps. Event: caller = recipient = `0xd74f…2B49`, btcIn 300000000000000, fee 300000000000, btcToSwap 149850000000000, musdFromSwap 11775167457143114855, musdAdded 11775167457143114855, btcAdded 149790077206098, liquidityOut 41996811353360838, musdRefund 0, btcRefund 59922793902.
+
 ### Research transactions
 
 - Borrow MUSD: `https://explorer.test.mezo.org/tx/0x2c6cb4f33d812a4d508500d923a1c9870242b2c1b0a72f39e81e3117133f60b4`
@@ -911,7 +940,7 @@ Wave 2 work must not be included in the Wave 1 submission.
 - Final price-impact hard limit after integration tests. The CR safety floor is set provisionally to 160% (F2, 5 Oct 2026): a borrow must leave the Trove able to survive a 30% BTC drop, and the dashboard shows a Trove as at risk when a 30% drop would put it below the MCR.
 - Cap for `MezoRouteLeverage` (Wave 2).
 - Leverage execution fee (proposed: same 10 bps on the MUSD borrowed).
-- Whether Mezo announces MEZO utility for integrators during the event.
+- Whether Mezo announces MEZO utility for integrators during the event. (Wave 1; the gauge answered it, see the G1 spec.)
 
 ---
 

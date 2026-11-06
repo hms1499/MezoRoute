@@ -1,6 +1,6 @@
 import type { NetworkConfig } from "@/lib/config/networks";
 import { writeBlocker } from "@/lib/config/write-gate";
-import { AMOUNT_TOO_SMALL, LP_CHANGED, needsGas, NO_LP, noExecutor, PRICE_IMPACT, QUOTE_EXPIRED, wrongNetwork } from "@/lib/errors/outcomes";
+import { AMOUNT_TOO_SMALL, GAUGE_READ_FAILED, LP_CHANGED, needsGas, NO_LP, noExecutor, PRICE_IMPACT, QUOTE_EXPIRED, wrongNetwork } from "@/lib/errors/outcomes";
 import type { Outcome } from "@/lib/errors/types";
 import type { ExitQuote } from "@/lib/quote/exit";
 import { PRICE_IMPACT_LIMIT, QUOTE_TTL_MS } from "@/lib/routes/musd-btc-lp/gate";
@@ -8,6 +8,7 @@ import { PRICE_IMPACT_LIMIT, QUOTE_TTL_MS } from "@/lib/routes/musd-btc-lp/gate"
 export type ExitBlockReason =
   | "no-executor"
   | "wrong-network"
+  | "gauge-read-failed"
   | "no-lp"
   | "lp-changed"
   | "too-small"
@@ -24,6 +25,7 @@ export type ExitGateInput = {
   quote: ExitQuote | null;
   lacksGas: boolean;
   quoteAgeMs: number;
+  gaugeReadFailed?: boolean; // staked LP is unknown, so a shortfall here does not mean the LP is gone
 };
 
 /** Why exit is blocked; the first matching reason wins (Flow G, FR-09). Exit is never capped (FR-22). */
@@ -33,6 +35,7 @@ export function exitBlock(input: ExitGateInput): ExitBlock | null {
   const blocker = writeBlocker(network, input.walletChainId);
   if (blocker === "no-executor") return block("no-executor", noExecutor(network));
   if (blocker === "wrong-network") return block("wrong-network", wrongNetwork(network));
+  if (input.gaugeReadFailed && (input.lpBalance === 0n || input.liquidityIn > input.lpBalance)) return block("gauge-read-failed", GAUGE_READ_FAILED);
   if (input.lpBalance === 0n) return block("no-lp", NO_LP);
   if (input.liquidityIn > input.lpBalance) return block("lp-changed", LP_CHANGED);
   if (!input.quote) return block("too-small", AMOUNT_TOO_SMALL);

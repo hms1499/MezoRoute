@@ -20,6 +20,20 @@ export function exitQuery(intent: ExitIntent): string {
   return `?${new URLSearchParams({ percent: intent.percent.toString(), slippage: slippageParam(intent.slippageBps) }).toString()}`;
 }
 
+/**
+ * What an exit of `percent` of all the user's LP needs: the amount, and how much of it the gauge must
+ * release first. Wallet LP is spent first, so a share the wallet covers needs no unstake.
+ */
+export function exitPlan(walletLp: bigint, stakedLp: bigint, percent: ExitPercent): { liquidityIn: bigint; unstake: bigint } {
+  const liquidityIn = exitLiquidity(walletLp + stakedLp, percent);
+  return { liquidityIn, unstake: unstakeFor(walletLp, liquidityIn) };
+}
+
+/** The part of a pinned amount the wallet does not hold yet. */
+export function unstakeFor(walletLp: bigint, liquidityIn: bigint): bigint {
+  return liquidityIn > walletLp ? liquidityIn - walletLp : 0n;
+}
+
 /** LP to exit: the exact balance at Max (no dust left behind), otherwise the share rounded down. */
 export function exitLiquidity(balance: bigint, percent: ExitPercent): bigint {
   return percent === 100 ? balance : (balance * BigInt(percent)) / 100n;

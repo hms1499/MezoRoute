@@ -48,7 +48,7 @@ export function ModeToggle({
   return (
     <div>
       <div role="radiogroup" aria-label="Funding" className="inline-flex rounded-full bg-well p-1 text-sm font-semibold">
-        {option("deposit", "Deposit MUSD")}
+        {option("deposit", "Deposit")}
         {option("borrow", BORROW_LABEL, borrow.disabled)}
       </div>
       {borrow.note && <p className="mt-1 text-sm text-muted">{withTerm(borrow.note)}</p>}

@@ -14,6 +14,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Stat } from "@/components/ui/Stat";
 import { LoadingCard } from "@/components/ui/Skeleton";
+import { Notice } from "@/components/ui/Notice";
 import { useNetwork } from "@/lib/config/network-context";
 import { lacksGas } from "@/lib/dashboard/readiness";
 import { valueSeries } from "@/lib/exposure/plots";
@@ -21,13 +22,16 @@ import { claimBlock } from "@/lib/positions/claim";
 import { usePositionsHistory } from "@/lib/positions/usePositionsHistory";
 import { usePositionsSnapshot } from "@/lib/positions/usePositionsSnapshot";
 import { positionTotals } from "@/lib/positions/totals";
-import { positionView } from "@/lib/positions/view";
+import { positionView, showsNoPositions } from "@/lib/positions/view";
 import { spView } from "@/lib/stability-pool/position";
 import { spClaimPreview } from "@/lib/stability-pool/preview";
 import { useSpActions } from "@/lib/stability-pool/useSpActions";
 import { useSpHistory } from "@/lib/stability-pool/useSpHistory";
 import { useSpSnapshot } from "@/lib/stability-pool/useSpSnapshot";
+import { showsGaugeCard } from "@/lib/gauge/availability";
+import { feesStakedNote, GAUGE_READ_FAILED_POSITIONS } from "@/lib/gauge/copy";
 import { FeesCard } from "./FeesCard";
+import { GaugeCard } from "./GaugeCard";
 import { LpPositionCard } from "./LpPositionCard";
 
 /** Spec §9 screen 5: LP, pool fees, and the Stability Pool. */
@@ -62,14 +66,15 @@ function Positions({ account }: { account: Address }) {
     fees: data.snapshot.fees,
     lacksGas: lacksGas(data.gasBalance, data.gasPrice),
   });
-  const totals = positionTotals(view, pool);
+  const { gaugeReadFailed } = data.snapshot;
+  const totals = positionTotals(view, pool, gaugeReadFailed);
   const header = (
     <>
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <h1 className="text-title">Your positions</h1>
     </>
   );
-  if (view.empty && pool?.empty) {
+  if (showsNoPositions(view, pool, gaugeReadFailed)) {
     // Full width like every other tab's cards; the column starts at the same left edge.
     return (
       <>
@@ -117,8 +122,23 @@ function Positions({ account }: { account: Address }) {
         )
       }
     >
+      {gaugeReadFailed && (
+        <Notice tone="warning" role="status">
+          {GAUGE_READ_FAILED_POSITIONS}
+        </Notice>
+      )}
       {view.lp.balance > 0n && <LpPositionCard lp={view.lp} history={history} />}
-      {!view.empty && <FeesCard account={account} fees={view.fees} block={block} />}
+      {showsGaugeCard(data.snapshot.gauge, view.lp.walletLp, data.snapshot.blockTimestamp) && (
+        <GaugeCard account={account} lp={view.lp} data={data} gauge={data.snapshot.gauge} />
+      )}
+      {(view.lp.balance > 0n || view.fees.musd > 0n || view.fees.btc > 0n) && (
+        <FeesCard
+          account={account}
+          fees={view.fees}
+          block={block}
+          note={feesStakedNote({ walletLp: view.lp.walletLp, stakedLp: view.lp.stakedLp, fees: view.fees })}
+        />
+      )}
       {sp.error && !sp.data && <LoadError error={sp.error} onRetry={() => void sp.refresh().catch(() => undefined)} />}
       {sp.data && pool && !pool.empty && (
         <SpPositionCard
