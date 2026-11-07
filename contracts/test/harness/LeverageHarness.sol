@@ -34,16 +34,20 @@ abstract contract LeverageHarness is Test {
     uint256 internal userKey = 0xA11CE;
     address internal user = vm.addr(userKey);
 
+    function _newMusd() internal virtual returns (MockERC20Permit) {
+        return new MockERC20Permit("Mezo USD", "MUSD");
+    }
+
     /// @dev True to build the pool with BTC as token0 (mainnet's order).
     function _btcFirst() internal pure virtual returns (bool);
 
     function setUp() public virtual {
         btc = new MockUnifiedBtc();
-        musd = new MockERC20Permit("Mezo USD", "MUSD");
+        musd = _newMusd();
         // Tigris sorts tokens by address; redeploy MUSD until the order is the one wanted.
         for (uint256 i = 0; (address(btc) < address(musd)) != _btcFirst(); i++) {
             require(i < 32, "harness: token order not reached");
-            musd = new MockERC20Permit("Mezo USD", "MUSD");
+            musd = _newMusd();
         }
         btcIsToken0 = address(btc) < address(musd);
 

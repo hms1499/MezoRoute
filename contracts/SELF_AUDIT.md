@@ -3,7 +3,7 @@
 This is a self-review by the author, **not an external audit**. It is required before the capped
 mainnet deployment (`PRODUCT_SPEC.md` 6, 11.8, 15). Re-run it on every change to `src/`.
 
-- **Scope:** `src/MezoRouteExecutor.sol`, `src/interfaces/` (≈ 260 lines of logic)
+- **Scope:** `src/MezoRouteExecutor.sol`, `src/MezoRouteExecutorV2.sol`, `src/MezoRouteLeverage.sol` (L1), `src/interfaces/`
 - **Toolchain:** Solidity 0.8.24, `evm_version = london`, `via_ir`, optimizer 200 runs, OpenZeppelin 4.9.0
 - **Dependencies:** Tigris Router/Pool/PoolFactory at `0a3b5e8`; MUSD `BorrowerOperationsSignatures`
 - **Evidence:** `forge test` (unit, fuzz, invariant tests against the real Tigris source) and
@@ -52,6 +52,31 @@ gauge, and the constructor checks (`test_constructor_revertsOnZeroBtcCap`, `test
 
 Accepted: `exit` cannot unstake (`gauge.withdraw` pays only its caller), so leaving a staked position
 takes two transactions.
+
+### MezoRouteLeverage (`src/MezoRouteLeverage.sol`, L1)
+
+A separate immutable contract for Unwind, Close, Leverage and Open-with-leverage on the caller's own Trove through a flash swap on the MUSD/BTC pool (`PRODUCT_SPEC.md` §11.9, spec `docs/superpowers/specs/2026-11-07-l1-unwind-leverage-design.md`). Tests run every suite under both pool token orders (MUSD `token0` as on testnet, BTC `token0` as on mainnet) with the real Tigris Pool and a revert-safe unified-ledger BTC mock (`test/mocks/MockUnifiedBtc.sol`); the real `msg.value` leg and BOS are proven by the testnet smoke run.
+
+| # | Invariant | Where enforced | Evidence |
+|---|---|---|---|
+| L1 | Only the fixed MUSD, BTC, pool, factory, BOS, TroveManager and PriceFeed are called; no user-supplied target | All `immutable`; constructor checks `factory.getPool(musd, btc, false) == pool` | `test_constructor_poolMismatch`, `test_constructor_zeroAddressReverts`, code review ✅ |
+| L2 | No owner, pause, setter, proxy or admin withdrawal | No such code | Code review ✅ |
+| L3 | Every Trove action names the caller as borrower and recipient | `borrower = msg.sender`, passed as both arguments to every BOS call | `test_unwind_repaysAndReturnsRemainder`, `test_leverage_addsCollateralAndDebt`, `test_close_returnsAllCollateralLessBtcSold`, `invariant_recipientIsCallerAndNoAllowanceLeft` ✅ |
+| L4 | The hook runs only for the pool, for a swap this contract started, for the operation in flight; it authenticates before decoding | `msg.sender == pool`, `sender == this`, `_op != 0` then `op == _op` | `test_hook_directCallReverts`, `test_hook_poolCallForAnotherSenderReverts`, `test_hook_poolCallPretendingToBeTheContractReverts`, `invariant_opIdle` ✅ |
+| L5 | MUSD and BTC balances end every call where they started (Open: start − `msg.value`); nothing held before a call is paid out | `_balances` / `_verifyBalances` (`UnexpectedBalanceChange`) | `test_unwind_preExistingBalancesUntouched`, every happy-path test asserts zero balances, `invariant_holdsOnlyDonations` ✅ |
+| L6 | No allowance left: the contract never approves; a permit for the signed maximum ends at zero | `_pullPayRefund` pulls the maximum, pays the exact input (and fee), refunds the rest | `test_unwind_repaysAndReturnsRemainder`, `test_close_returnsAllCollateralLessBtcSold`, `test_leverage_addsCollateralAndDebt`, `test_open_opensTroveWithUserAndFlashedBtc` (allowance 0), `invariant_recipientIsCallerAndNoAllowanceLeft` ✅ |
+| L7 | The pool is paid exactly the smallest input its K check accepts | `exactInput` (volatile x·y, fee on input), reserves read in the hook | `testFuzz_exactInput_isTheSmallestThePoolAccepts` (one wei less reverts `K()`) ✅ |
+| L8 | Swap price bounded by PriceFeed, one-sided, user bound ≤ 10% | `_checkSellBound`, `_payForBtc`; `DeviationTooHigh` above `MAX_DEVIATION_BPS` | `test_unwind_oracleBound`, `test_close_oracleBound`, `test_leverage_oracleBound`, `test_unwind_deviationAboveCap` ✅ |
+| L9 | The user's signed amounts bound what they pay | `maxBtcToPool` / `maxMusdToPool` (`PoolInputAboveMax`); a pull never exceeds what was borrowed | `test_unwind_maxBtcToPoolTooLow`, `test_close_maxBtcToPoolTooLow`, `test_leverage_maxMusdToPoolTooLow`, `test_leverage_debtIncreaseTooSmall` ✅ |
+| L10 | Leverage and Open leave ICR ≥ the user's minimum, which is ≥ 150% | `_checkCollateralRatio` after the swap; `MinCrBelowFloor` | `test_leverage_minCrEnforced`, `test_leverage_minCrBelowFloor` ✅ |
+| L11 | Immutable per-transaction caps: BTC flashed (Leverage, Open), MUSD flashed (Unwind, Close) | `AmountAboveCap` before any external call | `test_unwind_capAbove`, `test_close_capAbove`, `test_leverage_capAbove`, `test_open_capAbove` ✅ |
+| L12 | Fee only on Leverage and Open, `musdToPool × feeBps / 10_000`, ≤ 50 bps, only to `feeRecipient`; Unwind and Close are free | `_fee`, constructor `FeeTooHigh` | `test_leverage_addsCollateralAndDebt`, `test_open_opensTroveWithUserAndFlashedBtc`, `test_constructor_feeTooHigh`, Unwind/Close tests (no fee transfer) ✅ |
+| L13 | Every entry point is `nonReentrant` | modifier on `unwind`, `close`, `leverage`, `openLeveraged` | `test_unwind_rejectsReentrantCall`, `test_leverage_rejectsReentrantCall` (each re-enters all four) ✅ |
+| L14 | The signature binds the BTC sent: the contract sends exactly the signed `assetAmount` | `{value: btcToAdd}` / `{value: msg.value + btcToFlash}` | `test_leverage_signatureBindsMsgValue` ✅ |
+| L15 | A used permit falls back to the allowance; without one the call reverts cleanly | try/catch permit | `test_unwind_permitAlreadyUsedFallsBackToAllowance`, `test_unwind_noPermitNoAllowanceReverts` ✅ |
+| L16 | The contract never owns a Trove | It is never passed as borrower | `invariant_ownsNoTrove` ✅ |
+
+Front-running a user's signature: whoever submits it must repay the debt (Unwind, Close) or supply the bound BTC (Leverage, Open) themselves, and every result goes to the borrower; the user's own call then reverts on the used nonce and nothing is lost. Recovery Mode, capacity, minimum net debt and MCR are the protocol's checks; the app checks them first and the contract bubbles the protocol's revert (`test_unwind_recoveryModeReverts`, `test_close_recoveryModeReverts`, `test_open_minNetDebt`).
 
 ## 2. Checklist
 

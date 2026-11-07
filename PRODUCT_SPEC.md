@@ -569,34 +569,24 @@ event Exited(
 
 ### 11.9 Wave 2 — `MezoRouteLeverage`
 
-A second immutable executor; `MezoRouteExecutor` is not modified.
+A second immutable contract; the executors are not modified. Design and reasoning: `docs/superpowers/specs/2026-11-07-l1-unwind-leverage-design.md` (L1, approved 7 Nov 2026), which supersedes the earlier draft of this section.
 
-**Dependencies:** MUSD, BTC, the MUSD/BTC pool (flash swaps), PoolFactory (fee), BorrowerOperationsSignatures, TroveManager + PriceFeed (post-condition CR check), fee configuration as in 11.1, and an immutable per-transaction cap.
+**Dependencies (immutable, one `Config` struct in the constructor):** MUSD, BTC, the MUSD/BTC volatile pool (flash swaps, checked against `PoolFactory.getPool`), PoolFactory (fee), BorrowerOperationsSignatures, TroveManager (exact debt, post-condition ICR), PriceFeed (oracle bound), `feeBps` ≤ 50 (Leverage and Open only), `feeRecipient`, `maxBtcFlash` and `maxMusdFlash` (per-transaction caps).
 
-**Leverage (`leverage`)**
+**Shared rules.** `borrower = recipient = msg.sender` on every BOS call. The hook accepts only the pool, for a swap this contract started (`sender == this`), for the operation in flight. The pool is paid the exact input its K check accepts. The swap price may be at most `maxDeviationBps` (≤ 10%) worse than `PriceFeed`, one-sided. The leg that repays the pool is paid from the caller's wallet: the signed maximum is pulled (after an optional EIP-2612 permit), the pool gets the exact input, the rest is refunded, so allowances end at zero. MUSD and BTC balances of the contract end every call where they started.
 
-1. Validate caller is the borrower, deadline, and `btcToAdd ≤ cap`.
-2. `pool.swap(btcOut = btcToAdd, to = executor, data)` → in `hook`:
-   1. Require `msg.sender == pool` and the call originated from this executor.
-   2. `adjustTroveWithSignature{value: btcToAdd}(0, debtIncrease, true, hints, borrower, recipient = borrower, signature, deadline)` — MUSD is minted to the **user**.
-   3. Permit + `transferFrom(user → executor, musdRequired)`, where `musdRequired` is the exact pool input for `btcToAdd` plus the MezoRoute fee.
-   4. Transfer `musdRequired − fee` to the pool; transfer the fee to `feeRecipient`.
-3. After the swap: require the user's Trove CR ≥ `minCollateralRatio` (user parameter, UI floor 200%); require executor balance deltas are zero; emit `Leveraged`.
-4. Any MUSD borrowed above `musdRequired` stays in the user's wallet and is reported in the event.
+- **`unwind`:** flash `debtToRepay` MUSD; `adjustTroveWithSignature(collWithdrawal, debtToRepay, false, …)` burns it from the contract and sends the BTC to the caller; the caller pays the pool's BTC. No fee.
+- **`close`:** `updateSystemAndTroveInterest`, flash `debt − 200` MUSD; `closeTroveWithSignature` returns all collateral to the caller; the caller pays the pool's BTC. No fee. Blocked by the protocol in Recovery Mode.
+- **`leverage`:** flash `btcToAdd` BTC; `adjustTroveWithSignature{value: btcToAdd}(0, debtIncrease, true, …)` mints MUSD to the caller; the caller pays the pool's MUSD plus the fee; ICR after ≥ `minCollateralRatio` ≥ 150%.
+- **`openLeveraged`** (payable): flash `btcToFlash`; `openTroveWithSignature{value: msg.value + btcToFlash}(debtAmount, …)`; then as `leverage`.
 
-**Unwind (`unwind`)**
+Refinance, when capacity is short, is a separate direct `BorrowerOperations.refinance` from the wallet (the app adds it as a step), not part of the contract.
 
-1. Validate caller, deadline, cap.
-2. `pool.swap(musdOut = debtToRepay, to = executor, data)` → in `hook`:
-   1. `adjustTroveWithSignature(collWithdrawal, debtToRepay, false, hints, borrower, recipient = borrower, signature, deadline)` — the executor is the caller, so the repayment is burned from the executor's flash-borrowed MUSD; withdrawn BTC goes to the **user**.
-   2. BTC permit + `transferFrom(user → executor, btcRequired)`; transfer `btcRequired` to the pool.
-3. Require executor balance deltas are zero; emit `Unwound`.
+**Why the recipient is always the user.** Anyone can submit a BOS signature. For a leverage or open signature, a front-runner must supply the bound BTC themselves — they gift collateral to the user. For an unwind or close signature, a front-runner must repay the debt themselves, and the collateral still goes to the user. Our call then reverts on the used nonce and nothing is lost.
 
-**Why the recipient is always the user.** Anyone can submit an `AdjustTrove` signature. For a leverage signature, a front-runner must supply the bound `assetAmount` of BTC themselves — they gift collateral to the user. For an unwind signature with the executor as recipient, a front-runner could repay the debt and strand the user's withdrawn collateral in the executor; with the user as recipient, the collateral always reaches the user. The executor then reverts on the consumed nonce and nothing is lost.
+**Testing.** Sending BTC as `msg.value` from a contract relies on Mezo's unified native/ERC-20 BTC ledger. Local tests use a revert-safe unified mock (`test/mocks/MockUnifiedBtc.sol`) and a mock MUSD protocol, under both pool token orders; the real BOS and the `msg.value` leg are proven by the live testnet smoke run before mainnet deployment.
 
-**Testing constraint.** Sending BTC as `msg.value` from a contract relies on Mezo's unified native/ERC-20 BTC balance and cannot be reproduced with a mock ERC-20. Local tests cover the flash-swap and accounting logic with a mock `BorrowerOperationsSignatures` funded via `vm.deal`; the `msg.value` path is proven by the live testnet smoke script before mainnet deployment.
-
-**Events:** `Leveraged(borrower, btcAdded, debtIncrease, musdToPool, fee, musdSurplus)`, `Unwound(borrower, debtRepaid, btcWithdrawn, btcToPool, btcToUser)`.
+**Events:** `Unwound(borrower, debtRepaid, collWithdrawn, btcToPool)`, `Closed(borrower, debtRepaid, collReturned, btcToPool)`, `Leveraged(borrower, btcAdded, debtIncrease, musdToPool, fee, musdSurplus)`, `OpenedLeveraged(borrower, btcFromUser, btcFlashed, debtAmount, musdToPool, fee, musdSurplus)`.
 
 ## 12. Frontend data and accounting rules
 
@@ -808,10 +798,10 @@ U2 done 15 Oct 2026: dark landing with route map, live mainnet route simulator, 
 
 | ID | Task | Depends on |
 |---|---|---|
-| W2-1 | `MezoRouteLeverage`: leverage + unwind with mock-BOS tests | Wave 1 gate |
+| W2-1 | `MezoRouteLeverage`: unwind, close, leverage, open with mock-BOS tests (done 7 Nov) | Wave 1 gate |
 | W2-2 | Leverage and Unwind screens | W2-1, T11 |
 | W2-3 | Live testnet smoke run of leverage and unwind | W2-1 |
-| W2-4 | Invariant suite and self-audit checklist for `MezoRouteLeverage` | W2-1 |
+| W2-4 | Invariant suite and self-audit checklist for `MezoRouteLeverage` (done 7 Nov) | W2-1 |
 | W2-5 | Mainnet deployment of `MezoRouteLeverage` with an immutable cap | W2-3, W2-4 |
 | W2-6 | Judge feedback changes | Wave 1 results (~1 Nov) |
 | W2-7 (Could) | Telegram CR/exposure alerts reusing the exposure module | T11 |
