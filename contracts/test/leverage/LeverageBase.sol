@@ -41,7 +41,9 @@ abstract contract LeverageBase is LeverageHarness {
     }
 
     function _deploy(uint256 feeBps, uint256 maxBtcFlash, uint256 maxMusdFlash) internal returns (MezoRouteLeverage) {
-        return new MezoRouteLeverage(_config(feeBps, maxBtcFlash, maxMusdFlash));
+        MezoRouteLeverage deployed = new MezoRouteLeverage(_config(feeBps, maxBtcFlash, maxMusdFlash));
+        btc.fund(address(deployed), 1_000_000e18); // native headroom for the msg.value leg (see MockUnifiedBtc)
+        return deployed;
     }
 
     function _reserves() internal view returns (uint256 reserveMusd, uint256 reserveBtc) {

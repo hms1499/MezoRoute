@@ -117,6 +117,43 @@ contract MezoRouteLeverage is IMezoRouteLeverage, ReentrancyGuard {
         emit Closed(msg.sender, musdNeeded, coll, btcToPool);
     }
 
+    /// @inheritdoc IMezoRouteLeverage
+    function leverage(LeverageParams calldata p, TroveAuth calldata a, Permit calldata musdPermit)
+        external
+        nonReentrant
+        returns (uint256 musdToPool)
+    {
+        _checkBuy(p.btcToAdd, p.deadline, p.maxDeviationBps, p.minCollateralRatio);
+
+        (uint256 musdStart, uint256 btcStart) = _balances();
+        musdToPool = _flash(OP_LEVERAGE, true, p.btcToAdd, abi.encode(p, a, musdPermit));
+        _verifyBalances(musdStart, btcStart);
+        _checkCollateralRatio(p.minCollateralRatio);
+        uint256 fee = _fee(musdToPool);
+        emit Leveraged(msg.sender, p.btcToAdd, p.debtIncrease, musdToPool, fee, p.debtIncrease - musdToPool - fee);
+    }
+
+    /// @inheritdoc IMezoRouteLeverage
+    function openLeveraged(OpenLeveragedParams calldata p, TroveAuth calldata a, Permit calldata musdPermit)
+        external
+        payable
+        nonReentrant
+        returns (uint256 musdToPool)
+    {
+        if (msg.value == 0) revert ZeroAmount();
+        _checkBuy(p.btcToFlash, p.deadline, p.maxDeviationBps, p.minCollateralRatio);
+
+        // The start balance already holds msg.value; all of it goes into the Trove.
+        (uint256 musdStart, uint256 btcStart) = _balances();
+        musdToPool = _flash(OP_OPEN, true, p.btcToFlash, abi.encode(p, a, musdPermit, msg.value));
+        _verifyBalances(musdStart, btcStart - msg.value);
+        _checkCollateralRatio(p.minCollateralRatio);
+        uint256 fee = _fee(musdToPool);
+        emit OpenedLeveraged(
+            msg.sender, msg.value, p.btcToFlash, p.debtAmount, musdToPool, fee, p.debtAmount - musdToPool - fee
+        );
+    }
+
     // ------------------------------------------------------------------ flash callback
 
     /// @notice Tigris flash-swap callback; only the pool, during an operation this contract started.
@@ -127,6 +164,8 @@ contract MezoRouteLeverage is IMezoRouteLeverage, ReentrancyGuard {
         if (op != _op) revert UnauthorizedHook();
         if (op == OP_UNWIND) _result = _hookUnwind(borrower, payload);
         else if (op == OP_CLOSE) _result = _hookClose(borrower, payload);
+        else if (op == OP_LEVERAGE) _result = _hookLeverage(borrower, payload);
+        else if (op == OP_OPEN) _result = _hookOpen(borrower, payload);
         else revert UnauthorizedHook();
     }
 
@@ -147,7 +186,7 @@ contract MezoRouteLeverage is IMezoRouteLeverage, ReentrancyGuard {
         btcToPool = _exactPoolInput(true, p.debtToRepay);
         if (btcToPool > p.maxBtcToPool) revert PoolInputAboveMax();
         _checkSellBound(btcToPool, p.debtToRepay, p.maxDeviationBps);
-        _pullPayRefund(btc, borrower, p.maxBtcToPool, btcToPool, permit);
+        _pullPayRefund(btc, borrower, p.maxBtcToPool, btcToPool, 0, permit);
     }
 
     function _hookClose(address borrower, bytes memory payload) private returns (uint256 btcToPool) {
@@ -157,7 +196,45 @@ contract MezoRouteLeverage is IMezoRouteLeverage, ReentrancyGuard {
         btcToPool = _exactPoolInput(true, musdNeeded);
         if (btcToPool > p.maxBtcToPool) revert PoolInputAboveMax();
         _checkSellBound(btcToPool, musdNeeded, p.maxDeviationBps);
-        _pullPayRefund(btc, borrower, p.maxBtcToPool, btcToPool, permit);
+        _pullPayRefund(btc, borrower, p.maxBtcToPool, btcToPool, 0, permit);
+    }
+
+    function _hookLeverage(address borrower, bytes memory payload) private returns (uint256) {
+        (LeverageParams memory p, TroveAuth memory a, Permit memory permit) =
+            abi.decode(payload, (LeverageParams, TroveAuth, Permit));
+        // The signature binds msg.value as assetAmount; MUSD is minted to the borrower.
+        borrowerOperationsSignatures.adjustTroveWithSignature{value: p.btcToAdd}(
+            0, p.debtIncrease, true, a.upperHint, a.lowerHint, borrower, borrower, a.signature, a.deadline
+        );
+        return _payForBtc(borrower, p.btcToAdd, p.maxMusdToPool, p.debtIncrease, p.maxDeviationBps, permit);
+    }
+
+    function _hookOpen(address borrower, bytes memory payload) private returns (uint256) {
+        (OpenLeveragedParams memory p, TroveAuth memory a, Permit memory permit, uint256 own) =
+            abi.decode(payload, (OpenLeveragedParams, TroveAuth, Permit, uint256));
+        borrowerOperationsSignatures.openTroveWithSignature{value: own + p.btcToFlash}(
+            p.debtAmount, a.upperHint, a.lowerHint, borrower, borrower, a.signature, a.deadline
+        );
+        return _payForBtc(borrower, p.btcToFlash, p.maxMusdToPool, p.debtAmount, p.maxDeviationBps, permit);
+    }
+
+    /// @dev Pays the pool for `btcOut` from the borrower's new MUSD: the exact input to the pool, the fee
+    ///      to `feeRecipient`; at most `maxMusdToPool` plus its fee, never more than was borrowed.
+    function _payForBtc(
+        address borrower,
+        uint256 btcOut,
+        uint256 maxMusdToPool,
+        uint256 borrowed,
+        uint256 maxDeviationBps,
+        Permit memory permit
+    ) private returns (uint256 musdToPool) {
+        uint256 maxPull = maxMusdToPool + _fee(maxMusdToPool);
+        if (maxPull > borrowed) revert PoolInputAboveMax();
+        musdToPool = _exactPoolInput(false, btcOut);
+        if (musdToPool > maxMusdToPool) revert PoolInputAboveMax();
+        uint256 price = priceFeed.fetchPrice();
+        if (musdToPool * 1e18 * BPS > btcOut * price * (BPS + maxDeviationBps)) revert OracleBoundExceeded();
+        _pullPayRefund(musd, borrower, maxPull, musdToPool, _fee(musdToPool), permit);
     }
 
     // ------------------------------------------------------------------ pool maths
@@ -194,6 +271,25 @@ contract MezoRouteLeverage is IMezoRouteLeverage, ReentrancyGuard {
 
     // ------------------------------------------------------------------ internals
 
+    function _checkBuy(uint256 btcOut, uint256 deadline, uint256 maxDeviationBps, uint256 minCollateralRatio)
+        private
+        view
+    {
+        if (btcOut == 0) revert ZeroAmount();
+        if (btcOut > maxBtcFlash) revert AmountAboveCap();
+        _checkCommon(deadline, maxDeviationBps);
+        if (minCollateralRatio < MIN_CR_FLOOR) revert MinCrBelowFloor();
+    }
+
+    function _checkCollateralRatio(uint256 minCollateralRatio) private view {
+        uint256 icr = troveManager.getCurrentICR(msg.sender, priceFeed.fetchPrice());
+        if (icr < minCollateralRatio) revert CollateralRatioTooLow();
+    }
+
+    function _fee(uint256 amount) private view returns (uint256) {
+        return (amount * feeBps) / BPS;
+    }
+
     function _checkCommon(uint256 deadline, uint256 maxDeviationBps) private view {
         if (block.timestamp > deadline) revert Expired();
         if (maxDeviationBps > MAX_DEVIATION_BPS) revert DeviationTooHigh();
@@ -217,8 +313,11 @@ contract MezoRouteLeverage is IMezoRouteLeverage, ReentrancyGuard {
         if (btcIn * price * BPS > musdOut * 1e18 * (BPS + maxDeviationBps)) revert OracleBoundExceeded();
     }
 
-    /// @dev Pulls `max` from `from` (after an optional permit), pays `exact` to the pool, refunds the rest.
-    function _pullPayRefund(IERC20 token, address from, uint256 max, uint256 exact, Permit memory permit) private {
+    /// @dev Pulls `max` from `from` (after an optional permit), pays `exact` to the pool and `fee` to
+    ///      `feeRecipient`, and refunds the rest, so a permit for `max` ends at a zero allowance.
+    function _pullPayRefund(IERC20 token, address from, uint256 max, uint256 exact, uint256 fee, Permit memory permit)
+        private
+    {
         if (permit.value > 0) {
             // A permit already used (e.g. front-run) leaves its allowance in place: fall back to it.
             try IERC20Permit(address(token))
@@ -227,7 +326,8 @@ contract MezoRouteLeverage is IMezoRouteLeverage, ReentrancyGuard {
         }
         token.safeTransferFrom(from, address(this), max);
         token.safeTransfer(address(pool), exact);
-        if (max > exact) token.safeTransfer(from, max - exact);
+        if (fee > 0) token.safeTransfer(feeRecipient, fee);
+        if (max > exact + fee) token.safeTransfer(from, max - exact - fee);
     }
 
     function _balances() private view returns (uint256, uint256) {

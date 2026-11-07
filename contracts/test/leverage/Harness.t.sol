@@ -3,23 +3,53 @@ pragma solidity 0.8.24;
 
 import {Pool} from "@tigris/Pool.sol";
 import {LeverageHarness} from "../harness/LeverageHarness.sol";
+import {MockUnifiedBtc} from "../mocks/MockUnifiedBtc.sol";
+
+contract NativeSender {
+    function send(address payable to, uint256 amount) external {
+        (bool ok,) = to.call{value: amount}("");
+        require(ok, "send");
+    }
+
+    function transferThenRevert(MockUnifiedBtc btc, address to, uint256 amount) external {
+        btc.transfer(to, amount);
+        revert("boom");
+    }
+}
 
 abstract contract HarnessTest is LeverageHarness {
     function test_tokenOrder_matchesFlag() public view {
         assertEq(Pool(pool).token0(), btcIsToken0 ? address(btc) : address(musd));
     }
 
-    function test_unifiedBtc_poolSwapMovesNativeBalance() public {
+    function test_unifiedBtc_poolSwapCreditsBalance() public {
         musd.mint(user, 1_000e18);
-        uint256 before = user.balance;
         vm.startPrank(user);
         musd.approve(address(router), 1_000e18);
         uint256[] memory amounts =
             router.swapExactTokensForTokens(1_000e18, 0, _route(address(musd), address(btc)), user, block.timestamp);
         vm.stopPrank();
-        assertEq(user.balance - before, amounts[1]);
-        assertEq(btc.balanceOf(user), user.balance);
-        assertEq(btc.balanceOf(pool), pool.balance);
+        assertEq(btc.balanceOf(user), amounts[1]);
+        assertEq(btc.balanceOf(pool), SEED_BTC - amounts[1]);
+    }
+
+    function test_unifiedBtc_erc20ReceivedLeavesAsMsgValue() public {
+        NativeSender sender = new NativeSender();
+        btc.fund(address(sender), 100e18);
+        btc.mint(address(this), 1e18);
+        btc.transfer(address(sender), 1e18);
+        assertEq(btc.balanceOf(address(sender)), 1e18);
+        sender.send(payable(user), 0.4e18);
+        assertEq(btc.balanceOf(address(sender)), 0.6e18);
+        assertEq(btc.balanceOf(user), 0.4e18);
+    }
+
+    function test_unifiedBtc_revertUndoesTransfer() public {
+        NativeSender sender = new NativeSender();
+        btc.mint(address(sender), 1e18);
+        try sender.transferThenRevert(btc, user, 0.5e18) {} catch {}
+        assertEq(btc.balanceOf(address(sender)), 1e18);
+        assertEq(btc.balanceOf(user), 0);
     }
 
     function test_mockProtocol_repayBurnsFromCaller() public {

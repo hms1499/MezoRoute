@@ -108,4 +108,13 @@ interface IMezoRouteLeverage {
     function close(CloseParams calldata p, TroveAuth calldata a, Permit calldata btcPermit)
         external
         returns (uint256 btcToPool);
+
+    function leverage(LeverageParams calldata p, TroveAuth calldata a, Permit calldata musdPermit)
+        external
+        returns (uint256 musdToPool);
+
+    function openLeveraged(OpenLeveragedParams calldata p, TroveAuth calldata a, Permit calldata musdPermit)
+        external
+        payable
+        returns (uint256 musdToPool);
 }
