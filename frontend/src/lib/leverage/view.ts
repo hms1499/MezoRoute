@@ -7,6 +7,8 @@ import { EVM_ONLY, MAINNET_NOT_RUN, RECOVERY_MODE_BLOCK } from "./copy";
 import type { GateQuote, TroveBlockReason } from "./gate";
 import type { TroveAction } from "./intent";
 import type { TroveSnapshot } from "./snapshot";
+import type { CapacityCheck } from "./capacity";
+import type { LeverageLimit } from "./quote-leverage";
 import { cr, liquidationPriceOf, type TroveState } from "./trove-math";
 
 const musd = (v: bigint) => `${formatToken(v, 18, 2)} MUSD`;
@@ -113,4 +115,28 @@ export function pageNotice(input: { action: TroveAction; snapshot: TroveSnapshot
       break;
   }
   return input.network.id === "mainnet" && input.block === null ? { tone: "neutral", text: MAINNET_NOT_RUN, actions: [] } : null;
+}
+
+/** What stops the largest Leverage the page offers (`leverageMax`). */
+export function leverageMaxNote(max: { btc: bigint; limitedBy: LeverageLimit }, floor: bigint): string {
+  const pct = formatPercent(floor, 0);
+  if (max.btc === 0n) return `Your Trove is already at or below ${pct}: there is no room to leverage.`;
+  const amount = `Up to ${formatToken(max.btc, 18, 6)} BTC`;
+  switch (max.limitedBy) {
+    case "floor":
+      return `${amount}: the most that keeps your Trove at ${pct} (the ${pct} floor).`;
+    case "cap":
+      return `${amount}: MezoRoute's per-transaction cap.`;
+    case "capacity":
+      return `${amount}: your Trove's borrowing capacity, even after a refinance.`;
+    case "oracle":
+      return `${amount}: beyond this the pool's price would sit more than 5% from Mezo's oracle.`;
+  }
+}
+
+/** The Refinance step's reason, shown above the steps when the plan starts with it. */
+export function refinanceNote(capacity: CapacityCheck): string | null {
+  return capacity === "refinance"
+    ? "Refinance first: your Trove's borrowing capacity was set when it opened and does not grow with added BTC. A refinance resets it from today's collateral (fee ≈ 0.02% of your debt) and moves the Trove to the current interest rate."
+    : null;
 }

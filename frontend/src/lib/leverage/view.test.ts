@@ -4,7 +4,7 @@ import { quoteClose } from "./quote-close";
 import { quoteUnwind } from "./quote-unwind";
 import type { TroveSnapshot } from "./snapshot";
 import { HARNESS_MARKET, HARNESS_POOL, ONE, trove } from "./test-fixtures";
-import { costText, crPresets, pageNotice, troveOverviewRows } from "./view";
+import { costText, crPresets, leverageMaxNote, pageNotice, refinanceNote, troveOverviewRows } from "./view";
 
 const t = trove(ONE, 40_000n * ONE);
 const snapshot: TroveSnapshot = {
@@ -68,5 +68,23 @@ describe("pageNotice", () => {
   it("flags mainnet as not yet run end to end when nothing blocks", () => {
     expect(pageNotice({ action: "leverage", snapshot, network: networks.mainnet, block: null })?.text).toBe("Not yet run end to end on mainnet.");
     expect(pageNotice({ action: "leverage", snapshot, network: networks.testnet, block: null })).toBeNull();
+  });
+});
+
+describe("leverageMaxNote", () => {
+  it("says what stops the largest Leverage", () => {
+    expect(leverageMaxNote({ btc: ONE / 10n, limitedBy: "floor" }, 2n * ONE)).toBe("Up to 0.1 BTC: the most that keeps your Trove at 200% (the 200% floor).");
+    expect(leverageMaxNote({ btc: ONE / 100n, limitedBy: "cap" }, 2n * ONE)).toContain("MezoRoute's per-transaction cap");
+    expect(leverageMaxNote({ btc: ONE / 100n, limitedBy: "capacity" }, 2n * ONE)).toContain("borrowing capacity, even after a refinance");
+    expect(leverageMaxNote({ btc: ONE / 100n, limitedBy: "oracle" }, 2n * ONE)).toContain("5% from Mezo's oracle");
+    expect(leverageMaxNote({ btc: 0n, limitedBy: "floor" }, 2n * ONE)).toBe("Your Trove is already at or below 200%: there is no room to leverage.");
+  });
+});
+
+describe("refinanceNote", () => {
+  it("explains the extra step only when the plan has it", () => {
+    expect(refinanceNote("refinance")).toContain("Refinance first");
+    expect(refinanceNote("ok")).toBeNull();
+    expect(refinanceNote("blocked")).toBeNull();
   });
 });

@@ -30,9 +30,11 @@ import { quoteFor, troveSteps } from "@/lib/leverage/steps";
 import { cr, nominalCr, type TroveState } from "@/lib/leverage/trove-math";
 import { useDirectTroveCall } from "@/lib/leverage/useDirectTroveCall";
 import { useTroveSnapshot, type TroveData } from "@/lib/leverage/useTroveSnapshot";
-import { crPresets, pageNotice, troveOverviewRows } from "@/lib/leverage/view";
+import { crPresets, leverageMaxNote, pageNotice, refinanceNote, troveOverviewRows } from "@/lib/leverage/view";
+import { leverageMax, leverageQuoteAt } from "@/lib/leverage/quote-leverage";
+import { Notice } from "@/components/ui/Notice";
 import { queueLine } from "@/lib/leverage/copy";
-import { ORACLE_BOUND_DEFAULT_BPS } from "@/lib/trove/constants";
+import { LEVERAGE_CR_FLOOR, ORACLE_BOUND_DEFAULT_BPS } from "@/lib/trove/constants";
 import { useNow } from "@/lib/useNow";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
@@ -162,6 +164,15 @@ function AmountCard(props: {
   const current = snapshot.trove ? cr(snapshot.trove, snapshot.market.price) : null;
   const presets = action === "unwind" || action === "leverage" ? (current ? crPresets(action, current) : []) : [2_000_000_000_000_000_000n, 2_500_000_000_000_000_000n, 3_000_000_000_000_000_000n];
   const canReview = view.block === null && view.quote !== null;
+  // Leverage: the largest size the page offers and what stops it (spec L1, Inputs).
+  const max =
+    action === "leverage" && snapshot.trove && network.leverage
+      ? leverageMax(snapshot.trove, snapshot.pool, snapshot.market, network.leverage.feeBps, { maxBtcFlash: network.leverage.maxBtcFlash }, ORACLE_BOUND_DEFAULT_BPS, intent.slippageBps)
+      : null;
+  const maxCr =
+    max && max.btc > 0n && snapshot.trove && network.leverage
+      ? leverageQuoteAt(snapshot.trove, snapshot.pool, snapshot.market, max.btc, intent.slippageBps, network.leverage.feeBps).crAfter
+      : null;
   const confirmHref = `/trove/${action}/confirm/?${intentQuery(action, intent)}`;
   const repay = () =>
     snapshot.trove &&
@@ -216,6 +227,16 @@ function AmountCard(props: {
             label={action === "unwind" ? "Target collateral ratio (higher)" : "Target collateral ratio (200% or more)"}
           />
         )}
+        {max && (
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
+            <span>{leverageMaxNote(max, LEVERAGE_CR_FLOOR)}</span>
+            {maxCr !== null && (
+              <Button size="sm" variant="quiet" onClick={() => props.onCr(roundUpPercent(maxCr))}>
+                Use the most
+              </Button>
+            )}
+          </div>
+        )}
         {view.rows.length > 0 && <Overview rows={view.rows} />}
         {view.block?.outcome && view.block.reason !== "recovery-mode" && view.block.reason !== "smart-account" && (
           <p role="status" className="text-sm text-danger">
@@ -235,6 +256,12 @@ function AmountCard(props: {
       )}
     </FlowColumn>
   );
+}
+
+/** A CR as a percent string rounded up to 0.1% (so the quote lands at or above it, never below). */
+function roundUpPercent(ratio: bigint): string {
+  const tenths = (ratio * 1000n + 10n ** 18n - 1n) / 10n ** 18n;
+  return `${tenths / 10n}.${tenths % 10n}`;
 }
 
 /** The exposure panel's input for the Trove alone (LP and Stability Pool left out): before and after the action. */
@@ -302,6 +329,13 @@ function ConfirmBody(props: {
         overview={view.rows}
         quote={<QueueLine before={view.queueBefore} after={view.queueAfter} />}
         risks={queueFirst}
+        footnote={
+          refinanceNote(capacity) && (
+            <Notice tone="neutral" role="note">
+              {refinanceNote(capacity)}
+            </Notice>
+          )
+        }
         steps={
           <TroveStepper
             action={action}
