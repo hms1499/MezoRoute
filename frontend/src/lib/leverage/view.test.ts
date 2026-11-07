@@ -4,7 +4,7 @@ import { quoteClose } from "./quote-close";
 import { quoteUnwind } from "./quote-unwind";
 import type { TroveSnapshot } from "./snapshot";
 import { HARNESS_MARKET, HARNESS_POOL, ONE, trove } from "./test-fixtures";
-import { costText, crPresets, leverageMaxNote, pageNotice, refinanceNote, troveOverviewRows, unwindReachNote } from "./view";
+import { costText, crPresets, leverageMaxNote, pageNotice, openBtcMax, openReachNote, refinanceNote, troveOverviewRows, unwindReachNote } from "./view";
 
 const t = trove(ONE, 40_000n * ONE);
 const snapshot: TroveSnapshot = {
@@ -102,5 +102,24 @@ describe("unwindReachNote", () => {
     });
     expect(unwindReachNote({ current: (25n * ONE) / 10n, maxCr: (355n * ONE) / 100n, target: 3n * ONE })).toBeNull();
     expect(unwindReachNote({ current: (25n * ONE) / 10n, maxCr: (355n * ONE) / 100n, target: null })).toBeNull();
+  });
+});
+
+describe("openBtcMax", () => {
+  it("keeps a gas reserve of budget × 4 at the gas price, and is unknown without a gas price", () => {
+    expect(openBtcMax(ONE, 10n ** 9n, networks.testnet)).toBe(ONE - 895_000n * 4n * 10n ** 9n);
+    expect(openBtcMax(ONE, 10n ** 9n, networks.mainnet)).toBe(ONE - ((895_000n * 13n) / 10n) * 4n * 10n ** 9n);
+    expect(openBtcMax(ONE, undefined, networks.testnet)).toBeNull();
+    expect(openBtcMax(1_000n, 10n ** 9n, networks.testnet)).toBe(0n);
+  });
+});
+
+describe("openReachNote", () => {
+  it("explains an unreachable Open", () => {
+    expect(openReachNote({ btc: ONE / 100n, cr: (25n * ONE) / 10n, quoteFound: false })).toBe(
+      "With 0.01 BTC, a Trove at 250% is out of reach: a Trove needs at least 1,800 MUSD of debt. Add BTC or choose a lower ratio.",
+    );
+    expect(openReachNote({ btc: ONE, cr: 2n * ONE, quoteFound: true })).toBeNull();
+    expect(openReachNote({ btc: null, cr: 2n * ONE, quoteFound: false })).toBeNull();
   });
 });

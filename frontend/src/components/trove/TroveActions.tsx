@@ -74,7 +74,11 @@ export function TroveActions({ account }: { account: Address }) {
               Leverage
             </ButtonLink>
           </>
-        ) : null}
+        ) : (
+          <ButtonLink href="/trove/open/" variant="secondary" size="md">
+            Open with leverage
+          </ButtonLink>
+        )}
       </div>
     </div>
   );

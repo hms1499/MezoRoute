@@ -3,6 +3,7 @@ import type { NetworkConfig } from "@/lib/config/networks";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import { WAD } from "@/lib/math";
 import { LEVERAGE_CR_FLOOR } from "@/lib/trove/constants";
+import { troveGasBudget } from "@/lib/quote/gas";
 import { EVM_ONLY, MAINNET_NOT_RUN, RECOVERY_MODE_BLOCK } from "./copy";
 import type { GateQuote, TroveBlockReason } from "./gate";
 import type { TroveAction } from "./intent";
@@ -153,4 +154,21 @@ export function unwindReachNote(input: { current: bigint | null; maxCr: bigint |
       closeInstead: true,
     };
   return null;
+}
+
+/**
+ * The most BTC an Open can bring: the wallet less a gas reserve of the send's budget × 4 at the current
+ * gas price (as the BTC entry does: MetaMask on mainnet needs balance ≥ limit × price + value); null
+ * while the gas price is unknown, so Max never spends the gas.
+ */
+export function openBtcMax(walletBtc: bigint, gasPrice: bigint | undefined, network: NetworkConfig): bigint | null {
+  if (gasPrice === undefined) return null;
+  const reserve = troveGasBudget("open", network) * 4n * gasPrice;
+  return walletBtc > reserve ? walletBtc - reserve : 0n;
+}
+
+/** Why an Open with this BTC and target has no quote: the 1,800 MUSD minimum debt needs more collateral. */
+export function openReachNote(input: { btc: bigint | null; cr: bigint | null; quoteFound: boolean }): string | null {
+  if (input.btc === null || input.cr === null || input.quoteFound) return null;
+  return `With ${formatToken(input.btc, 18, 6)} BTC, a Trove at ${formatPercent(input.cr, 0)} is out of reach: a Trove needs at least 1,800 MUSD of debt. Add BTC or choose a lower ratio.`;
 }

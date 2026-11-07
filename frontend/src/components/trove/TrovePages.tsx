@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { formatUnits, parseUnits, type Address } from "viem";
-import { useAccount } from "wagmi";
+import { useAccount, useGasPrice } from "wagmi";
 import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { ActionCard } from "@/components/flow/ActionCard";
 import { ConfirmCard } from "@/components/flow/ConfirmCard";
@@ -30,7 +30,7 @@ import { quoteFor, troveSteps } from "@/lib/leverage/steps";
 import { cr, nominalCr, type TroveState } from "@/lib/leverage/trove-math";
 import { useDirectTroveCall } from "@/lib/leverage/useDirectTroveCall";
 import { useTroveSnapshot, type TroveData } from "@/lib/leverage/useTroveSnapshot";
-import { crPresets, leverageMaxNote, pageNotice, refinanceNote, troveOverviewRows, unwindReachNote } from "@/lib/leverage/view";
+import { crPresets, leverageMaxNote, openBtcMax, openReachNote, pageNotice, refinanceNote, troveOverviewRows, unwindReachNote } from "@/lib/leverage/view";
 import { unwindMaxCr } from "@/lib/leverage/quote-unwind";
 import { leverageMax, leverageQuoteAt } from "@/lib/leverage/quote-leverage";
 import { Notice } from "@/components/ui/Notice";
@@ -161,6 +161,8 @@ function AmountCard(props: {
   const { chainId } = useAccount();
   const view = useTroveView(action, account, data, props.queue, intent);
   const direct = useDirectTroveCall(account);
+  const gasPrice = useGasPrice({ chainId: network.chainId });
+  const btcMax = action === "open" ? openBtcMax(data.snapshot.walletBtc, gasPrice.data, network) : null;
   const snapshot: TroveSnapshot = data.snapshot;
   const current = snapshot.trove ? cr(snapshot.trove, snapshot.market.price) : null;
   const presets = action === "unwind" || action === "leverage" ? (current ? crPresets(action, current) : []) : [2_000_000_000_000_000_000n, 2_500_000_000_000_000_000n, 3_000_000_000_000_000_000n];
@@ -171,7 +173,9 @@ function AmountCard(props: {
       ? unwindReachNote({ current, maxCr: unwindMaxCr(snapshot.trove, snapshot.pool, snapshot.market, intent.slippageBps), target: intent.cr })
       : action === "leverage" && current !== null && intent.cr !== null && intent.cr >= current
         ? { text: `Choose a ratio below today's ${formatPercent(current, 0)} and at least 200%.`, closeInstead: false }
-        : null;
+        : action === "open"
+          ? openNote(view.quote, intent)
+          : null;
   // Leverage: the largest size the page offers and what stops it (spec L1, Inputs).
   const max =
     action === "leverage" && snapshot.trove && network.leverage
@@ -224,7 +228,8 @@ function AmountCard(props: {
             onAmount={props.onBtc}
             token="btc"
             balance={snapshot.walletBtc}
-            max={snapshot.walletBtc}
+            max={btcMax}
+            note="Max keeps enough BTC for gas. A Trove needs at least 1,800 MUSD of debt; MUSD beyond what the pool needs stays in your wallet, still owed."
           />
         )}
         {action !== "close" && (
@@ -281,6 +286,11 @@ function AmountCard(props: {
   );
 }
 
+function openNote(quote: GateQuote | null, intent: TroveIntent): { text: string; closeInstead: boolean } | null {
+  const text = openReachNote({ btc: intent.btc, cr: intent.cr, quoteFound: quote?.action === "open" && quote.quote !== null });
+  return text ? { text, closeInstead: false } : null;
+}
+
 /** A CR as a percent string rounded up to 0.1% (so the quote lands at or above it, never below). */
 function roundUpPercent(ratio: bigint): string {
   const tenths = (ratio * 1000n + 10n ** 18n - 1n) / 10n ** 18n;
@@ -334,6 +344,7 @@ function ConfirmBody(props: {
   const view = useTroveView(action, account, data, props.queue, intent);
   const capacity = view.quote?.action === "leverage" ? view.quote.quote.capacity : "ok";
   const risks = troveRisks(action);
+  const openReach = action === "open" ? openNote(view.quote, intent) : null;
   const queueFirst = (action === "leverage" || action === "open") && view.queueAfter ? [`After this: ${queueLine(view.queueAfter)}`, ...risks] : risks;
   return (
     <FlowColumn
@@ -353,9 +364,9 @@ function ConfirmBody(props: {
         quote={<QueueLine before={view.queueBefore} after={view.queueAfter} />}
         risks={queueFirst}
         footnote={
-          refinanceNote(capacity) && (
+          (refinanceNote(capacity) ?? openReach?.text) && (
             <Notice tone="neutral" role="note">
-              {refinanceNote(capacity)}
+              {refinanceNote(capacity) ?? openReach?.text}
             </Notice>
           )
         }
