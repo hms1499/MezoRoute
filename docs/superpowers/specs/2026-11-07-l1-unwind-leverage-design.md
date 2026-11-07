@@ -61,11 +61,13 @@ Protocol rules that shape the design:
 - A borrower can **Unwind** (sell part of their collateral to repay part of their debt), **Close** (repay all debt from collateral, BTC back to the wallet) and **Leverage** (add BTC to the Trove, paid for by new debt), each in **one transaction**, with no MUSD needed in the wallet for Unwind and Close.
 - Every preview shows: collateral and debt before → after, CR before → after, liquidation price, MezoRoute fee (0 on Unwind and Close), borrowing fee, pool fee and price impact, the pool-vs-oracle gap, BTC exposure change, and the user's place in the redemption queue before → after.
 - The edge cases from the review table above are handled and shown, not just reverted.
+- A user **without a Trove** can open one at leverage from BTC alone in one transaction (`openLeveraged`). It is in the contract from day one because the contract is immutable; mainnet has 4 Troves, so without it almost nobody (judges included) could use Leverage.
+- Every Confirm page leads with **the cost against the oracle price** (what the swap pays compared with `PriceFeed`), because the pools are thin: on 7 Nov reserves, a mainnet Leverage at the cap costs ≈ 4.4%, a mainnet Close of a minimum Trove ≈ 3.8% (≈ $70), a small mainnet Unwind ≈ 0.6% better than the oracle, and a testnet Leverage ≈ 3.7% (the pool/oracle gap).
 - Live testnet round trips of all three with the user's MetaMask; mainnet deployed and verified with caps.
 
 ## Non-goals
 
-- Opening a new Trove at leverage (`openTroveWithSignature` + flash). Leverage works on an existing Trove; users without one are pointed at Borrow (Mezo app) as today.
+- The **Open with leverage page** is a stretch goal (built last, only if time allows); `openLeveraged` itself is in the contract from the start (below).
 - Keepers, automation, triggers (Coil's Guard/Shield/Recoil, Pylon's Shield reserve).
 - Refinance inside the leverage transaction (a second signature on nonce + 1). It is a separate, direct step instead.
 - Bitcoin wallets (OrangeKit Safes). `BorrowerOperationsSignatures` verifies a plain ECDSA signature, as in F4.
@@ -140,10 +142,23 @@ User intent: "add `btcToAdd` to my Trove and borrow `debtIncrease` to pay for it
 
 The borrowing fee (0.1% of `debtIncrease`) is added to the Trove's debt and minted to the PCV by the protocol (`BorrowerOperations.sol` `_triggerBorrowingFee`); the user does not pay it from the wallet. The capacity check is `debt + debtIncrease + fee ≤ maxBorrowingCapacity`. The preview shows the fee.
 
+### `openLeveraged(OpenLeveragedParams p, Permit musdPermit)` (payable)
+
+User intent: "open a Trove with my `msg.value` BTC plus `btcToFlash` from the pool, borrowing `debtAmount`; CR must end ≥ `minCollateralRatio`". For a user with no Trove (`TroveManager` status not active; the protocol also enforces it).
+
+1. Validate: `msg.value > 0`, `btcToFlash > 0`, `btcToFlash ≤ maxBtcFlash`, deadline, deviation cap, `minCollateralRatio ≥ MIN_CR_FLOOR`.
+2. `pool.swap(btcOut = btcToFlash, to = this, data)`. In the hook:
+   1. `openTroveWithSignature{value: msg.value + btcToFlash}(debtAmount, upperHint, lowerHint, borrower, recipient = borrower, signature, deadline)`. The signature binds `assetAmount = msg.value + btcToFlash`, `debtAmount`, `borrower`, `recipient`. MUSD is minted to the borrower.
+   2. Exact `musdToPool`, `fee`, the oracle bound and the pull-maximum-and-refund payment exactly as in `leverage`.
+3. Post-condition ICR ≥ `minCollateralRatio`; balance checks (the start snapshot is taken after `msg.value` is credited, so the expected end balance is start − `msg.value`); emit `OpenedLeveraged(borrower, btcFromUser, btcFlashed, debtAmount, musdToPool, fee, musdSurplus)`.
+
+The protocol's minimum (1,800 MUSD net debt) applies: `debtAmount` may exceed what the pool needs, and the surplus stays in the wallet. On mainnet the 0.0125 BTC cap pays for ≈ 950 MUSD, so a mainnet open at leverage needs `debtAmount ≥ 1,800` with the rest as surplus and enough of the user's own BTC to stay ≥ 200% (≈ 0.045 BTC on 7 Nov). The front-run argument is the leverage one: whoever submits the signature must supply the bound BTC, and the Trove and its MUSD belong to the borrower.
+
 ### Tests and audit
 
 - Unit tests per path with the real Tigris Pool (`TigrisHarness`) and a mock `BorrowerOperationsSignatures` / `TroveManager` / `PriceFeed`, following the V2 test layout under `test/leverage/`. **BTC in these tests is a unified mock** whose `balanceOf` is the account's native balance and whose `transfer`/`transferFrom` move native balance (through the `vm.deal` cheatcode inside the mock), so the pool's ERC-20 transfer to the contract and the contract's `msg.value` send hit one ledger as on Mezo, and the end-of-call balance check runs locally unchanged. (This replaces `PRODUCT_SPEC.md` §11.9's "mock BOS funded with `vm.deal`", which funds the wrong party.) The smoke run still proves the real precompile.
 - Invariant suite (`test/invariant/`): random sequences of the three actions, pool moves and oracle moves; the contract never holds MUSD or BTC after a call, never owns a Trove, never pays out a pre-existing balance, and the hook is unreachable from outside an operation.
+- `openLeveraged` gets the same unit and invariant coverage as `leverage`, plus: a borrower who already has a Trove, `msg.value` that does not match the signed `assetAmount`, and the minimum net debt.
 - Negative tests: hook from a non-pool caller, from the pool outside an operation, `sender ≠ this`; recipient games; oracle bound both directions; one wei less to the pool; cap edges; expired deadline; used nonce; permit already spent (falls back to allowance and reverts cleanly without one).
 - `contracts/SELF_AUDIT.md` gains a `MezoRouteLeverage` section mapping each invariant to its tests. `forge fmt --check` passes.
 - **Testnet smoke first.** Because the `msg.value` leg and the real BOS cannot be tested locally, the first contract milestone is a testnet deploy and a `cast` smoke run of Unwind, Close and Leverage against a real Trove (extend `script/smoke-testnet.sh` or add a sibling), before any frontend work depends on it.
@@ -161,6 +176,8 @@ The borrowing fee (0.1% of `debtIncrease`) is added to the Trove's debt and mint
 - **Unwind:** a target CR above the current one (presets plus a field). The quote solves `debtToRepay` and the BTC sold so the Trove lands at the target; the maximum is the largest repayment that keeps net debt ≥ 1,800 MUSD; beyond that the page offers Close.
 - **Close:** no input. Shows the BTC the wallet receives (collateral − BTC sold).
 - **Leverage:** a target CR below the current one, floor 200% (`LEVERAGE_CR_FLOOR`, next to the existing constants in `src/lib/trove/constants.ts`). The quote solves `btcToAdd` and `debtIncrease`. The maximum is the smallest of: the CR floor, the cap, the borrowing capacity (after a refinance if that helps), and the size at which the oracle bound would fail.
+- **Cost against the oracle**, first on every Confirm page and under the receive row on every amount page: the swap's effective price against `PriceFeed`, as a percentage and in MUSD, with the pool fee and price impact under Details. The maximum each page offers is the largest size whose cost stays inside the oracle bound.
+- **Open with leverage (stretch):** `/trove/open/?btc=&cr=` → confirm, for accounts with no Trove: BTC in, target CR (floor 200%), the minimum-debt rule explained, the surplus MUSD shown. Built only after the three main pages pass QA; if it is not built, the contract function still ships and the Dashboard's no-Trove card stays as today.
 - Slippage as on the LP route (the shared `SlippagePopover`); the oracle bound defaults to 500 bps, and the page blocks with the measured gap when a quote's own deviation exceeds it.
 
 ### Quote maths (pure, tested)
@@ -212,6 +229,8 @@ The existing `ExposurePanel` / "If BTC moves" chart takes the after-state of the
 - **Pull the signed maximum, refund the rest** (instead of pulling the exact amount and leaving an allowance), so every permit ends at zero allowance.
 - **Unified mock BTC in local tests**, so the balance invariant runs locally on the `msg.value` path.
 - **Mainnet gas budgets = testnet + 30%**, since mainnet cannot be measured without a round trip.
+- **`openLeveraged` in the contract now, its page as a stretch** (user agreed, 7 Nov): the contract is immutable, and without it almost no one can use Leverage.
+- **Cost against the oracle as the headline figure** (user agreed, 7 Nov).
 - **Mainnet caps 0.0125 BTC / 2,500 MUSD**, matching V2's BTC cap; with 0.48 BTC in the pool, the oracle bound will refuse sizes much larger anyway.
 
 ## Left to the builder
