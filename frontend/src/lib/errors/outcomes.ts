@@ -251,3 +251,74 @@ export const STAKING_CLOSED_NOW: Outcome = {
   message: "Staking is closed right now. You can still claim and unstake.",
   recovery: [],
 };
+
+// L1 (Unwind, Close, Leverage, Open with leverage). Copy in src/lib/leverage/copy.ts.
+
+export const TROVE_AUTH_USED: Outcome = {
+  kind: "trove-auth-used",
+  message: "Your Trove authorisation was already used or replaced. Sign again.",
+  recovery: ["retry"],
+};
+
+export const PRICE_MOVED: Outcome = {
+  kind: "price-moved",
+  message: "The pool price moved; review the new quote.",
+  recovery: ["refresh-quote"],
+};
+
+export const CAPACITY_SHORT: Outcome = {
+  kind: "capacity-short",
+  message: "Your Trove's borrowing capacity is too low for this, even after a refinance. Choose a higher target ratio.",
+  recovery: ["reduce-amount"],
+};
+
+export const BELOW_MIN_DEBT: Outcome = {
+  kind: "below-min-debt",
+  message: "This would leave less than the 1,800 MUSD minimum debt. Close the Trove instead.",
+  recovery: ["reduce-amount"],
+};
+
+export const TROVE_RECOVERY_MODE: Outcome = {
+  kind: "trove-recovery-mode",
+  message:
+    "Mezo is in Recovery Mode: the protocol does not allow withdrawing collateral or closing a Trove until the system ratio is back above 150%.",
+  recovery: [],
+};
+
+export const EVM_ONLY: Outcome = {
+  kind: "evm-only",
+  message: "Trove authorisations need an EVM wallet such as MetaMask. Bitcoin wallets can claim surplus BTC and repay from the wallet.",
+  recovery: [],
+};
+
+export const HAS_TROVE: Outcome = { kind: "has-trove", message: "You already have an open Trove; use Leverage instead.", recovery: [] };
+
+export const LEVERAGE_NOT_DEPLOYED: Outcome = {
+  kind: "leverage-not-deployed",
+  message: "Trove actions are not available on this network yet.",
+  recovery: [],
+};
+
+export const ORACLE_BOUND: Outcome = {
+  kind: "oracle-bound",
+  message: "The pool price is too far from Mezo's oracle for this size. Try a smaller amount.",
+  recovery: ["reduce-amount"],
+};
+
+export function leverageCapOutcome(network: NetworkConfig): Outcome {
+  const cap = network.leverage;
+  return {
+    kind: "above-cap",
+    message:
+      cap === null
+        ? "Amount is above the per-transaction cap."
+        : `MezoRoute caps each Trove action at ${formatCap(cap.maxBtcFlash)} BTC or ${formatCap(cap.maxMusdFlash)} MUSD per transaction.`,
+    recovery: ["reduce-amount"],
+  };
+}
+
+function formatCap(wei: bigint): string {
+  const whole = wei / 10n ** 18n;
+  const frac = (wei % 10n ** 18n).toString().padStart(18, "0").replace(/0+$/, "");
+  return `${whole.toLocaleString("en-US")}${frac ? `.${frac}` : ""}`;
+}

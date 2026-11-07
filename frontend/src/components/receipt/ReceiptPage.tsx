@@ -19,6 +19,7 @@ import { formatPercent, formatToken, shortAddress } from "@/lib/format";
 import { gaugeReceiptRows } from "@/lib/gauge/actions";
 import { claimRows } from "@/lib/positions/claim";
 import { enteredFromBtcRows, enteredRows, exitedRows } from "@/lib/routes/musd-btc-lp/receipt";
+import { TROVE_RECEIPT_TITLES, troveReceiptRows } from "@/lib/leverage/receipt";
 import { spReceiptRows } from "@/lib/stability-pool/receipt";
 import { collateralRatio } from "@/lib/trove/health";
 import { receiptKind } from "@/lib/tx/receipt-kind";
@@ -111,17 +112,27 @@ function Confirmed({ receipt, icon, explorer }: { receipt: TransactionReceipt; i
           ? claimRows(result.fees)
           : result.kind === "gauge"
             ? gaugeReceiptRows(result.gauge)
-            : spReceiptRows(result.sp);
+            : result.kind === "trove"
+              ? troveReceiptRows(result.event)
+              : spReceiptRows(result.sp);
   return (
     <ReceiptCard
       icon={icon}
-      title={borrowed ? "Borrow & deposit confirmed" : result.kind === "gauge" ? GAUGE_TITLES[result.gauge.action] : TITLES[result.kind]}
+      title={
+        borrowed
+          ? "Borrow & deposit confirmed"
+          : result.kind === "gauge"
+            ? GAUGE_TITLES[result.gauge.action]
+            : result.kind === "trove"
+              ? TROVE_RECEIPT_TITLES[result.event.kind]
+              : TITLES[result.kind]
+      }
       rows={[
         ...rows.map((row) => ({ label: row.label, value: row.value })),
         { label: "Gas used", value: formatToken(receipt.gasUsed, 0, 0) },
         { label: "Block", value: receipt.blockNumber.toString() },
       ]}
-      extra={borrowed && <TroveNow />}
+      extra={(borrowed || (result.kind === "trove" && result.event.kind !== "closed")) && <TroveNow />}
       explorer={explorer}
     />
   );

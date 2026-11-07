@@ -134,3 +134,30 @@ export const GAUGE_DEPOSIT_GAS = 165_000n;
 export const GAUGE_WITHDRAW_GAS = 155_000n;
 /** `gauge.getReward`: mainnet estimate 85,049 (tx 0x093b…bd59, 6 Nov 2026), plus 5%, rounded up to 5,000; testnet estimated 67,949 (highest used 66,295). */
 export const GAUGE_CLAIM_GAS = 90_000n;
+
+// L1 (MezoRouteLeverage), from the testnet smoke run of 7 Nov 2026 with hints (docs/STATUS.md):
+// max(gasUsed, healthy eth_estimateGas) + 5%, rounded up to 5,000. Unwind used 645,994 (estimate
+// 736,405), leverage 660,143 (754,742), close 541,508 (652,181), openLeveraged 754,502 (848,047).
+export const UNWIND_GAS = 775_000n;
+export const LEVERAGE_GAS = 795_000n;
+export const CLOSE_GAS = 685_000n;
+export const OPEN_LEVERAGED_GAS = 895_000n;
+
+// Direct BorrowerOperations calls, from real mainnet transactions (explorer, 7 Nov 2026): refinance
+// used 363,349, claimCollateral 129,811, repayMUSD 349,644; + 5%, rounded up to 5,000.
+export const REFINANCE_GAS = 385_000n;
+export const CLAIM_COLLATERAL_GAS = 140_000n;
+export const REPAY_GAS = 370_000n;
+
+/**
+ * Mainnet has no L1 round trip to measure (user's decision, 7 Nov 2026), so its flash budgets are
+ * testnet's × 1.3 (G1's mainnet-over-testnet gaps came from the first gauge stake, which these paths do not touch).
+ */
+export const MAINNET_LEVERAGE_GAS_FACTOR = 13n;
+
+const TROVE_GAS = { unwind: UNWIND_GAS, close: CLOSE_GAS, leverage: LEVERAGE_GAS, open: OPEN_LEVERAGED_GAS } as const;
+
+export function troveGasBudget(action: keyof typeof TROVE_GAS, network: { id: "testnet" | "mainnet" }): bigint {
+  const base = TROVE_GAS[action];
+  return network.id === "mainnet" ? (base * MAINNET_LEVERAGE_GAS_FACTOR) / 10n : base;
+}
