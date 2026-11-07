@@ -120,3 +120,18 @@ describe("stepperReducer: skipped", () => {
     expect(stepperReducer(idle, { type: "skipped" })).toBe(idle);
   });
 });
+
+describe("Trove authorisation steps (L1)", () => {
+  it("treats authorise as a signature: signed advances, an expiry returns to it", () => {
+    let s = createStepper<"authorise" | "permit" | "send">(["authorise", "permit", "send"]);
+    s = stepperReducer(s, { type: "start" });
+    s = stepperReducer(s, { type: "signed" });
+    expect(s.active).toBe(1);
+    s = stepperReducer(s, { type: "start" });
+    s = stepperReducer(s, { type: "signed" });
+    expect(s.active).toBe(2);
+    s = stepperReducer(s, { type: "signature-expired" });
+    expect(s.active).toBe(0);
+    expect(s.steps.map((step) => step.status)).toEqual(["idle", "idle", "idle"]);
+  });
+});
