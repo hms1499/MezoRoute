@@ -96,6 +96,27 @@ contract MezoRouteLeverage is IMezoRouteLeverage, ReentrancyGuard {
         emit Unwound(msg.sender, p.debtToRepay, p.collWithdrawal, btcToPool);
     }
 
+    /// @inheritdoc IMezoRouteLeverage
+    function close(CloseParams calldata p, TroveAuth calldata a, Permit calldata btcPermit)
+        external
+        nonReentrant
+        returns (uint256 btcToPool)
+    {
+        _checkCommon(p.deadline, p.maxDeviationBps);
+        // Brings interest and pending redistribution in, so the debt read next is what the close burns.
+        troveManager.updateSystemAndTroveInterest(msg.sender);
+        uint256 debt = troveManager.getTroveDebt(msg.sender);
+        if (debt <= GAS_COMPENSATION) revert ZeroAmount(); // no active Trove
+        uint256 musdNeeded = debt - GAS_COMPENSATION; // the gas compensation is burned from the gas pool
+        if (musdNeeded > maxMusdFlash) revert AmountAboveCap();
+        uint256 coll = troveManager.getTroveColl(msg.sender);
+
+        (uint256 musdStart, uint256 btcStart) = _balances();
+        btcToPool = _flash(OP_CLOSE, false, musdNeeded, abi.encode(p, a, btcPermit, musdNeeded));
+        _verifyBalances(musdStart, btcStart);
+        emit Closed(msg.sender, musdNeeded, coll, btcToPool);
+    }
+
     // ------------------------------------------------------------------ flash callback
 
     /// @notice Tigris flash-swap callback; only the pool, during an operation this contract started.
@@ -105,6 +126,7 @@ contract MezoRouteLeverage is IMezoRouteLeverage, ReentrancyGuard {
         (uint256 op, address borrower, bytes memory payload) = abi.decode(data, (uint256, address, bytes));
         if (op != _op) revert UnauthorizedHook();
         if (op == OP_UNWIND) _result = _hookUnwind(borrower, payload);
+        else if (op == OP_CLOSE) _result = _hookClose(borrower, payload);
         else revert UnauthorizedHook();
     }
 
@@ -125,6 +147,16 @@ contract MezoRouteLeverage is IMezoRouteLeverage, ReentrancyGuard {
         btcToPool = _exactPoolInput(true, p.debtToRepay);
         if (btcToPool > p.maxBtcToPool) revert PoolInputAboveMax();
         _checkSellBound(btcToPool, p.debtToRepay, p.maxDeviationBps);
+        _pullPayRefund(btc, borrower, p.maxBtcToPool, btcToPool, permit);
+    }
+
+    function _hookClose(address borrower, bytes memory payload) private returns (uint256 btcToPool) {
+        (CloseParams memory p, TroveAuth memory a, Permit memory permit, uint256 musdNeeded) =
+            abi.decode(payload, (CloseParams, TroveAuth, Permit, uint256));
+        borrowerOperationsSignatures.closeTroveWithSignature(borrower, borrower, a.signature, a.deadline);
+        btcToPool = _exactPoolInput(true, musdNeeded);
+        if (btcToPool > p.maxBtcToPool) revert PoolInputAboveMax();
+        _checkSellBound(btcToPool, musdNeeded, p.maxDeviationBps);
         _pullPayRefund(btc, borrower, p.maxBtcToPool, btcToPool, permit);
     }
 

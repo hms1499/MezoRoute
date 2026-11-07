@@ -104,4 +104,8 @@ interface IMezoRouteLeverage {
     function unwind(UnwindParams calldata p, TroveAuth calldata a, Permit calldata btcPermit)
         external
         returns (uint256 btcToPool);
+
+    function close(CloseParams calldata p, TroveAuth calldata a, Permit calldata btcPermit)
+        external
+        returns (uint256 btcToPool);
 }
