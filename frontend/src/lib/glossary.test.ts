@@ -17,6 +17,8 @@ const TERMS: TermId[] = [
   "permit",
   "gauge",
   "emissions",
+  "redemption",
+  "refinance",
 ];
 
 const G1_TERMS: TermId[] = ["gauge", "emissions"];
