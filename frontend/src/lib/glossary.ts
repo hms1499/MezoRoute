@@ -13,7 +13,9 @@ export type TermId =
   | "borrowAndDeploy"
   | "permit"
   | "gauge"
-  | "emissions";
+  | "emissions"
+  | "redemption"
+  | "refinance";
 
 /**
  * One sentence per Mezo term, shown by `Term` (U8). Readers know basic DeFi (LP, slippage, approvals),
@@ -32,4 +34,6 @@ export const GLOSSARY: Record<TermId, string> = {
   permit: "A gasless signature that lets MezoRoute take exactly this amount, instead of an approval transaction.",
   gauge: "A contract that pays MEZO to people who stake their LP in it; while staked, swap fees go to veBTC voters.",
   emissions: "MEZO paid to a gauge each week. veBTC voters decide how much each gauge gets.",
+  redemption: "Swapping MUSD for BTC at $1 per MUSD, taken from the lowest-ratio Troves first to repay their debt.",
+  refinance: "Resets your Trove's borrowing limit from today's collateral and moves it to the current interest rate.",
 };

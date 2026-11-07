@@ -10,4 +10,9 @@ contract MockERC20Permit is ERC20Permit {
     function mint(address to, uint256 amount) external {
         _mint(to, amount);
     }
+
+    /// @dev Test-only: lets MockMusdProtocol burn repayments from the caller, as BorrowerOperations does.
+    function burn(address from, uint256 amount) external {
+        _burn(from, amount);
+    }
 }

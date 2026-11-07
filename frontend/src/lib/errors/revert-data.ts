@@ -1,6 +1,7 @@
 import { decodeErrorResult, parseAbi, type Abi, type Hex } from "viem";
 import { gaugeAbi } from "@/lib/abi/gauge";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
+import { mezoRouteLeverageAbi } from "@/lib/abi/mezoRouteLeverage";
 import { tigrisErrorsAbi } from "@/lib/abi/tigrisErrors";
 
 // MUSD and BTC on Mezo may use either OpenZeppelin generation; OZ4 reverts with strings instead.
@@ -15,6 +16,11 @@ const ozErrorsAbi = parseAbi([
  */
 export const revertErrorsAbi: Abi = [
   ...mezoRouteExecutorAbi.filter((item) => item.type === "error"),
+  // MezoRouteLeverage shares ZeroAmount, ZeroAddress, AmountAboveCap, Expired, FeeTooHigh and PoolMismatch
+  // with the executor (same selectors); only its own errors are added.
+  ...mezoRouteLeverageAbi.filter(
+    (item) => item.type === "error" && !mezoRouteExecutorAbi.some((e) => e.type === "error" && e.name === item.name),
+  ),
   ...tigrisErrorsAbi,
   ...gaugeAbi.filter((item) => item.type === "error"),
   ...ozErrorsAbi,

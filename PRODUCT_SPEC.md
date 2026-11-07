@@ -569,34 +569,24 @@ event Exited(
 
 ### 11.9 Wave 2 — `MezoRouteLeverage`
 
-A second immutable executor; `MezoRouteExecutor` is not modified.
+A second immutable contract; the executors are not modified. Design and reasoning: `docs/superpowers/specs/2026-11-07-l1-unwind-leverage-design.md` (L1, approved 7 Nov 2026), which supersedes the earlier draft of this section.
 
-**Dependencies:** MUSD, BTC, the MUSD/BTC pool (flash swaps), PoolFactory (fee), BorrowerOperationsSignatures, TroveManager + PriceFeed (post-condition CR check), fee configuration as in 11.1, and an immutable per-transaction cap.
+**Dependencies (immutable, one `Config` struct in the constructor):** MUSD, BTC, the MUSD/BTC volatile pool (flash swaps, checked against `PoolFactory.getPool`), PoolFactory (fee), BorrowerOperationsSignatures, TroveManager (exact debt, post-condition ICR), PriceFeed (oracle bound), `feeBps` ≤ 50 (Leverage and Open only), `feeRecipient`, `maxBtcFlash` and `maxMusdFlash` (per-transaction caps).
 
-**Leverage (`leverage`)**
+**Shared rules.** `borrower = recipient = msg.sender` on every BOS call. The hook accepts only the pool, for a swap this contract started (`sender == this`), for the operation in flight. The pool is paid the exact input its K check accepts. The swap price may be at most `maxDeviationBps` (≤ 10%) worse than `PriceFeed`, one-sided. The leg that repays the pool is paid from the caller's wallet: the signed maximum is pulled (after an optional EIP-2612 permit), the pool gets the exact input, the rest is refunded, so allowances end at zero. MUSD and BTC balances of the contract end every call where they started.
 
-1. Validate caller is the borrower, deadline, and `btcToAdd ≤ cap`.
-2. `pool.swap(btcOut = btcToAdd, to = executor, data)` → in `hook`:
-   1. Require `msg.sender == pool` and the call originated from this executor.
-   2. `adjustTroveWithSignature{value: btcToAdd}(0, debtIncrease, true, hints, borrower, recipient = borrower, signature, deadline)` — MUSD is minted to the **user**.
-   3. Permit + `transferFrom(user → executor, musdRequired)`, where `musdRequired` is the exact pool input for `btcToAdd` plus the MezoRoute fee.
-   4. Transfer `musdRequired − fee` to the pool; transfer the fee to `feeRecipient`.
-3. After the swap: require the user's Trove CR ≥ `minCollateralRatio` (user parameter, UI floor 200%); require executor balance deltas are zero; emit `Leveraged`.
-4. Any MUSD borrowed above `musdRequired` stays in the user's wallet and is reported in the event.
+- **`unwind`:** flash `debtToRepay` MUSD; `adjustTroveWithSignature(collWithdrawal, debtToRepay, false, …)` burns it from the contract and sends the BTC to the caller; the caller pays the pool's BTC. No fee.
+- **`close`:** `updateSystemAndTroveInterest`, flash `debt − 200` MUSD; `closeTroveWithSignature` returns all collateral to the caller; the caller pays the pool's BTC. No fee. Blocked by the protocol in Recovery Mode.
+- **`leverage`:** flash `btcToAdd` BTC; `adjustTroveWithSignature{value: btcToAdd}(0, debtIncrease, true, …)` mints MUSD to the caller; the caller pays the pool's MUSD plus the fee; ICR after ≥ `minCollateralRatio` ≥ 150%.
+- **`openLeveraged`** (payable): flash `btcToFlash`; `openTroveWithSignature{value: msg.value + btcToFlash}(debtAmount, …)`; then as `leverage`.
 
-**Unwind (`unwind`)**
+Refinance, when capacity is short, is a separate direct `BorrowerOperations.refinance` from the wallet (the app adds it as a step), not part of the contract.
 
-1. Validate caller, deadline, cap.
-2. `pool.swap(musdOut = debtToRepay, to = executor, data)` → in `hook`:
-   1. `adjustTroveWithSignature(collWithdrawal, debtToRepay, false, hints, borrower, recipient = borrower, signature, deadline)` — the executor is the caller, so the repayment is burned from the executor's flash-borrowed MUSD; withdrawn BTC goes to the **user**.
-   2. BTC permit + `transferFrom(user → executor, btcRequired)`; transfer `btcRequired` to the pool.
-3. Require executor balance deltas are zero; emit `Unwound`.
+**Why the recipient is always the user.** Anyone can submit a BOS signature. For a leverage or open signature, a front-runner must supply the bound BTC themselves — they gift collateral to the user. For an unwind or close signature, a front-runner must repay the debt themselves, and the collateral still goes to the user. Our call then reverts on the used nonce and nothing is lost.
 
-**Why the recipient is always the user.** Anyone can submit an `AdjustTrove` signature. For a leverage signature, a front-runner must supply the bound `assetAmount` of BTC themselves — they gift collateral to the user. For an unwind signature with the executor as recipient, a front-runner could repay the debt and strand the user's withdrawn collateral in the executor; with the user as recipient, the collateral always reaches the user. The executor then reverts on the consumed nonce and nothing is lost.
+**Testing.** Sending BTC as `msg.value` from a contract relies on Mezo's unified native/ERC-20 BTC ledger. Local tests use a revert-safe unified mock (`test/mocks/MockUnifiedBtc.sol`) and a mock MUSD protocol, under both pool token orders; the real BOS and the `msg.value` leg are proven by the live testnet smoke run before mainnet deployment.
 
-**Testing constraint.** Sending BTC as `msg.value` from a contract relies on Mezo's unified native/ERC-20 BTC balance and cannot be reproduced with a mock ERC-20. Local tests cover the flash-swap and accounting logic with a mock `BorrowerOperationsSignatures` funded via `vm.deal`; the `msg.value` path is proven by the live testnet smoke script before mainnet deployment.
-
-**Events:** `Leveraged(borrower, btcAdded, debtIncrease, musdToPool, fee, musdSurplus)`, `Unwound(borrower, debtRepaid, btcWithdrawn, btcToPool, btcToUser)`.
+**Events:** `Unwound(borrower, debtRepaid, collWithdrawn, btcToPool)`, `Closed(borrower, debtRepaid, collReturned, btcToPool)`, `Leveraged(borrower, btcAdded, debtIncrease, musdToPool, fee, musdSurplus)`, `OpenedLeveraged(borrower, btcFromUser, btcFlashed, debtAmount, musdToPool, fee, musdSurplus)`.
 
 ## 12. Frontend data and accounting rules
 
@@ -808,10 +798,10 @@ U2 done 15 Oct 2026: dark landing with route map, live mainnet route simulator, 
 
 | ID | Task | Depends on |
 |---|---|---|
-| W2-1 | `MezoRouteLeverage`: leverage + unwind with mock-BOS tests | Wave 1 gate |
+| W2-1 | `MezoRouteLeverage`: unwind, close, leverage, open with mock-BOS tests (done 7 Nov) | Wave 1 gate |
 | W2-2 | Leverage and Unwind screens | W2-1, T11 |
 | W2-3 | Live testnet smoke run of leverage and unwind | W2-1 |
-| W2-4 | Invariant suite and self-audit checklist for `MezoRouteLeverage` | W2-1 |
+| W2-4 | Invariant suite and self-audit checklist for `MezoRouteLeverage` (done 7 Nov) | W2-1 |
 | W2-5 | Mainnet deployment of `MezoRouteLeverage` with an immutable cap | W2-3, W2-4 |
 | W2-6 | Judge feedback changes | Wave 1 results (~1 Nov) |
 | W2-7 (Could) | Telegram CR/exposure alerts reusing the exposure module | T11 |
@@ -919,6 +909,22 @@ Wave 2 work must not be included in the Wave 1 submission.
 - `script/smoke-testnet.sh` passes against it: the testnet gauge (source unverified) behaves like `Gauge.sol` (`deposit(uint256,address)`, `earned`, `getReward`, `withdraw`, MEZO reward), the real BTC token's `DOMAIN_SEPARATOR()` equals the hash of ("BTC", "1", 31611, token), and the executor holds no MUSD, BTC, LP, or gauge stake afterwards.
 - Measured gas, one run of `cd contracts && set -a && source .env && set +a && EXECUTOR=0x1281cC769c136F9F4f291B390c8992a3Cd556288 GAS_MULT=1.3 bash script/smoke-testnet.sh` (receipt `gasUsed`; the script prints it with the estimate and limit for each transaction; no transaction ran out of gas): `enter` without stake 323,655; `enter` with stake 423,282 (the gauge deposit adds about 100,000); `enterFromBtc` without stake 299,498; `enterFromBtc` with stake 388,645; `gauge.deposit` (direct) 127,995; `gauge.withdraw` 97,194 (direct), 130,620 (after the `enter` stake, with accrued rewards), 105,357 (after the `enterFromBtc` stake); `gauge.getReward` 58,168; `exit` 322,766, 318,286, 316,046. Gas varies with first-touch storage slots between runs (earlier runs: `enter` with stake 434,722 to 448,402, `gauge.deposit` 142,295). Mezo charges at least half the gas limit, so at the script default `GAS_MULT=2` (the testnet RPC once under-estimated a `gauge.withdraw`, so the default stays safe) `gasUsed` is floor-inflated, for example `enterFromBtc` 355,484 instead of 299,498; use `GAS_MULT=1.3` to measure.
 - Replay fixture for the `EnteredFromBtc` quote (Task 9): transaction `0xf0378a9d16a3e07147fd6a316786e11ff458a9aeeae1347ef0d6834f3b6c3cf5`, block 16,570,227, transaction index 0 (no other transaction touched the pool earlier in the block). Pre-state at block 16,570,226: pool reserves MUSD 102510355910841854805827690 and BTC 1304018023912565731526 (equal to the pool's token balances), LP total supply 365609032746488322770813, `PoolFactory.getFee` 4 bps. Event: caller = recipient = `0xd74f…2B49`, btcIn 300000000000000, fee 300000000000, btcToSwap 149850000000000, musdFromSwap 11775167457143114855, musdAdded 11775167457143114855, btcAdded 149790077206098, liquidityOut 41996811353360838, musdRefund 0, btcRefund 59922793902.
+
+### L1 mainnet: `MezoRouteLeverage` (7 Nov 2026)
+
+- Address `0xA82059CEaAa50678e0295610106c46D0bd26F6C6`, block 13,064,669, deployed from the keystore `mezo-mainnet` (deployer `0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49`) with `NETWORK=mainnet ACCOUNT=mezo-mainnet FEE_BPS=10 FEE_RECIPIENT=0x375a…d6e8 bash script/deploy-leverage.sh`: `https://explorer.mezo.org/tx/0xd38ed08ce7f778122cc44173151e16eb6c8aa6a6e6873f2aa943323214076048`, gas used 2,546,521.
+- Every immutable read back by the script: MUSD, BTC, factory, pool `0x52e6…acefb` (BTC is token0), BorrowerOperationsSignatures, TroveManager, PriceFeed, fee 10 bps to `0x375a…d6e8`, caps 0.0125 BTC / 2,500 MUSD per call. A direct `hook(…)` call reverts with `UnauthorizedHook()` (`0x6842e659`).
+- Source verification: not yet. The explorer answers "Fail - Unable to verify" to `forge verify-contract` (twice) and to the v2 standard-input endpoint, although the creation input on chain equals the local build plus the constructor arguments byte for byte, with the settings that verified the testnet copy (0.8.24, via-IR, 200 runs, london). Retry later.
+- Not yet run end to end on mainnet (the app says so). Mainnet has 4 Troves (7 Nov); read-only QA used `0x467F…3Fb4` (debt 2,058 MUSD): Unwind reached the `AdjustTrove` signature with the mainnet BOS domain and borrower = recipient = the account.
+
+### L1 testnet: `MezoRouteLeverage` round trip through the app (7 Nov 2026, user's MetaMask `0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8`)
+
+Contract `0x14bEdE8de5Cc60342492934B207Ce99eAf986d88`. Each event was checked against the Trove read before and after; after every transaction the contract held 0 BTC and 0 MUSD and the wallet's allowance to it was 0. No Refinance step was needed.
+
+- Open with leverage, 0.043 BTC, target 200% (signed `minCollateralRatio` 200%): `0x8ecad1a49b84571578d8aff91a39a804cb8529306616f99a904addf1b770df90`, block 16,631,102. Flashed 0.033948 BTC, borrowed 2,699.12 MUSD, 2,669.72 to the pool, 2.67 fee (10 bps), 26.72 MUSD surplus to the wallet; Trove 0.076948 BTC / 2,901.82 MUSD, CR 200.98%. Gas used 746,950 (budget 895,000).
+- Unwind to 240%: `0x430fb080ad85937c651c0f92c55307cddf3a1dd713d0d563cceeeb9f9adfb74c`. Repaid 793.74 MUSD, withdrew 0.010202 BTC, paid the pool 0.010101 BTC (the rest refunded); Trove 0.066746 BTC / 2,108.08 MUSD, CR 240.0%. Gas used 581,209 (budget 775,000).
+- Leverage to 200%: `0x8d880f9740924a2f7e9a8d190026f7374d65554604a18cd8306d725583c8fff9`. Added 0.009771 BTC, borrowed 776.90 MUSD, 768.44 to the pool, 0.768 fee, 7.69 MUSD surplus; Trove 0.076518 BTC / 2,885.75 MUSD, CR 201.0%. Gas used 655,391 (budget 795,000).
+- Close: `0x381aac38b78a4472ff2c85bdd2b5346cc7bca70b21065948bb30af768b811b7b`. Repaid 2,685.76 MUSD (debt less the 200 MUSD gas compensation), returned all 0.076518 BTC, paid the pool 0.034180 BTC; Trove status 2 (closed by owner); the wallet's MUSD unchanged. Gas used 531,908 (budget 685,000).
 
 ### Research transactions
 

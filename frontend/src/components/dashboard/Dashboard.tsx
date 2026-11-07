@@ -171,7 +171,7 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
       </Settle>
       <Settle index={2} className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
         <ExposurePanel snapshot={snapshot} />
-        <TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} />
+        <TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} account={account} />
       </Settle>
       <Settle index={3}>
         <RouteComparison snapshot={snapshot} />

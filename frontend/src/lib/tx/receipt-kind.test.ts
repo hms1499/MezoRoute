@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { gaugeAbi } from "@/lib/abi/gauge";
 import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { networks } from "@/lib/config/networks";
+import { LIVE_UNWOUND_LOG } from "@/lib/leverage/live-logs";
 import { receiptKind } from "./receipt-kind";
 
 const testnet = networks.testnet;
@@ -74,5 +75,13 @@ describe("receiptKind", () => {
 
   it("is null for a receipt without MezoRoute or pool events", () => {
     expect(receiptKind([], testnet)).toBeNull();
+  });
+});
+
+describe("receiptKind for Trove actions (L1)", () => {
+  it("names a MezoRouteLeverage receipt", () => {
+    const kind = receiptKind([LIVE_UNWOUND_LOG], testnet);
+    expect(kind?.kind).toBe("trove");
+    expect(kind?.kind === "trove" && kind.event.kind).toBe("unwound");
   });
 });

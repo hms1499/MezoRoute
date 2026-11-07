@@ -11,6 +11,7 @@ import {
   RECOVERY_MODE,
   SIGNATURE_INVALID,
   SP_WITHDRAW_BLOCKED,
+  BELOW_MIN_DEBT,
 } from "./outcomes";
 import type { Outcome } from "./types";
 
@@ -34,6 +35,10 @@ export const REVERT_STRINGS: readonly { match: RegExp; outcome: Outcome }[] = [
   { match: /exceeds maxBorrowingCapacity/i, outcome: ABOVE_HEADROOM },
   { match: /TCR < CCR|in Recovery Mode/i, outcome: RECOVERY_MODE },
   { match: /Trove does not exist or is closed/i, outcome: NO_TROVE },
+  // L1: Unwind, Close and Repay from wallet.
+  { match: /net debt must be greater than minimum/i, outcome: BELOW_MIN_DEBT },
+  { match: /Collateral withdrawal not permitted Recovery Mode|Operation not permitted during Recovery Mode/i, outcome: RECOVERY_MODE },
+  { match: /Caller doesnt have enough mUSD to make repayment/i, outcome: INSUFFICIENT_BALANCE },
 ];
 
 export function revertStringOutcome(text: string): Outcome | null {

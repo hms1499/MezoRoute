@@ -13,6 +13,7 @@ import {
   type LogLike,
   type StakedEvent,
 } from "@/lib/routes/musd-btc-lp/receipt";
+import { findTroveReceipt, type TroveReceipt } from "@/lib/leverage/receipt";
 import { findSpReceipt, type SpReceipt } from "@/lib/stability-pool/receipt";
 
 export type ReceiptKind =
@@ -22,9 +23,10 @@ export type ReceiptKind =
   | { kind: "claim"; fees: Fees }
   | { kind: "gauge"; gauge: GaugeReceipt }
   | { kind: SpReceipt["kind"]; sp: SpReceipt }
+  | { kind: "trove"; event: TroveReceipt }
   | null;
 
-/** What a confirmed transaction did, from its logs: an entry, an exit, a fee claim, a gauge action, or a Stability Pool action. */
+/** What a confirmed transaction did, from its logs: an entry, an exit, a Trove action, a fee claim, a gauge action, or a Stability Pool action. */
 export function receiptKind(logs: readonly LogLike[], network: NetworkConfig): ReceiptKind {
   // Legacy executors too: a receipt link from before an upgrade still names what it did.
   const executors = [...(network.executor ? [network.executor.address] : []), ...network.legacyExecutors.map((item) => item.address)];
@@ -36,6 +38,9 @@ export function receiptKind(logs: readonly LogLike[], network: NetworkConfig): R
     const exited = findExitedEvent(logs, executor);
     if (exited) return { kind: "exited", event: exited };
   }
+  // A Trove action (L1) also carries the pool's Swap and token Transfers, so it is matched before them.
+  const trove = findTroveReceipt(logs, network);
+  if (trove) return { kind: "trove", event: trove };
   const fees = findClaimEvent(logs, network);
   if (fees) return { kind: "claim", fees };
   const gauge = network.gauge ? findGaugeReceipt(logs, network.gauge.address) : null;

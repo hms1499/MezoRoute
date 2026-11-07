@@ -13,6 +13,7 @@ import {
   SLIPPAGE,
   STAKE_FAILED,
   STAKING_CLOSED,
+  PRICE_MOVED,
 } from "./outcomes";
 import type { Outcome } from "./types";
 
@@ -55,6 +56,15 @@ const BY_NAME: Record<string, Outcome | ((network: NetworkConfig) => Outcome)> =
   PoolMismatch: FEE_MISMATCH,
   GaugeMismatch: FEE_MISMATCH,
   FeeTooHigh: FEE_MISMATCH,
+  // MezoRouteLeverage (L1): the pool or the oracle moved between the quote and the send.
+  OracleBoundExceeded: PRICE_MOVED,
+  PoolInputAboveMax: PRICE_MOVED,
+  CollateralRatioTooLow: PRICE_MOVED,
+  // The app never builds these; they mean a bad build or a tampered call.
+  DeviationTooHigh: ROUTE_REFUSED,
+  MinCrBelowFloor: ROUTE_REFUSED,
+  UnauthorizedHook: ROUTE_REFUSED,
+  UnexpectedBalanceChange: ROUTE_REFUSED,
 };
 
 export function customErrorOutcome(name: string, network: NetworkConfig): Outcome | null {

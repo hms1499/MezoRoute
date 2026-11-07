@@ -30,7 +30,7 @@ export function hasStarted(state: Stepper<string>): boolean {
 
 /** Steps the user signs without a transaction. */
 function isSignature(kind: string): boolean {
-  return kind === "permit" || kind === "borrow";
+  return kind === "permit" || kind === "borrow" || kind === "authorise";
 }
 
 /** The entry and exit steppers (spec §9 screens 3a, 6a); events that do not fit the active step are ignored. */

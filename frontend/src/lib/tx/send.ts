@@ -60,10 +60,11 @@ export function receiptFailure(error: unknown, hash: Hash): TransactionRevertedE
  */
 export async function submitCall(
   config: Config,
-  call: { to: Address; data: Hex },
+  call: { to: Address; data: Hex; value?: bigint },
   pin: SendPin,
   gasBudget?: bigint,
 ): Promise<Hash> {
+  const value = call.value === undefined ? {} : { value: call.value };
   const connector = getAccount(config).connector;
   const connectorType = connector?.type;
   const gas =
@@ -71,7 +72,7 @@ export async function submitCall(
       ? undefined
       : gasLimit(
           gasBudget,
-          await estimateGas(config, { to: call.to, data: call.data, account: pin.account, chainId: pin.chainId }).catch(() => undefined),
+          await estimateGas(config, { to: call.to, data: call.data, ...value, account: pin.account, chainId: pin.chainId }).catch(() => undefined),
         );
   let sent: unknown;
   try {
@@ -81,6 +82,7 @@ export async function submitCall(
     sent = await sendTransaction(config, {
       to: call.to,
       data: call.data,
+      ...value,
       account: pin.account,
       chainId: pin.chainId,
       ...(gas === undefined ? {} : { gas }),

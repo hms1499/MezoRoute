@@ -74,6 +74,11 @@ describe("sendCall", () => {
     );
   });
 
+  it("sends a call's value (Open with leverage pays BTC with the call)", async () => {
+    await submitCall(config, { ...CALL, value: 5n }, PIN);
+    expect(sendTransaction).toHaveBeenCalledWith(config, { ...CALL, value: 5n, account: PIN.account, chainId: 31611 });
+  });
+
   it("lets wagmi's chain-mismatch error through so the decoder can offer Switch network", async () => {
     const mismatch = new ConnectorChainMismatchError({ connectionChainId: 31611, connectorChainId: 1 });
     vi.mocked(sendTransaction).mockRejectedValue(mismatch);

@@ -11,6 +11,8 @@ import { CR_SAFETY_FLOOR } from "@/lib/trove/constants";
 import { collateralRatio, liquidationPrice, type TroveHealth } from "@/lib/trove/health";
 import { Stat } from "@/components/ui/Stat";
 import { Term } from "@/components/ui/Term";
+import { TroveActions } from "@/components/trove/TroveActions";
+import type { Address } from "viem";
 
 const HEALTH_TAG: Record<TroveHealth, { label: string; tone: "accent" | "warning" | "danger" }> = {
   healthy: { label: "Healthy", tone: "accent" },
@@ -23,10 +25,13 @@ export function TroveCard({
   snapshot,
   borrowable,
   health,
+  account,
 }: {
   snapshot: DashboardSnapshot;
   borrowable: bigint;
   health: TroveHealth | null;
+  /** With an account the card adds the L1 actions (Unwind, Close, Leverage, the queue, the surplus claim). */
+  account?: Address;
 }) {
   const { network } = useNetwork();
   const { trove, price, protocol } = snapshot;
@@ -42,6 +47,7 @@ export function TroveCard({
         <ButtonLink href={network.mezoAppUrl} external variant="secondary" size="md" className="mt-4">
           Open Mezo app
         </ButtonLink>
+        {account && <TroveActions account={account} />}
       </Card>
     );
   }
@@ -74,6 +80,7 @@ export function TroveCard({
           {formatToken(borrowable, 18, 2)} MUSD
         </Stat>
       </dl>
+      {account && <TroveActions account={account} />}
     </Card>
   );
 }

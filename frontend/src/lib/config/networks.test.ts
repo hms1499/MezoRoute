@@ -31,6 +31,29 @@ describe("networks", () => {
     expect(networks.mainnet.entryCap).toBe(1_000n * 10n ** 18n);
   });
 
+  it("pins MezoRouteLeverage per network (L1; DeployLeverage.s.sol caps)", () => {
+    expect(networks.testnet.leverage).toEqual({
+      address: "0x14bEdE8de5Cc60342492934B207Ce99eAf986d88",
+      deployBlock: 16_622_070n,
+      feeBps: 10n,
+      maxBtcFlash: 12n * 10n ** 18n,
+      maxMusdFlash: 1_000_000n * 10n ** 18n,
+    });
+    // Deployed 7 Nov 2026 from the keystore, every immutable read back (deploy-leverage.sh).
+    expect(networks.mainnet.leverage).toEqual({
+      address: "0xA82059CEaAa50678e0295610106c46D0bd26F6C6",
+      deployBlock: 13_064_669n,
+      feeBps: 10n,
+      maxBtcFlash: 125n * 10n ** 14n,
+      maxMusdFlash: 2_500n * 10n ** 18n,
+    });
+  });
+
+  it("pins the CollSurplusPool read back from BorrowerOperationsSignatures (L1)", () => {
+    expect(networks.testnet.addresses.collSurplusPool).toBe("0xB4C35747c26E4aB5F1a7CdC7E875B5946eFa6fa9");
+    expect(networks.mainnet.addresses.collSurplusPool).toBe("0xBF51807ACb3394B8550f0554FB9098856Ef5F491");
+  });
+
   it("pins the testnet executor's 10 bps fee (spec 11.1)", () => {
     expect(networks.testnet.executor?.feeBps).toBe(10n);
   });
