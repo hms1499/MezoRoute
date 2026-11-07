@@ -39,7 +39,14 @@ describe("networks", () => {
       maxBtcFlash: 12n * 10n ** 18n,
       maxMusdFlash: 1_000_000n * 10n ** 18n,
     });
-    expect(networks.mainnet.leverage).toBeNull();
+    // Deployed 7 Nov 2026 from the keystore, every immutable read back (deploy-leverage.sh).
+    expect(networks.mainnet.leverage).toEqual({
+      address: "0xA82059CEaAa50678e0295610106c46D0bd26F6C6",
+      deployBlock: 13_064_669n,
+      feeBps: 10n,
+      maxBtcFlash: 125n * 10n ** 14n,
+      maxMusdFlash: 2_500n * 10n ** 18n,
+    });
   });
 
   it("pins the CollSurplusPool read back from BorrowerOperationsSignatures (L1)", () => {

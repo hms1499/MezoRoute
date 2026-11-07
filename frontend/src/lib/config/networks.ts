@@ -119,7 +119,14 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     legacyExecutors: [{ address: "0x046449b1229C863e278f369869BA10e12bd80d9E", deployBlock: 12_524_142n }],
     entryCap: 1_000n * 10n ** 18n,
     entryCapBtc: 125n * 10n ** 14n,
-    leverage: null,
+    // L1, 7 Nov 2026: deployed from the keystore, every immutable read back; caps 0.0125 BTC / 2,500 MUSD per call.
+    leverage: {
+      address: "0xA82059CEaAa50678e0295610106c46D0bd26F6C6",
+      deployBlock: 13_064_669n,
+      feeBps: 10n,
+      maxBtcFlash: 125n * 10n ** 14n,
+      maxMusdFlash: 2_500n * 10n ** 18n,
+    },
     gauge: { address: "0x8Be20a5fF57E381025aE5E3A121B697269569AaF", voter: "0x48233cCC97B87Ba93bCA212cbEe48e3210211f03" },
     mezoPricePool: { address: "0x1D6e8D24c133535F2d00676F66a0e824f84765ff", mezoIsToken0: true },
     addresses: {
