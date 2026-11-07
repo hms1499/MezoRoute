@@ -22,7 +22,7 @@ import { troveActionBlock, type GateQuote } from "./gate";
 import { intentQuery, type TroveAction, type TroveIntent } from "./intent";
 import { buildCloseCall, buildLeverageCall, buildOpenCall, buildUnwindCall, refinanceCall, type TroveAuth } from "./params";
 import { adjustTypedData, closeTypedData, openTypedData } from "./signatures";
-import { preSendCheck, quoteFor, type TroveStepKind } from "./steps";
+import { preSendCheck, quoteFor, restartsSigning, signedMinCr, type TroveStepKind } from "./steps";
 import { nominalCr, type TroveState } from "./trove-math";
 import type { TroveData } from "./useTroveSnapshot";
 
@@ -119,6 +119,13 @@ export function useTroveFlow(input: TroveFlowInput): { stepper: Stepper<TroveSte
     return quote;
   }
 
+  /** Drops both signatures and returns the stepper to the authorisation step. */
+  function restartSigning() {
+    auth.current = null;
+    permit.current = null;
+    dispatch({ type: "signature-expired" });
+  }
+
   async function refinance(sendPin: SendPin) {
     const fresh = await input.refresh();
     const trove = fresh.snapshot.trove;
@@ -168,11 +175,7 @@ export function useTroveFlow(input: TroveFlowInput): { stepper: Stepper<TroveSte
     const fresh = await input.refresh();
     const blocked = preSendCheck({ snapshot: fresh.snapshot, auth: auth.current, permit: permit.current, permitToken: permitToken(input.action), now: nowSeconds() });
     if (blocked) {
-      if (blocked === PERMIT_EXPIRED) {
-        auth.current = null;
-        permit.current = null;
-        dispatch({ type: "signature-expired" });
-      }
+      if (restartsSigning(blocked.kind)) restartSigning();
       throw new BlockedError(blocked);
     }
     const signed = auth.current!;
@@ -199,10 +202,16 @@ export function useTroveFlow(input: TroveFlowInput): { stepper: Stepper<TroveSte
         : q.action === "close"
           ? buildCloseCall(network, q.quote, troveAuth, usedPermit, ORACLE_BOUND_DEFAULT_BPS, signed.deadline)
           : q.action === "leverage"
-            ? buildLeverageCall(network, q.quote, troveAuth, usedPermit, input.intent.cr ?? 0n, ORACLE_BOUND_DEFAULT_BPS, signed.deadline)
-            : buildOpenCall(network, q.quote!, troveAuth, usedPermit, input.intent.cr ?? 0n, ORACLE_BOUND_DEFAULT_BPS, signed.deadline);
-    // A simulated revert is decoded (PRICE_MOVED, Recovery Mode, …) and nothing is sent.
-    await simulateContract(config, { ...(call as object), account: sendPin.account, chainId: sendPin.chainId } as never);
+            ? buildLeverageCall(network, q.quote, troveAuth, usedPermit, signedMinCr(input.intent), ORACLE_BOUND_DEFAULT_BPS, signed.deadline)
+            : buildOpenCall(network, q.quote!, troveAuth, usedPermit, signedMinCr(input.intent), ORACLE_BOUND_DEFAULT_BPS, signed.deadline);
+    // A simulated revert is decoded (PRICE_MOVED, Recovery Mode, …) and nothing is sent. After a moved price the
+    // signed amounts can never pass, so the flow goes back to the authorisation with a new quote.
+    try {
+      await simulateContract(config, { ...(call as object), account: sendPin.account, chainId: sendPin.chainId } as never);
+    } catch (error) {
+      if (restartsSigning(decodeError(error, network).kind)) restartSigning();
+      throw error;
+    }
     const value = "value" in call ? call.value : undefined;
     const hash = await submitCall(
       config,

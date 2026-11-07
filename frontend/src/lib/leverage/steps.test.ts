@@ -1,7 +1,7 @@
 import { zeroHash } from "viem";
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
-import { preSendCheck, quoteFor, troveAuthState, troveSteps } from "./steps";
+import { preSendCheck, quoteFor, restartsSigning, signedMinCr, troveAuthState, troveSteps } from "./steps";
 import type { TroveSnapshot } from "./snapshot";
 import { HARNESS_MARKET, HARNESS_POOL, ONE, trove } from "./test-fixtures";
 
@@ -67,5 +67,36 @@ describe("quoteFor", () => {
   it("is null without the input an action needs", () => {
     expect(quoteFor("unwind", snapshot, { cr: null, btc: null, slippageBps: 100n }, networks.testnet)).toBeNull();
     expect(quoteFor("close", { ...snapshot, trove: null }, { cr: null, btc: null, slippageBps: 100n }, networks.testnet)).toBeNull();
+  });
+});
+
+describe("Leverage and Open survive the wait between signing and sending (review Critical 1)", () => {
+  const aged = (t: { coll: bigint; debt: bigint }, price: bigint) => {
+    // 600 s of interest at 5% a year, and a 0.25% oracle drop.
+    const debt = t.debt + (t.debt * 500n * 600n) / (10_000n * 31_536_000n) + 1n;
+    return (t.coll * ((price * 9_975n) / 10_000n)) / debt;
+  };
+
+  it("quotes Leverage above the target so the signed minimum still holds after 600 s and a 0.25% drop", () => {
+    const q = quoteFor("leverage", snapshot, { cr: 2n * ONE, btc: null, slippageBps: 100n }, networks.testnet);
+    expect(q?.action).toBe("leverage");
+    const after = q!.action === "leverage" ? q!.quote.after : null;
+    expect(aged(after!, HARNESS_MARKET.price) >= signedMinCr({ cr: 2n * ONE, btc: null, slippageBps: 100n })).toBe(true);
+  });
+
+  it("quotes Open the same way", () => {
+    const q = quoteFor("open", { ...snapshot, trove: null }, { cr: 2n * ONE, btc: ONE, slippageBps: 100n }, networks.testnet);
+    const after = q?.action === "open" ? q.quote!.after : null;
+    expect(aged(after!, HARNESS_MARKET.price) >= 2n * ONE).toBe(true);
+  });
+});
+
+describe("restartsSigning (review Important 1)", () => {
+  it("sends the flow back to the authorisation after a used authorisation, a moved price, or an expiry", () => {
+    expect(restartsSigning("trove-auth-used")).toBe(true);
+    expect(restartsSigning("price-moved")).toBe(true);
+    expect(restartsSigning("permit-expired")).toBe(true);
+    expect(restartsSigning("rejected")).toBe(false);
+    expect(restartsSigning("rpc-unavailable")).toBe(false);
   });
 });

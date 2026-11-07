@@ -31,7 +31,9 @@ export function useTroveSnapshot(account: Address): {
   });
   const price = reads.data ? (reads.data[0] as bigint) : undefined;
   const queue = useQuery({
-    queryKey: ["trove-queue", network.id, price?.toString()],
+    // One queue read per network per minute: re-reading every Trove on each price change was ≈ 1,500 reads on
+    // testnet (review, 7 Nov 2026); an ICR a minute old only shifts Troves near the MCR in or out of the count.
+    queryKey: ["trove-queue", network.id],
     enabled: price !== undefined,
     staleTime: 60_000,
     retry: 1,

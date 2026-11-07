@@ -46,6 +46,27 @@ export function preSendCheck(input: {
   return null;
 }
 
+/**
+ * Leverage and Open quote 0.5% above the target and sign the target itself as the contract's minimum CR,
+ * so interest accrued while the user signs (the deadline is 600 s; ≈ 0.01% at 5% a year) and a small
+ * oracle move do not fail the send's ICR check (review, 7 Nov 2026).
+ */
+export const QUOTE_CR_BUFFER_BPS = 50n;
+
+export function quoteTarget(cr: bigint): bigint {
+  return (cr * (10_000n + QUOTE_CR_BUFFER_BPS)) / 10_000n;
+}
+
+/** The `minCollateralRatio` a Leverage or Open signs: the user's target (≥ the 200% floor the gate enforces). */
+export function signedMinCr(intent: TroveIntent): bigint {
+  return intent.cr ?? 0n;
+}
+
+/** Outcomes after which the signed amounts are useless, so the flow goes back to the authorisation. */
+export function restartsSigning(kind: string): boolean {
+  return kind === "trove-auth-used" || kind === "price-moved" || kind === "permit-expired";
+}
+
 /** The quote for an action on a snapshot; null without a Trove (or with one, for Open) or the input it needs. */
 export function quoteFor(action: TroveAction, snapshot: TroveSnapshot, intent: TroveIntent, network: NetworkConfig): GateQuote | null {
   const { trove, pool, market } = snapshot;
@@ -58,13 +79,13 @@ export function quoteFor(action: TroveAction, snapshot: TroveSnapshot, intent: T
     case "close":
       return trove ? { action, quote: quoteClose(trove, pool, market, intent.slippageBps) } : null;
     case "leverage": {
-      const quote = trove && intent.cr !== null ? quoteLeverage(trove, pool, market, intent.cr, intent.slippageBps, feeBps) : null;
+      const quote = trove && intent.cr !== null ? quoteLeverage(trove, pool, market, quoteTarget(intent.cr), intent.slippageBps, feeBps) : null;
       return quote ? { action, quote } : null;
     }
     case "open": {
       if (trove || intent.btc === null) return null;
       const cap = network.leverage?.maxBtcFlash ?? 0n;
-      const quote = intent.cr !== null ? quoteOpen(intent.btc, pool, market, intent.cr, intent.slippageBps, feeBps, cap) : null;
+      const quote = intent.cr !== null ? quoteOpen(intent.btc, pool, market, quoteTarget(intent.cr), intent.slippageBps, feeBps, cap) : null;
       return { action, btcFromUser: intent.btc, quote };
     }
   }
