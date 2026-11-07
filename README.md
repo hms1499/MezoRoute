@@ -41,6 +41,7 @@ A Mezo user who wants to put MUSD to work runs into four problems:
 | **"If BTC moves" chart** | What a −30% … +30% BTC move does to your Trove ratio and position values, including where the Trove would cross the minimum collateral ratio. |
 | **LP route** | Deposit wallet MUSD into the MUSD/BTC pool through the executor. The app computes the optimal swap to the wei (it mirrors the pool's rounding; replays of every live entry match exactly), sets on-chain minimums, and uses an EIP-2612 permit instead of an approval transaction. |
 | **Borrow & Deploy** | For an existing Trove: sign a borrow authorisation and a permit, send one transaction. The executor borrows through Mezo's `BorrowerOperationsSignatures` and deposits into the pool. The borrowed MUSD always goes to the borrower. |
+| **Unwind, Close, Leverage** | One transaction on your own Trove through `MezoRouteLeverage` and a flash swap on the MUSD/BTC pool: **Unwind** sells part of your collateral to repay debt, **Close** repays the whole debt from collateral and returns the rest of your BTC (no MUSD needed in the wallet), **Leverage** adds BTC paid for by new debt (a Refinance step first when borrowing capacity needs it). Every page leads with the swap's cost against Mezo's oracle and your place in the redemption queue before and after. Unwind and Close are free; Leverage pays 10 bps. In Recovery Mode the app says why these are blocked and offers Repay from wallet; surplus BTC after a redemption has a Claim button. |
 | **Stability Pool** | Deposit, withdraw, and claim BTC gains with direct calls to Mezo's Stability Pool (no executor, no fee). |
 | **Positions** | LP value (wallet and staked), claimable trading fees (with a Claim button), pending MEZO with Claim, Stake, and Unstake, Stability Pool deposit and BTC gain, and cost basis rebuilt from executor events. Exit LP to MUSD at 25/50/75% or Max (a staked position unstakes first: two transactions). |
 | **Receipts** | Every result is decoded from executor or Stability Pool events, with an explorer link. Reloading the receipt page keeps tracking the transaction. |
@@ -94,6 +95,7 @@ Each invariant is mapped to its tests in [`contracts/SELF_AUDIT.md`](contracts/S
 | Contract | Mezo mainnet (31612) | Mezo testnet (31611) |
 |---|---|---|
 | **MezoRouteExecutorV2** | [`0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915`](https://explorer.mezo.org/address/0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915) (caps 1,000 MUSD and 0.0125 BTC, fee 10 bps) | [`0x1281cC769c136F9F4f291B390c8992a3Cd556288`](https://explorer.test.mezo.org/address/0x1281cC769c136F9F4f291B390c8992a3Cd556288) (caps 1,000,000 MUSD and 12 BTC, fee 10 bps) |
+| **MezoRouteLeverage** (L1) | not deployed yet | [`0x14bEdE8de5Cc60342492934B207Ce99eAf986d88`](https://explorer.test.mezo.org/address/0x14bEdE8de5Cc60342492934B207Ce99eAf986d88) (caps 12 BTC and 1,000,000 MUSD, fee 10 bps on Leverage only) |
 | MezoRouteExecutor (V1, legacy: its LP can still exit) | [`0x046449b1229C863e278f369869BA10e12bd80d9E`](https://explorer.mezo.org/address/0x046449b1229C863e278f369869BA10e12bd80d9E) (cap 1,000 MUSD, fee 10 bps) | [`0xB36B2E012003840951CFf00fA6b1E3237A110920`](https://explorer.test.mezo.org/address/0xB36B2E012003840951CFf00fA6b1E3237A110920) (cap 1,000,000 MUSD, fee 10 bps) |
 | MUSD | `0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186` | `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503` |
 | BTC (ERC-20 interface) | `0x7b7C000000000000000000000000000000000000` | `0x7b7C000000000000000000000000000000000000` |
@@ -143,6 +145,7 @@ Status: V2 is live on testnet and mainnet (6 Nov 2026). A real mainnet round tri
 - **Thin mainnet pool.** The mainnet MUSD/BTC basic pool is small, so the app blocks any entry whose swap would move the price by more than 5%.
 - **Stability Pool withdrawals pause** while any Trove is below the minimum collateral ratio (a Mezo rule). The app shows that state and still offers claiming BTC gains.
 - **Mainnet funding.** Mezo's native BTC bridge-in closed on 13 Oct 2026; BTC now arrives as tBTC from Ethereum through the Mezo app.
+- **Unwind, Close and Leverage need an EVM wallet and an existing Trove** (the Trove authorisation is an `ecrecover` signature, like Borrow & Deploy). They ran end to end on testnet (unwind, leverage, close, open with leverage; hashes in `docs/STATUS.md`). **Not yet run end to end on mainnet.** The mainnet pool is thin, so many sizes cost several percent against the oracle; the app shows that cost first and refuses a swap more than 5% from the oracle.
 - **Gauge staking and BTC entry are new on mainnet** (6 Nov 2026) and capped like every entry. MEZO emissions are this week's rate and can change; staked LP gives up its swap fees to veBTC voters.
 
 ## Run it locally

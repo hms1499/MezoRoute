@@ -4,7 +4,7 @@ import { quoteClose } from "./quote-close";
 import { quoteUnwind } from "./quote-unwind";
 import type { TroveSnapshot } from "./snapshot";
 import { HARNESS_MARKET, HARNESS_POOL, ONE, trove } from "./test-fixtures";
-import { costText, crPresets, leverageMaxNote, pageNotice, refinanceNote, troveOverviewRows } from "./view";
+import { costText, crPresets, leverageMaxNote, pageNotice, refinanceNote, troveOverviewRows, unwindReachNote } from "./view";
 
 const t = trove(ONE, 40_000n * ONE);
 const snapshot: TroveSnapshot = {
@@ -86,5 +86,21 @@ describe("refinanceNote", () => {
     expect(refinanceNote("refinance")).toContain("Refinance first");
     expect(refinanceNote("ok")).toBeNull();
     expect(refinanceNote("blocked")).toBeNull();
+  });
+});
+
+describe("unwindReachNote", () => {
+  it("tells the user when the target is out of an Unwind's reach and offers Close", () => {
+    expect(unwindReachNote({ current: (25n * ONE) / 10n, maxCr: (355n * ONE) / 100n, target: 4n * ONE })).toEqual({
+      text: "An Unwind reaches at most 355% here: past that your debt would fall under the 1,800 MUSD minimum. Close the Trove instead.",
+      closeInstead: true,
+    });
+    expect(unwindReachNote({ current: (25n * ONE) / 10n, maxCr: null, target: 3n * ONE })?.closeInstead).toBe(true);
+    expect(unwindReachNote({ current: (25n * ONE) / 10n, maxCr: (355n * ONE) / 100n, target: 2n * ONE })).toEqual({
+      text: "Choose a ratio above today's 250%.",
+      closeInstead: false,
+    });
+    expect(unwindReachNote({ current: (25n * ONE) / 10n, maxCr: (355n * ONE) / 100n, target: 3n * ONE })).toBeNull();
+    expect(unwindReachNote({ current: (25n * ONE) / 10n, maxCr: (355n * ONE) / 100n, target: null })).toBeNull();
   });
 });

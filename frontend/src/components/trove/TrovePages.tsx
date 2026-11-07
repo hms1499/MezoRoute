@@ -30,7 +30,8 @@ import { quoteFor, troveSteps } from "@/lib/leverage/steps";
 import { cr, nominalCr, type TroveState } from "@/lib/leverage/trove-math";
 import { useDirectTroveCall } from "@/lib/leverage/useDirectTroveCall";
 import { useTroveSnapshot, type TroveData } from "@/lib/leverage/useTroveSnapshot";
-import { crPresets, leverageMaxNote, pageNotice, refinanceNote, troveOverviewRows } from "@/lib/leverage/view";
+import { crPresets, leverageMaxNote, pageNotice, refinanceNote, troveOverviewRows, unwindReachNote } from "@/lib/leverage/view";
+import { unwindMaxCr } from "@/lib/leverage/quote-unwind";
 import { leverageMax, leverageQuoteAt } from "@/lib/leverage/quote-leverage";
 import { Notice } from "@/components/ui/Notice";
 import { queueLine } from "@/lib/leverage/copy";
@@ -164,6 +165,13 @@ function AmountCard(props: {
   const current = snapshot.trove ? cr(snapshot.trove, snapshot.market.price) : null;
   const presets = action === "unwind" || action === "leverage" ? (current ? crPresets(action, current) : []) : [2_000_000_000_000_000_000n, 2_500_000_000_000_000_000n, 3_000_000_000_000_000_000n];
   const canReview = view.block === null && view.quote !== null;
+  // Unwind: a target out of reach says why and offers Close (Review Focus 3); Leverage: a target not below today's CR.
+  const reach =
+    action === "unwind" && snapshot.trove
+      ? unwindReachNote({ current, maxCr: unwindMaxCr(snapshot.trove, snapshot.pool, snapshot.market, intent.slippageBps), target: intent.cr })
+      : action === "leverage" && current !== null && intent.cr !== null && intent.cr >= current
+        ? { text: `Choose a ratio below today's ${formatPercent(current, 0)} and at least 200%.`, closeInstead: false }
+        : null;
   // Leverage: the largest size the page offers and what stops it (spec L1, Inputs).
   const max =
     action === "leverage" && snapshot.trove && network.leverage
@@ -236,6 +244,21 @@ function AmountCard(props: {
               </Button>
             )}
           </div>
+        )}
+        {reach && (
+          <Notice
+            tone="neutral"
+            role="status"
+            action={
+              reach.closeInstead && (
+                <ButtonLink href="/trove/close/" variant="secondary" size="md">
+                  Close instead
+                </ButtonLink>
+              )
+            }
+          >
+            {reach.text}
+          </Notice>
         )}
         {view.rows.length > 0 && <Overview rows={view.rows} />}
         {view.block?.outcome && view.block.reason !== "recovery-mode" && view.block.reason !== "smart-account" && (

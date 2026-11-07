@@ -140,3 +140,17 @@ export function refinanceNote(capacity: CapacityCheck): string | null {
     ? "Refinance first: your Trove's borrowing capacity was set when it opened and does not grow with added BTC. A refinance resets it from today's collateral (fee ≈ 0.02% of your debt) and moves the Trove to the current interest rate."
     : null;
 }
+
+/** Unwind's reach: below today's CR there is nothing to unwind; past `unwindMaxCr` the minimum debt binds and Close is the way. */
+export function unwindReachNote(input: { current: bigint | null; maxCr: bigint | null; target: bigint | null }): { text: string; closeInstead: boolean } | null {
+  const { current, maxCr, target } = input;
+  if (target === null || current === null) return null;
+  if (target <= current) return { text: `Choose a ratio above today's ${formatPercent(current, 0)}.`, closeInstead: false };
+  if (maxCr === null) return { text: "Your debt is already at the 1,800 MUSD minimum: close the Trove instead.", closeInstead: true };
+  if (target > maxCr)
+    return {
+      text: `An Unwind reaches at most ${formatPercent(maxCr, 0)} here: past that your debt would fall under the 1,800 MUSD minimum. Close the Trove instead.`,
+      closeInstead: true,
+    };
+  return null;
+}
