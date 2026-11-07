@@ -8,7 +8,7 @@ The Wave 1 judge named the next step directly: "add the planned leverage and unw
 
 The user delegated the research and the design calls (7 Nov). The user's decisions:
 
-- **Mainnet:** deploy and verify the contract with small caps, no real-money round trip. The real demo runs on testnet. (The user has 0.05 BTC; a minimum Trove of 2,000 MUSD debt on 0.05 BTC sits near 195% CR, below the 200% leverage floor, so a mainnet round trip would not even be possible at that size.)
+- **Mainnet:** deploy and verify the contract with small caps, no real-money round trip by the team; Unwind, Close and Leverage are **open to users and judges** on mainnet. The real demo runs on testnet. (The user has 0.05 BTC; a minimum Trove of 2,000 MUSD debt on 0.05 BTC sits near 195% CR, below the 200% leverage floor, so a mainnet round trip would not even be possible at that size.)
 - Order and scope as proposed in chat: Unwind, then Close, then Leverage; exits free; EOAs only.
 
 ## What we learned from the projects that ship this
@@ -198,7 +198,7 @@ The existing `ExposurePanel` / "If BTC moves" chart takes the after-state of the
 1. Contract with unit + invariant tests; testnet deploy; testnet smoke of all three paths against a real Trove (agent, testnet key in `contracts/.env`).
 2. App pages and the Dashboard pieces; agent QA with Playwright and the mock wallet on the testnet QA accounts (`docs/STATUS.md`), including the "can borrow" and "at risk" accounts.
 3. User's testnet round trips with MetaMask (Unwind, Close on a throwaway Trove, Leverage) through the app.
-4. Mainnet deploy with the caps above (user's keystore, as M1/G1), explorer verification, `networks.ts` updated with `leverage: { address, deployBlock, sendsOpen: false }` (testnet `sendsOpen: true`). No mainnet round trip; the three flash actions are preview-only on mainnet until one is run.
+4. Mainnet deploy with the caps above (user's keystore, as M1/G1), explorer verification, `networks.ts` updated with `leverage: { address, deployBlock }` on both networks; sends are open on mainnet. No mainnet round trip by the team; a Notice on the three pages and a README line say the path has not yet run end to end on mainnet.
 5. Docs: `PRODUCT_SPEC.md` §11.9 updated to this design (Close added, oracle bound, exits free, refinance as a step), §16 W2 rows ticked, §20 addresses; `contracts/SELF_AUDIT.md`; `AGENTS.md` (an L1 paragraph); README (Leverage/Unwind/Close, the mainnet note).
 
 ## Calls made by the agent (for the user to check)
@@ -208,7 +208,7 @@ The existing `ExposurePanel` / "If BTC moves" chart takes the after-state of the
 - **Refinance as a separate step**, not a second signature inside the transaction: simpler contract, same outcome, one extra wallet confirmation only when needed.
 - **Oracle bound one-sided, hard cap 10%, app default 5%:** testnet's pool sits 3.7% above the oracle today, so a 3% cap (Coil's) would block every testnet Leverage. The signed amounts stay the exact slippage guard.
 - **Leverage floor 200% in the app**, 150% in the contract (`PRODUCT_SPEC.md` §4 already set 200% for leverage).
-- **Mainnet: previews only for the three flash actions** (agent's call when the user asked how a senior would handle it). The contract is deployed and verified, and the pages show the full preview, the redemption queue and the risks, but Unwind, Close and Leverage sends are blocked with "Deployed and verified on mainnet; sends open after the first real mainnet transaction". Why: no mainnet transaction will have run the path; mainnet's pool has the opposite token order (`token0` is BTC on mainnet, MUSD on testnet), so the flash amounts map differently; mainnet gas is estimated, not measured; and the pool holds 0.48 BTC at a 30 bps fee, so many sizes would fail the oracle bound anyway. Claim surplus and Repay from wallet stay live on mainnet: they are direct protocol calls the app already makes in the same way. Opening sends later is one config change (`leverage.sendsOpen` in `networks.ts`).
+- **Mainnet sends open, with the caps** (user's decision, 7 Nov, after the agent proposed previews only). Unwind, Close and Leverage are usable on mainnet by users and judges. What keeps this safe without a mainnet round trip: every action is one atomic transaction, so any mismatch reverts and costs only gas; every send is simulated (`eth_call`) before the wallet is asked, so a broken path shows an error before any gas is spent; unit tests run both token orders (mainnet's `token0` is BTC, testnet's is MUSD); the caps bound the size; the contract holds nothing and has no admin. The app and README say "Not yet run end to end on mainnet" until the first real mainnet transaction, and the first outside mainnet transaction is checked by the agent against the event and the Trove (gas budget updated from it).
 - **Pull the signed maximum, refund the rest** (instead of pulling the exact amount and leaving an allowance), so every permit ends at zero allowance.
 - **Unified mock BTC in local tests**, so the balance invariant runs locally on the `msg.value` path.
 - **Mainnet gas budgets = testnet + 30%**, since mainnet cannot be measured without a round trip.
