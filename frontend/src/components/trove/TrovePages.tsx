@@ -30,7 +30,8 @@ import { quoteFor, troveSteps } from "@/lib/leverage/steps";
 import { cr, nominalCr, type TroveState } from "@/lib/leverage/trove-math";
 import { useDirectTroveCall } from "@/lib/leverage/useDirectTroveCall";
 import { useTroveSnapshot, type TroveData } from "@/lib/leverage/useTroveSnapshot";
-import { crPresets, leverageMaxNote, openBtcMax, openReachNote, pageNotice, refinanceNote, troveOverviewRows, unwindReachNote } from "@/lib/leverage/view";
+import { crPresets, leverageMaxNote, maxTarget, maxTargetText, openBtcMax, openMaxNote, openReachNote, pageNotice, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "@/lib/leverage/view";
+import { openMaxCr } from "@/lib/leverage/quote-open";
 import { unwindMaxCr } from "@/lib/leverage/quote-unwind";
 import { leverageMax, leverageQuoteAt } from "@/lib/leverage/quote-leverage";
 import { Notice } from "@/components/ui/Notice";
@@ -165,16 +166,33 @@ function AmountCard(props: {
   const btcMax = action === "open" ? openBtcMax(data.snapshot.walletBtc, gasPrice.data, network) : null;
   const snapshot: TroveSnapshot = data.snapshot;
   const current = snapshot.trove ? cr(snapshot.trove, snapshot.market.price) : null;
-  const presets = action === "unwind" || action === "leverage" ? (current ? crPresets(action, current) : []) : [2_000_000_000_000_000_000n, 2_500_000_000_000_000_000n, 3_000_000_000_000_000_000n];
+  // Unwind and Open: the most CR the action reaches; presets past it are dropped and "Use the most" fills it.
+  const reachCr =
+    action === "unwind" && snapshot.trove
+      ? unwindMaxCr(snapshot.trove, snapshot.pool, snapshot.market, intent.slippageBps)
+      : action === "open" && intent.btc !== null && network.leverage
+        ? openMaxCr(intent.btc, snapshot.pool, snapshot.market, intent.slippageBps, network.leverage.feeBps, network.leverage.maxBtcFlash)
+        : null;
+  const highest = reachCr === null ? null : maxTarget(reachCr, action === "open");
+  const presets = presetsWithin(
+    action === "unwind" || action === "leverage" ? (current ? crPresets(action, current) : []) : [2_000_000_000_000_000_000n, 2_500_000_000_000_000_000n, 3_000_000_000_000_000_000n],
+    highest,
+  );
+  const reachRow =
+    action === "unwind" && reachCr !== null && current !== null && highest !== null && highest > current
+      ? { text: unwindMaxNote(reachCr), use: true }
+      : action === "open" && intent.btc !== null && highest !== null && highest >= LEVERAGE_CR_FLOOR
+        ? { text: openMaxNote(intent.btc, highest), use: true }
+        : null;
   const canReview = view.block === null && view.quote !== null;
   // Unwind: a target out of reach says why and offers Close (Review Focus 3); Leverage: a target not below today's CR.
   const reach =
     action === "unwind" && snapshot.trove
-      ? unwindReachNote({ current, maxCr: unwindMaxCr(snapshot.trove, snapshot.pool, snapshot.market, intent.slippageBps), target: intent.cr })
+      ? unwindReachNote({ current, maxCr: reachCr, target: intent.cr })
       : action === "leverage" && current !== null && intent.cr !== null && intent.cr >= current
         ? { text: `Choose a ratio below today's ${formatPercent(current, 0)} and at least 200%.`, closeInstead: false }
         : action === "open"
-          ? openNote(view.quote, intent)
+          ? openNote(view.quote, intent, highest)
           : null;
   // Leverage: the largest size the page offers and what stops it (spec L1, Inputs).
   const max =
@@ -250,6 +268,14 @@ function AmountCard(props: {
             )}
           </div>
         )}
+        {reachRow && reachCr !== null && (
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
+            <span>{reachRow.text}</span>
+            <Button size="sm" variant="quiet" onClick={() => props.onCr(maxTargetText(reachCr, action === "open"))}>
+              Use the most
+            </Button>
+          </div>
+        )}
         {reach && (
           <Notice
             tone="neutral"
@@ -286,8 +312,8 @@ function AmountCard(props: {
   );
 }
 
-function openNote(quote: GateQuote | null, intent: TroveIntent): { text: string; closeInstead: boolean } | null {
-  const text = openReachNote({ btc: intent.btc, cr: intent.cr, quoteFound: quote?.action === "open" && quote.quote !== null });
+function openNote(quote: GateQuote | null, intent: TroveIntent, highest: bigint | null): { text: string; closeInstead: boolean } | null {
+  const text = openReachNote({ btc: intent.btc, cr: intent.cr, maxTarget: highest, quoteFound: quote?.action === "open" && quote.quote !== null });
   return text ? { text, closeInstead: false } : null;
 }
 
@@ -344,7 +370,13 @@ function ConfirmBody(props: {
   const view = useTroveView(action, account, data, props.queue, intent);
   const capacity = view.quote?.action === "leverage" ? view.quote.quote.capacity : "ok";
   const risks = troveRisks(action);
-  const openReach = action === "open" ? openNote(view.quote, intent) : null;
+  const { network } = useNetwork();
+  const snapshot = data.snapshot;
+  const openHighest =
+    action === "open" && intent.btc !== null && network.leverage
+      ? maxTarget(openMaxCr(intent.btc, snapshot.pool, snapshot.market, intent.slippageBps, network.leverage.feeBps, network.leverage.maxBtcFlash), true)
+      : null;
+  const openReach = action === "open" ? openNote(view.quote, intent, openHighest) : null;
   const queueFirst = (action === "leverage" || action === "open") && view.queueAfter ? [`After this: ${queueLine(view.queueAfter)}`, ...risks] : risks;
   return (
     <FlowColumn

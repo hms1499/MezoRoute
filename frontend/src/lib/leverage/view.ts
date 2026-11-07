@@ -9,6 +9,7 @@ import type { GateQuote, TroveBlockReason } from "./gate";
 import type { TroveAction } from "./intent";
 import type { TroveSnapshot } from "./snapshot";
 import type { CapacityCheck } from "./capacity";
+import { QUOTE_CR_BUFFER_BPS } from "./steps";
 import type { LeverageLimit } from "./quote-leverage";
 import { cr, liquidationPriceOf, type TroveState } from "./trove-math";
 
@@ -167,8 +168,47 @@ export function openBtcMax(walletBtc: bigint, gasPrice: bigint | undefined, netw
   return walletBtc > reserve ? walletBtc - reserve : 0n;
 }
 
-/** Why an Open with this BTC and target has no quote: the 1,800 MUSD minimum debt needs more collateral. */
-export function openReachNote(input: { btc: bigint | null; cr: bigint | null; quoteFound: boolean }): string | null {
-  if (input.btc === null || input.cr === null || input.quoteFound) return null;
-  return `With ${formatToken(input.btc, 18, 6)} BTC, a Trove at ${formatPercent(input.cr, 0)} is out of reach: a Trove needs at least 1,800 MUSD of debt. Add BTC or choose a lower ratio.`;
+/** Why an Open with this BTC and target has no quote, with the most it reaches (`maxTarget`, after the quote buffer). */
+export function openReachNote(input: { btc: bigint | null; cr: bigint | null; maxTarget: bigint | null; quoteFound: boolean }): string | null {
+  if (input.btc === null || input.quoteFound) return null;
+  const btc = formatToken(input.btc, 18, 6);
+  // Under the floor no target works, so this shows before one is typed.
+  if (input.maxTarget !== null && input.maxTarget < LEVERAGE_CR_FLOOR)
+    return `With ${btc} BTC, a new Trove reaches at most ${formatPercent(input.maxTarget, 1)}, under the ${formatPercent(LEVERAGE_CR_FLOOR, 0)} floor: a Trove needs at least 1,800 MUSD of debt. Add BTC.`;
+  if (input.cr === null) return null;
+  if (input.maxTarget === null) return `With ${btc} BTC, a Trove at ${formatPercent(input.cr, 0)} is out of reach. Add BTC or choose a lower ratio.`;
+  return `With ${btc} BTC, a new Trove reaches at most ${formatPercent(input.maxTarget, 1)}. Choose that or less, or add BTC.`;
+}
+
+/** A CR rounded down to 0.1%, so a target at it still quotes. */
+function floorTenth(ratio: bigint): bigint {
+  const tenth = WAD / 1000n;
+  return (ratio / tenth) * tenth;
+}
+
+/**
+ * The highest target an action quotes, given the most CR it reaches: rounded down to 0.1%, and first divided by the
+ * quote buffer when the action quotes above its target (Open and Leverage, `quoteTarget`).
+ */
+export function maxTarget(maxCr: bigint, buffered: boolean): bigint {
+  return floorTenth(buffered ? (maxCr * 10_000n) / (10_000n + QUOTE_CR_BUFFER_BPS) : maxCr);
+}
+
+/** `maxTarget` as the target field's text ("247.3"). */
+export function maxTargetText(maxCr: bigint, buffered: boolean): string {
+  const tenths = maxTarget(maxCr, buffered) / (WAD / 1000n);
+  return `${tenths / 10n}.${tenths % 10n}`;
+}
+
+/** Presets at or under the highest target; all of them while it is unknown. */
+export function presetsWithin(presets: bigint[], highest: bigint | null): bigint[] {
+  return highest === null ? presets : presets.filter((p) => p <= highest);
+}
+
+export function unwindMaxNote(maxCr: bigint): string {
+  return `Up to ${formatPercent(maxTarget(maxCr, false), 1)}: past that your debt would fall under the 1,800 MUSD minimum.`;
+}
+
+export function openMaxNote(btc: bigint, highest: bigint): string {
+  return `With ${formatToken(btc, 18, 6)} BTC, up to ${formatPercent(highest, 1)}: past that the debt would fall under the 1,800 MUSD minimum.`;
 }

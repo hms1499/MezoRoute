@@ -4,7 +4,7 @@ import { quoteClose } from "./quote-close";
 import { quoteUnwind } from "./quote-unwind";
 import type { TroveSnapshot } from "./snapshot";
 import { HARNESS_MARKET, HARNESS_POOL, ONE, trove } from "./test-fixtures";
-import { costText, crPresets, leverageMaxNote, pageNotice, openBtcMax, openReachNote, refinanceNote, troveOverviewRows, unwindReachNote } from "./view";
+import { costText, crPresets, leverageMaxNote, maxTargetText, openMaxNote, pageNotice, openBtcMax, openReachNote, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "./view";
 
 const t = trove(ONE, 40_000n * ONE);
 const snapshot: TroveSnapshot = {
@@ -115,11 +115,42 @@ describe("openBtcMax", () => {
 });
 
 describe("openReachNote", () => {
-  it("explains an unreachable Open", () => {
-    expect(openReachNote({ btc: ONE / 100n, cr: (25n * ONE) / 10n, quoteFound: false })).toBe(
-      "With 0.01 BTC, a Trove at 250% is out of reach: a Trove needs at least 1,800 MUSD of debt. Add BTC or choose a lower ratio.",
+  it("explains an unreachable Open with the most it reaches", () => {
+    expect(openReachNote({ btc: ONE / 100n, cr: (25n * ONE) / 10n, maxTarget: (2364n * ONE) / 1000n, quoteFound: false })).toBe(
+      "With 0.01 BTC, a new Trove reaches at most 236.4%. Choose that or less, or add BTC.",
     );
-    expect(openReachNote({ btc: ONE, cr: 2n * ONE, quoteFound: true })).toBeNull();
-    expect(openReachNote({ btc: null, cr: 2n * ONE, quoteFound: false })).toBeNull();
+    expect(openReachNote({ btc: ONE / 100n, cr: 2n * ONE, maxTarget: (165n * ONE) / 100n, quoteFound: false })).toBe(
+      "With 0.01 BTC, a new Trove reaches at most 165%, under the 200% floor: a Trove needs at least 1,800 MUSD of debt. Add BTC.",
+    );
+    // Under the floor there is nothing to choose, so it shows before a target is typed (every preset is dropped).
+    expect(openReachNote({ btc: ONE / 100n, cr: null, maxTarget: (165n * ONE) / 100n, quoteFound: false })).toContain("under the 200% floor");
+    expect(openReachNote({ btc: ONE / 100n, cr: null, maxTarget: (2364n * ONE) / 1000n, quoteFound: false })).toBeNull();
+    expect(openReachNote({ btc: ONE, cr: 2n * ONE, maxTarget: 3n * ONE, quoteFound: true })).toBeNull();
+    expect(openReachNote({ btc: null, cr: 2n * ONE, maxTarget: null, quoteFound: false })).toBeNull();
+  });
+});
+
+describe("maxTargetText", () => {
+  it("rounds the most reachable CR down to 0.1%, after the quote buffer when the action adds one", () => {
+    expect(maxTargetText((24738n * ONE) / 10_000n, false)).toBe("247.3");
+    expect(maxTargetText(2n * ONE, false)).toBe("200.0");
+    // Open and Leverage quote 0.5% above the target: 241.2% / 1.005 = 240.0
+    expect(maxTargetText((2412n * ONE) / 1000n, true)).toBe("240.0");
+  });
+});
+
+describe("presetsWithin", () => {
+  it("drops presets past the most an action reaches, and keeps them all while that is unknown", () => {
+    const presets = [(25n * ONE) / 10n, 3n * ONE, (35n * ONE) / 10n];
+    expect(presetsWithin(presets, (2473n * ONE) / 1000n)).toEqual([]);
+    expect(presetsWithin(presets, 3n * ONE)).toEqual([(25n * ONE) / 10n, 3n * ONE]);
+    expect(presetsWithin(presets, null)).toEqual(presets);
+  });
+});
+
+describe("unwindMaxNote / openMaxNote", () => {
+  it("names the most each action reaches", () => {
+    expect(unwindMaxNote((2473n * ONE) / 1000n)).toBe("Up to 247.3%: past that your debt would fall under the 1,800 MUSD minimum.");
+    expect(openMaxNote(ONE / 25n, (2364n * ONE) / 1000n)).toBe("With 0.04 BTC, up to 236.4%: past that the debt would fall under the 1,800 MUSD minimum.");
   });
 });

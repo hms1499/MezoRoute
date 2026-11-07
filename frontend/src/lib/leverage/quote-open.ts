@@ -58,6 +58,15 @@ function openAt(own: bigint, pool: PoolState, market: Market, flash: bigint, sli
   };
 }
 
+/** The flash with the highest CR: the largest whose pull still fits under the minimum debt (or the flash limit). */
+function peakOf(at: (y: bigint) => OpenQuote, hi: bigint, floor: bigint): bigint {
+  return largestWhere(1n, hi, (y) => at(y).debtAmount === floor) || 1n;
+}
+
+function flashLimit(pool: PoolState, maxBtcFlash: bigint): bigint {
+  return maxBtcFlash < pool.reserveBtc / 2n ? maxBtcFlash : pool.reserveBtc / 2n;
+}
+
 /**
  * Open a Trove with `btcFromUser` plus the most flashed BTC (≤ `maxBtcFlash`) that keeps CR at or above
  * `targetCr`. While the pool's MUSD is under the 1,800 MUSD minimum the debt stays at the minimum and
@@ -73,12 +82,19 @@ export function quoteOpen(
   feeBps: bigint,
   maxBtcFlash: bigint,
 ): OpenQuote | null {
-  const hi = maxBtcFlash < pool.reserveBtc / 2n ? maxBtcFlash : pool.reserveBtc / 2n;
+  const hi = flashLimit(pool, maxBtcFlash);
   const at = (y: bigint) => openAt(btcFromUser, pool, market, y, slippageBps, feeBps);
-  const floor = minDebt(market.borrowingRate);
-  // The peak: the largest flash whose pull still fits under the minimum debt (or hi).
-  const peak = largestWhere(1n, hi, (y) => at(y).debtAmount === floor) || 1n;
+  const peak = peakOf(at, hi, minDebt(market.borrowingRate));
   if (at(hi).crAfter >= targetCr) return at(hi);
   if (at(peak).crAfter < targetCr) return null;
   return at(largestWhere(peak, hi, (y) => at(y).crAfter >= targetCr));
+}
+
+/** The highest CR an Open with `btcFromUser` reaches (the peak above): `quoteOpen` quotes any target up to it. */
+export function openMaxCr(btcFromUser: bigint, pool: PoolState, market: Market, slippageBps: bigint, feeBps: bigint, maxBtcFlash: bigint): bigint {
+  const hi = flashLimit(pool, maxBtcFlash);
+  const at = (y: bigint) => openAt(btcFromUser, pool, market, y, slippageBps, feeBps);
+  const peak = at(peakOf(at, hi, minDebt(market.borrowingRate))).crAfter;
+  const top = at(hi).crAfter;
+  return top > peak ? top : peak;
 }

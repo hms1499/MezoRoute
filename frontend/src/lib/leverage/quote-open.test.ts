@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MIN_NET_DEBT } from "@/lib/trove/constants";
-import { quoteOpen } from "./quote-open";
+import { openMaxCr, quoteOpen } from "./quote-open";
 import { HARNESS_MARKET, HARNESS_POOL, MAINNET_MARKET, MAINNET_POOL, ONE } from "./test-fixtures";
 
 describe("quoteOpen", () => {
@@ -21,5 +21,19 @@ describe("quoteOpen", () => {
 
   it("quoteOpen returns null when 200% is unreachable", () => {
     expect(quoteOpen(ONE / 100n, HARNESS_POOL, HARNESS_MARKET, 2n * ONE, 100n, 10n, 12n * ONE)).toBeNull();
+  });
+});
+
+describe("openMaxCr", () => {
+  it("is the highest CR an Open reaches with this BTC, and a target at it still quotes", () => {
+    const max = openMaxCr(ONE / 10n, HARNESS_POOL, HARNESS_MARKET, 100n, 10n, 12n * ONE);
+    expect(quoteOpen(ONE / 10n, HARNESS_POOL, HARNESS_MARKET, max, 100n, 10n, 12n * ONE)?.crAfter).toBe(max);
+    expect(quoteOpen(ONE / 10n, HARNESS_POOL, HARNESS_MARKET, max + 1n, 100n, 10n, 12n * ONE)).toBeNull();
+  });
+
+  it("rises with the BTC brought", () => {
+    const small = openMaxCr(ONE / 100n, HARNESS_POOL, HARNESS_MARKET, 100n, 10n, 12n * ONE);
+    expect(small < 2n * ONE).toBe(true); // why quoteOpen returns null above
+    expect(openMaxCr(ONE / 10n, HARNESS_POOL, HARNESS_MARKET, 100n, 10n, 12n * ONE) > small).toBe(true);
   });
 });
