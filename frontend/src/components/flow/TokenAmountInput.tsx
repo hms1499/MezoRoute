@@ -160,7 +160,7 @@ export function TokenAmountInput({
     <div className="space-y-2">
       <div className="rounded-inset bg-well px-4 py-3 focus-within:ring-2 focus-within:ring-accent/20">
         <div className="flex items-center justify-between gap-3 text-xs text-muted">
-          <label htmlFor={percent ? undefined : id} className="font-medium">
+          <label htmlFor={percent ? undefined : id} id={`${id}-label`} className="font-medium">
             {label}
           </label>
           <span id={helpId} className="flex min-w-0 items-center gap-2">
@@ -172,7 +172,7 @@ export function TokenAmountInput({
         </div>
         <div className="mt-2 flex items-center gap-3">
           {percent ? (
-            <output id={id} aria-describedby={describedBy} className="min-w-0 flex-1 truncate text-title font-semibold">
+            <output id={id} aria-describedby={describedBy} aria-labelledby={`${id}-label`} className="min-w-0 flex-1 truncate text-title font-semibold">
               {amount || "0"}
             </output>
           ) : (

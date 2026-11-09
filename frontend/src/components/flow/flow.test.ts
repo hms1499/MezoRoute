@@ -49,12 +49,20 @@ describe("TokenAmountInput", () => {
 
   it("shows the balance", () => {
     expect(render({})).toContain("Balance 10");
-  });
-
-  it("renders the percent presets in percent mode", () => {
+  });  it("renders the percent presets in percent mode", () => {
     const out = render({ percent: { value: 50, presets: [25, 50, 75, 100], onPreset: () => undefined } });
     expect(out).toContain('role="radiogroup"');
     expect(out).toContain(">Max<");
+  });
+
+  it("labels the percent output", () => {
+    const out = render({ percent: { value: 50, presets: [25, 50, 75, 100], onPreset: () => undefined } });
+    expect(out).toMatch(/<label[^>]*id="amount-label"/);
+    expect(out).toMatch(/<output[^>]*id="amount"[^>]*aria-labelledby="amount-label"/);
+  });
+
+  it("keeps the input's htmlFor", () => {
+    expect(render({})).toMatch(/<label[^>]*for="amount"/);
   });
 });
 
