@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MezoRoute — U13 planner mockup</title>
+    <style>
+      :root {
+        --canvas: #eef4f2;
+        --surface: #ffffff;
+        --well: #f3f7f6;
+        --ink: #0b2523;
+        --muted: #3f5551;
+        --line: #d5e1de;
+        --accent: #0f766e;
+        --on-accent: #ffffff;
+        --sp: #4338ca;
+        --btc: #b03a0b;
+        --warning: #92400e;
+        --warning-bg: #fdf3e3;
+        --danger: #b91c1c;
+        --accent-soft: #e7f2f0;
+      }
+      [data-theme="dark"] {
+        --canvas: #0a1416;
+        --surface: #162022;
+        --well: #0f1a1c;
+        --ink: #e8f1ef;
+        --muted: #9fb3af;
+        --line: #222b2d;
+        --accent: #2dd4bf;
+        --on-accent: #062221;
+        --sp: #a5b4fc;
+        --btc: #fb923c;
+        --warning: #fcd34d;
+        --warning-bg: #2a2410;
+        --danger: #f87171;
+        --accent-soft: #12312f;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 14px;
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: inherit; }
+      button { font: inherit; }
+      .wrap { width: 100%; max-width: 1000px; margin: 0 auto; padding: 0 16px 48px; }
+      .mock-badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        margin: 16px 0 0; padding: 6px 10px; border-radius: 9999px;
+        background: var(--warning-bg); color: var(--warning);
+        font-size: 12px; font-weight: 600;
+      }
+      .topbar {
+        position: sticky; top: 0; z-index: 5;
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        padding: 12px 0; background: color-mix(in srgb, var(--canvas) 92%, transparent);
+        border-bottom: 1px solid var(--line); backdrop-filter: blur(8px);
+      }
+      .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; text-decoration: none; }
+      .brand-mark { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9999px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 700; }
+      .nav { display: flex; align-items: center; gap: 16px; font-size: 14px; color: var(--muted); }
+      .nav a { text-decoration: none; }
+      .nav a:hover { color: var(--ink); }
+      .controls { display: flex; align-items: center; gap: 8px; }
+      .chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        min-height: 32px; padding: 0 12px; border-radius: 9999px;
+        background: var(--surface); border: 1px solid var(--line);
+        color: var(--ink); font-size: 12px; font-weight: 500; cursor: pointer;
+      }
+      .dot { width: 8px; height: 8px; border-radius: 9999px; background: var(--accent); }
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        min-height: 44px; padding: 0 20px; border-radius: 9999px;
+        border: 0; cursor: pointer; font-size: 14px; font-weight: 600;
+        transition: background-color .2s, transform .2s;
+      }
+      .btn:active { transform: scale(.98); }
+      .btn-primary { background: var(--accent); color: var(--on-accent); width: 100%; }
+      .btn-primary:hover { filter: brightness(.95); }
+      .btn-secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+      .btn-secondary:hover { background: var(--accent-soft); }
+      .btn:disabled { opacity: .5; cursor: not-allowed; }
+      .header { padding: 24px 0 16px; display: flex; flex-direction: column; gap: 12px; }
+      .back { color: var(--muted); font-size: 14px; text-decoration: none; }
+      .steps { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); list-style: none; padding: 0; margin: 0; }
+      .steps li { display: flex; align-items: center; gap: 8px; }
+      .steps .bar { width: 24px; height: 1px; background: var(--line); }
+      .steps .n { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 9999px; border: 1px solid var(--line); font-size: 12px; }
+      .steps .current { border: 2px solid var(--accent); color: var(--accent); }
+      h1 { margin: 0; font-size: 28px; line-height: 34px; letter-spacing: -.025em; }
+      .sub { margin: 0; color: var(--muted); }
+      .layout { display: grid; grid-template-columns: minmax(0, 520px) minmax(0, 340px); gap: 16px; align-items: start; justify-content: center; }
+      @media (max-width: 980px) { .layout { grid-template-columns: minmax(0, 520px); } }
+      .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+      .card + .card { margin-top: 12px; }
+      .card-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 12px; }
+      .asset { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 220px; }
+      .pair { display: flex; }
+      .pair span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9999px; font-size: 11px; font-weight: 700; border: 2px solid var(--surface); }
+      .pair span:first-child { background: var(--accent-soft); color: var(--accent); }
+      .pair span:last-child { background: color-mix(in srgb, var(--btc) 14%, var(--surface)); color: var(--btc); margin-left: -8px; }
+      .asset h2 { margin: 0; font-size: 16px; font-weight: 600; }
+      .asset p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+      .figure { flex: none; text-align: right; }
+      .figure p { margin: 0; font-size: 12px; color: var(--muted); white-space: nowrap; }
+      .figure strong { display: block; margin-top: 2px; font-size: 14px; font-weight: 500; white-space: nowrap; }
+      @media (max-width: 720px) {
+        .figure { display: flex; align-items: baseline; gap: 8px; text-align: left; }
+        .figure strong { margin-top: 0; }
+      }
+      .tabs { display: flex; gap: 4px; margin: 16px 0 12px; padding: 4px; border-radius: 9999px; background: var(--well); }
+      .tab { flex: 1; min-height: 32px; border: 0; border-radius: 9999px; background: transparent; color: var(--muted); font-size: 14px; font-weight: 500; cursor: pointer; }
+      .tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+      .tab:disabled { opacity: .45; cursor: not-allowed; }
+      .tab-note { margin: -4px 0 12px; font-size: 12px; color: var(--muted); }
+      .field { background: var(--well); border-radius: 12px; padding: 12px 16px; }
+      .field + .field, .field + .row, .row + .field { margin-top: 12px; }
+      .field-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--muted); }
+      .field-top .label { font-weight: 500; }
+      .field-top .right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+      .balance { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      @media (max-width: 480px) { .field-top .balance { display: none; } }
+      .max { min-height: 28px; padding: 0 12px; border: 0; border-radius: 9999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; }
+      .max:disabled { opacity: .45; cursor: not-allowed; }
+      .field-main { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+      .amount-input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-family: inherit; font-size: 28px; font-weight: 600; letter-spacing: -.025em; }
+      .amount-input:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent); outline-offset: 2px; border-radius: 4px; }
+      .token { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px 0 8px; border-radius: 9999px; background: var(--surface); border: 1px solid var(--line); font-size: 14px; font-weight: 600; }
+      .token i { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 9999px; background: var(--accent-soft); color: var(--accent); font-style: normal; font-size: 9px; font-weight: 700; }
+      .field-note { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+      .receive { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--well); border-radius: 12px; padding: 12px 16px; margin-top: 12px; }
+      .receive p { margin: 0; font-size: 12px; color: var(--muted); }
+      .receive strong { display: block; margin-top: 4px; font-size: 20px; font-weight: 500; }
+      .receive small { display: block; margin-top: 2px; font-size: 14px; color: var(--muted); }
+      .pair-mini { display: flex; }
+      .pair-mini span { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 9999px; font-size: 8px; font-weight: 700; border: 2px solid var(--surface); }
+      .pair-mini span:first-child { background: var(--accent-soft); color: var(--accent); }
+      .pair-mini span:last-child { background: color-mix(in srgb, var(--btc) 14%, var(--surface)); color: var(--btc); margin-left: -6px; }
+      .stake { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; }
+      .stake strong { display: block; font-size: 14px; font-weight: 600; }
+      .stake p { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+      .switch { position: relative; width: 44px; height: 24px; border: 0; border-radius: 9999px; background: var(--accent); cursor: pointer; flex: none; }
+      .switch::after { content: ""; position: absolute; top: 2px; left: 22px; width: 20px; height: 20px; border-radius: 9999px; background: var(--surface); transition: left .2s; }
+      .switch[aria-checked="false"] { background: var(--line); }
+      .switch[aria-checked="false"]::after { left: 2px; }
+      .overview { margin: 12px 0 0; padding: 0 16px; border: 1px solid var(--line); border-radius: 12px; }
+      .overview div { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+      .overview div:last-child { border-bottom: 0; }
+      .overview dt { font-size: 14px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+      .overview dd { margin: 0; min-width: 0; text-align: right; font-size: 14px; font-weight: 500; }
+      .overview dd small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+      .risk { margin: 12px 0; text-align: left; font-size: 14px; color: var(--muted); }
+      .risk a { color: var(--accent); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
+      .cta-note { margin: 8px 0 0; text-align: center; font-size: 12px; color: var(--muted); }
+      .compare { border-color: color-mix(in srgb, var(--sp) 35%, var(--line)); }
+      .compare-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+      .compare-head h2 { margin: 0; font-size: 16px; font-weight: 600; }
+      .same { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 9999px; background: var(--well); font-size: 12px; color: var(--muted); white-space: nowrap; }
+      .route { padding: 12px 0; border-bottom: 1px solid var(--line); }
+      .route:last-of-type { border-bottom: 0; }
+      .route-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+      .route-tag.lp { color: var(--accent); }
+      .route-tag.sp { color: var(--sp); }
+      .route-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 6px; font-size: 14px; }
+      .route-row span:first-child { color: var(--muted); white-space: nowrap; }
+      .route-row strong { font-weight: 500; text-align: right; }
+      .route-risk { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+      .compare-actions { margin-top: 12px; display: grid; gap: 8px; }
+      .compare-actions .btn-secondary { width: 100%; min-height: 36px; }
+      .compare-note { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+      .trust { font-size: 12px; color: var(--muted); }
+      .trust div { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; }
+      .trust a { color: var(--accent); text-decoration: none; }
+      .footer { margin-top: 24px; font-size: 12px; color: var(--muted); text-align: center; }
+      .toast {
+        position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+        max-width: calc(100vw - 32px); padding: 12px 16px; border-radius: 12px;
+        background: var(--ink); color: var(--canvas); font-size: 14px; font-weight: 500;
+        box-shadow: 0 12px 32px -12px rgb(0 0 0 / .28);
+        opacity: 0; pointer-events: none; transition: opacity .2s;
+      }
+      .toast.show { opacity: 1; }
+      @media (max-width: 640px) {
+        .nav { display: none; }
+        .topbar { gap: 8px; }
+        .header { padding-top: 16px; }
+        h1 { font-size: 24px; line-height: 32px; }
+        .card { padding: 16px; }
+        .field, .receive, .stake { padding: 12px; }
+        .amount-input { font-size: 24px; }
+        .figure { display: flex; align-items: baseline; gap: 8px; text-align: left; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="mock-badge">MOCKUP · U13 · illustrative numbers, not the app</p>
+
+      <header class="topbar">
+        <a class="brand" href="#"><span class="brand-mark">M</span>MezoRoute</a>
+        <nav class="nav" aria-label="Main">
+          <a href="#">Dashboard</a>
+          <a href="#">Positions</a>
+        </nav>
+        <div class="controls">
+          <button class="chip" id="network" type="button"><span class="dot"></span>Testnet</button>
+          <button class="chip" id="connect" type="button">Connect</button>
+        </div>
+      </header>
+
+      <div class="header">
+        <a class="back" href="#">← Dashboard</a>
+        <ol class="steps" aria-label="Progress">
+          <li><span class="n current">1</span>Amount</li>
+          <li><span class="bar"></span></li>
+          <li><span class="n">2</span>Confirm</li>
+          <li><span class="bar"></span></li>
+          <li><span class="n">3</span>Done</li>
+        </ol>
+        <h1>Add liquidity</h1>
+        <p class="sub">Earn swap fees or MEZO in the MUSD/BTC pool</p>
+      </div>
+
+      <main class="layout">
+        <div>
+          <section class="card" aria-labelledby="route-title">
+            <div class="card-head">
+              <div class="asset">
+                <div class="pair" aria-hidden="true"><span>M</span><span>B</span></div>
+                <div>
+                  <h2 id="route-title">MUSD / BTC</h2>
+                  <p>Volatile pool · Tigris</p>
+                </div>
+              </div>
+              <div class="figure">
+                <p>At this week's rate</p>
+                <strong>≈ 41.0% APR</strong>
+              </div>
+            </div>
+
+            <div class="tabs" role="tablist" aria-label="Funding">
+              <button class="tab" role="tab" aria-selected="true">Deposit</button>
+              <button class="tab" role="tab" aria-selected="false" disabled>Borrow &amp; Deploy</button>
+            </div>
+            <p class="tab-note" id="funding-note">Connect a wallet to borrow against your Trove.</p>
+
+            <div class="field">
+              <div class="field-top">
+                <label class="label" for="amount">You deposit</label>
+                <span class="right">
+                  <span class="balance" id="balance">Connect to see balance</span>
+                  <button class="max" id="max" type="button" disabled>Max</button>
+                </span>
+              </div>
+              <div class="field-main">
+                <input class="amount-input" id="amount" inputmode="decimal" autocomplete="off" value="1000" aria-describedby="amount-note" />
+                <span class="token"><i>M</i>MUSD</span>
+              </div>
+              <p class="field-note" id="amount-note">No wallet needed to explore. MezoRoute reads the pool, not your balances.</p>
+            </div>
+
+            <div class="receive">
+              <div>
+                <p>You receive</p>
+                <strong id="lp-out">≈ 0.0158 LP</strong>
+                <small id="lp-min">Minimum received 0.0157 LP</small>
+              </div>
+              <div class="pair-mini" aria-hidden="true"><span>M</span><span>B</span></div>
+            </div>
+
+            <div class="stake">
+              <div>
+                <strong>Stake to earn MEZO</strong>
+                <p id="stake-copy">≈ 3.2 MEZO a week · swap fees go to veBTC voters while staked</p>
+              </div>
+              <button class="switch" role="switch" aria-checked="true" aria-label="Stake to earn MEZO" id="stake"></button>
+            </div>
+
+            <dl class="overview">
+              <div><dt>Deposited to the pool</dt><dd><span id="dep-musd">1,000.00 MUSD</span><small id="dep-btc">+ 0.0060 BTC</small></dd></div>
+              <div><dt>MezoRoute fee</dt><dd><span id="fee">1.00 MUSD</span><small>0.1%</small></dd></div>
+              <div><dt>Price impact</dt><dd>0.06%<small>includes the pool's swap fee</small></dd></div>
+              <div><dt>Staking</dt><dd>In the MEZO gauge<small>swap fees go to veBTC voters</small></dd></div>
+            </dl>
+
+            <p class="risk">Impermanent loss and MEZO price risk · <a href="#details">Details</a></p>
+            <button class="btn btn-primary" id="review" type="button">Connect to review</button>
+            <p class="cta-note" id="cta-note">Exploring is free. Connect only when you are ready to sign.</p>
+          </section>
+        </div>
+
+        <aside>
+          <section class="card compare" aria-labelledby="compare-title">
+            <div class="compare-head">
+              <h2 id="compare-title">Compare with the Stability Pool</h2>
+              <span class="same" id="same">1,000 MUSD</span>
+            </div>
+
+            <div class="route">
+              <span class="route-tag lp">● MUSD/BTC LP · this page</span>
+              <div class="route-row"><span>You get</span><strong>Swap fees + MEZO</strong></div>
+              <div class="route-row"><span>This week</span><strong>≈ 41.0% APR · 3.2 MEZO</strong></div>
+              <p class="route-risk">Impermanent loss, MEZO price, and a BTC position while you hold it.</p>
+            </div>
+
+            <div class="route">
+              <span class="route-tag sp">● Stability Pool</span>
+              <div class="route-row"><span>You get</span><strong>BTC from liquidations</strong></div>
+              <div class="route-row"><span>This week</span><strong>Variable · paid in bursts</strong></div>
+              <p class="route-risk">No annualised rate. Withdrawals pause while any Trove is below MCR.</p>
+            </div>
+
+            <div class="compare-actions">
+              <button class="btn btn-secondary" id="sp" type="button">Deposit to Stability Pool instead →</button>
+            </div>
+            <p class="compare-note">The same amount, both routes, one screen. Rates are this week's; the pool never annualises the Stability Pool.</p>
+          </section>
+
+          <section class="card trust" aria-labelledby="trust-title">
+            <h2 id="trust-title" style="margin: 0 0 8px; font-size: 14px">Before you sign</h2>
+            <div><span>Executor</span><a href="#">0x0464…0d9E</a></div>
+            <div><span>MezoRoute fee</span><span>10 bps</span></div>
+            <div><span>Audit</span><span>Unaudited software</span></div>
+            <div><span>Reads</span><span>Pool block 16,569,977</span></div>
+          </section>
+        </aside>
+      </main>
+
+      <p class="footer">Mockup only. No transaction is built or sent from this page.</p>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const state = { connected: false, amount: 1000, theme: "light" };
+      const fmt = (value, digits = 2) =>
+        value.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+      function render() {
+        const a = state.amount;
+        $("review").textContent = state.connected ? "Review deposit" : "Connect to review";
+        $("balance").textContent = state.connected ? "12,480.00 MUSD" : "Connect to see balance";
+        $("max").disabled = !state.connected;
+        $("connect").textContent = state.connected ? "0x375a…d6e8" : "Connect";
+        $("cta-note").textContent = state.connected
+          ? "The quote refreshes every 15 s; Confirm checks it again before signing."
+          : "Exploring is free. Connect only when you are ready to sign.";
+        $("lp-out").textContent = `≈ ${(a * 0.0000158).toFixed(6).replace(/0+$/, "").replace(/\.$/, "")} LP`;
+        $("lp-min").textContent = `Minimum received ${(a * 0.0000157).toFixed(6).replace(/0+$/, "").replace(/\.$/, "")} LP`;
+        $("stake-copy").textContent = `≈ ${fmt((a / 1000) * 3.2, 2)} MEZO a week · swap fees go to veBTC voters while staked`;
+        $("dep-musd").textContent = `${fmt(a)} MUSD`;
+        $("dep-btc").textContent = `+ ${((a / 1000) * 0.006).toFixed(4)} BTC`;
+        $("fee").textContent = `${fmt((a / 1000) * 1)} MUSD`;
+        $("same").textContent = `${fmt(a, 0)} MUSD`;
+        document.documentElement.dataset.theme = state.theme;
+        $("theme").textContent = state.theme === "light" ? "Dark" : "Light";
+      }
+
+      $("amount").addEventListener("input", (event) => {
+        const next = Number(event.target.value.replace(/,/g, ""));
+        state.amount = Number.isFinite(next) && next > 0 ? next : 0;
+        render();
+      });
+      $("max").addEventListener("click", () => {
+        $("amount").value = "12480";
+        state.amount = 12480;
+        render();
+      });
+      $("connect").addEventListener("click", () => {
+        state.connected = !state.connected;
+        render();
+      });
+      $("review").addEventListener("click", () => {
+        toast(state.connected ? "Mockup: this would open Confirm with a fresh quote." : "Mockup: this would open the wallet modal and keep your amount.");
+      });
+      $("sp").addEventListener("click", () => toast("Mockup: this would open the Stability Pool with the same amount."));
+      $("stake").addEventListener("click", (event) => {
+        const on = event.currentTarget.getAttribute("aria-checked") === "true";
+        event.currentTarget.setAttribute("aria-checked", String(!on));
+      });
+      $("network").addEventListener("click", () => toast("Mockup: network menu."));
+
+      const themeButton = document.createElement("button");
+      themeButton.className = "chip";
+      themeButton.id = "theme";
+      themeButton.type = "button";
+      themeButton.textContent = "Dark";
+      $("network").after(themeButton);
+      themeButton.addEventListener("click", () => {
+        state.theme = state.theme === "light" ? "dark" : "light";
+        render();
+      });
+
+      let timer;
+      function toast(message) {
+        const el = $("toast");
+        el.textContent = message;
+        el.classList.add("show");
+        clearTimeout(timer);
+        timer = setTimeout(() => el.classList.remove("show"), 2600);
+      }
+
+      render();
+    </script>
+  </body>
+</html>
