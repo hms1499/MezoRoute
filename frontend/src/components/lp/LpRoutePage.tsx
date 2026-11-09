@@ -197,7 +197,12 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
   });
 
   return (
-    <FlowColumn header={<PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title="Earn swap fees or MEZO in the MUSD/BTC pool" />}>
+    <FlowColumn header={<PageHeader
+        back={{ href: "/", label: "Dashboard" }}
+        step={1}
+        title="Add liquidity"
+        subtitle="Earn swap fees or MEZO in the MUSD/BTC pool"
+      />}>
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <LpEntryCard
         header={header}

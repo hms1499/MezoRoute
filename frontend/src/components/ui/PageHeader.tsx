@@ -11,12 +11,15 @@ const DEFAULT_LABELS: Labels = ["Amount", "Confirm", "Done"];
 export function PageHeader({
   back,
   title,
+  subtitle,
   step,
   stepStatus,
   labels = DEFAULT_LABELS,
 }: {
   back: { href: string; label: string };
   title?: ReactNode;
+  /** A supporting sentence under the heading, kept out of its accessible name (U12). */
+  subtitle?: ReactNode;
   step?: 1 | 2 | 3;
   /** The current step's state, when it is a transaction (the receipt's Done step). */
   stepStatus?: StepStatus;
@@ -30,6 +33,7 @@ export function PageHeader({
       </Link>
       {step && <FlowProgress step={step} status={stepStatus} labels={labels} />}
       {title && <h1 className="text-title [text-wrap:balance]">{title}</h1>}
+      {subtitle && <p className="text-sm text-muted">{subtitle}</p>}
     </div>
   );
 }
