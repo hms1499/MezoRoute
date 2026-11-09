@@ -1,5 +1,7 @@
 # U12 Planner Clarity: Implementation Plan
 
+**Status (9 Nov 2026):** executed inline on `feat/u12-planner-clarity` in one commit per task (`0988cb3`, `44c76a6`, `ccb7e7a`, `5321c3b`, `0ae0326`, `e65e20e`, then the page title and docs). 1481 Vitest and `npm run build` pass at the branch head. Not merged; a merge into `main` needs the user's word.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make the LP planner (`/route/lp/`) state in one screen what the user is about to do and what they get, and make its primary action always do the thing that unblocks them. Fix the small defects the 9 Nov UI review found; do not add new product surfaces.
