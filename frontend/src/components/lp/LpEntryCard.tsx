@@ -5,7 +5,7 @@ import { Overview, type OverviewRow } from "@/components/flow/Overview";
 import { ReceiveRow } from "@/components/flow/ReceiveRow";
 import { SlippagePopover } from "@/components/flow/SlippagePopover";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
-import { ButtonLink } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { PairIcon, type Token } from "@/components/ui/TokenIcon";
 import type { LpAmountField } from "@/lib/flow/lp-entry";
 import type { SlippageBps } from "@/lib/quote/entry";
@@ -24,7 +24,7 @@ export function LpEntryCard({
   overview,
   notices,
   risk,
-  review,
+  action,
   details,
 }: {
   header: { label: string; value: string };
@@ -38,7 +38,8 @@ export function LpEntryCard({
   /** Block reasons with their recoveries, the 2% warning, and the gauge notices: above the action. */
   notices: ReactNode;
   risk: string;
-  review: { href: string; disabled: boolean };
+  /** The page's one primary: Review, or the way out while the entry is blocked. */
+  action: { label: ReactNode; href?: string; onClick?: () => void; external?: boolean; disabled?: boolean };
   details: ReactNode;
 }) {
   return (
@@ -60,9 +61,19 @@ export function LpEntryCard({
           </>
         }
         action={
-          <ButtonLink href={review.href} disabled={review.disabled} className="w-full" arrow>
-            Review
-          </ButtonLink>
+          action.disabled ? (
+            <ButtonLink href={action.href ?? "#"} disabled className="w-full">
+              {action.label}
+            </ButtonLink>
+          ) : action.href ? (
+            <ButtonLink href={action.href} external={action.external} className="w-full" arrow={!action.external}>
+              {action.label}
+            </ButtonLink>
+          ) : (
+            <Button onClick={action.onClick} className="w-full" arrow>
+              {action.label}
+            </Button>
+          )
         }
       >
         <TokenAmountInput

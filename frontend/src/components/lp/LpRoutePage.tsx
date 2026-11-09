@@ -19,6 +19,7 @@ import { emissionsApr, mezoPerWeek } from "@/lib/gauge/maths";
 import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
 import { exposure } from "@/lib/exposure/exposure";
 import { lpAmountField, lpHeaderFigure, lpRiskLine } from "@/lib/flow/lp-entry";
+import { splitPrimary } from "@/lib/flow/notice-action";
 import { btcRecoveries } from "@/lib/routes/musd-btc-lp/asset";
 import { entryQuery, parseEntryIntent, type EntryIntent } from "@/lib/routes/musd-btc-lp/intent";
 import { entryPreview } from "@/lib/routes/musd-btc-lp/preview";
@@ -168,6 +169,12 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           },
         )
       : [];
+  // A blocked entry's primary action is the first way out; Review only leads when nothing is blocked.
+  const reviewHref = `/route/lp/confirm/${entryQuery(intent)}`;
+  const { primary, rest: noticeActions } = splitPrimary(recoveries);
+  const primaryAction = primary
+    ? { label: primary.label, href: primary.href, onClick: primary.onClick, external: primary.href !== undefined }
+    : { label: "Review", href: reviewHref, disabled: preview.block !== null };
   const field = lpAmountField({ preview, mode: intent.mode, asset: intent.asset, walletMusd: dashboard.musd });
   const reserve = preview.btc?.fillReserve;
   const note =
@@ -223,11 +230,11 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
             {intent.slippageBps === 200n && (
               <Notice tone="warning">2% slippage lets this deposit fill up to 2% below the quote. Use it only if lower settings keep failing.</Notice>
             )}
-            <BlockNotice block={preview.block} actions={recoveries} />
+            <BlockNotice block={preview.block} actions={noticeActions} />
           </>
         }
         risk={lpRiskLine({ borrow: intent.mode === "borrow", fromBtc })}
-        review={{ href: `/route/lp/confirm/${entryQuery(intent)}`, disabled: preview.block !== null }}
+        action={primaryAction}
         details={
           <>
             {quote && <EntryPreviewCard quote={quote} feeBps={data.snapshot.executorFeeBps} borrowFee={preview.borrow?.effect?.fee} stake={preview.stake.on} />}

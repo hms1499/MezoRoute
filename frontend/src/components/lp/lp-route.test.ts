@@ -26,7 +26,7 @@ const props = {
   overview: [{ label: "MezoRoute fee", value: "0.01 MUSD" }],
   notices: null,
   risk: "Impermanent loss and MEZO price risk",
-  review: { href: "/route/lp/confirm/?amount=1", disabled: false },
+  action: { label: "Review", href: "/route/lp/confirm/?amount=1", disabled: false },
   details: createElement("p", null, "What happens"),
 };
 
@@ -54,5 +54,34 @@ describe("LpEntryCard", () => {
 
   it("opens the token menu for MUSD | BTC", () => {
     expect(out).toContain('aria-haspopup="menu"');
+  });
+
+  it("makes the way out the primary when a recovery is offered", () => {
+    const blocked = renderToStaticMarkup(
+      createElement(LpEntryCard, {
+        ...props,
+        action: { label: "Borrow & Deploy instead", onClick: () => undefined },
+      }),
+    );
+    expect(blocked.match(/bg-accent(?![\w-])/g)).toHaveLength(1);
+    expect(blocked).toContain("Borrow &amp; Deploy instead");
+    expect(blocked).not.toContain(">Review<");
+  });
+
+  it("renders a disabled primary inert", () => {
+    const blocked = renderToStaticMarkup(createElement(LpEntryCard, { ...props, action: { label: "Review", href: "#", disabled: true } }));
+    expect(blocked).toContain('aria-disabled="true"');
+    expect(blocked).not.toContain('href="#"');
+  });
+
+  it("keeps an external recovery out of the arrow", () => {
+    const external = renderToStaticMarkup(
+      createElement(LpEntryCard, {
+        ...props,
+        action: { label: "Get test BTC", href: "https://faucet.test.mezo.org", external: true },
+      }),
+    );
+    expect(external).toContain('target="_blank"');
+    expect(external).not.toContain("btn-circle");
   });
 });
