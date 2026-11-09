@@ -112,31 +112,36 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
     : null;
   const { dashboard } = data.snapshot;
   const exposureChange = preview.after ? exposure(preview.after).totalBtc - exposure(dashboard).totalBtc : null;
-  const overview: OverviewRow[] =
-    quote && minLpOut !== undefined
-      ? [
-          { label: "Deposited to the pool", value: musd(quote.musdAdded), sub: `+ ${fromBtc ? btcFine(quote.btcAdded) : btc(quote.btcAdded)}` },
-          { label: "MezoRoute fee", value: amount(quote.fee), sub: formatBps(data.snapshot.executorFeeBps) },
-          { label: "Price impact", value: formatPercent(quote.priceImpact, 2), sub: "includes the pool's swap fee" },
-          ...(preview.stake.availability === "unavailable"
-            ? []
-            : [{ label: "Staking", value: preview.stake.on ? "In the MEZO gauge" : "Off", sub: preview.stake.on ? "swap fees go to veBTC voters" : undefined }]),
-          ...(exposureChange === null
-            ? []
-            : [
-                {
-                  label: "BTC exposure",
-                  value: `${exposureChange < 0n ? "−" : "+"}${btc(exposureChange < 0n ? -exposureChange : exposureChange)}`,
-                  sub: fromBtc ? "pool share only; the BTC you deposit leaves your wallet" : undefined,
-                  tone: "btc" as const,
-                },
-              ]),
-          ...(preview.borrow?.trove && preview.borrow.effect
-            ? troveChangeRows({ trove: preview.borrow.trove, effect: preview.borrow.effect, price: dashboard.price, mcr: dashboard.protocol.mcr })
-            : []),
-          { label: "Network fee", value: preview.gasCost === null ? "—" : btc(preview.gasCost) },
-        ]
-      : [];
+  // U12: four rows decide the entry; BTC exposure, the Trove change, and the network fee sit in Details.
+  const hasQuote = quote !== null && minLpOut !== undefined;
+  const overview: OverviewRow[] = hasQuote
+    ? [
+        { label: "Deposited to the pool", value: musd(quote.musdAdded), sub: `+ ${fromBtc ? btcFine(quote.btcAdded) : btc(quote.btcAdded)}` },
+        { label: "MezoRoute fee", value: amount(quote.fee), sub: formatBps(data.snapshot.executorFeeBps) },
+        { label: "Price impact", value: formatPercent(quote.priceImpact, 2), sub: "includes the pool's swap fee" },
+        ...(preview.stake.availability === "unavailable"
+          ? []
+          : [{ label: "Staking", value: preview.stake.on ? "In the MEZO gauge" : "Off", sub: preview.stake.on ? "swap fees go to veBTC voters" : undefined }]),
+      ]
+    : [];
+  const context: OverviewRow[] = hasQuote
+    ? [
+        ...(exposureChange === null
+          ? []
+          : [
+              {
+                label: "BTC exposure",
+                value: `${exposureChange < 0n ? "−" : "+"}${btc(exposureChange < 0n ? -exposureChange : exposureChange)}`,
+                sub: fromBtc ? "pool share only; the BTC you deposit leaves your wallet" : undefined,
+                tone: "btc" as const,
+              },
+            ]),
+        ...(preview.borrow?.trove && preview.borrow.effect
+          ? troveChangeRows({ trove: preview.borrow.trove, effect: preview.borrow.effect, price: dashboard.price, mcr: dashboard.protocol.mcr })
+          : []),
+        { label: "Network fee", value: preview.gasCost === null ? "—" : btc(preview.gasCost) },
+      ]
+    : [];
   // A shortfall offers Borrow & Deploy (same checks as F4's gate), the wallet's balance, or the Mezo app.
   const recoveries =
     fromBtc && preview.btc && intent.btcIn !== null && (preview.block?.reason === "insufficient-balance" || preview.block?.reason === "needs-gas")
@@ -225,6 +230,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           />
         }
         overview={overview}
+        context={context}
         notices={
           <>
             {intent.slippageBps === 200n && (

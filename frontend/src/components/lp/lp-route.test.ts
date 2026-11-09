@@ -84,4 +84,28 @@ describe("LpEntryCard", () => {
     expect(external).toContain('target="_blank"');
     expect(external).not.toContain("btn-circle");
   });
+
+  it("keeps the card to the decision rows", () => {
+    const out = renderToStaticMarkup(
+      createElement(LpEntryCard, {
+        ...props,
+        overview: [
+          { label: "Deposited to the pool", value: "1,000 MUSD" },
+          { label: "MezoRoute fee", value: "1 MUSD" },
+          { label: "Price impact", value: "0.1%" },
+          { label: "Staking", value: "On" },
+        ],
+        context: [{ label: "Network fee", value: "0.00001 BTC" }],
+      }),
+    );
+    const detailsAt = out.indexOf('id="details"');
+    expect(detailsAt).toBeGreaterThan(-1);
+    expect(out.indexOf("Network fee")).toBeGreaterThan(detailsAt);
+    expect(out.slice(0, detailsAt).match(/<dt/g)).toHaveLength(4);
+  });
+
+  it("renders no empty overview box in Details", () => {
+    const out = renderToStaticMarkup(createElement(LpEntryCard, { ...props, context: [] }));
+    expect(out.match(/<dl/g)).toHaveLength(1);
+  });
 });

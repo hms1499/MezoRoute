@@ -25,6 +25,7 @@ export function LpEntryCard({
   notices,
   risk,
   action,
+  context,
   details,
 }: {
   header: { label: string; value: string };
@@ -40,6 +41,8 @@ export function LpEntryCard({
   risk: string;
   /** The page's one primary: Review, or the way out while the entry is blocked. */
   action: { label: ReactNode; href?: string; onClick?: () => void; external?: boolean; disabled?: boolean };
+  /** Context rows (exposure, Trove change, network fee) shown in Details, not before the action. */
+  context?: OverviewRow[];
   details: ReactNode;
 }) {
   return (
@@ -96,7 +99,10 @@ export function LpEntryCard({
         {overview.length > 0 && <Overview rows={overview} />}
         {notices}
       </ActionCard>
-      <Details>{details}</Details>
+      <Details>
+        {context && context.length > 0 && <Overview rows={context} />}
+        {details}
+      </Details>
     </>
   );
 }
