@@ -1,6 +1,6 @@
 # U12 Planner Clarity: Implementation Plan
 
-**Status (9 Nov 2026):** executed inline on `feat/u12-planner-clarity` in one commit per task (`0988cb3`, `44c76a6`, `ccb7e7a`, `5321c3b`, `0ae0326`, `e65e20e`, then the page title and docs). 1481 Vitest and `npm run build` pass at the branch head. Not merged; a merge into `main` needs the user's word.
+**Status (9 Nov 2026):** executed inline on `feat/u12-planner-clarity` in one commit per task (`0988cb3`, `44c76a6`, `ccb7e7a`, `5321c3b`, `0ae0326`, `e65e20e`, then the page title and docs). 1481 Vitest and `npm run build` pass at the branch head. Browser QA with the mock wallet on the served export passed 4/4 (title at 360 px, Details link, Max precision, blocked primary). Not merged; a merge into `main` needs the user's word.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
