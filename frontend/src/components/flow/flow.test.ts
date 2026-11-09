@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { ActionCard } from "./ActionCard";
 import { Overview } from "./Overview";
 import { ReceiveRow } from "./ReceiveRow";
 import { TokenAmountInput } from "./TokenAmountInput";
@@ -72,6 +73,21 @@ describe("ReceiveRow", () => {
     expect(out).toContain("You receive");
     expect(out).toContain("1 LP");
     expect(out).toContain("Minimum 0.9 LP");
+  });
+
+  it("gives the minimum the sentence size", () => {
+    const out = renderToStaticMarkup(createElement(ReceiveRow, { value: "1 LP", minimum: "At least 0.9 LP", icon: null }));
+    expect(out).toMatch(/<p class="mt-0\.5 text-sm text-muted">At least 0\.9 LP<\/p>/);
+  });
+});
+
+describe("ActionCard", () => {
+  it("left-aligns the risk line at the sentence size", () => {
+    const out = renderToStaticMarkup(
+      createElement(ActionCard, { icon: null, title: "MUSD / BTC", risk: "Impermanent loss and MEZO price risk" }),
+    );
+    expect(out).toMatch(/<p class="text-left text-sm text-muted">/);
+    expect(out).not.toContain("text-center text-xs");
   });
 });
 
