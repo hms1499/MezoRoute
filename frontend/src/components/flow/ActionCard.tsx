@@ -52,7 +52,7 @@ export function ActionCard({
       )}
       {children}
       {action}
-      {risk && <p className="text-center text-xs text-muted">{risk}</p>}
+      {risk && <p className="text-left text-sm text-muted">{risk}</p>}
     </section>
   );
 }

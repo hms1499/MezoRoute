@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { ActionCard } from "./ActionCard";
 import { Overview } from "./Overview";
 import { ReceiveRow } from "./ReceiveRow";
 import { TokenAmountInput } from "./TokenAmountInput";
@@ -49,12 +50,20 @@ describe("TokenAmountInput", () => {
 
   it("shows the balance", () => {
     expect(render({})).toContain("Balance 10");
-  });
-
-  it("renders the percent presets in percent mode", () => {
+  });  it("renders the percent presets in percent mode", () => {
     const out = render({ percent: { value: 50, presets: [25, 50, 75, 100], onPreset: () => undefined } });
     expect(out).toContain('role="radiogroup"');
     expect(out).toContain(">Max<");
+  });
+
+  it("labels the percent output", () => {
+    const out = render({ percent: { value: 50, presets: [25, 50, 75, 100], onPreset: () => undefined } });
+    expect(out).toMatch(/<label[^>]*id="amount-label"/);
+    expect(out).toMatch(/<output[^>]*id="amount"[^>]*aria-labelledby="amount-label"/);
+  });
+
+  it("keeps the input's htmlFor", () => {
+    expect(render({})).toMatch(/<label[^>]*for="amount"/);
   });
 });
 
@@ -64,6 +73,21 @@ describe("ReceiveRow", () => {
     expect(out).toContain("You receive");
     expect(out).toContain("1 LP");
     expect(out).toContain("Minimum 0.9 LP");
+  });
+
+  it("gives the minimum the sentence size", () => {
+    const out = renderToStaticMarkup(createElement(ReceiveRow, { value: "1 LP", minimum: "At least 0.9 LP", icon: null }));
+    expect(out).toMatch(/<p class="mt-0\.5 text-sm text-muted">At least 0\.9 LP<\/p>/);
+  });
+});
+
+describe("ActionCard", () => {
+  it("left-aligns the risk line at the sentence size", () => {
+    const out = renderToStaticMarkup(
+      createElement(ActionCard, { icon: null, title: "MUSD / BTC", risk: "Impermanent loss and MEZO price risk" }),
+    );
+    expect(out).toMatch(/<p class="text-left text-sm text-muted">/);
+    expect(out).not.toContain("text-center text-xs");
   });
 });
 

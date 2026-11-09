@@ -3,8 +3,9 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import type { Outcome } from "@/lib/errors/types";
 import { formatToken } from "@/lib/format";
 import type { BalanceAction } from "@/lib/routes/balance-recovery";
+import type { NoticeAction } from "@/lib/flow/notice-action";
 
-export type NoticeAction = { label: string; onClick?: () => void; href?: string };
+export type { NoticeAction };
 
 /** Why the primary action is disabled, in the §13 wording, and the ways out (U3 §5.4); nothing when there is no message. */
 export function BlockNotice({ block, actions = [] }: { block: { outcome: Outcome | null } | null; actions?: NoticeAction[] }) {

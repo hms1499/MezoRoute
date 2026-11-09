@@ -26,7 +26,7 @@ const props = {
   overview: [{ label: "MezoRoute fee", value: "0.01 MUSD" }],
   notices: null,
   risk: "Impermanent loss and MEZO price risk",
-  review: { href: "/route/lp/confirm/?amount=1", disabled: false },
+  action: { label: "Review", href: "/route/lp/confirm/?amount=1", disabled: false },
   details: createElement("p", null, "What happens"),
 };
 
@@ -54,5 +54,58 @@ describe("LpEntryCard", () => {
 
   it("opens the token menu for MUSD | BTC", () => {
     expect(out).toContain('aria-haspopup="menu"');
+  });
+
+  it("makes the way out the primary when a recovery is offered", () => {
+    const blocked = renderToStaticMarkup(
+      createElement(LpEntryCard, {
+        ...props,
+        action: { label: "Borrow & Deploy instead", onClick: () => undefined },
+      }),
+    );
+    expect(blocked.match(/bg-accent(?![\w-])/g)).toHaveLength(1);
+    expect(blocked).toContain("Borrow &amp; Deploy instead");
+    expect(blocked).not.toContain(">Review<");
+  });
+
+  it("renders a disabled primary inert", () => {
+    const blocked = renderToStaticMarkup(createElement(LpEntryCard, { ...props, action: { label: "Review", href: "#", disabled: true } }));
+    expect(blocked).toContain('aria-disabled="true"');
+    expect(blocked).not.toContain('href="#"');
+  });
+
+  it("keeps an external recovery out of the arrow", () => {
+    const external = renderToStaticMarkup(
+      createElement(LpEntryCard, {
+        ...props,
+        action: { label: "Get test BTC", href: "https://faucet.test.mezo.org", external: true },
+      }),
+    );
+    expect(external).toContain('target="_blank"');
+    expect(external).not.toContain("btn-circle");
+  });
+
+  it("keeps the card to the decision rows", () => {
+    const out = renderToStaticMarkup(
+      createElement(LpEntryCard, {
+        ...props,
+        overview: [
+          { label: "Deposited to the pool", value: "1,000 MUSD" },
+          { label: "MezoRoute fee", value: "1 MUSD" },
+          { label: "Price impact", value: "0.1%" },
+          { label: "Staking", value: "On" },
+        ],
+        context: [{ label: "Network fee", value: "0.00001 BTC" }],
+      }),
+    );
+    const detailsAt = out.indexOf('id="details"');
+    expect(detailsAt).toBeGreaterThan(-1);
+    expect(out.indexOf("Network fee")).toBeGreaterThan(detailsAt);
+    expect(out.slice(0, detailsAt).match(/<dt/g)).toHaveLength(4);
+  });
+
+  it("renders no empty overview box in Details", () => {
+    const out = renderToStaticMarkup(createElement(LpEntryCard, { ...props, context: [] }));
+    expect(out.match(/<dl/g)).toHaveLength(1);
   });
 });

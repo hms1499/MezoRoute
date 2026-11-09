@@ -1,10 +1,9 @@
 "use client";
 
-import { formatUnits } from "viem";
 import { Check, ChevronDown, CircleAlert } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { formatToken } from "@/lib/format";
-import { FLOW_TOKEN_DIGITS, FLOW_TOKEN_UNIT, type FlowToken } from "@/lib/flow/amount";
+import { FLOW_TOKEN_DIGITS, FLOW_TOKEN_UNIT, maxFillAmount, type FlowToken } from "@/lib/flow/amount";
 import { cx } from "@/lib/ui/cx";
 import { menuKeys, triggerKey } from "@/lib/ui/menu";
 import { MaxButton } from "@/components/ui/MaxButton";
@@ -161,19 +160,19 @@ export function TokenAmountInput({
     <div className="space-y-2">
       <div className="rounded-inset bg-well px-4 py-3 focus-within:ring-2 focus-within:ring-accent/20">
         <div className="flex items-center justify-between gap-3 text-xs text-muted">
-          <label htmlFor={percent ? undefined : id} className="font-medium">
+          <label htmlFor={percent ? undefined : id} id={`${id}-label`} className="font-medium">
             {label}
           </label>
           <span id={helpId} className="flex min-w-0 items-center gap-2">
             <span className="truncate">
               {balanceLabel} {formatToken(balance, 18, FLOW_TOKEN_DIGITS[token])}
             </span>
-            {!percent && onAmount && <MaxButton onClick={() => max !== null && onAmount(formatUnits(max, 18))} disabled={max === null} />}
+            {!percent && onAmount && <MaxButton onClick={() => max !== null && onAmount(maxFillAmount(max, token))} disabled={max === null} />}
           </span>
         </div>
         <div className="mt-2 flex items-center gap-3">
           {percent ? (
-            <output id={id} aria-describedby={describedBy} className="min-w-0 flex-1 truncate text-title font-semibold">
+            <output id={id} aria-describedby={describedBy} aria-labelledby={`${id}-label`} className="min-w-0 flex-1 truncate text-title font-semibold">
               {amount || "0"}
             </output>
           ) : (

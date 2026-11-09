@@ -18,7 +18,7 @@ export function ReceiveRow({
       <div className="min-w-0">
         <p className="text-xs text-muted">{label}</p>
         <p className="mt-1 break-words text-xl font-medium">{value}</p>
-        {minimum && <p className="mt-0.5 text-xs text-muted">{minimum}</p>}
+        {minimum && <p className="mt-0.5 text-sm text-muted">{minimum}</p>}
       </div>
       {icon}
     </div>
