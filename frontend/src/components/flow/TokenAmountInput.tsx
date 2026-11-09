@@ -1,10 +1,9 @@
 "use client";
 
-import { formatUnits } from "viem";
 import { Check, ChevronDown, CircleAlert } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { formatToken } from "@/lib/format";
-import { FLOW_TOKEN_DIGITS, FLOW_TOKEN_UNIT, type FlowToken } from "@/lib/flow/amount";
+import { FLOW_TOKEN_DIGITS, FLOW_TOKEN_UNIT, maxFillAmount, type FlowToken } from "@/lib/flow/amount";
 import { cx } from "@/lib/ui/cx";
 import { menuKeys, triggerKey } from "@/lib/ui/menu";
 import { MaxButton } from "@/components/ui/MaxButton";
@@ -168,7 +167,7 @@ export function TokenAmountInput({
             <span className="truncate">
               {balanceLabel} {formatToken(balance, 18, FLOW_TOKEN_DIGITS[token])}
             </span>
-            {!percent && onAmount && <MaxButton onClick={() => max !== null && onAmount(formatUnits(max, 18))} disabled={max === null} />}
+            {!percent && onAmount && <MaxButton onClick={() => max !== null && onAmount(maxFillAmount(max, token))} disabled={max === null} />}
           </span>
         </div>
         <div className="mt-2 flex items-center gap-3">

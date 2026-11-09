@@ -1,5 +1,6 @@
 // U11 §6.1: the amount field's arithmetic, kept pure so the BTC gas reserve (Review Focus 2) is tested on its own.
 
+import { formatUnits } from "viem";
 import type { Token } from "@/components/ui/TokenIcon";
 
 /** What an amount field holds: a token, or the pool's LP (the exit). */
@@ -9,6 +10,22 @@ export const FLOW_TOKEN_UNIT: Record<FlowToken, string> = { musd: "MUSD", btc: "
 
 /** Digits a balance line shows: MUSD to the cent, the rest to six places (as the route pages did before U11). */
 export const FLOW_TOKEN_DIGITS: Record<FlowToken, number> = { musd: 2, btc: 6, mezo: 6, lp: 6 };
+
+/**
+ * Digits Max fills: the precision each flow already shows, so the field never holds eighteen decimals of wei dust.
+ * BTC keeps eight (the BTC entry's figures do) and MUSD four (the flow's `musd` formatter).
+ */
+export const MAX_FILL_DIGITS: Record<FlowToken, number> = { musd: 4, btc: 8, mezo: 4, lp: 6 };
+
+/** The balance as an input value, floored to `MAX_FILL_DIGITS` (never rounded up, which would exceed the balance). */
+export function maxFillAmount(max: bigint, token: FlowToken): string {
+  if (max <= 0n) return "0";
+  const digits = MAX_FILL_DIGITS[token];
+  const step = 10n ** BigInt(18 - digits);
+  const [whole, fraction = ""] = formatUnits((max / step) * step, 18).split(".");
+  const kept = fraction.slice(0, digits).replace(/0+$/, "");
+  return kept ? `${whole}.${kept}` : whole;
+}
 
 export type TokenAmountMax = { max: bigint } | { blocked: "gas-price-unknown" };
 
