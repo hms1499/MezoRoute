@@ -3,14 +3,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { networks } from "@/lib/config/networks";
 import { REPOSITORY } from "@/lib/config/links";
+import { lpSignFacts } from "@/lib/flow/sign-facts";
 import { BeforeYouSign } from "./BeforeYouSign";
 
 const out = renderToStaticMarkup(
   createElement(BeforeYouSign, {
-    network: networks.testnet,
-    feeBps: 10n,
-    capMusd: 1_000_000n * 10n ** 18n,
-    blockNumber: 16_700_000n,
+    facts: lpSignFacts(networks.testnet, { feeBps: 10n, capMusd: 1_000_000n * 10n ** 18n, blockNumber: 16_700_000n }),
   }),
 );
 
@@ -29,11 +27,13 @@ describe("BeforeYouSign", () => {
     expect(out).toContain(REPOSITORY);
   });
 
-  it("shows nothing without an executor", () => {
-    expect(
-      renderToStaticMarkup(
-        createElement(BeforeYouSign, { network: { ...networks.testnet, executor: null }, feeBps: 10n, capMusd: 1n, blockNumber: 1n }),
-      ),
-    ).toBe("");
+  it("shows nothing without facts (no executor on this network)", () => {
+    expect(renderToStaticMarkup(createElement(BeforeYouSign, { facts: null }))).toBe("");
+  });
+
+  it("links a fact only when it has an address", () => {
+    const html = renderToStaticMarkup(createElement(BeforeYouSign, { facts: [{ label: "MezoRoute fee", value: "None" }] }));
+    expect(html).toContain("None");
+    expect(html).not.toContain("<a");
   });
 });

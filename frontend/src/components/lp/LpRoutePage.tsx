@@ -8,6 +8,7 @@ import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { ConnectCta } from "@/components/home/ConnectCta";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
+import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
 import { FlowColumn } from "@/components/flow/FlowColumn";
 import type { OverviewRow } from "@/components/flow/Overview";
 import { Notice } from "@/components/ui/Notice";
@@ -21,6 +22,7 @@ import { exposure } from "@/lib/exposure/exposure";
 import { lpAmountField, lpHeaderFigure, lpRiskLine } from "@/lib/flow/lp-entry";
 import { splitPrimary } from "@/lib/flow/notice-action";
 import { plannerView } from "@/lib/flow/planner";
+import { lpSignFacts } from "@/lib/flow/sign-facts";
 import { BTC_COMPARE_MESSAGE, plannerAmount, plannerComparisonRows } from "@/lib/flow/planner-comparison";
 import { btcRecoveries } from "@/lib/routes/musd-btc-lp/asset";
 import { entryQuery, parseEntryIntent, type EntryIntent } from "@/lib/routes/musd-btc-lp/intent";
@@ -32,7 +34,6 @@ import { borrowLimit, isRecoveryMode } from "@/lib/trove/borrow";
 import { walletCapabilities } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { balanceNoticeActions, BlockNotice } from "./BlockNotice";
-import { BeforeYouSign } from "./BeforeYouSign";
 import { EntryPreviewCard } from "./EntryPreviewCard";
 import { LpEntryCard } from "./LpEntryCard";
 import { ModeToggle } from "./ModeToggle";
@@ -241,10 +242,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
             />
           )}
           <BeforeYouSign
-            network={network}
-            feeBps={data.snapshot.executorFeeBps}
-            capMusd={data.snapshot.maxMusdIn}
-            blockNumber={data.snapshot.blockNumber}
+            facts={lpSignFacts(network, { feeBps: data.snapshot.executorFeeBps, capMusd: data.snapshot.maxMusdIn, blockNumber: data.snapshot.blockNumber })}
           />
         </>
       }
