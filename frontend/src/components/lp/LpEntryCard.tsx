@@ -20,7 +20,6 @@ export function LpEntryCard({
   onSlippage,
   field,
   receive,
-  stake,
   overview,
   notices,
   risk,
@@ -34,7 +33,6 @@ export function LpEntryCard({
   onSlippage: (bps: SlippageBps) => void;
   field: LpAmountField & { amount: string; onAmount: (amount: string) => void; onToken?: (token: Token) => void; note?: ReactNode };
   receive: { value: string; minimum: string } | null;
-  stake: ReactNode;
   overview: OverviewRow[];
   /** Block reasons with their recoveries, the 2% warning, and the gauge notices: above the action. */
   notices: ReactNode;
@@ -100,7 +98,6 @@ export function LpEntryCard({
         {receive && (
           <ReceiveRow value={receive.value} minimum={receive.minimum} icon={<PairIcon tokens={["musd", "btc"]} size={20} />} />
         )}
-        {stake}
         {overview.length > 0 && <Overview rows={overview} />}
         {notices}
       </ActionCard>

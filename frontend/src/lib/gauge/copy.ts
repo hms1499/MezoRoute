@@ -39,3 +39,20 @@ export function feesStakedNote(input: { walletLp: bigint; stakedLp: bigint; fees
   if (walletLp > 0n || stakedLp === 0n || fees.musd > 0n || fees.btc > 0n) return null;
   return "Your LP is all staked, so it earns no pool fees: swap fees go to veBTC voters.";
 }
+
+/**
+ * The LP overview's Staking row (U14 B2): the copy under its switch, or the read-failed sentence without one. Null
+ * when staking is unavailable. Rates are this week's, and the copy always says swap fees go to veBTC voters.
+ */
+export function stakeRowCopy(input: {
+  availability: StakeAvailability;
+  on: boolean;
+  mezoPerWeek: bigint | null;
+  aprLabel: string | null;
+  readFailed: boolean;
+}): { switchable: boolean; sub: string } | null {
+  if (input.readFailed) return { switchable: false, sub: GAUGE_READ_FAILED_ENTRY };
+  if (input.availability === "unavailable") return null;
+  const apr = input.on && input.availability === "open" && input.aprLabel !== null ? [`Emissions APR ≈ ${input.aprLabel} at this week's rate.`] : [];
+  return { switchable: true, sub: [...stakeLines(input.availability, input.mezoPerWeek), ...apr].join(" ") };
+}

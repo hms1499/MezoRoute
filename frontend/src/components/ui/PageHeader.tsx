@@ -27,11 +27,14 @@ export function PageHeader({
 }) {
   return (
     <div className="space-y-3">
-      <Link href={back.href} className="hit inline-flex min-h-9 items-center gap-2 rounded-full text-sm font-medium text-muted hover:text-accent">
-        <ArrowLeft aria-hidden className="h-4 w-4" />
-        {back.label}
-      </Link>
-      {step && <FlowProgress step={step} status={stepStatus} labels={labels} />}
+      {/* U14 B2: one row from sm (back left, progress right), so the card starts about 30 px higher. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Link href={back.href} className="hit inline-flex min-h-9 items-center gap-2 rounded-full text-sm font-medium text-muted hover:text-accent">
+          <ArrowLeft aria-hidden className="h-4 w-4" />
+          {back.label}
+        </Link>
+        {step && <FlowProgress step={step} status={stepStatus} labels={labels} />}
+      </div>
       {title && <h1 className="text-title [text-wrap:balance]">{title}</h1>}
       {subtitle && <p className="text-sm text-muted">{subtitle}</p>}
     </div>

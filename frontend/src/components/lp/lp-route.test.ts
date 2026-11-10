@@ -22,7 +22,6 @@ const props = {
     onToken: () => undefined,
   },
   receive: { value: "≈ 0.017962 LP", minimum: "At least 0.017782 LP" },
-  stake: createElement("div", null, "stake row"),
   overview: [{ label: "MezoRoute fee", value: "0.01 MUSD" }],
   notices: null,
   risk: "Impermanent loss and MEZO price risk",

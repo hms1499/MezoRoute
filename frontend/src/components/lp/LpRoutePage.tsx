@@ -14,8 +14,10 @@ import type { OverviewRow } from "@/components/flow/Overview";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
+import { Term } from "@/components/ui/Term";
 import { useNetwork } from "@/lib/config/network-context";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
+import { stakeRowCopy } from "@/lib/gauge/copy";
 import { emissionsApr, mezoPerWeek } from "@/lib/gauge/maths";
 import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
 import { exposure } from "@/lib/exposure/exposure";
@@ -40,7 +42,7 @@ import { ModeToggle } from "./ModeToggle";
 import { NoExecutorCard } from "./NoExecutorCard";
 import { PlannerComparison } from "./PlannerComparison";
 import { RisksCard } from "./RisksCard";
-import { StakeToggle } from "./StakeToggle";
+import { StakeSwitch } from "./StakeToggle";
 import { troveChangeRows } from "./troveChange";
 import { btc, btcFine, lp, musd } from "./units";
 
@@ -129,14 +131,28 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
   const exposureChange = preview.after ? exposure(preview.after).totalBtc - exposure(dashboard).totalBtc : null;
   // U12: four rows decide the entry; BTC exposure, the Trove change, and the network fee sit in Details.
   const hasQuote = quote !== null && minLpOut !== undefined;
+  const stakeRow = stakeRowCopy({
+    availability: preview.stake.availability,
+    on: preview.stake.on,
+    mezoPerWeek: weekly,
+    aprLabel: apr === null ? null : formatPercent(apr, 1),
+    readFailed: dashboard.gaugeReadFailed,
+  });
   const overview: OverviewRow[] = hasQuote
     ? [
         { label: "Deposited to the pool", value: musd(quote.musdAdded), sub: `+ ${fromBtc ? btcFine(quote.btcAdded) : btc(quote.btcAdded)}` },
         { label: "MezoRoute fee", value: amount(quote.fee), sub: formatBps(data.snapshot.executorFeeBps) },
         { label: "Price impact", value: formatPercent(quote.priceImpact, 2), sub: "includes the pool's swap fee" },
-        ...(preview.stake.availability === "unavailable"
+        // U14 B2: the Staking row is the stake control (its switch on the value side), not a block of its own.
+        ...(stakeRow === null
           ? []
-          : [{ label: "Staking", value: preview.stake.on ? "In the MEZO gauge" : "Off", sub: preview.stake.on ? "swap fees go to veBTC voters" : undefined }]),
+          : [
+              {
+                label: <Term id="gauge">Staking</Term>,
+                value: stakeRow.switchable ? <StakeSwitch on={preview.stake.on} onChange={(stake) => update({ ...intent, stake })} /> : "Off",
+                sub: stakeRow.sub,
+              },
+            ]),
       ]
     : [];
   const context: OverviewRow[] = hasQuote
@@ -199,8 +215,11 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
       : { label: "Review", href: reviewHref, disabled: view.block !== null };
   const field = lpAmountField({ preview, mode: displayIntent.mode, asset: intent.asset, walletMusd: dashboard.musd, connected });
   const reserve = preview.btc?.fillReserve;
+  // U14 B2: the Borrow & Deploy explainer left the tab row for the field's note.
   const note = !connected
     ? undefined
+    : displayIntent.mode === "borrow"
+      ? "Borrowed from your Trove and deposited in one transaction."
     : preview.btc && reserve === null
       ? "Max waits for the network fee"
       : reserve != null && reserve >= MIN_SHOWN_RESERVE
@@ -269,16 +288,6 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
           onToken: displayIntent.mode === "borrow" ? undefined : (token) => update({ ...intent, asset: token === "btc" ? "btc" : "musd", amount: "" }),
         }}
         receive={quote && minLpOut !== undefined ? { value: `≈ ${lp(quote.liquidity)}`, minimum: `At least ${lp(minLpOut)}` } : null}
-        stake={
-          <StakeToggle
-            availability={preview.stake.availability}
-            on={preview.stake.on}
-            onChange={(stake) => update({ ...intent, stake })}
-            mezoPerWeek={weekly}
-            aprLabel={apr === null ? null : formatPercent(apr, 1)}
-            readFailed={dashboard.gaugeReadFailed}
-          />
-        }
         overview={overview}
         context={context}
         notices={
