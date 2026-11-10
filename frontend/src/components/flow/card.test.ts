@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ActionCard } from "./ActionCard";
 import { Details } from "./Details";
 import { FlowColumn } from "./FlowColumn";
+import { FlowPage } from "./FlowPage";
 import { SlippagePopover } from "./SlippagePopover";
 
 // U11 §6.1-6.2: the flow's one card, its disclosure, the slippage popover, and the centred column.
@@ -66,21 +67,31 @@ describe("FlowColumn", () => {
     expect(out).toContain("mx-auto");
   });
 
-  it("adds a 340 px aside beside the 520 px flow from lg", () => {
+  it("with an aside, fills the page width in the Positions grid: the flow two thirds, the aside one", () => {
     const out = renderToStaticMarkup(
       createElement(FlowColumn, { header: createElement("h1", null, "T"), aside: createElement("p", { id: "aside" }, "side") }, "c"),
     );
-    expect(out).toContain("max-w-[876px]");
-    expect(out).toContain("lg:grid-cols-[520px_340px]");
+    expect(out).not.toContain("max-w-[520px]");
+    expect(out).toContain("lg:grid-cols-3");
+    expect(out).toContain("lg:col-span-2");
     expect(out).toContain('id="aside"');
-    // The aside follows the flow's children in source order, so a narrow screen stacks it under them.
+    // The aside follows the flow's children in source order, so below lg it stacks under them.
     expect(out.indexOf('id="aside"')).toBeGreaterThan(out.indexOf(">c<"));
   });
 
   it("keeps today's centred column without an aside", () => {
     const out = renderToStaticMarkup(createElement(FlowColumn, { header: createElement("h1", null, "T") }, "c"));
     expect(out).toContain("max-w-[520px]");
-    expect(out).not.toContain("876");
+  });
+});
+
+describe("FlowPage", () => {
+  it("frames every state of a flow route in the 520 px flow column", () => {
+    const out = renderToStaticMarkup(createElement(FlowPage, null, createElement("p", { id: "loading" }, "Loading")));
+    expect(out).toContain("max-w-[520px]");
+    expect(out).toContain("mx-auto");
+    expect(out).not.toMatch(/max-w-none|\b(?:lg|xl):/);
+    expect(out).toContain('id="loading"');
   });
 });
 
