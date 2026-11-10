@@ -78,14 +78,16 @@ export function ExposurePanel({
   const plots = chartPlots({ snapshot, before });
   const chart: MovePlot[] = [];
   if (plots.value) {
-    // U15: on the Dashboard the value plot is to scale (±30% of today's value) with a Kept in MUSD line to read it by.
-    const baseline = onDashboard ? baselineFor(plots.value) : null;
+    // U15: a Kept in MUSD line to read one line by (the After line on previews); on the Dashboard the plot is also to
+    // scale (±30% of today's value).
+    const baseline = baselineFor(plots.value);
     // Scaled around the largest line's value today, so a small second line never shrinks the frame.
     const around = Math.max(...plots.value.map((s) => s.points.find((p) => p.move === 0)?.value ?? 0));
     chart.push({
       title: "Value in MUSD",
       series: baseline ? [baseline, ...plots.value] : plots.value,
       format: chartMusd,
+      unit: "MUSD",
       ...(onDashboard ? { scale: { around, spread: 0.3 }, changeLabels: true } : {}),
     });
   }

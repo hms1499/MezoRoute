@@ -76,9 +76,12 @@ describe("baselineFor", () => {
     expect(base?.points.map((p) => p.move)).toEqual(lp[0].points.map((p) => p.move));
   });
 
-  it("is absent with two lines, which already compare each other, and on previews", () => {
+  it("is absent with two lines, which already compare each other", () => {
     expect(baselineFor(valueSeries({ lpValue: 100n * WAD, spDeposit: 50n * WAD, spBtcGain: 0n, price: WAD })!)).toBeNull();
-    const before = valueSeries({ lpValue: 100n * WAD, spDeposit: 0n, spBtcGain: 0n, price: WAD }, "before")!;
-    expect(baselineFor([...lp, ...before])).toBeNull();
+  });
+
+  it("follows the After line on a preview, so its gap is shaded too (the faint before line is not counted)", () => {
+    const before = valueSeries({ lpValue: 40n * WAD, spDeposit: 0n, spBtcGain: 0n, price: WAD }, "before")!;
+    expect(new Set(baselineFor([...lp, ...before])?.points.map((p) => p.value))).toEqual(new Set([100]));
   });
 });

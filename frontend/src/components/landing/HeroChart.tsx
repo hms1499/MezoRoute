@@ -16,7 +16,7 @@ export function HeroChart({ sim, highlight, className }: { sim: LandingSimulatio
     <div className={className}>
       <div className="landing-chart-surface">
         <BtcMoveChart
-          plots={[{ title: "Value in MUSD if BTC moves", series, format: musd }]}
+          plots={[{ title: "Value in MUSD if BTC moves", series, format: musd, unit: "MUSD" }]}
           ariaLabel={describe(sim)}
           highlight={highlight}
           drawIn

@@ -87,11 +87,13 @@ function valueInput(snapshot: DashboardSnapshot) {
 
 /**
  * U15: the dashed "Kept in MUSD" line, flat at today's value, so the gap shows what a BTC move does to the position.
- * Only for one solid line: two lines (LP and Stability Pool) already compare each other, and previews draw before lines.
+ * Only for one solid line (a preview's faint before line does not count): two lines (LP and Stability Pool) already
+ * compare each other.
  */
 export function baselineFor(series: Series[]): Series | null {
-  if (series.length !== 1 || series[0].id.endsWith("-before")) return null;
-  const today = series[0].points.find((p) => p.move === 0)?.value;
+  const solid = series.filter((s) => !s.id.endsWith("-before"));
+  if (solid.length !== 1) return null;
+  const today = solid[0].points.find((p) => p.move === 0)?.value;
   if (today === undefined) return null;
-  return { id: "baseline", points: series[0].points.map((p) => ({ move: p.move, value: today })) };
+  return { id: "baseline", points: solid[0].points.map((p) => ({ move: p.move, value: today })) };
 }
