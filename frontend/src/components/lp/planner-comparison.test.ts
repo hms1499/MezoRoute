@@ -25,7 +25,7 @@ describe("PlannerComparison", () => {
     expect(out).toContain("No annualised rate");
     // No accent fill on an action: the page owns the only primary. The one accent background is the LP dot.
     expect(out.match(/<a[^>]*class="[^"]*(?<![:-\w])bg-accent(?![\w-])/)).toBeNull();
-    // The Dashboard's Compare card names the same action; "Deposit to Stability Pool" wrapped in the 276 px rail.
+    // The Dashboard's Compare card names the same action the same way.
     expect(out).toContain("Choose Stability Pool");
     expect(out.match(/(?<![:-\w])bg-accent(?![\w-])/g)).toHaveLength(1);
     // Next's Link drops the trailing slash before the query.

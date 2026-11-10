@@ -67,35 +67,29 @@ describe("FlowColumn", () => {
     expect(out).toContain("mx-auto");
   });
 
-  it("keeps the flow centred and puts the aside in the right rail from xl", () => {
+  it("stacks an aside under the flow, in the same 520 px column, at every width", () => {
     const out = renderToStaticMarkup(
       createElement(FlowColumn, { header: createElement("h1", null, "T"), aside: createElement("p", { id: "aside" }, "side") }, "c"),
     );
-    // Equal rails either side of the 520 px column keep its left edge where every other flow page has it.
-    expect(out).toContain("xl:grid-cols-[minmax(0,1fr)_520px_minmax(0,1fr)]");
-    expect(out).toContain("xl:col-start-2");
-    expect(out).toContain("xl:col-start-3");
-    expect(out).toContain("data-flow-aside");
-    expect(out).not.toContain("876");
-    expect(out).not.toMatch(/\blg:/);
+    // One width for every flow page: no grid, no rail, no breakpoint that widens the column.
+    expect(out).toContain("max-w-[520px]");
+    expect(out).not.toMatch(/grid|max-w-none|\b(?:lg|xl):/);
     expect(out).toContain('id="aside"');
-    // The aside follows the flow's children in source order, so a narrower screen stacks it under them.
     expect(out.indexOf('id="aside"')).toBeGreaterThan(out.indexOf(">c<"));
   });
 
   it("keeps today's centred column without an aside", () => {
     const out = renderToStaticMarkup(createElement(FlowColumn, { header: createElement("h1", null, "T") }, "c"));
     expect(out).toContain("max-w-[520px]");
-    expect(out).not.toContain("data-flow-aside");
   });
 });
 
 describe("FlowPage", () => {
-  it("frames every state of a flow route in the flow column, and lets an aside take the page from xl", () => {
+  it("frames every state of a flow route in the 520 px flow column", () => {
     const out = renderToStaticMarkup(createElement(FlowPage, null, createElement("p", { id: "loading" }, "Loading")));
     expect(out).toContain("max-w-[520px]");
     expect(out).toContain("mx-auto");
-    expect(out).toContain("xl:has-[[data-flow-aside]]:max-w-none");
+    expect(out).not.toMatch(/max-w-none|\b(?:lg|xl):/);
     expect(out).toContain('id="loading"');
   });
 });

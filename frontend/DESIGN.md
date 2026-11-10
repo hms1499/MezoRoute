@@ -289,7 +289,7 @@ A `<details>` under the action card (closed by default on amount pages) with Wha
 "Slippage 1%" with a gear (`quiet sm`) in the card's top-right; the overlay (`rounded-tip`, `shadow-overlay`) holds the 0.5 / 1 / 2% `Segmented`, closes on Escape or a click outside, and returns focus to the trigger. A 2% setting also shows the warning notice in the card.
 
 ### FlowColumn
-Every flow page (amount, confirm, exit, withdraw, receipt): `PageHeader` plus one centred column, `max-w-[520px]`, so the left edge never moves within a flow. It replaced `RouteLayout` and `MobileBar`. An `aside` (the planner's comparison and Before you sign) sits in a right rail from `xl` (equal `minmax(0,1fr)` rails either side, 276 px at full width), so the flow itself never moves off centre; below `xl` the aside stacks under the flow. Rows in the rail stack label over value.
+Every flow page (amount, confirm, exit, withdraw, receipt): `PageHeader` plus one centred column, `max-w-[520px]`, so the left edge never moves within a flow. It replaced `RouteLayout` and `MobileBar`. An `aside` (the planner's comparison and Before you sign) stacks under the flow in the same column at every width: every flow page has one width.
 
 ### StatsStrip
 A panel of 3–4 stats (`xs` label, `xl`/500 value, optional caption), split by hairlines from 768 px, a 2 × 2 grid below. A value that could not be read says "Not readable", never 0.
