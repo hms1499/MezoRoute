@@ -43,3 +43,26 @@ describe("ExposurePanel after a failed gauge read", () => {
     expect(out).not.toContain(GAUGE_READ_FAILED_EXPOSURE);
   });
 });
+
+// U15: on the Dashboard the strip already says the total, so the panel is the chart: boxed, titled If BTC moves,
+// with the footnote behind Show figures. Route previews keep the total and the open footnote.
+describe("ExposurePanel on the Dashboard", () => {
+  const out = renderToStaticMarkup(createElement(ExposurePanel, { snapshot: allStaked, variant: "dashboard" }));
+
+  it("is a boxed panel titled If BTC moves, without the total figure", () => {
+    expect(out).toMatch(/^<section[^>]*class="card/);
+    expect(out).toContain(">If BTC moves<");
+    expect(out).not.toContain("Total BTC exposure");
+  });
+
+  it("keeps the footnote behind Show figures", () => {
+    expect(out.indexOf("Estimates in MUSD")).toBeGreaterThan(out.indexOf("Show figures"));
+    expect(out.slice(out.indexOf("Show figures")).split("</details>")[0]).toContain("Estimates in MUSD");
+  });
+
+  it("leaves the route preview as it was", () => {
+    const preview = render(allStaked);
+    expect(preview).toContain("Total BTC exposure");
+    expect(preview).toMatch(/^<section[^>]*class="border-t/);
+  });
+});

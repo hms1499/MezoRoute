@@ -2,7 +2,8 @@
 
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
-import { BtcMoveChart } from "@/components/chart/BtcMoveChart";
+import { BtcMoveChart, type MovePlot } from "@/components/chart/BtcMoveChart";
+import type { Series } from "@/lib/chart/move-chart";
 import { ConnectCard } from "@/components/home/ConnectCard";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
@@ -17,7 +18,7 @@ import { LoadingCard } from "@/components/ui/Skeleton";
 import { Notice } from "@/components/ui/Notice";
 import { useNetwork } from "@/lib/config/network-context";
 import { lacksGas } from "@/lib/dashboard/readiness";
-import { valueSeries } from "@/lib/exposure/plots";
+import { baselineFor, valueSeries } from "@/lib/exposure/plots";
 import { claimBlock } from "@/lib/positions/claim";
 import { usePositionsHistory } from "@/lib/positions/usePositionsHistory";
 import { usePositionsSnapshot } from "@/lib/positions/usePositionsSnapshot";
@@ -185,11 +186,25 @@ function Positions({ account }: { account: Address }) {
           <BtcMoveChart
             well
             className="mt-3"
-            plots={[{ title: "Value in MUSD if BTC moves", series, format: (v) => v.toLocaleString("en-US", { maximumFractionDigits: 2 }) }]}
+            plots={[positionsPlot(series)]}
             ariaLabel="Chart of your positions' value in MUSD if BTC moves 30% either way."
           />
         </Card>
       )}
     </div>
   );
+}
+
+/** U15: the same reading as the Dashboard's: to scale, against Kept in MUSD when there is one line. */
+function positionsPlot(series: Series[]): MovePlot {
+  const baseline = baselineFor(series);
+  const around = Math.max(...series.map((s) => s.points.find((p) => p.move === 0)?.value ?? 0));
+  return {
+    title: "Value in MUSD if BTC moves",
+    series: baseline ? [baseline, ...series] : series,
+    format: (v) => v.toLocaleString("en-US", { maximumFractionDigits: 2 }),
+    unit: "MUSD",
+    scale: { around, spread: 0.3 },
+    changeLabels: true,
+  };
 }

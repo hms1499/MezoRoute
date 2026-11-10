@@ -37,7 +37,8 @@ type RouteId = "lp" | "sp";
 type Route = { id: RouteId; title: string; term?: TermId; tagline: string; rows: Row[]; risks: string[]; href: string; cta: string };
 
 /** Flow B / FR-19: both routes for the typed amount, aligned row by row, with what each paid over the last 30 days. */
-export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
+/** `heading={false}` (U15): on /compare/ the page's h1 and subtitle name the comparison, so the card has no title. */
+export function RouteComparison({ snapshot, heading = true }: { snapshot: DashboardSnapshot; heading?: boolean }) {
   const { network } = useNetwork();
   // Starts filled, so both routes show on arrival (U3 §5.2); an empty wallet gets a 1,000 MUSD example.
   const [initial] = useState(() => defaultCompareAmount(snapshot.musd, network.entryCap));
@@ -109,8 +110,8 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
   const [lp, sp] = routes;
 
   return (
-    <Card id="compare" title="Compare routes" subtitle="Where to put MUSD: both routes for the same amount.">
-      <div className="mt-4 max-w-md">
+    <Card id="compare" title={heading ? "Compare routes" : undefined} subtitle={heading ? "Where to put MUSD: both routes for the same amount." : undefined}>
+      <div className={cx(heading && "mt-4", "max-w-md")}>
         <TokenAmountInput id="compare-amount" label="Amount" amount={text} onAmount={setText} token="musd" balance={snapshot.musd} balanceLabel="Wallet balance" max={snapshot.musd} />
         {amountError && (
           <p role="alert" className="mt-2 text-sm text-danger">

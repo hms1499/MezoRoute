@@ -292,7 +292,15 @@ A `<details>` under the action card (closed by default on amount pages) with Wha
 Every flow page (amount, confirm, exit, withdraw, receipt): `PageHeader`, then Positions' grid (`grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start`): the flow's card two thirds (`lg:col-span-2`) and an aside one third from `lg`, stacked under the card below it. The aside holds facts the page already read (Before you sign, the position, the Trove, the transaction; on Confirm the risks from `lg`, which stay in the card above the steps below it). A route's loading, error, connect, and no-executor states use `FlowState`: the same grid with an empty aside, so the card's edge and width never move while data arrive. It replaced `RouteLayout` and `MobileBar`.
 
 ### StatsStrip
-A panel of 3–4 stats (`xs` label, `xl`/500 value, optional caption), split by hairlines from 768 px, a 2 × 2 grid below. A value that could not be read says "Not readable", never 0.
+A panel of 3–4 stats (`xs` label, `xl`/500 value, optional caption), split by hairlines from 768 px, a 2 × 2 grid below. A value that could not be read says "Not readable", never 0. On the Dashboard it is the only place a total appears (U15): no block below repeats it as a headline figure.
+
+### Dashboard
+The strip, then one `DashboardGrid` of boxed panels 24 px apart: Your positions and If BTC moves on the left, Put your MUSD to work and Your Trove on the right, each column at its own height; below `lg` the order is positions, routes, chart, Trove. Decision tools (Compare routes, the mainnet reference) live on `/compare/`, linked from the route table.
+
+### If BTC moves (value chart)
+On the Dashboard the value plot is to scale: its range always holds today's value × (1 ± 30%), what a position fully in BTC would do, so the slope shows how much of the position moves with BTC. One solid line gets a dashed `muted` Kept in MUSD line at today's value; the −30% and +30% labels add their change from today; an end lower than today has its label below the point (and a label with no room on its side takes the other). Route previews and the landing keep the fitted axis.
+
+Every chart (landing, Dashboard, Positions, route previews, Trove pages) shares one look: smooth monotone curves through the real points (never a decorative wave: the lines say what the maths says), the gap between a line and its reference (Kept in MUSD, or the Stability Pool beside the LP) shaded `btc` at 14% where BTC costs the position and `accent` where it pays, a legend in the caption row, and a readout above the plot ("If BTC −15% · 2.08 MUSD · −0.18 (−8%)", "was …" on previews, the band's name for a CR). The readout rests at −30% and follows the pointer, a tap, or the arrow keys: each plot is a `role="slider"` whose value text is the readout. A CR line is redrawn in `warning-ink` under 160% and `danger` under 110%.
 
 ### Card
 `level="panel"` is a boxed surface (`rounded-card`, 20 px padding, `line` border); `level="section"` is unboxed under a hairline. Card titles are `text-base font-semibold`.

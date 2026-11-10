@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BAND_LABEL_MIN_HEIGHT, chartGeometry, chartLabels, placeLabels, type Series } from "./move-chart";
+import { BAND_LABEL_MIN_HEIGHT, belowRuns, chartGeometry, chartLabels, gapRegions, labelText, moveAt, placeLabels, readout, smoothPath, type Series } from "./move-chart";
 
 const MOVES = [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30];
 const lp: Series = { id: "lp", points: MOVES.map((move) => ({ move, value: 1000 * Math.sqrt(1 + move / 100) })) };
@@ -21,9 +21,11 @@ describe("chartGeometry", () => {
     expect(g.y(lp.points[0].value)).toBeLessThanOrEqual(130);
   });
 
-  it("draws one polyline command per point", () => {
+  // U15: a smooth curve now, one move and one cubic segment per point after the first.
+  it("draws one curve segment per point", () => {
     expect(g.paths.lp.startsWith("M")).toBe(true);
-    expect(g.paths.lp.match(/[ML]/g)).toHaveLength(13);
+    expect(g.paths.lp.match(/M/g)).toHaveLength(1);
+    expect(g.paths.lp.match(/C/g)).toHaveLength(12);
     expect(Object.keys(g.paths).sort()).toEqual(["lp", "sp"]);
   });
 
@@ -96,5 +98,233 @@ describe("placeLabels (12 px chart text, U6)", () => {
 
   it("shows a band label only from 14 px of band height", () => {
     expect(BAND_LABEL_MIN_HEIGHT).toBe(14);
+  });
+});
+
+// U15: a fitted axis drew every position corner to corner. The relative scale spans today's value × (1 ± 30%), what a
+// position fully in BTC would do, so a half-BTC LP rises about half as steeply and a MUSD deposit stays flat.
+describe("chartGeometry with a relative scale", () => {
+  const scale = { around: 1000, spread: 0.3 };
+  const g = chartGeometry({ series: [lp], width: 400, height: 160, pad, scale });
+
+  it("keeps today's value × (1 ± 30%) inside the plot", () => {
+    expect(g.y(700)).toBeLessThanOrEqual(g.plot.bottom);
+    expect(g.y(1300)).toBeGreaterThanOrEqual(g.plot.top);
+  });
+
+  it("puts a flat position across the middle, not the edge", () => {
+    const flat = chartGeometry({ series: [sp], width: 400, height: 160, pad, scale });
+    expect(Math.abs(flat.y(1000) - (flat.plot.top + flat.plot.bottom) / 2)).toBeLessThan(1);
+  });
+
+  it("leaves the LP's −30% end well above the floor, unlike the fitted axis", () => {
+    const fitted = chartGeometry({ series: [lp], width: 400, height: 160, pad });
+    // About 19 px higher in a 120 px plot: the end sits a sixth of the way up instead of on the floor.
+    expect(g.y(lp.points[0].value)).toBeLessThan(fitted.y(lp.points[0].value) - 15);
+  });
+
+  it("only widens the range: data outside it stays in view", () => {
+    const wide = chartGeometry({ series: [{ id: "lp", points: [{ move: -30, value: 100 }, { move: 30, value: 2000 }] }], width: 400, height: 160, pad, scale });
+    expect(wide.y(100)).toBeLessThanOrEqual(wide.plot.bottom);
+    expect(wide.y(2000)).toBeGreaterThanOrEqual(wide.plot.top);
+  });
+});
+
+describe("labelText", () => {
+  const format = (v: number) => v.toFixed(2);
+  it("adds the change from today at the ends", () => {
+    expect(labelText({ side: "left", value: 1.89, today: 2.25 }, format)).toBe("1.89 (−16%)");
+    expect(labelText({ side: "right", value: 2.57, today: 2.25 }, format)).toBe("2.57 (+14%)");
+  });
+
+  it("keeps Today's label and a zero change plain", () => {
+    expect(labelText({ side: "today", value: 2.25, today: 2.25 }, format)).toBe("2.25");
+    expect(labelText({ side: "left", value: 20, today: 20 }, format)).toBe("20.00 (0%)");
+    expect(labelText({ side: "left", value: 5, today: 0 }, format)).toBe("5.00");
+  });
+});
+
+// U15: an end label above a rising line's low end sat on the line ("1.89 (−16%)" was struck through). An end lower
+// than today puts its label below the point, where the line never runs.
+describe("placeLabels at the ends", () => {
+  const y = (value: number) => 200 - value;
+  const plot = { top: 0, bottom: 200 };
+  const rising = [
+    { id: "lp" as const, side: "left" as const, move: -30, value: 80 },
+    { id: "lp" as const, side: "today" as const, move: 0, value: 100 },
+    { id: "lp" as const, side: "right" as const, move: 30, value: 115 },
+  ];
+
+  it("puts a low end's label below its point and a high end's above", () => {
+    const placed = placeLabels(rising, y, plot);
+    expect(placed[0].y).toBeGreaterThan(y(80));
+    expect(placed[2].y).toBeLessThan(y(115));
+  });
+
+  it("mirrors it for a falling line", () => {
+    const falling = rising.map((l) => ({ ...l, value: 200 - l.value }));
+    const placed = placeLabels(falling, y, plot);
+    expect(placed[0].y).toBeLessThan(y(120));
+    expect(placed[2].y).toBeGreaterThan(y(85));
+  });
+});
+
+// U15 chart pass: one look for every chart. Smooth curves through the real points (never overshooting them), the gap
+// to a reference shaded as loss or gain, the CR line coloured inside its bands, and a readout that follows the pointer.
+describe("smoothPath", () => {
+  const pts = [
+    { x: 0, y: 100 },
+    { x: 10, y: 90 },
+    { x: 20, y: 85 },
+    { x: 30, y: 84 },
+  ];
+  const path = smoothPath(pts);
+  const numbers = (d: string) => d.match(/-?\d+(\.\d+)?/g)!.map(Number);
+
+  it("starts at the first point and passes through every point", () => {
+    expect(path.startsWith("M0 100")).toBe(true);
+    for (const p of pts.slice(1)) expect(path).toContain(`${p.x} ${p.y}`);
+  });
+
+  it("never overshoots: every control point stays between its segment's ends", () => {
+    const segments = path.split("C").slice(1).map(numbers);
+    segments.forEach(([, c1y, , c2y, , endY], i) => {
+      const lo = Math.min(pts[i].y, endY);
+      const hi = Math.max(pts[i].y, endY);
+      expect(c1y).toBeGreaterThanOrEqual(lo - 1e-9);
+      expect(c1y).toBeLessThanOrEqual(hi + 1e-9);
+      expect(c2y).toBeGreaterThanOrEqual(lo - 1e-9);
+      expect(c2y).toBeLessThanOrEqual(hi + 1e-9);
+    });
+  });
+
+  it("draws a flat run flat and a single point as a move", () => {
+    expect(numbers(smoothPath([{ x: 0, y: 5 }, { x: 10, y: 5 }, { x: 20, y: 5 }])).filter((_, i) => i % 2 === 1).every((y) => y === 5)).toBe(true);
+    expect(smoothPath([{ x: 3, y: 4 }])).toBe("M3 4");
+  });
+});
+
+describe("gapRegions", () => {
+  const ref: Series = { id: "baseline", points: MOVES.map((move) => ({ move, value: 1000 })) };
+
+  it("splits at today when the line crosses its reference there: loss below, gain above", () => {
+    const regions = gapRegions(lp, ref);
+    expect(regions.map((r) => r.tone)).toEqual(["loss", "gain"]);
+    expect(regions[0].points[0].move).toBe(-30);
+    expect(regions[0].points.at(-1)?.move).toBe(0);
+    expect(regions[1].points[0].move).toBe(0);
+  });
+
+  it("inserts the crossing between two points (the landing's LP sits a little under the Stability Pool today)", () => {
+    const low: Series = { id: "lp", points: lp.points.map((p) => ({ move: p.move, value: p.value - 9 })) };
+    const regions = gapRegions(low, ref);
+    const cross = regions[0].points.at(-1)!;
+    expect(cross.move).toBeGreaterThan(0);
+    expect(cross.move).toBeLessThan(5);
+    expect(cross.top).toBeCloseTo(cross.bottom, 6);
+  });
+
+  it("is empty when the two lines are the same", () => {
+    expect(gapRegions(ref, ref)).toEqual([]);
+  });
+});
+
+describe("belowRuns", () => {
+  const cr: Series = { id: "cr", points: MOVES.map((move) => ({ move, value: 201 * (1 + move / 100) })) };
+
+  it("returns the stretch under the threshold, starting where the line crosses it", () => {
+    const runs = belowRuns(cr, 160);
+    expect(runs).toHaveLength(1);
+    expect(runs[0][0].move).toBe(-30);
+    const end = runs[0].at(-1)!;
+    expect(end.value).toBeCloseTo(160, 6);
+    expect(end.move).toBeGreaterThan(-25);
+    expect(end.move).toBeLessThan(-20);
+  });
+
+  it("is empty when the line stays above it", () => {
+    expect(belowRuns(cr, 110)).toEqual([]);
+  });
+});
+
+describe("moveAt", () => {
+  const plot = { left: 40, right: 460 };
+  it("snaps the pointer to the nearest 5% step inside ±30%", () => {
+    expect(moveAt(250, plot)).toBe(0);
+    expect(moveAt(145, plot)).toBe(-15);
+    expect(moveAt(10, plot)).toBe(-30);
+    expect(moveAt(999, plot)).toBe(30);
+  });
+});
+
+describe("readout", () => {
+  const two = (v: number) => v.toFixed(2);
+  const one: Series = { id: "lp", points: MOVES.map((move) => ({ move, value: 2.26 * Math.sqrt(1 + move / 100) })) };
+  const base: Series = { id: "baseline", points: MOVES.map((move) => ({ move, value: 2.26 })) };
+
+  it("names one position's value and its change from today", () => {
+    expect(readout({ series: [base, one], move: -15, format: two, unit: "MUSD" })).toEqual({
+      lead: "If BTC −15%",
+      parts: [
+        { text: "2.08 MUSD", tone: "ink" },
+        { text: "−0.18 (−8%)", tone: "negative" },
+      ],
+    });
+  });
+
+  it("names both lines when the landing compares the LP with the Stability Pool", () => {
+    const sp: Series = { id: "sp", points: MOVES.map((move) => ({ move, value: 1000 })) };
+    const lp1000: Series = { id: "lp", points: MOVES.map((move) => ({ move, value: 991 * Math.sqrt(1 + move / 100) })) };
+    expect(readout({ series: [lp1000, sp], move: -20, format: (v) => v.toFixed(0), unit: "MUSD" }).parts).toEqual([
+      { text: "LP 886", tone: "lp" },
+      { text: "Stability Pool 1000", tone: "sp" },
+    ]);
+  });
+
+  it("adds what it was before on a preview", () => {
+    const before: Series = { id: "lp-before", points: MOVES.map((move) => ({ move, value: 1.0 })) };
+    expect(readout({ series: [one, before], move: -30, format: two, unit: "MUSD" }).parts.at(-1)).toEqual({ text: "was 1.00", tone: "muted" });
+  });
+
+  it("says Today without a change", () => {
+    expect(readout({ series: [base, one], move: 0, format: two, unit: "MUSD" })).toEqual({ lead: "Today", parts: [{ text: "2.26 MUSD", tone: "ink" }] });
+  });
+
+  it("names the band a collateral ratio falls into", () => {
+    const cr: Series = { id: "cr", points: MOVES.map((move) => ({ move, value: 201 * (1 + move / 100) })) };
+    const bands = [
+      { from: 0, to: 110, tone: "danger" as const, label: "Liquidation" },
+      { from: 110, to: 160, tone: "warning" as const, label: "Below 160%" },
+    ];
+    expect(readout({ series: [cr], move: -30, format: (v) => `${Math.round(v)}%`, bands }).parts).toEqual([
+      { text: "CR 141%", tone: "warning" },
+      { text: "Below 160%", tone: "warning" },
+    ]);
+    expect(readout({ series: [cr], move: 0, format: (v) => `${Math.round(v)}%`, bands }).parts).toEqual([{ text: "CR 201%", tone: "ink" }]);
+  });
+});
+
+// U15: a high end near the top had no room above its point, so it was clamped onto the line (a preview's "13.89").
+describe("placeLabels near the edges", () => {
+  const y = (value: number) => 200 - value;
+  const plot = { top: 0, bottom: 200 };
+
+  it("moves a high end's label below its point when there is no room above", () => {
+    const labels = [
+      { id: "lp" as const, side: "today" as const, move: 0, value: 180 },
+      { id: "lp" as const, side: "right" as const, move: 30, value: 197 },
+    ];
+    const placed = placeLabels(labels, y, plot);
+    // The text's baseline sits a line (14 px) under the point, clear of the line through it.
+    expect(placed[1].y).toBe(y(197) + 14);
+  });
+
+  it("moves a low end's label above its point when there is no room below", () => {
+    const labels = [
+      { id: "lp" as const, side: "left" as const, move: -30, value: 4 },
+      { id: "lp" as const, side: "today" as const, move: 0, value: 50 },
+    ];
+    const placed = placeLabels(labels, y, plot);
+    expect(placed[0].y).toBe(y(4) - 6);
   });
 });

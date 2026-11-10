@@ -38,7 +38,7 @@ export function TroveCard({
 
   if (!trove) {
     return (
-      <Card level="section" title={
+      <Card title={
           <>
             Your <Term id="trove">Trove</Term>
           </>
@@ -56,7 +56,7 @@ export function TroveCard({
   const liquidation = liquidationPrice(trove, protocol.mcr);
   const tag = health ? HEALTH_TAG[health] : null;
   return (
-    <Card level="section" title={
+    <Card title={
           <>
             Your <Term id="trove">Trove</Term>
           </>

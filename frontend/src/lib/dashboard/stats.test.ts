@@ -85,7 +85,8 @@ describe("dashboard tables", () => {
     expect(positions).toContain("staked");
     expect(positions).toContain("in wallet");
     expect(routes).toContain("20");
-    expect(routes).toContain('href="#compare"');
+    // next/link drops the trailing slash outside the app's trailingSlash config; the export keeps /compare/.
+    expect(routes).toMatch(/href="\/compare\/?"/);
   });
 });
 
