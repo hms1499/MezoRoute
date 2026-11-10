@@ -221,7 +221,7 @@ function AmountCard(props: {
       <ActionCard
         icon={<TokenIcon token="btc" size={24} />}
         title={TITLES[action].card}
-        subtitle="Your Trove · MUSD/BTC pool · one transaction"
+        subtitle="Your Trove, in one transaction"
         figure={current === null ? "—" : formatPercent(current)}
         figureLabel="Collateral ratio now"
         settings={<SlippagePopover slippageBps={intent.slippageBps as SlippageBps} onChange={props.onSlippage} action={action === "unwind" || action === "close" ? "sale" : "purchase"} />}
@@ -391,7 +391,7 @@ function ConfirmBody(props: {
       <ConfirmCard
         icon={<TokenIcon token="btc" size={24} />}
         title={TITLES[action].card}
-        subtitle="Your Trove · MUSD/BTC pool · one transaction"
+        subtitle="Your Trove, in one transaction"
         overview={view.rows}
         quote={<QueueLine before={view.queueBefore} after={view.queueAfter} />}
         risks={queueFirst}

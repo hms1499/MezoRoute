@@ -134,7 +134,8 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
         <StatsStrip
           stats={[
             {
-              label: "Positions value",
+              // U13 follow-up: "Positions value" read as the worth of everything on the page while a Trove sat beside it.
+              label: "LP + Stability Pool",
               value: stats.positionsValue === null ? "—" : `${formatToken(stats.positionsValue, 18, 2)} MUSD`,
               note: positions.data?.snapshot.gaugeReadFailed ? "Not readable: staked LP could not be read" : "at the BTC price",
             },

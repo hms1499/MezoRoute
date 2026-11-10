@@ -1,7 +1,7 @@
 import { formatToken } from "@/lib/format";
 import type { StakeAvailability } from "./availability";
 
-export const STAKE_TITLE = "Stake to earn MEZO";
+export const STAKE_TITLE = "Stake for MEZO";
 
 const FEES_NOTE = "While staked, swap fees go to veBTC voters instead of you.";
 const NO_AMOUNT = "Enter an amount to see this week's rate.";
@@ -16,7 +16,7 @@ export const GAUGE_READ_FAILED_RETRY = "Staked LP could not be read right now. T
 export const GAUGE_READ_FAILED_SUMMARY = "In your wallet only: staked LP could not be read";
 
 /** On Positions, when staking is unavailable but LP is staked: claim and unstake still work. A killed gauge keeps paying what it was funded until `periodFinish`. */
-export const GAUGE_NOT_FUNDED = "This gauge gets no new MEZO, so any rewards end with the current week, and staked LP earns no swap fees. Unstake to earn pool fees.";
+export const GAUGE_NOT_FUNDED = "This gauge gets no new MEZO, so any rewards end with the current week, and staked LP collects no swap fees. Unstake to collect pool fees.";
 
 /** The emissions row on the gauge card: this week's amount, or why there is none. */
 export function gaugeRateLine(availability: StakeAvailability, mezoPerWeek: bigint | null): string {

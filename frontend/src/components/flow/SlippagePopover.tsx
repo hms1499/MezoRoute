@@ -44,7 +44,8 @@ export function SlippagePopover({
   return (
     // ml-auto keeps the trigger at the card's right edge when the settings row wraps under the tabs (360 px), so the
     // right-anchored panel opens inside the screen.
-    <div ref={root} className="relative ml-auto shrink-0">
+    // `sm:ml-auto`: on a phone the card's blocks stack, so the control follows the left edge like the tabs above it.
+    <div ref={root} className="relative shrink-0 sm:ml-auto">
       <button
         ref={trigger}
         type="button"

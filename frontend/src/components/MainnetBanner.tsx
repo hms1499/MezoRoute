@@ -12,9 +12,11 @@ export function MainnetBanner() {
   const { network } = useNetwork();
   if (network.id !== "mainnet") return null;
   return (
-    <p role="note" className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-inset bg-warning-bg px-4 py-2 text-xs text-warning-ink">
-      <span className="inline-flex items-center gap-2 font-medium">
-        <ShieldAlert aria-hidden className="h-4 w-4" />
+    // U13 follow-up: a filled warning band above the hero shouted louder than the page itself. The shield and the
+    // sentence carry the warning; the surface stays quiet.
+    <p role="note" className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-inset border border-line bg-surface px-4 py-2 text-xs text-muted">
+      <span className="inline-flex items-center gap-2 font-medium text-ink">
+        <ShieldAlert aria-hidden className="h-4 w-4 text-warning-ink" />
         Unaudited · max 1,000 MUSD per transaction
       </span>
       {network.executor && (

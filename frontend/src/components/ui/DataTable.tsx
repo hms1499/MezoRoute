@@ -14,8 +14,9 @@ export function tableClass(dense = false): string {
 }
 
 /** A column header: 12/500 muted with 8 px vertical padding in both densities. `dense` is accepted for symmetry. */
+/** A right-aligned column takes a left gutter, so two adjacent figure headers never run together. */
 export function thClass(align: Align, _dense = false): string {
-  return cx("border-b border-line py-2 text-xs font-medium text-muted", align === "right" ? "text-right" : "text-left");
+  return cx("border-b border-line py-2 text-xs font-medium text-muted", align === "right" ? "pl-4 text-right" : "text-left");
 }
 
 /** A row header (`th scope="row"`): body weight, left-aligned. */
@@ -24,7 +25,7 @@ export function rowThClass(dense = false): string {
 }
 
 export function tdClass(align: Align, dense = false): string {
-  return cx(dense ? "py-2" : "py-3", align === "right" ? "text-right" : "text-left");
+  return cx(dense ? "py-2" : "py-3", align === "right" ? "pl-4 text-right" : "text-left");
 }
 
 /** A body row: the divider between rows. */
@@ -111,12 +112,12 @@ export function DataTable<R>({
                       {column.cell(row)}
                     </th>
                   ) : (
-                    <td key={column.key} className={cx(tdClass(column.align), column.action && "pl-3")}>
+                    <td key={column.key} className={tdClass(column.align)}>
                       {column.cell(row)}
                     </td>
                   ),
                 )}
-                {expand && <td className={cx(tdClass("right"), "pl-2")}>{detailsButton(key)}</td>}
+                {expand && <td className={tdClass("right")}>{detailsButton(key)}</td>}
               </tr>
               );
               return expand && open.has(key)

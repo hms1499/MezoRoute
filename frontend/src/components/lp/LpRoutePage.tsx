@@ -224,7 +224,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
           back={{ href: "/", label: "Dashboard" }}
           step={1}
           title="Add liquidity"
-          subtitle="Earn swap fees or MEZO in the MUSD/BTC pool"
+          subtitle="Collect swap fees or MEZO in the MUSD/BTC pool"
         />}
       aside={
         <>

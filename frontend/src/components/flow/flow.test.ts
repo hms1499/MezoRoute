@@ -56,7 +56,12 @@ describe("TokenAmountInput", () => {
     const out = render({ balance: null, max: null });
     expect(out).toContain("Connect to see balance");
     expect(out).not.toContain("Balance 0");
-    expect(out).toMatch(/<button[^>]*disabled=""[^>]*>Max<\/button>/);
+    // U13 follow-up: no Max before a wallet connects (it filled nothing and truncated the sentence beside it).
+    expect(out).not.toContain(">Max<");
+  });
+
+  it("keeps Max while a balance is readable but Max is blocked", () => {
+    expect(render({ balance: 10n, max: null })).toMatch(/<button[^>]*disabled=""[^>]*>Max<\/button>/);
   });  it("renders the percent presets in percent mode", () => {
     const out = render({ percent: { value: 50, presets: [25, 50, 75, 100], onPreset: () => undefined } });
     expect(out).toContain('role="radiogroup"');

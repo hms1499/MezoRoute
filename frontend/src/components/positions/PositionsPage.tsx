@@ -1,9 +1,9 @@
 "use client";
 
-import { Inbox } from "lucide-react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { BtcMoveChart } from "@/components/chart/BtcMoveChart";
+import { ConnectCard } from "@/components/home/ConnectCard";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
@@ -40,7 +40,18 @@ const musd2 = (value: bigint) => `${formatToken(value, 18, 2)} MUSD`;
 
 /** Spec §9 screen 5; U11 §6.4: stats, one positions table, one Rewards card, and the totals chart. */
 export default function PositionsPage() {
-  return <RequireWallet>{(account) => <Positions account={account} />}</RequireWallet>;
+  return (
+    <RequireWallet
+      fallback={
+        <div className="space-y-4">
+          <h1 className="text-title">Your positions</h1>
+          <ConnectCard />
+        </div>
+      }
+    >
+      {(account) => <Positions account={account} />}
+    </RequireWallet>
+  );
 }
 
 function Positions({ account }: { account: Address }) {
@@ -77,23 +88,28 @@ function Positions({ account }: { account: Address }) {
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <h1 className="text-title">Your positions</h1>
     </>
-  );
-  if (showsNoPositions(view, pool, gaugeReadFailed)) {
-    // Full width like every other tab's cards; the column starts at the same left edge.
+  );  if (showsNoPositions(view, pool, gaugeReadFailed)) {
+    // U13 follow-up: the empty state keeps the page's left edge and gets a heading of its own, so it reads as this
+    // page with nothing in it rather than a centred card floating in a blank canvas.
     return (
-      <>
+      <div className="space-y-4">
         {header}
-        <Card className="text-center">
-          <Inbox aria-hidden className="mx-auto h-10 w-10 text-muted" />
-          <p className="mt-3 text-sm">You have no MUSD/BTC LP, no unclaimed pool fees, and no Stability Pool deposit on {network.name}.</p>
-          <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <ButtonLink href="/route/lp/" arrow>Deposit to LP</ButtonLink>
-            <ButtonLink href="/route/stability-pool/" variant="secondary" arrow>
-              Deposit to Stability Pool
-            </ButtonLink>
-          </div>
-        </Card>
-      </>
+        <Settle index={0}>
+          <Card title="Nothing deposited yet">
+            <p className="mt-2 text-sm text-muted">
+              You have no MUSD/BTC LP, no unclaimed pool fees, and no Stability Pool deposit on {network.name}.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <ButtonLink href="/route/lp/" arrow>
+                Deposit to LP
+              </ButtonLink>
+              <ButtonLink href="/route/stability-pool/" variant="secondary">
+                Deposit to Stability Pool
+              </ButtonLink>
+            </div>
+          </Card>
+        </Settle>
+      </div>
     );
   }
 

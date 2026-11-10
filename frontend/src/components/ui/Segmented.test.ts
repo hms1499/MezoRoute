@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 import { MaxButton } from "./MaxButton";
 import { Segmented, segmentedItemClass, segmentedKey } from "./Segmented";
 
-// U11 §5.6: the one segmented control; the selected item is a surface chip with a line ring on a well track.
+// U11 §5.6: the one segmented control; the selected item is a `selected` chip with a line ring on a well track
+// (U13 follow-up: surface on well was too close to the track to read as selected).
 
 const options = [
   { value: "a", label: "One" },
@@ -19,7 +20,7 @@ describe("Segmented", () => {
     expect(out).toContain('role="radiogroup"');
     expect(out).toContain('aria-label="Pick"');
     expect(out.match(/aria-checked="true"/g)).toHaveLength(1);
-    expect(out).toMatch(/aria-checked="true"[^>]*class="[^"]*bg-surface[^"]*ring-line/);
+    expect(out).toMatch(/aria-checked="true"[^>]*class="[^"]*bg-selected[^"]*ring-line/);
   });
 
   it("keeps one enabled item in the tab order when the selected item is disabled", () => {
@@ -45,7 +46,7 @@ describe("Segmented", () => {
   });
 
   it("has one selected look, sized md or sm", () => {
-    expect(segmentedItemClass(true, "md")).toContain("bg-surface text-ink ring-1 ring-line");
+    expect(segmentedItemClass(true, "md")).toContain("bg-selected text-ink ring-1 ring-line");
     expect(segmentedItemClass(false, "md")).toContain("text-muted");
     expect(segmentedItemClass(true, "md")).toContain("min-h-9 px-4 text-sm");
     expect(segmentedItemClass(true, "sm")).toContain("min-h-7 px-3 text-xs");

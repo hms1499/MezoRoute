@@ -53,7 +53,7 @@ export function LpEntryCard({
       <ActionCard
         icon={<PairIcon tokens={["musd", "btc"]} size={24} />}
         title="MUSD / BTC"
-        subtitle="Volatile pool · Tigris"
+        subtitle="MUSD/BTC pool on Tigris"
         figure={header.value}
         figureLabel={header.label}
         tabs={tabs}

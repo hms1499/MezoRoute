@@ -28,7 +28,8 @@ export function segmentedItemClass(selected: boolean, size: SegmentedSize): stri
   return cx(
     "hit inline-flex items-center justify-center whitespace-nowrap rounded-pill font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
     ITEM[size],
-    selected ? "bg-surface text-ink ring-1 ring-line" : "text-muted hover:text-ink",
+    // `selected` is the palette's selected pill: surface on the well track was too close to the track itself.
+    selected ? "bg-selected text-ink ring-1 ring-line" : "text-muted hover:text-ink",
   );
 }
 

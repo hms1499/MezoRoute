@@ -168,7 +168,10 @@ export function TokenAmountInput({
             <span className="truncate">
               {balance === null ? "Connect to see balance" : `${balanceLabel} ${formatToken(balance, 18, FLOW_TOKEN_DIGITS[token])}`}
             </span>
-            {!percent && onAmount && <MaxButton onClick={() => max !== null && onAmount(maxFillAmount(max, token))} disabled={max === null} />}
+            {/* Before a wallet connects there is no balance to fill: Max only took the room the sentence needs. */}
+            {!percent && onAmount && balance !== null && (
+              <MaxButton onClick={() => max !== null && onAmount(maxFillAmount(max, token))} disabled={max === null} />
+            )}
           </span>
         </div>
         <div className="mt-2 flex items-center gap-3">

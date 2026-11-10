@@ -48,7 +48,8 @@ export function PlannerComparison({
       <p className="mt-4 text-xs text-muted">{PLANNER_COMPARE_NOTE}</p>
       {spHref !== null && (
         <ButtonLink href={spHref} variant="secondary" size="md" className="mt-4 w-full">
-          Deposit to Stability Pool instead
+          {/* "… instead" wrapped to two lines in the 340 px aside; the card's own heading carries the comparison. */}
+          Deposit to Stability Pool
         </ButtonLink>
       )}
     </Card>

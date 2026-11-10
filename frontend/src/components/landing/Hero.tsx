@@ -41,17 +41,17 @@ export function Hero({ data, error }: { data: MainnetReferenceData | undefined; 
             <div className="landing-rise mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center" style={delay(320)}>
               {/* With the arrow circle the full label wraps below 640 px. */}
               <ConnectCta variant="primary" className="w-full sm:w-auto" arrow label={<><span className="sm:hidden">Connect a wallet</span><span className="max-sm:hidden">Connect a Bitcoin or EVM wallet</span></>} />
-              <a href="#simulator" className={buttonClass("secondary", "lg", "w-full sm:w-auto", true)}>
-                <ButtonContent variant="secondary" arrow>
-                  Compare routes
-                </ButtonContent>
+              {/* On the canvas a line ring alone is nearly invisible (360 px): the fill gives the pill a body. */}
+              <a href="#simulator" className={buttonClass("secondary", "lg", "w-full bg-surface sm:w-auto")}>
+                <ButtonContent variant="secondary">Compare routes</ButtonContent>
               </a>
             </div>
             <div className="landing-rise mt-10" style={delay(400)}>
               <HeroFigures live={live} />
             </div>
           </div>
-          <RouteMotif className="min-w-0" />
+          {/* Below lg the motif is a cropped fragment of a wide diagram: the hero is type and figures there. */}
+          <RouteMotif className="hidden min-w-0 lg:block" />
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4 text-xs text-muted">

@@ -16,28 +16,42 @@ import { btc, btcFine, lp, musd } from "./units";
 export function confirmOverview({ preview, data, slippageBps }: { preview: EntryPreview; data: LpRouteData; slippageBps: bigint }): OverviewRow[] {
   const { quote, minimums, btcQuote, btcMinimums } = preview;
   const fee = { label: "MezoRoute fee", sub: formatBps(data.snapshot.executorFeeBps) };
-  // The rows every entry ends with, whichever token it brings.
+  // The rows every entry ends with, whichever token it brings: what the transaction is signed under.
   const tail: OverviewRow[] = [
     ...(preview.stake.availability !== "unavailable"
       ? [
           {
+            group: "Terms",
             label: "Staking",
             value: preview.stake.on ? "Staked in the MEZO gauge" : "Not staked",
             sub: preview.stake.on ? "swap fees go to veBTC voters while staked" : undefined,
           },
         ]
       : []),
-    ...(data.snapshot.dashboard.gaugeReadFailed ? [{ label: "Staking", value: "Not staked", sub: GAUGE_READ_FAILED_ENTRY }] : []),
-    { label: "Slippage", value: formatBps(slippageBps, 1) },
-    { label: "Deadline", value: new Date(Number(preview.deadline) * 1000).toLocaleTimeString(), sub: "10 minutes after this quote's block" },
+    ...(data.snapshot.dashboard.gaugeReadFailed
+      ? [{ group: "Terms", label: "Staking", value: "Not staked", sub: GAUGE_READ_FAILED_ENTRY }]
+      : []),
+    { group: "Terms", label: "Slippage", value: formatBps(slippageBps, 1) },
+    {
+      group: "Terms",
+      label: "Deadline",
+      value: new Date(Number(preview.deadline) * 1000).toLocaleTimeString(),
+      sub: "10 minutes after this quote's block",
+    },
   ];
   if (btcQuote && btcMinimums) {
     return [
-      { label: "You deposit", value: btcFine(btcQuote.btcIn) },
-      { ...fee, value: btcFine(btcQuote.fee) },
-      { label: "Swapped to MUSD", value: btcFine(btcQuote.btcToSwap), sub: `at least ${musd(btcMinimums.minMusdFromSwap)}` },
+      { group: "You pay", label: "You deposit", value: btcFine(btcQuote.btcIn) },
+      { ...fee, group: "You pay", value: btcFine(btcQuote.fee) },
       {
-        label: "Deposited to the pool",
+        group: "You receive",
+        label: "Swapped to MUSD",
+        value: btcFine(btcQuote.btcToSwap),
+        sub: `at least ${musd(btcMinimums.minMusdFromSwap)}`,
+      },
+      {
+        group: "You receive",
+        label: "Pool deposit",
         value: (
           <>
             <span className="block">{musd(btcQuote.musdAdded)}</span>
@@ -47,7 +61,8 @@ export function confirmOverview({ preview, data, slippageBps }: { preview: Entry
         sub: `at least ${musd(btcMinimums.minMusdAdded)} + ${btcFine(btcMinimums.minBtcAdded)}`,
       },
       {
-        label: "LP tokens",
+        group: "You receive",
+        label: "LP received",
         value: lp(btcQuote.liquidity),
         sub: `≈ ${musd(entryValue(data.snapshot.pool, btcQuote))} at the pool price · at least ${lp(btcMinimums.minLpOut)}`,
       },
@@ -56,32 +71,19 @@ export function confirmOverview({ preview, data, slippageBps }: { preview: Entry
   }
   if (!quote || !minimums) return tail;
   return [
-    { label: preview.borrow ? "You borrow and deposit" : "You deposit", value: musd(quote.musdIn) },
-    { ...fee, value: musd(quote.fee) },
-    ...(preview.borrow?.effect
-      ? [
-          { label: "Borrowing fee", value: musd(preview.borrow.effect.fee), sub: "added to your Trove debt" },
-          {
-            label: (
-              <>
-                <Term id="trove">Trove</Term> debt after
-              </>
-            ),
-            value: musd(preview.borrow.effect.newDebt),
-          },
-          {
-            label: (
-              <>
-                <Term id="collateralRatio">Collateral ratio</Term> after
-              </>
-            ),
-            value: preview.borrow.effect.newCr === null ? "—" : formatPercent(preview.borrow.effect.newCr, 1),
-          },
-        ]
-      : []),
-    { label: "Swapped to BTC", value: musd(quote.musdToSwap), sub: `at least ${btc(minimums.minBtcFromSwap)}` },
     {
-      label: "Deposited to the pool",
+      group: "You pay",
+      label: preview.borrow ? "You borrow and deposit" : "You deposit",
+      value: musd(quote.musdIn),
+    },
+    { ...fee, group: "You pay", value: musd(quote.fee) },
+    ...(preview.borrow?.effect
+      ? [{ group: "You pay", label: "Borrowing fee", value: musd(preview.borrow.effect.fee), sub: "added to your Trove debt" }]
+      : []),
+    { group: "You receive", label: "Swapped to BTC", value: musd(quote.musdToSwap), sub: `at least ${btc(minimums.minBtcFromSwap)}` },
+    {
+      group: "You receive",
+      label: "Pool deposit",
       value: (
         <>
           <span className="block">{musd(quote.musdAdded)}</span>
@@ -91,10 +93,33 @@ export function confirmOverview({ preview, data, slippageBps }: { preview: Entry
       sub: `at least ${musd(minimums.minMusdAdded)} + ${btc(minimums.minBtcAdded)}`,
     },
     {
-      label: "LP tokens",
+      group: "You receive",
+      label: "LP received",
       value: lp(quote.liquidity),
       sub: `≈ ${musd(entryValue(data.snapshot.pool, quote))} at the pool price · at least ${lp(minimums.minLpOut)}`,
     },
+    ...(preview.borrow?.effect
+      ? [
+          {
+            group: "Your Trove after",
+            label: (
+              <>
+                <Term id="trove">Trove</Term> debt
+              </>
+            ),
+            value: musd(preview.borrow.effect.newDebt),
+          },
+          {
+            group: "Your Trove after",
+            label: (
+              <>
+                <Term id="collateralRatio">Collateral ratio</Term>
+              </>
+            ),
+            value: preview.borrow.effect.newCr === null ? "—" : formatPercent(preview.borrow.effect.newCr, 1),
+          },
+        ]
+      : []),
     ...tail,
   ];
 }
