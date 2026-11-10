@@ -6,7 +6,9 @@ import { formatUnits, parseUnits, type Address } from "viem";
 import { useAccount, useGasPrice } from "wagmi";
 import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { ActionCard } from "@/components/flow/ActionCard";
-import { ConfirmCard } from "@/components/flow/ConfirmCard";
+import { ConfirmAside, ConfirmCard } from "@/components/flow/ConfirmCard";
+import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
+import { troveSignFacts } from "@/lib/flow/sign-facts";
 import { Details } from "@/components/flow/Details";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { Overview } from "@/components/flow/Overview";
@@ -30,7 +32,7 @@ import { quoteFor, troveSteps } from "@/lib/leverage/steps";
 import { cr, nominalCr, type TroveState } from "@/lib/leverage/trove-math";
 import { useDirectTroveCall } from "@/lib/leverage/useDirectTroveCall";
 import { useTroveSnapshot, type TroveData } from "@/lib/leverage/useTroveSnapshot";
-import { crPresets, leverageMaxNote, maxTarget, maxTargetText, openBtcMax, openMaxNote, openReachNote, pageNotice, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "@/lib/leverage/view";
+import { crPresets, leverageMaxNote, maxTarget, troveNowRows, maxTargetText, openBtcMax, openMaxNote, openReachNote, pageNotice, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "@/lib/leverage/view";
 import { openMaxCr } from "@/lib/leverage/quote-open";
 import { unwindMaxCr } from "@/lib/leverage/quote-unwind";
 import { leverageMax, leverageQuoteAt } from "@/lib/leverage/quote-leverage";
@@ -41,8 +43,9 @@ import { useNow } from "@/lib/useNow";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import type { SlippageBps } from "@/lib/quote/entry";
+import { TroveAside } from "./TroveAside";
 import { TroveStepper } from "./TroveStepper";
-import { CrField, QueueLine, TroveNotice } from "./TroveViews";
+import { CrField, TroveNotice } from "./TroveViews";
 
 const TITLES: Record<TroveAction, { amount: string; confirm: string; card: string }> = {
   unwind: { amount: "Unwind your Trove", confirm: "Review your unwind", card: "Unwind" },
@@ -208,8 +211,12 @@ function AmountCard(props: {
     snapshot.trove &&
     direct.run({ kind: "repay", amount: snapshot.walletMusd < snapshot.trove.debt - 2_000n * 10n ** 18n ? snapshot.walletMusd : snapshot.trove.debt - 2_000n * 10n ** 18n, trove: snapshot.trove, troveCount: snapshot.system.troveCount });
 
+  const facts = network.leverage
+    ? troveSignFacts(network, { feeBps: network.leverage.feeBps, maxBtcFlash: network.leverage.maxBtcFlash, maxMusdFlash: network.leverage.maxMusdFlash, blockNumber: snapshot.block.number })
+    : null;
   return (
     <FlowColumn
+      aside={<TroveAside rows={troveNowRows(snapshot)} queue={{ before: view.queueBefore, after: view.queueAfter }} facts={facts} />}
       header={
         <>
           <PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title={TITLES[action].amount} />
@@ -297,7 +304,6 @@ function AmountCard(props: {
             {view.block.outcome.message}
           </p>
         )}
-        <QueueLine before={view.queueBefore} after={view.queueAfter} />
       </ActionCard>
       {view.after && (
         <Details summary="If BTC moves">
@@ -378,8 +384,18 @@ function ConfirmBody(props: {
       : null;
   const openReach = action === "open" ? openNote(view.quote, intent, openHighest) : null;
   const queueFirst = (action === "leverage" || action === "open") && view.queueAfter ? [`After this: ${queueLine(view.queueAfter)}`, ...risks] : risks;
+  const facts = network.leverage
+    ? troveSignFacts(network, { feeBps: network.leverage.feeBps, maxBtcFlash: network.leverage.maxBtcFlash, maxMusdFlash: network.leverage.maxMusdFlash, blockNumber: snapshot.block.number })
+    : null;
   return (
+    // U14 §A: the amount page's grid; the risks sit beside the card from lg (in it, above the steps, below), then the
+    // redemption queue and Before you sign.
     <FlowColumn
+      aside={
+        <ConfirmAside risks={queueFirst}>
+          <TroveAside queue={{ before: view.queueBefore, after: view.queueAfter }} facts={facts} />
+        </ConfirmAside>
+      }
       header={
         <>
           <PageHeader back={{ href: `/trove/${action}/?${intentQuery(action, intent)}`, label: "Change" }} step={2} title={TITLES[action].confirm} />
@@ -393,8 +409,8 @@ function ConfirmBody(props: {
         title={TITLES[action].card}
         subtitle="Your Trove, in one transaction"
         overview={view.rows}
-        quote={<QueueLine before={view.queueBefore} after={view.queueAfter} />}
         risks={queueFirst}
+        risksPlacement="aside-from-lg"
         footnote={
           (refinanceNote(capacity) ?? openReach?.text) && (
             <Notice tone="neutral" role="note">

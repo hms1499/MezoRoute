@@ -38,6 +38,18 @@ function troveRows(before: TroveState | null, after: TroveState, snapshot: Trove
   ];
 }
 
+/** The Trove pages' aside (U14): the Trove as it stands; the ratio is the card's headline figure, so it is not repeated. */
+export function troveNowRows(snapshot: TroveSnapshot): OverviewRow[] {
+  const t = snapshot.trove;
+  if (!t) return [{ label: "Trove", value: "None yet" }, { label: "Your BTC", value: btc(snapshot.walletBtc), tone: "btc" }];
+  const liq = liquidationPriceOf(t, snapshot.market.mcr);
+  return [
+    { label: "Collateral", value: btc(t.coll), tone: "btc" },
+    { label: "Debt", value: musd(t.debt) },
+    { label: "Liquidation price", value: liq === null ? "—" : `${formatToken(liq, 18, 0, "up")} MUSD / BTC` },
+  ];
+}
+
 /** Every amount page's and Confirm page's overview, cost first. */
 export function troveOverviewRows(quote: GateQuote, snapshot: TroveSnapshot): OverviewRow[] {
   switch (quote.action) {

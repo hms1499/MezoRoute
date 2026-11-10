@@ -4,7 +4,7 @@ import { quoteClose } from "./quote-close";
 import { quoteUnwind } from "./quote-unwind";
 import type { TroveSnapshot } from "./snapshot";
 import { HARNESS_MARKET, HARNESS_POOL, ONE, trove } from "./test-fixtures";
-import { costText, crPresets, leverageMaxNote, maxTargetText, openMaxNote, pageNotice, openBtcMax, openReachNote, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "./view";
+import { costText, crPresets, leverageMaxNote, maxTargetText, openMaxNote, pageNotice, openBtcMax, openReachNote, presetsWithin, refinanceNote, troveNowRows, troveOverviewRows, unwindMaxNote, unwindReachNote } from "./view";
 
 const t = trove(ONE, 40_000n * ONE);
 const snapshot: TroveSnapshot = {
@@ -152,5 +152,24 @@ describe("unwindMaxNote / openMaxNote", () => {
   it("names the most each action reaches", () => {
     expect(unwindMaxNote((2473n * ONE) / 1000n)).toBe("Up to 247.3%: past that your debt would fall under the 1,800 MUSD minimum.");
     expect(openMaxNote(ONE / 25n, (2364n * ONE) / 1000n)).toBe("With 0.04 BTC, up to 236.4%: past that the debt would fall under the 1,800 MUSD minimum.");
+  });
+});
+
+// U14 §A: the Trove pages' aside shows the Trove as it stands. The collateral ratio is the card's headline figure
+// ("Collateral ratio now"), so the aside leaves it out rather than repeat it.
+describe("troveNowRows", () => {
+  it("names the collateral, debt, and liquidation price of an active Trove", () => {
+    const rows = troveNowRows(snapshot);
+    expect(rows.map((r) => r.label)).toEqual(["Collateral", "Debt", "Liquidation price"]);
+    expect(rows[0]).toMatchObject({ value: "1 BTC", tone: "btc" });
+    expect(rows[1].value).toBe("40,000 MUSD");
+    expect(rows[2].value).toBe("44,000 MUSD / BTC");
+  });
+
+  it("says there is no Trove yet and shows the BTC an Open would use", () => {
+    expect(troveNowRows({ ...snapshot, trove: null })).toEqual([
+      { label: "Trove", value: "None yet" },
+      { label: "Your BTC", value: "1 BTC", tone: "btc" },
+    ]);
   });
 });
