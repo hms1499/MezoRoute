@@ -13,5 +13,6 @@ export type PlannerView = { block: EntryBlock | null; wrongNetwork: boolean };
  */
 export function plannerView(input: { connected: boolean; block: EntryBlock | null; walletChainId: number | undefined; chainId: number }): PlannerView {
   if (!input.connected) return { block: null, wrongNetwork: false };
-  return { block: input.block, wrongNetwork: input.walletChainId !== input.chainId };
+  // wagmi reports an account before the chain it sits on: a wallet whose network is still unknown is not on the wrong one.
+  return { block: input.block, wrongNetwork: input.walletChainId !== undefined && input.walletChainId !== input.chainId };
 }
