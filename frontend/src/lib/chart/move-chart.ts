@@ -2,7 +2,7 @@
 
 import { CHART_FONT_PX } from "@/lib/ui/tokens";
 
-export type SeriesId = "lp" | "sp" | "cr" | "lp-before" | "sp-before";
+export type SeriesId = "lp" | "sp" | "cr" | "lp-before" | "sp-before" | "baseline";
 export type Series = { id: SeriesId; points: { move: number; value: number }[] };
 export type Band = { from: number; to: number; tone: "danger" | "warning"; label: string };
 export type Pad = { top: number; right: number; bottom: number; left: number };
@@ -18,21 +18,37 @@ const RIGHT_LABEL_MIN_WIDTH = 400;
 
 const round = (n: number) => Math.round(n * 10) / 10;
 
-export function chartGeometry(input: { series: Series[]; bands?: Band[]; width: number; height: number; pad?: Pad }) {
-  const { series, bands = [], width, height, pad = DEFAULT_PAD } = input;
+/**
+ * `scale` (U15): keep `around × (1 ± spread)` in view, so the slope shows how much of the position moves with BTC
+ * (a position fully in BTC spans the plot, a MUSD deposit stays flat). It only widens the fitted range.
+ */
+export type RelativeScale = { around: number; spread: number };
+
+export function chartGeometry(input: { series: Series[]; bands?: Band[]; width: number; height: number; pad?: Pad; scale?: RelativeScale }) {
+  const { series, bands = [], width, height, pad = DEFAULT_PAD, scale } = input;
   const top = pad.top;
   const bottom = height - pad.bottom;
   const left = pad.left;
   const right = width - pad.right;
 
   // Each band's upper edge is kept in view, so the chart always shows where the danger starts.
-  const values = [...series.flatMap((s) => s.points.map((p) => p.value)), ...bands.map((b) => b.to)];
+  const values = [
+    ...series.flatMap((s) => s.points.map((p) => p.value)),
+    ...bands.map((b) => b.to),
+    ...(scale ? [scale.around * (1 - scale.spread), scale.around * (1 + scale.spread)] : []),
+  ];
   // With nothing to draw, Math.min/max give ±Infinity and every coordinate turns into NaN.
   let lo = values.length ? Math.min(...values) : 0;
   let hi = values.length ? Math.max(...values) : 0;
   const span = hi - lo || Math.abs(hi) * 0.1 || 1;
-  lo -= span * HEADROOM;
-  hi += span * HEADROOM;
+  // The relative range is the frame itself; headroom would only push it off centre-weighted symmetry.
+  if (!scale) {
+    lo -= span * HEADROOM;
+    hi += span * HEADROOM;
+  } else if (hi === lo) {
+    lo -= span / 2;
+    hi += span / 2;
+  }
 
   const x = (move: number) => left + ((move - MIN_MOVE) / (MAX_MOVE - MIN_MOVE)) * (right - left);
   const y = (value: number) => bottom - ((value - lo) / (hi - lo)) * (bottom - top);
@@ -62,7 +78,7 @@ export function chartLabels(input: { series: Series[]; width: number }): ChartLa
     ...(input.width >= RIGHT_LABEL_MIN_WIDTH ? ([["right", MAX_MOVE]] as [ChartLabel["side"], number][]) : []),
   ];
   return input.series
-    .filter((s) => !s.id.endsWith("-before"))
+    .filter((s) => !s.id.endsWith("-before") && s.id !== "baseline")
     .flatMap((s) =>
       sides.flatMap(([side, move]) => {
         const point = s.points.find((p) => p.move === move);
@@ -75,15 +91,31 @@ export function chartLabels(input: { series: Series[]; width: number }): ChartLa
 export const BAND_LABEL_MIN_HEIGHT = CHART_FONT_PX + 2;
 
 /**
- * Labels sit above their point; where two would touch at the same move, the lower value goes below its point.
+ * Labels sit above their point, except an end lower than today (U15), whose label goes below it; where two would
+ * touch at the same move, the lower value goes below its point.
  * Both stay inside the plot, clear of the axis labels underneath (a low −30% value reached them at 360 px).
  */
 export function placeLabels(labels: ChartLabel[], y: (value: number) => number, plot: { top: number; bottom: number }): (ChartLabel & { y: number })[] {
   return labels.map((label) => {
     const twin = labels.find((other) => other !== label && other.side === label.side);
     const close = twin !== undefined && Math.abs(y(label.value) - y(twin.value)) < 14;
-    const below = close && (label.value < twin.value || (label.value === twin.value && label.id > twin.id));
+    // U15: an end lower than today has the line rising away above it, so its label goes below the point.
+    const today = labels.find((other) => other.id === label.id && other.side === "today");
+    const lowEnd = label.side !== "today" && today !== undefined && label.value < today.value;
+    const below = close ? label.value < twin.value || (label.value === twin.value && label.id > twin.id) : lowEnd;
     const at = below ? y(label.value) + 14 : y(label.value) - 6;
     return { ...label, y: Math.min(plot.bottom - 3, Math.max(plot.top + 9, at)) };
   });
+}
+
+/**
+ * U15: an end label with its change from today ("1.89 (−16%)"), so the −30% and +30% ends say what the move does.
+ * Today's label, and any label when today is zero, stays the plain value.
+ */
+export function labelText(label: { side: ChartLabel["side"]; value: number; today: number }, format: (value: number) => string): string {
+  const value = format(label.value);
+  if (label.side === "today" || label.today === 0) return value;
+  const change = Math.round(((label.value - label.today) / label.today) * 100);
+  const signed = change > 0 ? `+${change}%` : change < 0 ? `−${Math.abs(change)}%` : "0%";
+  return `${value} (${signed})`;
 }

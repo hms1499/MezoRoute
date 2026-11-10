@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BAND_LABEL_MIN_HEIGHT, chartGeometry, chartLabels, placeLabels, type Series } from "./move-chart";
+import { BAND_LABEL_MIN_HEIGHT, chartGeometry, chartLabels, labelText, placeLabels, type Series } from "./move-chart";
 
 const MOVES = [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30];
 const lp: Series = { id: "lp", points: MOVES.map((move) => ({ move, value: 1000 * Math.sqrt(1 + move / 100) })) };
@@ -96,5 +96,73 @@ describe("placeLabels (12 px chart text, U6)", () => {
 
   it("shows a band label only from 14 px of band height", () => {
     expect(BAND_LABEL_MIN_HEIGHT).toBe(14);
+  });
+});
+
+// U15: a fitted axis drew every position corner to corner. The relative scale spans today's value × (1 ± 30%), what a
+// position fully in BTC would do, so a half-BTC LP rises about half as steeply and a MUSD deposit stays flat.
+describe("chartGeometry with a relative scale", () => {
+  const scale = { around: 1000, spread: 0.3 };
+  const g = chartGeometry({ series: [lp], width: 400, height: 160, pad, scale });
+
+  it("keeps today's value × (1 ± 30%) inside the plot", () => {
+    expect(g.y(700)).toBeLessThanOrEqual(g.plot.bottom);
+    expect(g.y(1300)).toBeGreaterThanOrEqual(g.plot.top);
+  });
+
+  it("puts a flat position across the middle, not the edge", () => {
+    const flat = chartGeometry({ series: [sp], width: 400, height: 160, pad, scale });
+    expect(Math.abs(flat.y(1000) - (flat.plot.top + flat.plot.bottom) / 2)).toBeLessThan(1);
+  });
+
+  it("leaves the LP's −30% end well above the floor, unlike the fitted axis", () => {
+    const fitted = chartGeometry({ series: [lp], width: 400, height: 160, pad });
+    // About 19 px higher in a 120 px plot: the end sits a sixth of the way up instead of on the floor.
+    expect(g.y(lp.points[0].value)).toBeLessThan(fitted.y(lp.points[0].value) - 15);
+  });
+
+  it("only widens the range: data outside it stays in view", () => {
+    const wide = chartGeometry({ series: [{ id: "lp", points: [{ move: -30, value: 100 }, { move: 30, value: 2000 }] }], width: 400, height: 160, pad, scale });
+    expect(wide.y(100)).toBeLessThanOrEqual(wide.plot.bottom);
+    expect(wide.y(2000)).toBeGreaterThanOrEqual(wide.plot.top);
+  });
+});
+
+describe("labelText", () => {
+  const format = (v: number) => v.toFixed(2);
+  it("adds the change from today at the ends", () => {
+    expect(labelText({ side: "left", value: 1.89, today: 2.25 }, format)).toBe("1.89 (−16%)");
+    expect(labelText({ side: "right", value: 2.57, today: 2.25 }, format)).toBe("2.57 (+14%)");
+  });
+
+  it("keeps Today's label and a zero change plain", () => {
+    expect(labelText({ side: "today", value: 2.25, today: 2.25 }, format)).toBe("2.25");
+    expect(labelText({ side: "left", value: 20, today: 20 }, format)).toBe("20.00 (0%)");
+    expect(labelText({ side: "left", value: 5, today: 0 }, format)).toBe("5.00");
+  });
+});
+
+// U15: an end label above a rising line's low end sat on the line ("1.89 (−16%)" was struck through). An end lower
+// than today puts its label below the point, where the line never runs.
+describe("placeLabels at the ends", () => {
+  const y = (value: number) => 200 - value;
+  const plot = { top: 0, bottom: 200 };
+  const rising = [
+    { id: "lp" as const, side: "left" as const, move: -30, value: 80 },
+    { id: "lp" as const, side: "today" as const, move: 0, value: 100 },
+    { id: "lp" as const, side: "right" as const, move: 30, value: 115 },
+  ];
+
+  it("puts a low end's label below its point and a high end's above", () => {
+    const placed = placeLabels(rising, y, plot);
+    expect(placed[0].y).toBeGreaterThan(y(80));
+    expect(placed[2].y).toBeLessThan(y(115));
+  });
+
+  it("mirrors it for a falling line", () => {
+    const falling = rising.map((l) => ({ ...l, value: 200 - l.value }));
+    const placed = placeLabels(falling, y, plot);
+    expect(placed[0].y).toBeLessThan(y(120));
+    expect(placed[2].y).toBeGreaterThan(y(85));
   });
 });

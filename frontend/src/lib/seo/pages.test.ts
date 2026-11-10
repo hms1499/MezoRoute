@@ -57,3 +57,12 @@ describe("page metadata", () => {
     }
   });
 });
+
+// U15: Compare routes is its own page, linked from the Dashboard's route table.
+describe("the Compare page", () => {
+  it("has its own title and stays indexable", () => {
+    expect(PAGES).toHaveProperty(["/compare/"]);
+    expect(pageMetadata("/compare/" as keyof typeof PAGES).title).toEqual({ absolute: "Compare routes | MezoRoute" });
+    expect(pageMetadata("/compare/" as keyof typeof PAGES).robots).toBeUndefined();
+  });
+});

@@ -7,7 +7,7 @@ import { Notice } from "@/components/ui/Notice";
 import { Stat } from "@/components/ui/Stat";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { drawdownScenarios, exposure, showsDoubleExposure, type Exposure, type Scenario } from "@/lib/exposure/exposure";
-import { breakdownSources, chartPlots, crossingLabel, type CrPlot } from "@/lib/exposure/plots";
+import { baselineFor, breakdownSources, chartPlots, crossingLabel, type CrPlot } from "@/lib/exposure/plots";
 import { formatPercent, formatToken } from "@/lib/format";
 import { GAUGE_READ_FAILED_EXPOSURE } from "@/lib/gauge/copy";
 import { collateralRatio } from "@/lib/trove/health";
@@ -31,7 +31,26 @@ const chartPercent = (value: number) => `${Math.round(value)}%`;
  * "If BTC moves" chart, with the 10/20/30% drawdown table behind "Show figures". With `before` (route
  * previews) every line reads before → after, and the chart draws the before lines faint.
  */
-export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBtc = false }: { snapshot: DashboardSnapshot; before?: DashboardSnapshot; title?: string; fromBtc?: boolean }) {
+/**
+ * `variant="dashboard"` (U15): the stats strip already shows the total, so the panel is boxed, titled If BTC moves,
+ * leads with the chart, and keeps the footnote behind Show figures. Route previews keep the default.
+ */
+export function ExposurePanel({
+  snapshot,
+  before,
+  title = "BTC exposure",
+  fromBtc = false,
+  variant = "preview",
+}: {
+  snapshot: DashboardSnapshot;
+  before?: DashboardSnapshot;
+  title?: string;
+  fromBtc?: boolean;
+  variant?: "preview" | "dashboard";
+}) {
+  const onDashboard = variant === "dashboard";
+  const heading = onDashboard ? "If BTC moves" : title;
+  const level = onDashboard ? "panel" : "section";
   const current = exposure(snapshot);
   const prior = before ? exposure(before) : null;
   const scenarios = drawdownScenarios(snapshot, current);
@@ -48,7 +67,7 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
 
   if (!hasTrove && !hasLp && !hasSp) {
     return (
-      <Card id="exposure" level="section" title={title}>
+      <Card id="exposure" level={level} title={heading}>
         {readNote || <p className="mt-2 text-sm text-muted">No BTC exposure in a Trove, the LP, or the Stability Pool yet.</p>}
       </Card>
     );
@@ -58,7 +77,18 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
   const showBreakdown = new Set([...breakdownSources(current), ...(prior ? breakdownSources(prior) : [])]).size >= 2;
   const plots = chartPlots({ snapshot, before });
   const chart: MovePlot[] = [];
-  if (plots.value) chart.push({ title: "Value in MUSD", series: plots.value, format: chartMusd });
+  if (plots.value) {
+    // U15: on the Dashboard the value plot is to scale (±30% of today's value) with a Kept in MUSD line to read it by.
+    const baseline = onDashboard ? baselineFor(plots.value) : null;
+    // Scaled around the largest line's value today, so a small second line never shrinks the frame.
+    const around = Math.max(...plots.value.map((s) => s.points.find((p) => p.move === 0)?.value ?? 0));
+    chart.push({
+      title: "Value in MUSD",
+      series: baseline ? [baseline, ...plots.value] : plots.value,
+      format: chartMusd,
+      ...(onDashboard ? { scale: { around, spread: 0.3 }, changeLabels: true } : {}),
+    });
+  }
   if (plots.cr) chart.push(crPlot(plots.cr, mcr));
 
   const nowCr = snapshot.trove ? collateralRatio(snapshot.trove, snapshot.price) : null;
@@ -74,9 +104,13 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
     })),
   ];
   return (
-    <Card id="exposure" level="section" title={title} aside={<span className="text-xs text-muted">BTC price {price(snapshot.price)} MUSD</span>}>
-      <p className="figure mt-3 text-btc [overflow-wrap:anywhere]">{change((e) => e.totalBtc)}</p>
-      <p className="text-xs text-muted">Total BTC exposure</p>
+    <Card id="exposure" level={level} title={heading} aside={<span className="text-xs text-muted">BTC price {price(snapshot.price)} MUSD</span>}>
+      {!onDashboard && (
+        <>
+          <p className="figure mt-3 text-btc [overflow-wrap:anywhere]">{change((e) => e.totalBtc)}</p>
+          <p className="text-xs text-muted">Total BTC exposure</p>
+        </>
+      )}
       {showBreakdown && (
         <dl className="stat-list mt-4">
           {hasTrove && <Stat label="Trove collateral">{change((e) => e.troveBtc)}</Stat>}
@@ -141,6 +175,7 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
               </tbody>
             </table>
           </div>
+          {onDashboard && <p className="mt-3 text-sm leading-relaxed text-muted">{FOOTNOTE}</p>}
         </details>
       </BtcMoveChart>
       {rows.some((row) => row.liquidatable) && (
@@ -149,7 +184,7 @@ export function ExposurePanel({ snapshot, before, title = "BTC exposure", fromBt
           Liquidatable: below the {formatPercent(mcr, 0)} minimum collateral ratio
         </p>
       )}
-      <p className="mt-3 text-sm leading-relaxed text-muted">{FOOTNOTE}</p>
+      {!onDashboard && <p className="mt-3 text-sm leading-relaxed text-muted">{FOOTNOTE}</p>}
     </Card>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { BAND_LABEL_MIN_HEIGHT, chartGeometry, chartLabels, placeLabels, type Band, type Series, type SeriesId } from "@/lib/chart/move-chart";
+import { BAND_LABEL_MIN_HEIGHT, chartGeometry, chartLabels, labelText, placeLabels, type Band, type RelativeScale, type Series, type SeriesId } from "@/lib/chart/move-chart";
 import { CHART_FONT_PX, themeColor } from "@/lib/ui/tokens";
 import { cx } from "@/lib/ui/cx";
 
@@ -12,6 +12,10 @@ export type MovePlot = {
   format: (value: number) => string;
   /** A marked point on the plot, e.g. where the Trove reaches the MCR. */
   crossing?: { move: number; value: number; label: string };
+  /** U15: keep today's value × (1 ± spread) in view, so the slope shows how much moves with BTC. */
+  scale?: RelativeScale;
+  /** U15: the end labels add their change from today ("1.89 (−16%)"). */
+  changeLabels?: boolean;
 };
 
 // Theme variables (U9), set through `style`: SVG presentation attributes do not reliably resolve var().
@@ -21,6 +25,7 @@ const STROKE: Record<SeriesId, string> = {
   cr: themeColor.ink,
   "lp-before": themeColor.accent,
   "sp-before": themeColor.sp,
+  baseline: themeColor.muted,
 };
 const BAND_FILL = { danger: themeColor["danger-soft"], warning: themeColor["warning-bg"] };
 const BAND_TEXT = { danger: themeColor.danger, warning: themeColor["warning-ink"] };
@@ -89,14 +94,24 @@ function Plot({
   /** The background behind the plot: value labels get an outline in it, so lines crossing them never cut the digits. */
   halo: string;
 }) {
-  const g = chartGeometry({ series: plot.series, bands: plot.bands, width, height });
+  const g = chartGeometry({ series: plot.series, bands: plot.bands, width, height, scale: plot.scale });
   const labels = placeLabels(chartLabels({ series: plot.series, width }), g.y, g.plot);
+  const todayOf = (id: SeriesId) => plot.series.find((s) => s.id === id)?.points.find((p) => p.move === 0)?.value ?? 0;
+  const hasBaseline = plot.series.some((s) => s.id === "baseline");
   const today = g.x(0);
   return (
     <figure className="m-0">
       {/* The crossing's label sits in the caption row: inside the plot it collides with the Today labels. */}
       <figcaption className="flex flex-wrap items-baseline justify-between gap-x-3 text-xs text-muted">
         <span>{plot.title}</span>
+        {hasBaseline && (
+          <span className="inline-flex items-center gap-2">
+            <svg aria-hidden width={16} height={2} className="overflow-visible">
+              <line x1={0} x2={16} y1={1} y2={1} strokeWidth={1.5} strokeDasharray="3 3" style={{ stroke: themeColor.muted }} />
+            </svg>
+            Kept in MUSD
+          </span>
+        )}
         {plot.crossing && <span className="font-medium text-danger">{plot.crossing.label}</span>}
       </figcaption>
       <svg aria-hidden viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="mt-1 block max-w-full overflow-visible">
@@ -115,6 +130,9 @@ function Plot({
         ))}
         <line x1={today} x2={today} y1={g.plot.top} y2={g.plot.bottom} strokeWidth={1} strokeDasharray="2 3" style={{ stroke: themeColor.muted }} />
         {plot.series.map((s) => {
+          if (s.id === "baseline") {
+            return <path key={s.id} d={g.paths[s.id]} fill="none" style={{ stroke: STROKE.baseline }} strokeWidth={1.5} strokeDasharray="3 3" />;
+          }
           const before = s.id.endsWith("-before");
           return (
             <path
@@ -146,7 +164,7 @@ function Plot({
             strokeLinejoin="round"
             paintOrder="stroke"
           >
-            {plot.format(label.value)}
+            {plot.changeLabels ? labelText({ side: label.side, value: label.value, today: todayOf(label.id) }, plot.format) : plot.format(label.value)}
           </text>
         ))}
         <g fontSize={CHART_FONT_PX} fontFamily="var(--font-geist-mono)" style={{ fill: themeColor.muted }}>

@@ -29,8 +29,7 @@ import type { WalletKind } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { DashboardHeader } from "./DashboardHeader";
 import { ExposurePanel } from "./ExposurePanel";
-import { MainnetReferenceCard } from "./MainnetReferenceCard";
-import { RouteComparison } from "./RouteComparison";
+import { DashboardGrid } from "./DashboardGrid";
 import { RoutesTable } from "./RoutesTable";
 import { TroveCard } from "./TroveCard";
 import { TroveWarning } from "./TroveWarning";
@@ -38,7 +37,7 @@ import { useWalletLine } from "./useWalletLine";
 import { YourPositionsTable } from "./YourPositionsTable";
 import { Settle } from "@/components/ui/Settle";
 
-/** The connected home page (spec §9 screen 1; U11 §6.3): header, warning, stats strip, positions and routes tables, exposure and Trove, route comparison, mainnet reference (testnet only). */
+/** The connected home page (spec §9 screen 1; U11 §6.3; U15): header, warnings, the stats strip, then one grid of positions, routes, If BTC moves, and the Trove. Compare routes and the mainnet reference live on /compare/. */
 export function Dashboard({ account }: { account: Address }) {
   const { network } = useNetwork();
   const { chainId } = useAccount();
@@ -47,7 +46,8 @@ export function Dashboard({ account }: { account: Address }) {
   const view = dashboardView({ hasData: data !== undefined, walletKindKnown: walletKind !== undefined, hasError: error !== null });
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-4">
+    // U15: 24 px between the Dashboard's rows (16 px read as one dense block).
+    <div className="mx-auto w-full max-w-6xl space-y-6">
       {chainId !== network.chainId && <WrongNetworkAlert />}
       {view === "content" && data && walletKind && <DashboardBody data={data} walletKind={walletKind} account={account} />}
       {view === "error" && error && <LoadError error={error} onRetry={refresh} />}
@@ -156,28 +156,28 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
           ]}
         />
       </Settle>
-      <Settle index={1} className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
-        <YourPositionsTable
-          lp={lpRow}
-          sp={pool && !pool.empty ? { value: pool.value } : null}
-          trove={snapshot.trove ? { debt: snapshot.trove.debt, manageHref: network.mezoAppUrl } : null}
-          gaugeReadFailed={positions.data?.snapshot.gaugeReadFailed ?? false}
+      <Settle index={1}>
+        <DashboardGrid
+          positions={
+            <YourPositionsTable
+              lp={lpRow}
+              sp={pool && !pool.empty ? { value: pool.value } : null}
+              trove={snapshot.trove ? { debt: snapshot.trove.debt, manageHref: network.mezoAppUrl } : null}
+              gaugeReadFailed={positions.data?.snapshot.gaugeReadFailed ?? false}
+            />
+          }
+          routes={
+            <RoutesTable
+              lpReturns={lpReturns({ availability, apr, poolFeeBps: snapshot.poolFeeBps })}
+              walletMusd={snapshot.musd}
+              lpHref="/route/lp/"
+              spHref="/route/stability-pool/"
+            />
+          }
+          exposure={<ExposurePanel snapshot={snapshot} variant="dashboard" />}
+          trove={<TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} account={account} />}
         />
-        <RoutesTable
-          lpReturns={lpReturns({ availability, apr, poolFeeBps: snapshot.poolFeeBps })}
-          walletMusd={snapshot.musd}
-          lpHref="/route/lp/"
-          spHref="/route/stability-pool/"
-        />
       </Settle>
-      <Settle index={2} className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
-        <ExposurePanel snapshot={snapshot} />
-        <TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} account={account} />
-      </Settle>
-      <Settle index={3}>
-        <RouteComparison snapshot={snapshot} />
-      </Settle>
-      <MainnetReferenceCard />
     </>
   );
 }

@@ -3,7 +3,7 @@ import { atRiskTrove, deployerTrove, lpShare, snapshotWith, spPosition } from "@
 import { WAD } from "@/lib/math";
 import { exposure } from "./exposure";
 import { mcrCrossing } from "./moves";
-import { breakdownSources, chartPlots, crossingLabel, valueSeries } from "./plots";
+import { baselineFor, breakdownSources, chartPlots, crossingLabel, valueSeries } from "./plots";
 
 const troveOnly = snapshotWith({ trove: deployerTrove });
 const withLp = snapshotWith({ trove: deployerTrove, lp: lpShare });
@@ -62,5 +62,23 @@ describe("chartPlots", () => {
 describe("crossingLabel", () => {
   it("rounds the liquidation price up, like the Trove card", () => {
     expect(crossingLabel(81_266_400_000_000_000_000_000n)).toBe("Liquidated below 81,267");
+  });
+});
+
+// U15: with one value line, a dashed "Kept in MUSD" line at today's value shows what the BTC move does to it.
+describe("baselineFor", () => {
+  const lp = valueSeries({ lpValue: 100n * WAD, spDeposit: 0n, spBtcGain: 0n, price: WAD })!;
+
+  it("is flat at today's value for one line", () => {
+    const base = baselineFor(lp);
+    expect(base?.id).toBe("baseline");
+    expect(new Set(base?.points.map((p) => p.value))).toEqual(new Set([100]));
+    expect(base?.points.map((p) => p.move)).toEqual(lp[0].points.map((p) => p.move));
+  });
+
+  it("is absent with two lines, which already compare each other, and on previews", () => {
+    expect(baselineFor(valueSeries({ lpValue: 100n * WAD, spDeposit: 50n * WAD, spBtcGain: 0n, price: WAD })!)).toBeNull();
+    const before = valueSeries({ lpValue: 100n * WAD, spDeposit: 0n, spBtcGain: 0n, price: WAD }, "before")!;
+    expect(baselineFor([...lp, ...before])).toBeNull();
   });
 });

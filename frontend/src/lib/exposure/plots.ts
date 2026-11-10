@@ -84,3 +84,14 @@ function valueInput(snapshot: DashboardSnapshot) {
   const e = exposure(snapshot);
   return { lpValue: e.lpValue, spDeposit: e.spDeposit, spBtcGain: e.spBtcGain, price: snapshot.price };
 }
+
+/**
+ * U15: the dashed "Kept in MUSD" line, flat at today's value, so the gap shows what a BTC move does to the position.
+ * Only for one solid line: two lines (LP and Stability Pool) already compare each other, and previews draw before lines.
+ */
+export function baselineFor(series: Series[]): Series | null {
+  if (series.length !== 1 || series[0].id.endsWith("-before")) return null;
+  const today = series[0].points.find((p) => p.move === 0)?.value;
+  if (today === undefined) return null;
+  return { id: "baseline", points: series[0].points.map((p) => ({ move: p.move, value: today })) };
+}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DataTable } from "@/components/ui/DataTable";
@@ -50,9 +51,10 @@ export function RoutesTable({ lpReturns, walletMusd, lpHref, spHref }: { lpRetur
           ]}
         />
       </div>
-      <a href="#compare" className="hit mt-3 inline-flex min-h-9 items-center text-sm font-medium text-accent underline underline-offset-2 hover:text-accent-hover">
+      {/* U15: Compare routes is its own page; the Dashboard keeps today's status. */}
+      <Link href="/compare/" className="hit mt-3 inline-flex min-h-9 items-center text-sm font-medium text-accent underline underline-offset-2 hover:text-accent-hover">
         Compare routes in detail
-      </a>
+      </Link>
     </Card>
   );
 }
