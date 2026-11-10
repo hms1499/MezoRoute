@@ -4,7 +4,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
-import { ConfirmCard } from "@/components/flow/ConfirmCard";
+import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
+import { ConfirmAside, ConfirmCard } from "@/components/flow/ConfirmCard";
+import { spSignFacts } from "@/lib/flow/sign-facts";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { TokenIcon } from "@/components/ui/TokenIcon";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -51,8 +53,14 @@ function SpConfirm({ account }: { account: Address }) {
 
   const preview = spDepositPreview({ network, data, musdIn, walletKind, walletChainId: chainId });
   return (
-    // U11 §6.2: the same column as the amount page; the full risk list is always visible before signing.
+    // U11 §6.2, U14 §A: the amount page's grid; the full risk list is always visible before signing (beside the card
+    // from lg, in it above the steps below).
     <FlowColumn
+      aside={
+        <ConfirmAside risks={SP_RISKS}>
+          <BeforeYouSign facts={spSignFacts(network, data.snapshot.blockNumber)} />
+        </ConfirmAside>
+      }
       header={
         <>
           <PageHeader back={{ href: `/route/stability-pool/${spDepositQuery(amount)}`, label: "Change amount" }} step={2} title="Review your deposit" />
@@ -65,6 +73,7 @@ function SpConfirm({ account }: { account: Address }) {
         title="Stability Pool"
         overview={spConfirmRows(preview, musdIn)}
         risks={SP_RISKS}
+        risksPlacement="aside-from-lg"
         steps={<SpDepositStepper account={account} musdIn={musdIn} walletKind={walletKind} plan={preview.steps} refresh={refresh} block={preview.block} />}
       />
     </FlowColumn>

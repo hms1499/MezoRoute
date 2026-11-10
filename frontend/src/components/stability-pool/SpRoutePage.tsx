@@ -10,6 +10,7 @@ import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
+import { spSignFacts } from "@/lib/flow/sign-facts";
 import type { OverviewRow } from "@/components/flow/Overview";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
@@ -24,6 +25,7 @@ import { useSpSnapshot } from "@/lib/stability-pool/useSpSnapshot";
 import { balanceRecoveries } from "@/lib/routes/balance-recovery";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { SpEntryCard } from "./SpEntryCard";
+import { SpDepositAside } from "./SpDepositAside";
 import { SpRisksCard } from "./SpRisksCard";
 
 /** Spec §9 screen 2b; U11 §6.2: one action card (amount, overview, Review), then exposure and risks in Details. */
@@ -106,6 +108,7 @@ function SpRoute({ account }: { account: Address }) {
       : [];
   return (
     <FlowColumn
+      aside={<SpDepositAside sp={dashboard.sp} facts={spSignFacts(network, data.snapshot.blockNumber)} />}
       header={
         <PageHeader
           back={{ href: "/", label: "Dashboard" }}

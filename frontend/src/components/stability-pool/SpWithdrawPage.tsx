@@ -11,6 +11,8 @@ import { BlockNotice } from "@/components/lp/BlockNotice";
 import { btc, musd } from "@/components/lp/units";
 import { ActionCard } from "@/components/flow/ActionCard";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
+import { spSignFacts } from "@/lib/flow/sign-facts";
+import { SpDepositAside } from "./SpDepositAside";
 import { Overview } from "@/components/flow/Overview";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
 import { Button } from "@/components/ui/Button";
@@ -104,6 +106,7 @@ function WithdrawView(props: {
 
   return (
     <FlowColumn
+      aside={<SpDepositAside sp={props.data.snapshot.dashboard.sp} facts={spSignFacts(network, props.data.snapshot.blockNumber)} />}
       header={
         <PageHeader
           back={{ href: "/positions/", label: "Positions" }}
