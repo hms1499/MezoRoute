@@ -8,7 +8,8 @@ import { FLOW_WIDTH, isFlowPath } from "./layout";
 
 describe("isFlowPath", () => {
   it.each([
-    ["/route/lp/", true],
+    ["/route/lp/", false],
+    ["/route/lp", false],
     ["/route/lp/confirm/", true],
     ["/route/stability-pool", true],
     ["/trove/leverage/confirm/", true],

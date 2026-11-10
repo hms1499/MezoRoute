@@ -67,14 +67,15 @@ describe("FlowColumn", () => {
     expect(out).toContain("mx-auto");
   });
 
-  it("stacks an aside under the flow, in the same 520 px column, at every width", () => {
+  it("with an aside, fills the page width in the Positions grid: the flow two thirds, the aside one", () => {
     const out = renderToStaticMarkup(
       createElement(FlowColumn, { header: createElement("h1", null, "T"), aside: createElement("p", { id: "aside" }, "side") }, "c"),
     );
-    // One width for every flow page: no grid, no rail, no breakpoint that widens the column.
-    expect(out).toContain("max-w-[520px]");
-    expect(out).not.toMatch(/grid|max-w-none|\b(?:lg|xl):/);
+    expect(out).not.toContain("max-w-[520px]");
+    expect(out).toContain("lg:grid-cols-3");
+    expect(out).toContain("lg:col-span-2");
     expect(out).toContain('id="aside"');
+    // The aside follows the flow's children in source order, so below lg it stacks under them.
     expect(out.indexOf('id="aside"')).toBeGreaterThan(out.indexOf(">c<"));
   });
 
