@@ -34,8 +34,9 @@ export type LpAmountField = {
   tokens?: Token[];
   label: string;
   balanceLabel: string;
-  balance: bigint;
-  /** What Max fills; null while the gas price is unknown (BTC). */
+  /** null before a wallet connects: the page shows "Connect to see balance", never a zero. */
+  balance: bigint | null;
+  /** What Max fills; null while the gas price is unknown (BTC), or before a wallet connects. */
   max: bigint | null;
 };
 
@@ -43,8 +44,18 @@ export type LpAmountField = {
  * The amount field. A BTC entry's Max is the balance less the gas reserve (`tokenAmountMax`), capped by the executor;
  * while the gas price is unknown Max is disabled (the gate blocks the entry). Borrow & Deploy fills the borrow limit.
  */
-export function lpAmountField(input: { preview: EntryPreview; mode: EntryMode; asset: EntryAsset; walletMusd: bigint }): LpAmountField {
+export function lpAmountField(input: {
+  preview: EntryPreview;
+  mode: EntryMode;
+  asset: EntryAsset;
+  walletMusd: bigint;
+  /** U13: false on the planner before a wallet connects, when the balance is unknown (not zero). */
+  connected?: boolean;
+}): LpAmountField {
   const { preview } = input;
+  if (input.connected === false) {
+    return { token: input.asset, tokens: input.mode === "borrow" ? undefined : ["musd", "btc"], label: "You deposit", balanceLabel: "Balance", balance: null, max: null };
+  }
   if (input.mode === "borrow" && preview.borrow) {
     return { token: "musd", label: "You borrow", balanceLabel: "You can borrow", balance: preview.borrow.limit, max: preview.borrow.limit };
   }

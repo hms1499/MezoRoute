@@ -50,6 +50,13 @@ describe("TokenAmountInput", () => {
 
   it("shows the balance", () => {
     expect(render({})).toContain("Balance 10");
+  });
+
+  it("asks the visitor to connect instead of showing a zero balance", () => {
+    const out = render({ balance: null, max: null });
+    expect(out).toContain("Connect to see balance");
+    expect(out).not.toContain("Balance 0");
+    expect(out).toMatch(/<button[^>]*disabled=""[^>]*>Max<\/button>/);
   });  it("renders the percent presets in percent mode", () => {
     const out = render({ percent: { value: 50, presets: [25, 50, 75, 100], onPreset: () => undefined } });
     expect(out).toContain('role="radiogroup"');

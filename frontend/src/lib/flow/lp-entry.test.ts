@@ -63,6 +63,16 @@ describe("lpAmountField", () => {
     expect(lpAmountField({ preview: btcPreview(E18, 2n * E18), mode: "deposit", asset: "btc", walletMusd: 0n }).max).toBe(2n * E18);
   });
 
+  it("hides the balance and Max before a wallet connects", () => {
+    const musd = { btc: null, borrow: null } as unknown as EntryPreview;
+    const field = lpAmountField({ preview: musd, mode: "deposit", asset: "musd", walletMusd: 0n, connected: false });
+    expect(field.balance).toBeNull();
+    expect(field.max).toBeNull();
+    const fromBtc = lpAmountField({ preview: btcPreview(4n * E18), mode: "deposit", asset: "btc", walletMusd: 0n, connected: false });
+    expect(fromBtc.balance).toBeNull();
+    expect(fromBtc.max).toBeNull();
+  });
+
   it("offers MUSD and BTC outside Borrow & Deploy, MUSD only inside", () => {
     const musd = { btc: null, borrow: null } as unknown as EntryPreview;
     expect(lpAmountField({ preview: musd, mode: "deposit", asset: "musd", walletMusd: 5n }).tokens).toEqual(["musd", "btc"]);
