@@ -235,7 +235,7 @@ Weights: 300 for display type only, 400 body and row headers, 500 labels and fig
 
 - Base unit 4 px; padding, margin, gap, and `space-*` use only `spacing.steps` (×4 px). `0.5` (2 px) is the one half step, for hairline offsets and a segmented track's inner padding (`spacing-guard.test.ts`).
 - Card padding 20 px (`p-5`), 16 px for a card inside a card; inset padding 12 px; 12 px between cards; 24 px between page sections (32 px on the landing); 8 px inside a control row.
-- Two page widths inside the shell (16 px gutter below 640 px, 24 px above, 1104 px content from 1200 px): wide pages (Dashboard, Positions, the LP planner's two columns) fill it with `Column`; flow routes use `FlowPage`, one centred 520 px column (`FLOW_WIDTH`) for every state they render, and the mainnet banner narrows to the same column there. The 16 px side gutter is never crossed at 360 px.
+- One page width inside the shell (16 px gutter below 640 px, 24 px above, 1104 px content from 1200 px): every page frames with `Column`, so the banner, the h1, and the first block share one left edge on every page. Flow pages lay out in Positions' grid (`FlowColumn`). The 16 px side gutter is never crossed at 360 px.
 - Positioning offsets (`top-*`, `inset-*`) follow an element's geometry and are not part of the rhythm.
 
 ## Elevation & Depth
@@ -289,7 +289,7 @@ A `<details>` under the action card (closed by default on amount pages) with Wha
 "Slippage 1%" with a gear (`quiet sm`) in the card's top-right; the overlay (`rounded-tip`, `shadow-overlay`) holds the 0.5 / 1 / 2% `Segmented`, closes on Escape or a click outside, and returns focus to the trigger. A 2% setting also shows the warning notice in the card.
 
 ### FlowColumn
-Every flow page (amount, confirm, exit, withdraw, receipt): `PageHeader` plus one centred column, `max-w-[520px]`, so the left edge never moves within a flow. It replaced `RouteLayout` and `MobileBar`. An `aside` (the LP planner's comparison and Before you sign) makes the page a wide page instead: page width, Positions' grid (the flow two thirds, the aside one third from `lg`, stacked below), and the banner at page width (`isFlowPath` lists `/route/lp/` as a wide route).
+Every flow page (amount, confirm, exit, withdraw, receipt): `PageHeader`, then Positions' grid (`grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start`): the flow's card two thirds (`lg:col-span-2`) and an aside one third from `lg`, stacked under the card below it. The aside holds facts the page already read (Before you sign, the position, the Trove, the transaction; on Confirm the risks from `lg`, which stay in the card above the steps below it). A route's loading, error, connect, and no-executor states use `FlowState`: the same grid with an empty aside, so the card's edge and width never move while data arrive. It replaced `RouteLayout` and `MobileBar`.
 
 ### StatsStrip
 A panel of 3–4 stats (`xs` label, `xl`/500 value, optional caption), split by hairlines from 768 px, a 2 × 2 grid below. A value that could not be read says "Not readable", never 0.
@@ -333,7 +333,7 @@ One curve and three durations (`motion`), from U10: `ease-smooth` for everything
 - Widths checked: 360, 390, 768, 1024, 1440 px. Never a horizontal scroll at 360 px; one-column grids that grow at `lg` need `grid-cols-1`.
 - Every target is at least 24 × 24 px, and 44 × 44 px below 768 px, through the `.hit` area, without growing what it looks like. Inline targets (a `Term` or a link inside a sentence) are exempt.
 - The header keeps the logo, one nav link below 640 px, the network chip, and the wallet button; the theme switch moves to the footer below 768 px.
-- Flow pages keep their left edge within a flow (`FlowColumn`); the action sits in the card, so no page needs a fixed bottom bar.
+- Every page keeps one left edge (`Column`, `FlowColumn`, `FlowState`); the action sits in the card, so no page needs a fixed bottom bar.
 - Below 768 px tables become card lists and stats strips a 2 × 2 grid.
 
 ## Do's and Don'ts

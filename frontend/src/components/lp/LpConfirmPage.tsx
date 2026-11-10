@@ -5,7 +5,7 @@ import { useEffect, useMemo } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { ConfirmCard } from "@/components/flow/ConfirmCard";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { Notice } from "@/components/ui/Notice";
 import { PairIcon } from "@/components/ui/TokenIcon";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -26,12 +26,12 @@ import { NoExecutorCard } from "./NoExecutorCard";
 
 /** Spec §9 screen 3a: a fresh quote with a 60 s expiry, then the permit/approve → send stepper. */
 export default function LpConfirmPage() {
-  return <RequireWallet>{(account) => <LpConfirm account={account} />}</RequireWallet>;
+  return <RequireWallet flow>{(account) => <LpConfirm account={account} />}</RequireWallet>;
 }
 
 function LpConfirm({ account }: { account: Address }) {
   const { network } = useNetwork();
-  if (!network.executor) return <NoExecutorCard />;
+  if (!network.executor) return <FlowState><NoExecutorCard /></FlowState>;
   return <ConfirmFlow account={account} executor={network.executor.address} />;
 }
 
@@ -52,9 +52,9 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
   if (intentAmount(intent) === null) return null;
   if (!data || !walletKind) {
     return error ? (
-      <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
+      <FlowState><LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} /></FlowState>
     ) : (
-      <LoadingCard label="Loading the quote" />
+      <FlowState><LoadingCard label="Loading the quote" /></FlowState>
     );
   }
 

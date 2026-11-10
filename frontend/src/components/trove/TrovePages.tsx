@@ -8,7 +8,7 @@ import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { ActionCard } from "@/components/flow/ActionCard";
 import { ConfirmCard } from "@/components/flow/ConfirmCard";
 import { Details } from "@/components/flow/Details";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { Overview } from "@/components/flow/Overview";
 import { SlippagePopover } from "@/components/flow/SlippagePopover";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
@@ -93,13 +93,13 @@ function useTroveView(action: TroveAction, account: Address, data: TroveData, qu
 }
 
 function Loading({ error, retry, label }: { error: Error | null; retry: () => void; label: string }) {
-  return error ? <LoadError error={error} onRetry={retry} /> : <LoadingCard label={label} />;
+  return <FlowState>{error ? <LoadError error={error} onRetry={retry} /> : <LoadingCard label={label} />}</FlowState>;
 }
 
 // ---------------------------------------------------------------------------------- amount page
 
 export function TroveAmountPage({ action }: { action: TroveAction }) {
-  return <RequireWallet>{(account) => <AmountFlow action={action} account={account} />}</RequireWallet>;
+  return <RequireWallet flow>{(account) => <AmountFlow action={action} account={account} />}</RequireWallet>;
 }
 
 function AmountFlow({ action, account }: { action: TroveAction; account: Address }) {
@@ -344,7 +344,7 @@ function troveOnlySnapshot(s: TroveSnapshot, t: TroveState): DashboardSnapshot {
 // ---------------------------------------------------------------------------------- confirm page
 
 export function TroveConfirmPage({ action }: { action: TroveAction }) {
-  return <RequireWallet>{(account) => <ConfirmFlow action={action} account={account} />}</RequireWallet>;
+  return <RequireWallet flow>{(account) => <ConfirmFlow action={action} account={account} />}</RequireWallet>;
 }
 
 function ConfirmFlow({ action, account }: { action: TroveAction; account: Address }) {

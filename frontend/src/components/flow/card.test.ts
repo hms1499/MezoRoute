@@ -3,8 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ActionCard } from "./ActionCard";
 import { Details } from "./Details";
-import { FlowColumn } from "./FlowColumn";
-import { FlowPage } from "./FlowPage";
+import { FlowColumn, FlowState } from "./FlowColumn";
 import { SlippagePopover } from "./SlippagePopover";
 
 // U11 §6.1-6.2: the flow's one card, its disclosure, the slippage popover, and the centred column.
@@ -61,37 +60,30 @@ describe("SlippagePopover", () => {
 });
 
 describe("FlowColumn", () => {
-  it("centres one column of the flow width", () => {
+  // U14 §A: one page width. Every flow is Positions' grid: the card two thirds, the aside one third from lg.
+  it("renders Positions' grid without an aside, at the page width", () => {
     const out = renderToStaticMarkup(createElement(FlowColumn, { header: createElement("h1", null, "T") }, "c"));
-    expect(out).toContain("max-w-[520px]");
-    expect(out).toContain("mx-auto");
+    expect(out).toContain("lg:grid-cols-3");
+    expect(out).toContain("lg:col-span-2");
+    expect(out).not.toContain("max-w-[520px]");
   });
 
-  it("with an aside, fills the page width in the Positions grid: the flow two thirds, the aside one", () => {
+  it("with an aside, puts the aside after the flow's children", () => {
     const out = renderToStaticMarkup(
       createElement(FlowColumn, { header: createElement("h1", null, "T"), aside: createElement("p", { id: "aside" }, "side") }, "c"),
     );
-    expect(out).not.toContain("max-w-[520px]");
     expect(out).toContain("lg:grid-cols-3");
-    expect(out).toContain("lg:col-span-2");
     expect(out).toContain('id="aside"');
     // The aside follows the flow's children in source order, so below lg it stacks under them.
     expect(out.indexOf('id="aside"')).toBeGreaterThan(out.indexOf(">c<"));
   });
-
-  it("keeps today's centred column without an aside", () => {
-    const out = renderToStaticMarkup(createElement(FlowColumn, { header: createElement("h1", null, "T") }, "c"));
-    expect(out).toContain("max-w-[520px]");
-  });
 });
 
-describe("FlowPage", () => {
-  it("frames every state of a flow route in the 520 px flow column", () => {
-    const out = renderToStaticMarkup(createElement(FlowPage, null, createElement("p", { id: "loading" }, "Loading")));
-    expect(out).toContain("max-w-[520px]");
-    expect(out).toContain("mx-auto");
-    expect(out).not.toMatch(/max-w-none|\b(?:lg|xl):/);
-    expect(out).toContain('id="loading"');
+describe("FlowState", () => {
+  it("keeps a loading, error, or connect state on the card's edge and width, with no header", () => {
+    const out = renderToStaticMarkup(createElement(FlowState, null, createElement("p", { id: "loading" }, "Loading")));
+    expect(out).toMatch(/lg:col-span-2[^>]*>(<[^>]+>)*<p id="loading"/);
+    expect(out).not.toContain("<h1");
   });
 });
 

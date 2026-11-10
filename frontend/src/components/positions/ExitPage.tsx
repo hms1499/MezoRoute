@@ -10,7 +10,7 @@ import { LoadError } from "@/components/LoadError";
 import { NoExecutorCard } from "@/components/lp/NoExecutorCard";
 import { ActionCard } from "@/components/flow/ActionCard";
 import { Details } from "@/components/flow/Details";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { Overview } from "@/components/flow/Overview";
 import { ReceiveRow } from "@/components/flow/ReceiveRow";
 import { SlippagePopover } from "@/components/flow/SlippagePopover";
@@ -38,12 +38,12 @@ import { ExitStepper } from "./ExitStepper";
 
 /** Spec §9 screen 6a; U11 §6.2: one action card (share, overview, steps), the notes behind Details. */
 export default function ExitPage() {
-  return <RequireWallet>{(account) => <ExitRoute account={account} />}</RequireWallet>;
+  return <RequireWallet flow>{(account) => <ExitRoute account={account} />}</RequireWallet>;
 }
 
 function ExitRoute({ account }: { account: Address }) {
   const { network } = useNetwork();
-  if (!network.executor) return <NoExecutorCard />;
+  if (!network.executor) return <FlowState><NoExecutorCard /></FlowState>;
   return <ExitLoader account={account} executor={network.executor.address} />;
 }
 
@@ -55,9 +55,9 @@ function ExitLoader({ account, executor }: { account: Address; executor: Address
 
   if (!data || !walletKind) {
     return error ? (
-      <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
+      <FlowState><LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} /></FlowState>
     ) : (
-      <LoadingCard label="Loading the quote" />
+      <FlowState><LoadingCard label="Loading the quote" /></FlowState>
     );
   }
   return (

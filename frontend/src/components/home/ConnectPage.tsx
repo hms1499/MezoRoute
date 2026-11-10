@@ -8,7 +8,7 @@ import { ConnectCta } from "./ConnectCta";
 
 /**
  * A route page before a wallet connects (U13 follow-up): the page keeps its own title, its progress step, and its
- * 520 px column, and the connect card carries the route's name and what it does. Without this a route opened cold
+ * flow frame (U14: the card two thirds of the page), and the connect card carries the route's name and what it does. Without this a route opened cold
  * was a bare card at the container's left edge with no heading, which read as a broken page rather than a way in.
  */
 export function ConnectPage({

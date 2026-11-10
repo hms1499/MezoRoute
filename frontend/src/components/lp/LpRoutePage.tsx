@@ -9,7 +9,7 @@ import { ConnectCta } from "@/components/home/ConnectCta";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import type { OverviewRow } from "@/components/flow/Overview";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -56,8 +56,8 @@ export default function LpRoutePage() {
   const { address, status } = useAccount();
   const { network } = useNetwork();
   // A remembered wallet reconnecting on load keeps the loading card: the planner must not flash Connect at it.
-  if (status === "reconnecting") return <LoadingCard label="Connecting wallet" lines={2} />;
-  if (!network.executor) return <NoExecutorCard />;
+  if (status === "reconnecting") return <FlowState><LoadingCard label="Connecting wallet" lines={2} /></FlowState>;
+  if (!network.executor) return <FlowState><NoExecutorCard /></FlowState>;
   return <LpRouteForm account={address} executor={network.executor.address} />;
 }
 
@@ -79,9 +79,9 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
 
   if (!data) {
     return error ? (
-      <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
+      <FlowState><LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} /></FlowState>
     ) : (
-      <LoadingCard label="Loading the pool" />
+      <FlowState><LoadingCard label="Loading the pool" /></FlowState>
     );
   }
 

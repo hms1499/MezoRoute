@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { ConfirmCard } from "@/components/flow/ConfirmCard";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { TokenIcon } from "@/components/ui/TokenIcon";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
@@ -24,7 +24,7 @@ import { SpDepositStepper } from "./SpDepositStepper";
 
 /** Spec §9 screen 3b: exact approval (skipped if the allowance suffices) → provideToSP. */
 export default function SpConfirmPage() {
-  return <RequireWallet>{(account) => <SpConfirm account={account} />}</RequireWallet>;
+  return <RequireWallet flow>{(account) => <SpConfirm account={account} />}</RequireWallet>;
 }
 
 function SpConfirm({ account }: { account: Address }) {
@@ -43,9 +43,9 @@ function SpConfirm({ account }: { account: Address }) {
   if (musdIn === null) return null;
   if (!data || !walletKind) {
     return error ? (
-      <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
+      <FlowState><LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} /></FlowState>
     ) : (
-      <LoadingCard label="Loading the Stability Pool" />
+      <FlowState><LoadingCard label="Loading the Stability Pool" /></FlowState>
     );
   }
 

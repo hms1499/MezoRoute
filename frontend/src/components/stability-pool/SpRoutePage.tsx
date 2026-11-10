@@ -9,7 +9,7 @@ import { ConnectPage } from "@/components/home/ConnectPage";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import type { OverviewRow } from "@/components/flow/Overview";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
@@ -29,7 +29,7 @@ import { SpRisksCard } from "./SpRisksCard";
 /** Spec §9 screen 2b; U11 §6.2: one action card (amount, overview, Review), then exposure and risks in Details. */
 export default function SpRoutePage() {
   return (
-    <RequireWallet
+    <RequireWallet flow
       fallback={
         <ConnectPage
           back={{ href: "/", label: "Dashboard" }}
@@ -59,9 +59,9 @@ function SpRoute({ account }: { account: Address }) {
 
   if (!data) {
     return error ? (
-      <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
+      <FlowState><LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} /></FlowState>
     ) : (
-      <LoadingCard label="Loading the Stability Pool" />
+      <FlowState><LoadingCard label="Loading the Stability Pool" /></FlowState>
     );
   }
 

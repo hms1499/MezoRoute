@@ -10,7 +10,7 @@ import { LoadError } from "@/components/LoadError";
 import { BlockNotice } from "@/components/lp/BlockNotice";
 import { btc, musd } from "@/components/lp/units";
 import { ActionCard } from "@/components/flow/ActionCard";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { Overview } from "@/components/flow/Overview";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
 import { Button } from "@/components/ui/Button";
@@ -34,7 +34,7 @@ import { useWalletKind } from "@/lib/wallet/useWalletKind";
 
 /** Spec §9 screen 6b: share or Max, simulated first; a paused pool shows the blocked state with Claim BTC gain. U11 §6.2: one action card. */
 export default function SpWithdrawPage() {
-  return <RequireWallet>{(account) => <SpWithdraw account={account} />}</RequireWallet>;
+  return <RequireWallet flow>{(account) => <SpWithdraw account={account} />}</RequireWallet>;
 }
 
 function SpWithdraw({ account }: { account: Address }) {
@@ -43,9 +43,9 @@ function SpWithdraw({ account }: { account: Address }) {
   const { data, error, refresh } = useSpSnapshot(account);
   if (!data) {
     return error ? (
-      <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
+      <FlowState><LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} /></FlowState>
     ) : (
-      <LoadingCard label="Loading your deposit" />
+      <FlowState><LoadingCard label="Loading your deposit" /></FlowState>
     );
   }
   return (
