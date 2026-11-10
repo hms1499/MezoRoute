@@ -5,9 +5,10 @@ import { cx } from "@/lib/ui/cx";
 // U13 follow-up: a row may name a `group`; consecutive rows of the same group share one caption and a hairline, so a
 // Confirm card reads as "You pay / You receive / Terms" instead of a flat wall of eight equal rows.
 
-export type OverviewRow = { label: ReactNode; value: ReactNode; sub?: ReactNode; tone?: "btc" | "positive" | "negative"; group?: string };
+export type OverviewRow = { label: ReactNode; value: ReactNode; sub?: ReactNode; tone?: "btc" | "positive" | "negative" | "warning"; group?: string };
 
-const TONE: Record<NonNullable<OverviewRow["tone"]>, string> = { btc: "text-btc", positive: "text-positive", negative: "text-negative" };
+// `warning` (U14 B3): a figure that is still allowed but costly (price impact from 1%), never a signed result.
+const TONE: Record<NonNullable<OverviewRow["tone"]>, string> = { btc: "text-btc", positive: "text-positive", negative: "text-negative", warning: "text-warning-ink" };
 
 /** `columns={2}` lays the groups side by side from lg, in source order (U14: a Confirm card at page width). */
 export function Overview({ rows, className, columns = 1 }: { rows: OverviewRow[]; className?: string; columns?: 1 | 2 }) {

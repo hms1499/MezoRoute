@@ -8,6 +8,7 @@ import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { ActionCard } from "@/components/flow/ActionCard";
 import { ConfirmAside, ConfirmCard } from "@/components/flow/ConfirmCard";
 import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
+import { troveFieldError } from "@/lib/flow/field-error";
 import { troveSignFacts } from "@/lib/flow/sign-facts";
 import { Details } from "@/components/flow/Details";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
@@ -209,6 +210,8 @@ function AmountCard(props: {
   // U14 B1: with no room, the page says which limit binds (the oracle cost at the smallest size when that is it),
   // disables the target, and shows no Review: there is nothing to do here, and the header's Dashboard link is the way out.
   const noRoom = max !== null && max.btc === 0n;
+  // U14 B3: a block the typed BTC or target causes is said at that field, not under the overview.
+  const fieldError = troveFieldError(view.block, { btc: action === "open", cr: action !== "close" });
   const noRoomNote =
     noRoom && snapshot.trove && network.leverage
       ? leverageMaxNote(max, LEVERAGE_CR_FLOOR, leverageQuoteAt(snapshot.trove, snapshot.pool, snapshot.market, MIN_LEVERAGE_BTC, intent.slippageBps, network.leverage.feeBps).costBps)
@@ -262,6 +265,7 @@ function AmountCard(props: {
             balance={snapshot.walletBtc}
             max={btcMax}
             note="Max keeps enough BTC for gas. A Trove needs at least 1,800 MUSD of debt; MUSD beyond what the pool needs stays in your wallet, still owed."
+            error={fieldError?.field === "btc" ? fieldError.message : undefined}
           />
         )}
         {action !== "close" && (
@@ -272,6 +276,7 @@ function AmountCard(props: {
             label={action === "unwind" ? "Target collateral ratio (higher)" : "Target collateral ratio (200% or more)"}
             disabled={noRoom}
             description={noRoomNote}
+            error={fieldError?.field === "cr" ? fieldError.message : undefined}
           />
         )}
         {max && !noRoom && (
@@ -308,7 +313,7 @@ function AmountCard(props: {
           </Notice>
         )}
         {view.rows.length > 0 && <Overview rows={view.rows} />}
-        {view.block?.outcome && view.block.reason !== "recovery-mode" && view.block.reason !== "smart-account" && (
+        {view.block?.outcome && view.block.reason !== "recovery-mode" && view.block.reason !== "smart-account" && fieldError === null && (
           <p role="status" className="text-sm text-danger">
             {view.block.outcome.message}
           </p>

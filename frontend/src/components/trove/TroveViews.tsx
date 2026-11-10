@@ -1,5 +1,6 @@
 "use client";
 
+import { CircleAlert } from "lucide-react";
 import { ButtonLink } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Segmented } from "@/components/ui/Segmented";
@@ -35,6 +36,7 @@ export function CrField({
   label,
   disabled = false,
   description,
+  error,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -42,7 +44,10 @@ export function CrField({
   label: string;
   disabled?: boolean;
   description?: string;
+  /** U14 B3: a size limit the target hits, said at the field. */
+  error?: string | null;
 }) {
+  const describedBy = [description ? "target-cr-description" : null, error ? "target-cr-error" : null].filter(Boolean).join(" ") || undefined;
   const options = presets.map((p) => ({ value: formatPercent(p, 0).replace("%", ""), label: formatPercent(p, 0) }));
   return (
     <div className="space-y-2">
@@ -52,7 +57,8 @@ export function CrField({
       <div className="flex items-center gap-2 rounded-inset border border-line px-4 py-2">
         <input
           id="target-cr"
-          aria-describedby={description ? "target-cr-description" : undefined}
+          aria-describedby={describedBy}
+          aria-invalid={error ? true : undefined}
           inputMode="decimal"
           autoComplete="off"
           placeholder="250"
@@ -67,6 +73,12 @@ export function CrField({
       {description && (
         <p id="target-cr-description" className="text-sm text-muted">
           {description}
+        </p>
+      )}
+      {error && (
+        <p id="target-cr-error" className="flex items-start gap-2 text-sm text-danger">
+          <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
         </p>
       )}
       {options.length > 1 && !disabled && (

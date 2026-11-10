@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ActionCard } from "./ActionCard";
+import { BlockNotice } from "@/components/lp/BlockNotice";
 import { Overview } from "./Overview";
 import { ReceiveRow } from "./ReceiveRow";
 import { TokenAmountInput } from "./TokenAmountInput";
@@ -117,5 +118,27 @@ describe("Overview", () => {
     expect(out.match(/<dt/g)).toHaveLength(3);
     expect(out.match(/<dd/g)).toHaveLength(3);
     expect(out).toContain("text-btc");
+  });
+});
+
+// U14 B3: a heavy price impact reads amber before it blocks; a field block's recoveries stay without its message.
+describe("Overview warning tone", () => {
+  it("renders a warning value in the warning ink", () => {
+    const out = renderToStaticMarkup(createElement(Overview, { rows: [{ label: "Price impact", value: "2%", tone: "warning" }] }));
+    expect(out).toMatch(/<dd class="[^"]*\btext-warning-ink\b[^"]*">2%/);
+  });
+});
+
+describe("BlockNotice without a message", () => {
+  it("keeps the recoveries when the field says the message", () => {
+    const out = renderToStaticMarkup(
+      createElement(BlockNotice, { block: { outcome: null }, actions: [{ label: "Use my balance (20 MUSD)", onClick: () => undefined }] }),
+    );
+    expect(out).toContain("Use my balance (20 MUSD)");
+    expect(out).not.toContain("text-danger");
+  });
+
+  it("renders nothing with neither a message nor a recovery", () => {
+    expect(renderToStaticMarkup(createElement(BlockNotice, { block: { outcome: null } }))).toBe("");
   });
 });

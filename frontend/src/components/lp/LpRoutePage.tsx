@@ -24,6 +24,8 @@ import { exposure } from "@/lib/exposure/exposure";
 import { lpAmountField, lpHeaderFigure, lpRiskLine } from "@/lib/flow/lp-entry";
 import { splitPrimary } from "@/lib/flow/notice-action";
 import { plannerView } from "@/lib/flow/planner";
+import { isFieldBlock, lpFieldError } from "@/lib/flow/field-error";
+import { PRICE_IMPACT_WARN } from "@/lib/routes/musd-btc-lp/gate";
 import { lpSignFacts } from "@/lib/flow/sign-facts";
 import { BTC_COMPARE_MESSAGE, plannerAmount, plannerComparisonRows } from "@/lib/flow/planner-comparison";
 import { btcRecoveries } from "@/lib/routes/musd-btc-lp/asset";
@@ -142,7 +144,12 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
     ? [
         { label: "Deposited to the pool", value: musd(quote.musdAdded), sub: `+ ${fromBtc ? btcFine(quote.btcAdded) : btc(quote.btcAdded)}` },
         { label: "MezoRoute fee", value: amount(quote.fee), sub: formatBps(data.snapshot.executorFeeBps) },
-        { label: "Price impact", value: formatPercent(quote.priceImpact, 2), sub: "includes the pool's swap fee" },
+        {
+          label: "Price impact",
+          value: formatPercent(quote.priceImpact, 2),
+          sub: "includes the pool's swap fee",
+          tone: quote.priceImpact >= PRICE_IMPACT_WARN ? "warning" : undefined,
+        },
         // U14 B2: the Staking row is the stake control (its switch on the value side), not a block of its own.
         ...(stakeRow === null
           ? []
@@ -282,6 +289,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
         onSlippage={(slippageBps) => update({ ...intent, slippageBps })}
         field={{
           ...field,
+          error: lpFieldError(view.block),
           amount: intent.amount,
           note,
           onAmount: (next) => update({ ...intent, amount: next }),
@@ -295,7 +303,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
             {intent.slippageBps === 200n && (
               <Notice tone="warning">2% slippage lets this deposit fill up to 2% below the quote. Use it only if lower settings keep failing.</Notice>
             )}
-            <BlockNotice block={view.block} actions={noticeActions} />
+            <BlockNotice block={view.block && isFieldBlock(view.block.reason) ? { outcome: null } : view.block} actions={noticeActions} />
           </>
         }
         risk={lpRiskLine({ borrow: displayIntent.mode === "borrow", fromBtc })}

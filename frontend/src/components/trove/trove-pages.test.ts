@@ -53,3 +53,14 @@ describe("CrField with no room", () => {
     expect(html).not.toContain('role="radiogroup"');
   });
 });
+
+// U14 B3: a size limit is said at the ratio field.
+describe("CrField with an error", () => {
+  it("marks the input invalid and says why under it", () => {
+    const html = renderToStaticMarkup(
+      createElement(CrField, { value: "150", onChange: () => undefined, presets: [], label: "Target collateral ratio", error: "Above the cap." }),
+    );
+    expect(html).toMatch(/<input[^>]*aria-describedby="target-cr-error"[^>]*aria-invalid="true"/);
+    expect(html).toMatch(/id="target-cr-error"[^>]*>[\s\S]*Above the cap\./);
+  });
+});

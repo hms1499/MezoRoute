@@ -31,7 +31,7 @@ export function LpEntryCard({
   tabs: ReactNode;
   slippageBps: SlippageBps;
   onSlippage: (bps: SlippageBps) => void;
-  field: LpAmountField & { amount: string; onAmount: (amount: string) => void; onToken?: (token: Token) => void; note?: ReactNode };
+  field: LpAmountField & { amount: string; onAmount: (amount: string) => void; onToken?: (token: Token) => void; note?: ReactNode; error?: string | null };
   receive: { value: string; minimum: string } | null;
   overview: OverviewRow[];
   /** Block reasons with their recoveries, the 2% warning, and the gauge notices: above the action. */
@@ -94,6 +94,7 @@ export function LpEntryCard({
           balanceLabel={field.balanceLabel}
           max={field.max}
           note={field.note}
+          error={field.error ?? undefined}
         />
         {receive && (
           <ReceiveRow value={receive.value} minimum={receive.minimum} icon={<PairIcon tokens={["musd", "btc"]} size={20} />} />

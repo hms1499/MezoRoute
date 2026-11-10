@@ -10,6 +10,7 @@ import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
+import { isFieldBlock, spFieldError } from "@/lib/flow/field-error";
 import { spSignFacts } from "@/lib/flow/sign-facts";
 import type { OverviewRow } from "@/components/flow/Overview";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -123,9 +124,9 @@ function SpRoute({ account }: { account: Address }) {
     >
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <SpEntryCard
-        field={{ amount, onAmount, balance: dashboard.musd }}
+        field={{ amount, onAmount, balance: dashboard.musd, error: spFieldError(preview.block) }}
         overview={rows}
-        notices={<BlockNotice block={preview.block} actions={recoveries} />}
+        notices={<BlockNotice block={preview.block && isFieldBlock(preview.block.reason) ? { outcome: null } : preview.block} actions={recoveries} />}
         review={{ href: `/route/stability-pool/confirm/${spDepositQuery(amount)}`, disabled: preview.block !== null }}
         details={
           <>

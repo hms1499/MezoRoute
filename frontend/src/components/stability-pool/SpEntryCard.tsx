@@ -19,7 +19,7 @@ export function SpEntryCard({
   review,
   details,
 }: {
-  field: { amount: string; onAmount: (amount: string) => void; balance: bigint };
+  field: { amount: string; onAmount: (amount: string) => void; balance: bigint; error?: string | null };
   overview: OverviewRow[];
   notices: ReactNode;
   review: { href: string; disabled: boolean };
@@ -54,6 +54,7 @@ export function SpEntryCard({
           token="musd"
           balance={field.balance}
           max={field.balance}
+          error={field.error ?? undefined}
         />
         {overview.length > 0 && <Overview rows={overview} />}
         {notices}
