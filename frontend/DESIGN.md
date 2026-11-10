@@ -330,7 +330,7 @@ One curve and three durations (`motion`), from U10: `ease-smooth` for everything
 
 ## Responsive
 
-- Widths checked: 360, 390, 768, 1024, 1440 px. Never a horizontal scroll at 360 px; one-column grids that grow at `lg` need `grid-cols-1`.
+- Widths checked: 360, 390, 768, 1023, 1024, 1440, 1920 px (1023/1024 is the `lg` step where the aside moves beside the card). Never a horizontal scroll at 360 px; one-column grids that grow at `lg` need `grid-cols-1`.
 - Every target is at least 24 × 24 px, and 44 × 44 px below 768 px, through the `.hit` area, without growing what it looks like. Inline targets (a `Term` or a link inside a sentence) are exempt.
 - The header keeps the logo, one nav link below 640 px, the network chip, and the wallet button; the theme switch moves to the footer below 768 px.
 - Every page keeps one left edge (`Column`, `FlowColumn`, `FlowState`); the action sits in the card, so no page needs a fixed bottom bar.
@@ -344,6 +344,8 @@ One curve and three durations (`motion`), from U10: `ease-smooth` for everything
 - Show loading, empty, error, and disabled states for every data-driven view; empty states are neutral.
 - Say "this week's rate" next to every APR and that staked LP's swap fees go to veBTC voters.
 - Give every app page exactly one `h1`.
+- Give every route its own title: an entry in `src/lib/seo/pages.ts` and a server segment `layout.tsx` that exports it (titles never come from client code). An unknown URL lands on the MezoRoute 404 (`not-found.tsx`).
+- Give a page with nothing to act on an empty state that leads somewhere (SP withdraw with no deposit and no gain offers a deposit), not a disabled form.
 
 ### Don't
 - Write a hex, a raw size, a radius, or a shadow outside the tokens.
