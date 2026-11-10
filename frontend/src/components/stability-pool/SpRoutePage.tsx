@@ -5,6 +5,7 @@ import { useState } from "react";
 import { formatUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
+import { ConnectPage } from "@/components/home/ConnectPage";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
@@ -27,7 +28,25 @@ import { SpRisksCard } from "./SpRisksCard";
 
 /** Spec §9 screen 2b; U11 §6.2: one action card (amount, overview, Review), then exposure and risks in Details. */
 export default function SpRoutePage() {
-  return <RequireWallet>{(account) => <SpRoute account={account} />}</RequireWallet>;
+  return (
+    <RequireWallet
+      fallback={
+        <ConnectPage
+          back={{ href: "/", label: "Dashboard" }}
+          step={1}
+          title={
+            <>
+              Back the system in the <Term id="stabilityPool">Stability Pool</Term>
+            </>
+          }
+          cardTitle="Stability Pool"
+          cardNote="Your MUSD repays liquidated debt; you receive the liquidated BTC collateral."
+        />
+      }
+    >
+      {(account) => <SpRoute account={account} />}
+    </RequireWallet>
+  );
 }
 
 function SpRoute({ account }: { account: Address }) {

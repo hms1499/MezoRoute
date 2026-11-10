@@ -76,7 +76,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
     {
       id: "lp",
       title: "MUSD/BTC LP",
-      tagline: "Earn swap fees or MEZO",
+      tagline: "Collect swap fees or MEZO",
       rows: [
         { label: "Return source", value: LP_RETURN_SOURCE },
         ...lpGaugeRows(compared),
@@ -175,7 +175,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
           <span aria-hidden />
           {routes.map((route) => (
             <div key={route.id} role="cell">
-              <ButtonLink href={route.href} variant="secondary" arrow>
+              <ButtonLink href={route.href} variant="secondary">
                 {route.cta}
               </ButtonLink>
             </div>
@@ -221,7 +221,7 @@ export function RouteComparison({ snapshot }: { snapshot: DashboardSnapshot }) {
             <div className="mt-4">
               <RiskList risks={route.risks} />
             </div>
-            <ButtonLink href={route.href} variant="secondary" className="mt-4 w-full" arrow>
+            <ButtonLink href={route.href} variant="secondary" className="mt-4 w-full">
               {route.cta}
             </ButtonLink>
           </div>

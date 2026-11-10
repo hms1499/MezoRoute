@@ -142,7 +142,8 @@ export function TokenAmountInput({
   /** Two entries open a token menu; otherwise the chip is static. */
   tokens?: Token[];
   onToken?: (token: Token) => void;
-  balance: bigint;
+  /** null before a wallet connects: the line asks the visitor to connect instead of showing a zero. */
+  balance: bigint | null;
   balanceLabel?: string;
   /** What Max fills; `null` disables Max (BTC while the gas price is unknown). */
   max: bigint | null;
@@ -165,9 +166,12 @@ export function TokenAmountInput({
           </label>
           <span id={helpId} className="flex min-w-0 items-center gap-2">
             <span className="truncate">
-              {balanceLabel} {formatToken(balance, 18, FLOW_TOKEN_DIGITS[token])}
+              {balance === null ? "Connect to see balance" : `${balanceLabel} ${formatToken(balance, 18, FLOW_TOKEN_DIGITS[token])}`}
             </span>
-            {!percent && onAmount && <MaxButton onClick={() => max !== null && onAmount(maxFillAmount(max, token))} disabled={max === null} />}
+            {/* Before a wallet connects there is no balance to fill: Max only took the room the sentence needs. */}
+            {!percent && onAmount && balance !== null && (
+              <MaxButton onClick={() => max !== null && onAmount(maxFillAmount(max, token))} disabled={max === null} />
+            )}
           </span>
         </div>
         <div className="mt-2 flex items-center gap-3">

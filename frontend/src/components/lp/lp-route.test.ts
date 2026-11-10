@@ -68,6 +68,19 @@ describe("LpEntryCard", () => {
     expect(blocked).not.toContain(">Review<");
   });
 
+  it("renders the page's own node as the one primary", () => {
+    // The node's own label, so a fallback Button with the action's label cannot pass this test.
+    const out = renderToStaticMarkup(
+      createElement(LpEntryCard, {
+        ...props,
+        action: { label: "Review", node: createElement("button", { id: "connect-cta", className: "bg-accent w-full" }, "Connect to review") },
+      }),
+    );
+    expect(out).toContain('id="connect-cta"');
+    expect(out.match(/bg-accent(?![\w-])/g)).toHaveLength(1);
+    expect(out).not.toContain(">Review<");
+  });
+
   it("renders a disabled primary inert", () => {
     const blocked = renderToStaticMarkup(createElement(LpEntryCard, { ...props, action: { label: "Review", href: "#", disabled: true } }));
     expect(blocked).toContain('aria-disabled="true"');

@@ -11,13 +11,13 @@ describe("PageHeader", () => {
       back: { href: "/", label: "Dashboard" },
       step: 1,
       title: "Add liquidity",
-      subtitle: "Earn swap fees or MEZO in the MUSD/BTC pool",
+      subtitle: "Collect swap fees or MEZO in the MUSD/BTC pool",
     }),
   );
 
   it("keeps the heading short and the sentence under it", () => {
     expect(out).toContain('<h1 class="text-title [text-wrap:balance]">Add liquidity</h1>');
-    expect(out).toContain('<p class="text-sm text-muted">Earn swap fees or MEZO in the MUSD/BTC pool</p>');
+    expect(out).toContain('<p class="text-sm text-muted">Collect swap fees or MEZO in the MUSD/BTC pool</p>');
   });
 
   it("keeps the sentence out of the heading", () => {

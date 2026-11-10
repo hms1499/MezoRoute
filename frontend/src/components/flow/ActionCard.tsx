@@ -37,17 +37,28 @@ export function ActionCard({
             {subtitle && <p className="text-xs text-muted">{subtitle}</p>}
           </div>
         </div>
-        {figure && (
-          <div className="flex items-baseline justify-between gap-2 sm:block sm:shrink-0 sm:text-right">
-            {figureLabel && <p className="text-xs text-muted">{figureLabel}</p>}
-            <p className="text-sm font-medium">{figure}</p>
+        {(figure || (!tabs && settings)) && (
+          <div className="flex flex-col items-start gap-1 sm:shrink-0 sm:items-end">
+            {figure && (
+              // At 360 the label and the figure shared a line and both wrapped mid-phrase; they stack here and
+              // sit side by side, right-aligned, from sm up.
+              <div className="text-left sm:text-right">
+                {figureLabel && <p className="text-xs text-muted">{figureLabel}</p>}
+                <p className="text-sm font-medium">{figure}</p>
+              </div>
+            )}
+            {/* With no tabs (the Trove pages) the settings sit in the header; a row of their own is a lone control
+                at the card's right edge with an empty half beside it. */}
+            {!tabs && settings}
           </div>
         )}
       </div>
-      {(tabs || settings) && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          {tabs ?? <span />}
-          {settings}
+      {tabs && (
+        // Below sm the tab track takes the whole line, so the settings stack under it at the left instead of
+        // wrapping alone to the right edge.
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+          <div className="min-w-0 flex-1">{tabs}</div>
+          {settings && <div className="flex shrink-0 sm:pt-0.5">{settings}</div>}
         </div>
       )}
       {children}

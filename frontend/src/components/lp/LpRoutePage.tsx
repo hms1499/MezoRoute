@@ -5,7 +5,7 @@ import { useState } from "react";
 import { formatUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
-import { RequireWallet } from "@/components/home/RequireWallet";
+import { ConnectCta } from "@/components/home/ConnectCta";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { FlowColumn } from "@/components/flow/FlowColumn";
@@ -20,19 +20,24 @@ import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
 import { exposure } from "@/lib/exposure/exposure";
 import { lpAmountField, lpHeaderFigure, lpRiskLine } from "@/lib/flow/lp-entry";
 import { splitPrimary } from "@/lib/flow/notice-action";
+import { plannerView } from "@/lib/flow/planner";
+import { BTC_COMPARE_MESSAGE, plannerAmount, plannerComparisonRows } from "@/lib/flow/planner-comparison";
 import { btcRecoveries } from "@/lib/routes/musd-btc-lp/asset";
 import { entryQuery, parseEntryIntent, type EntryIntent } from "@/lib/routes/musd-btc-lp/intent";
 import { entryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import { useLpRouteSnapshot } from "@/lib/routes/musd-btc-lp/useLpRouteSnapshot";
 import { balanceRecoveries } from "@/lib/routes/balance-recovery";
+import { spDepositQuery } from "@/lib/stability-pool/intent";
 import { borrowLimit, isRecoveryMode } from "@/lib/trove/borrow";
 import { walletCapabilities } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { balanceNoticeActions, BlockNotice } from "./BlockNotice";
+import { BeforeYouSign } from "./BeforeYouSign";
 import { EntryPreviewCard } from "./EntryPreviewCard";
 import { LpEntryCard } from "./LpEntryCard";
 import { ModeToggle } from "./ModeToggle";
 import { NoExecutorCard } from "./NoExecutorCard";
+import { PlannerComparison } from "./PlannerComparison";
 import { RisksCard } from "./RisksCard";
 import { StakeToggle } from "./StakeToggle";
 import { troveChangeRows } from "./troveChange";
@@ -41,23 +46,27 @@ import { btc, btcFine, lp, musd } from "./units";
 /** Below one unit of the eight decimals shown, the reserve line would only say "<0.00000001 BTC". */
 const MIN_SHOWN_RESERVE = 10n ** 10n;
 
-/** Spec §9 screen 2a; U11 §6.2: one action card (amount, receive, stake, overview, Review), then Details. */
+/**
+ * Spec §9 screen 2a; U11 §6.2: one action card (amount, receive, stake, overview, Review), then Details.
+ * U13: the planner is the app's front door, so it quotes the chain before a wallet connects. The wallet gates only
+ * sending: without one the primary action connects, and the card's own gate is not shown.
+ */
 export default function LpRoutePage() {
-  return <RequireWallet>{(account) => <LpRoute account={account} />}</RequireWallet>;
-}
-
-function LpRoute({ account }: { account: Address }) {
+  const { address, status } = useAccount();
   const { network } = useNetwork();
+  // A remembered wallet reconnecting on load keeps the loading card: the planner must not flash Connect at it.
+  if (status === "reconnecting") return <LoadingCard label="Connecting wallet" lines={2} />;
   if (!network.executor) return <NoExecutorCard />;
-  return <LpRouteForm account={account} executor={network.executor.address} />;
+  return <LpRouteForm account={address} executor={network.executor.address} />;
 }
 
-function LpRouteForm({ account, executor }: { account: Address; executor: Address }) {
+function LpRouteForm({ account, executor }: { account: Address | undefined; executor: Address }) {
   const { network } = useNetwork();
   const { chainId } = useAccount();
   const walletKind = useWalletKind();
   const searchParams = useSearchParams();
   const [intent, setIntent] = useState<EntryIntent>(() => parseEntryIntent(searchParams));
+  const connected = account !== undefined;
   const { data, error, refresh } = useLpRouteSnapshot(account, executor);
   const mezoPrice = useMezoPrice(network, data?.snapshot.blockNumber);
 
@@ -75,15 +84,20 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
     );
   }
 
+  // Borrow & Deploy needs a wallet and a Trove, so before connecting the planner quotes a plain deposit; the URL keeps
+  // the user's mode, and the choice applies the moment the wallet connects.
+  const displayIntent: EntryIntent = connected || intent.mode === "deposit" ? intent : { ...intent, mode: "deposit" };
   // The route page refetches every 15 s, so its quote never expires here; the confirm page checks age.
   const preview = entryPreview({
     network,
     data,
-    intent,
+    intent: displayIntent,
     walletKind: walletKind ?? "unknown",
     walletChainId: chainId,
     now: data.fetchedAt,
   });
+  // U13: the wallet's verdicts and the network warning appear only once there is a wallet to blame them on.
+  const view = plannerView({ connected, block: preview.block, walletChainId: chainId, chainId: network.chainId });
 
   // The entry's quote and its minimum LP, whichever token it brings.
   const quote = preview.btcQuote ?? preview.quote;
@@ -144,7 +158,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
     : [];
   // A shortfall offers Borrow & Deploy (same checks as F4's gate), the wallet's balance, or the Mezo app.
   const recoveries =
-    fromBtc && preview.btc && intent.btcIn !== null && (preview.block?.reason === "insufficient-balance" || preview.block?.reason === "needs-gas")
+    fromBtc && preview.btc && intent.btcIn !== null && (view.block?.reason === "insufficient-balance" || view.block?.reason === "needs-gas")
       ? balanceNoticeActions(
           btcRecoveries({
             amount: intent.btcIn,
@@ -156,7 +170,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           { onUseBalance: (value) => update({ ...intent, amount: formatUnits(value, 18) }) },
           "BTC",
         )
-      : preview.block?.reason === "insufficient-balance" && intent.musdIn !== null
+      : view.block?.reason === "insufficient-balance" && intent.musdIn !== null
       ? balanceNoticeActions(
           balanceRecoveries({
             route: "lp",
@@ -177,17 +191,20 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
   // A blocked entry's primary action is the first way out; Review only leads when nothing is blocked.
   const reviewHref = `/route/lp/confirm/${entryQuery(intent)}`;
   const { primary, rest: noticeActions } = splitPrimary(recoveries);
-  const primaryAction = primary
-    ? { label: primary.label, href: primary.href, onClick: primary.onClick, external: primary.href !== undefined }
-    : { label: "Review", href: reviewHref, disabled: preview.block !== null };
-  const field = lpAmountField({ preview, mode: intent.mode, asset: intent.asset, walletMusd: dashboard.musd });
+  const primaryAction = !connected
+    ? { label: "Connect to review", node: <ConnectCta label="Connect to review" variant="primary" className="w-full" arrow /> }
+    : primary
+      ? { label: primary.label, href: primary.href, onClick: primary.onClick, external: primary.href !== undefined }
+      : { label: "Review", href: reviewHref, disabled: view.block !== null };
+  const field = lpAmountField({ preview, mode: displayIntent.mode, asset: intent.asset, walletMusd: dashboard.musd, connected });
   const reserve = preview.btc?.fillReserve;
-  const note =
-    preview.btc && reserve === null
+  const note = !connected
+    ? undefined
+    : preview.btc && reserve === null
       ? "Max waits for the network fee"
       : reserve != null && reserve >= MIN_SHOWN_RESERVE
-      ? `${formatToken(reserve, 18, 8)} BTC stays for the network fee`
-      : undefined;
+        ? `${formatToken(reserve, 18, 8)} BTC stays for the network fee`
+        : undefined;
   const header = lpHeaderFigure({
     stakeOn: preview.stake.on,
     availability: preview.stake.availability,
@@ -195,22 +212,52 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
     weekly,
     poolFeeBps: dashboard.poolFeeBps,
   });
+  // The aside compares the same amount on both routes, from this snapshot; a BTC entry can only compare in MUSD.
+  const comparison =
+    intent.asset === "btc"
+      ? ({ kind: "message", message: BTC_COMPARE_MESSAGE } as const)
+      : plannerAmount({ text: intent.amount, musdIn: intent.musdIn, cap: network.entryCap });
 
   return (
-    <FlowColumn header={<PageHeader
-        back={{ href: "/", label: "Dashboard" }}
-        step={1}
-        title="Add liquidity"
-        subtitle="Earn swap fees or MEZO in the MUSD/BTC pool"
-      />}>
-      {chainId !== network.chainId && <WrongNetworkAlert />}
+    <FlowColumn
+      header={<PageHeader
+          back={{ href: "/", label: "Dashboard" }}
+          step={1}
+          title="Add liquidity"
+          subtitle="Collect swap fees or MEZO in the MUSD/BTC pool"
+        />}
+      aside={
+        <>
+          {displayIntent.mode === "deposit" && (
+            <PlannerComparison
+              amountMusd={comparison.kind === "rows" ? comparison.amountMusd : 0n}
+              example={comparison.kind === "rows" && comparison.example}
+              state={
+                comparison.kind === "rows"
+                  ? { kind: "rows", rows: plannerComparisonRows({ stake: preview.stake, apr, weekly, poolFeeBps: dashboard.poolFeeBps }) }
+                  : comparison
+              }
+              spHref={comparison.kind === "rows" ? `/route/stability-pool/${spDepositQuery(comparison.amountText)}` : null}
+            />
+          )}
+          <BeforeYouSign
+            network={network}
+            feeBps={data.snapshot.executorFeeBps}
+            capMusd={data.snapshot.maxMusdIn}
+            blockNumber={data.snapshot.blockNumber}
+          />
+        </>
+      }
+    >
+      {view.wrongNetwork && <WrongNetworkAlert />}
       <LpEntryCard
         header={header}
         tabs={
           <ModeToggle
             walletKind={walletKind}
             hasTrove={dashboard.trove !== null}
-            mode={intent.mode}
+            mode={displayIntent.mode}
+            connected={connected}
             onChange={(mode) => update({ ...intent, mode, asset: mode === "borrow" ? "musd" : intent.asset })}
           />
         }
@@ -221,7 +268,7 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
           amount: intent.amount,
           note,
           onAmount: (next) => update({ ...intent, amount: next }),
-          onToken: intent.mode === "borrow" ? undefined : (token) => update({ ...intent, asset: token === "btc" ? "btc" : "musd", amount: "" }),
+          onToken: displayIntent.mode === "borrow" ? undefined : (token) => update({ ...intent, asset: token === "btc" ? "btc" : "musd", amount: "" }),
         }}
         receive={quote && minLpOut !== undefined ? { value: `≈ ${lp(quote.liquidity)}`, minimum: `At least ${lp(minLpOut)}` } : null}
         stake={
@@ -241,16 +288,16 @@ function LpRouteForm({ account, executor }: { account: Address; executor: Addres
             {intent.slippageBps === 200n && (
               <Notice tone="warning">2% slippage lets this deposit fill up to 2% below the quote. Use it only if lower settings keep failing.</Notice>
             )}
-            <BlockNotice block={preview.block} actions={noticeActions} />
+            <BlockNotice block={view.block} actions={noticeActions} />
           </>
         }
-        risk={lpRiskLine({ borrow: intent.mode === "borrow", fromBtc })}
+        risk={lpRiskLine({ borrow: displayIntent.mode === "borrow", fromBtc })}
         action={primaryAction}
         details={
           <>
             {quote && <EntryPreviewCard quote={quote} feeBps={data.snapshot.executorFeeBps} borrowFee={preview.borrow?.effect?.fee} stake={preview.stake.on} />}
             {preview.after && <ExposurePanel snapshot={preview.after} before={dashboard} title="BTC exposure after this deposit" fromBtc={fromBtc} />}
-            <RisksCard borrow={intent.mode === "borrow"} fromBtc={fromBtc} />
+            <RisksCard borrow={displayIntent.mode === "borrow"} fromBtc={fromBtc} />
           </>
         }
       />

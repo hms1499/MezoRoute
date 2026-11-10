@@ -5,7 +5,7 @@ import { GAUGE_READ_FAILED_ENTRY, STAKE_TITLE, stakeLines } from "@/lib/gauge/co
 import { cx } from "@/lib/ui/cx";
 
 /**
- * "Stake to earn MEZO": stake the LP in the pool's gauge in the same transaction. Hidden when the gauge
+ * "Stake for MEZO": stake the LP in the pool's gauge in the same transaction. Hidden when the gauge
  * is not alive or not funded; a gauge that could not be read says so instead, because the deposit then goes unstaked. Between reward weeks the switch stays on and only the rate is missing. Rates here are
  * always this week's, and the copy always says swap fees go to veBTC voters while staked.
  */

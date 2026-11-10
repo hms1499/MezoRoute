@@ -5,6 +5,8 @@ import { borrowMode } from "@/lib/routes/musd-btc-lp/mode";
 import type { WalletKind } from "@/lib/wallet/capabilities";
 
 const BORROW_LABEL = "Borrow & Deploy";
+/** U13: no wallet, no Trove to read, so borrowing waits for the connection. */
+const CONNECT_TO_BORROW = "Connect a wallet to borrow against your Trove.";
 
 /** The tab is a radio button, so the term's definition sits on the note under it (U8); every note starts with the label. */
 function withTerm(note: string) {
@@ -23,13 +25,16 @@ export function ModeToggle({
   hasTrove,
   mode,
   onChange,
+  connected = true,
 }: {
   walletKind: WalletKind | undefined;
   hasTrove: boolean | undefined;
   mode: EntryMode;
   onChange: (mode: EntryMode) => void;
+  /** U13: false on the read-only planner, which knows no wallet and therefore no Trove. */
+  connected?: boolean;
 }) {
-  const borrow = borrowMode(walletKind, hasTrove);
+  const borrow = connected ? borrowMode(walletKind, hasTrove) : { disabled: true, note: CONNECT_TO_BORROW };
   return (
     <div>
       <Segmented

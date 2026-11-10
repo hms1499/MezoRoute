@@ -57,7 +57,8 @@ export function CrField({
         />
         <span className="text-sm text-muted">%</span>
       </div>
-      {options.length > 0 && (
+      {/* One preset is not a choice: a lone chip in a track reads as a stray control. */}
+      {options.length > 1 && (
         <Segmented label={`${label} presets`} options={options} value={options.find((o) => o.value === value)?.value ?? ("" as string)} onChange={onChange} size="sm" />
       )}
     </div>

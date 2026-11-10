@@ -76,7 +76,7 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
       <ConfirmCard
         icon={<PairIcon tokens={["musd", "btc"]} size={24} />}
         title="MUSD / BTC"
-        subtitle="Volatile pool · Tigris"
+        subtitle="MUSD/BTC pool on Tigris"
         overview={confirmOverview({ preview, data, slippageBps: intent.slippageBps })}
         quote={<QuoteBlock data={data} now={now} onRefresh={() => void refresh().catch(() => undefined)} />}
         risks={entryRisks({ borrow: intent.mode === "borrow", fromBtc: intent.asset === "btc" })}

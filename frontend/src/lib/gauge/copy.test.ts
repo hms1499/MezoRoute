@@ -51,7 +51,7 @@ describe("gaugeRateLine", () => {
 
 describe("stake copy", () => {
   it("says the rate is this week's and that swap fees go to veBTC voters", () => {
-    expect(STAKE_TITLE).toBe("Stake to earn MEZO");
+    expect(STAKE_TITLE).toBe("Stake for MEZO");
     expect(stakeLines("open", 1_500_000_000_000_000_000n)).toEqual([
       "≈ 1.5 MEZO a week at this week's rate. While staked, swap fees go to veBTC voters instead of you.",
     ]);

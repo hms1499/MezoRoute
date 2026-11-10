@@ -14,34 +14,47 @@ export type SnapshotReads = { results: readonly unknown[]; gaugeReadFailed: bool
  * gauge reads with `allowFailure: true`. Any other failed read raises its own error, exactly as
  * `allowFailure: false` did. A dead RPC reports every call as failed rather than rejecting, so it raises here too.
  */
-export function unwrapSnapshotReads(outcomes: readonly ReadOutcome[], gauge: { start: number; count: number }): SnapshotReads {
+export function unwrapSnapshotReads(
+  outcomes: readonly ReadOutcome[],
+  gauge: { start: number; count: number },
+  tolerate: ReadonlyMap<number, unknown> = new Map(),
+): SnapshotReads {
   const end = gauge.start + gauge.count;
   const isGauge = (index: number) => index >= gauge.start && index < end;
   for (const [index, outcome] of outcomes.entries()) {
-    if (outcome.status === "failure" && !isGauge(index)) throw outcome.error;
+    if (outcome.status === "failure" && !isGauge(index) && !tolerate.has(index)) throw outcome.error;
   }
   const gaugeReadFailed = outcomes.some((outcome, index) => outcome.status === "failure" && isGauge(index));
-  const kept = gaugeReadFailed ? outcomes.filter((_, index) => !isGauge(index)) : outcomes;
-  return { results: kept.map((outcome) => outcome.result), gaugeReadFailed };
+  const kept = outcomes
+    .map((outcome, index) => ({ outcome, index }))
+    .filter(({ index }) => !(gaugeReadFailed && isGauge(index)))
+    // A tolerated failure keeps its slot, so the positional parsers still line up.
+    .map(({ outcome, index }) => (outcome.status === "success" ? outcome.result : tolerate.get(index)));
+  return { results: kept, gaugeReadFailed };
 }
 
 type SnapshotReadsInput = {
   network: NetworkConfig;
   contracts: readonly unknown[]; // one multicall on the selected network, every call carrying its chainId
   gaugeStart: number; // the index of the first of the gauge's reads
+  /**
+   * Reads whose failure has a meaning the caller can state (index → substitute). U13 tolerates the BTC allowance for
+   * the zero address, which the BTC precompile reverts; that read then carries the substitute instead of blanking the page.
+   */
+  tolerate?: ReadonlyMap<number, unknown>;
 };
 
 /**
  * The query behind `useSnapshotReads`. The unwrap runs inside `queryFn` so a failure is a failed fetch: TanStack retries it,
  * keeps the last good data, and reports `error`, and `refetch()` resolves with that `error`, just as with `useReadContracts`.
  */
-export function snapshotReadsQuery(config: Config, { network, contracts, gaugeStart }: SnapshotReadsInput) {
+export function snapshotReadsQuery(config: Config, { network, contracts, gaugeStart, tolerate }: SnapshotReadsInput) {
   const options = readContractsQueryOptions(config, { contracts: contracts as never, allowFailure: true });
   const gauge = { start: gaugeStart, count: network.gauge ? GAUGE_READS : 0 };
   return {
     queryKey: options.queryKey as readonly unknown[],
     queryFn: async (context: QueryFunctionContext): Promise<SnapshotReads> =>
-      unwrapSnapshotReads((await options.queryFn(context as never)) as unknown as readonly ReadOutcome[], gauge),
+      unwrapSnapshotReads((await options.queryFn(context as never)) as unknown as readonly ReadOutcome[], gauge, tolerate),
     queryKeyHashFn: hashFn,
     structuralSharing,
   };

@@ -39,8 +39,11 @@ export function LpEntryCard({
   /** Block reasons with their recoveries, the 2% warning, and the gauge notices: above the action. */
   notices: ReactNode;
   risk: string;
-  /** The page's one primary: Review, or the way out while the entry is blocked. */
-  action: { label: ReactNode; href?: string; onClick?: () => void; external?: boolean; disabled?: boolean };
+  /**
+   * The page's one primary: Review, or the way out while the entry is blocked. `node` (U13) is the page's own
+   * control (Connect to review); it owns its label and arrow, so nothing else renders in the slot.
+   */
+  action: { label: ReactNode; href?: string; onClick?: () => void; external?: boolean; disabled?: boolean; node?: ReactNode };
   /** Context rows (exposure, Trove change, network fee) shown in Details, not before the action. */
   context?: OverviewRow[];
   details: ReactNode;
@@ -50,7 +53,7 @@ export function LpEntryCard({
       <ActionCard
         icon={<PairIcon tokens={["musd", "btc"]} size={24} />}
         title="MUSD / BTC"
-        subtitle="Volatile pool · Tigris"
+        subtitle="MUSD/BTC pool on Tigris"
         figure={header.value}
         figureLabel={header.label}
         tabs={tabs}
@@ -64,7 +67,9 @@ export function LpEntryCard({
           </>
         }
         action={
-          action.disabled ? (
+          action.node ? (
+            action.node
+          ) : action.disabled ? (
             <ButtonLink href={action.href ?? "#"} disabled className="w-full">
               {action.label}
             </ButtonLink>
