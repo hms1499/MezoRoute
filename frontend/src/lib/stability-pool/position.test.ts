@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { FIXTURE_PRICE, ONE, snapshotWith } from "@/lib/dashboard/test-fixtures";
 import { WAD } from "@/lib/math";
-import { spView } from "./position";
+import { spDepositRows, spView } from "./position";
 import { spSnapshotWith } from "./test-fixtures";
 
 describe("spView", () => {
@@ -28,5 +28,23 @@ describe("spView", () => {
 
   it("is empty without an initial deposit", () => {
     expect(spView(spSnapshotWith(), null).empty).toBe(true);
+  });
+});
+
+// U14 §A: the Stability Pool pages' aside shows the deposit the page already read; nothing when there is none.
+describe("spDepositRows", () => {
+  it("is null with no deposit and no gain", () => {
+    expect(spDepositRows({ deposit: 0n, btcGain: 0n })).toBeNull();
+  });
+
+  it("names the deposit and its BTC gain", () => {
+    expect(spDepositRows({ deposit: 10n * ONE, btcGain: 10n ** 13n })).toEqual([
+      { label: "Deposit", value: "10 MUSD" },
+      { label: "BTC gain", value: "0.00001 BTC" },
+    ]);
+  });
+
+  it("still shows a gain left after a full withdrawal", () => {
+    expect(spDepositRows({ deposit: 0n, btcGain: 1n })?.map((r) => r.label)).toEqual(["Deposit", "BTC gain"]);
   });
 });

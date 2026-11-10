@@ -9,7 +9,9 @@ import { ConnectPage } from "@/components/home/ConnectPage";
 import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
+import { isFieldBlock, spFieldError } from "@/lib/flow/field-error";
+import { spSignFacts } from "@/lib/flow/sign-facts";
 import type { OverviewRow } from "@/components/flow/Overview";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
@@ -24,12 +26,13 @@ import { useSpSnapshot } from "@/lib/stability-pool/useSpSnapshot";
 import { balanceRecoveries } from "@/lib/routes/balance-recovery";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { SpEntryCard } from "./SpEntryCard";
+import { SpDepositAside } from "./SpDepositAside";
 import { SpRisksCard } from "./SpRisksCard";
 
 /** Spec §9 screen 2b; U11 §6.2: one action card (amount, overview, Review), then exposure and risks in Details. */
 export default function SpRoutePage() {
   return (
-    <RequireWallet
+    <RequireWallet flow
       fallback={
         <ConnectPage
           back={{ href: "/", label: "Dashboard" }}
@@ -59,9 +62,9 @@ function SpRoute({ account }: { account: Address }) {
 
   if (!data) {
     return error ? (
-      <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
+      <FlowState><LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} /></FlowState>
     ) : (
-      <LoadingCard label="Loading the Stability Pool" />
+      <FlowState><LoadingCard label="Loading the Stability Pool" /></FlowState>
     );
   }
 
@@ -106,6 +109,7 @@ function SpRoute({ account }: { account: Address }) {
       : [];
   return (
     <FlowColumn
+      aside={<SpDepositAside sp={dashboard.sp} facts={spSignFacts(network, data.snapshot.blockNumber)} />}
       header={
         <PageHeader
           back={{ href: "/", label: "Dashboard" }}
@@ -120,9 +124,9 @@ function SpRoute({ account }: { account: Address }) {
     >
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <SpEntryCard
-        field={{ amount, onAmount, balance: dashboard.musd }}
+        field={{ amount, onAmount, balance: dashboard.musd, error: spFieldError(preview.block) }}
         overview={rows}
-        notices={<BlockNotice block={preview.block} actions={recoveries} />}
+        notices={<BlockNotice block={preview.block && isFieldBlock(preview.block.reason) ? { outcome: null } : preview.block} actions={recoveries} />}
         review={{ href: `/route/stability-pool/confirm/${spDepositQuery(amount)}`, disabled: preview.block !== null }}
         details={
           <>

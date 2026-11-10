@@ -19,9 +19,10 @@ const TERMS: TermId[] = [
   "emissions",
   "redemption",
   "refinance",
+  "staking",
 ];
 
-const G1_TERMS: TermId[] = ["gauge", "emissions"];
+const G1_TERMS: TermId[] = ["gauge", "emissions", "staking"];
 
 describe("GLOSSARY", () => {
   it("defines exactly the Mezo terms approved for U8, and no general DeFi terms", () => {

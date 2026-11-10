@@ -9,8 +9,9 @@ import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { NoExecutorCard } from "@/components/lp/NoExecutorCard";
 import { ActionCard } from "@/components/flow/ActionCard";
+import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
 import { Details } from "@/components/flow/Details";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { Overview } from "@/components/flow/Overview";
 import { ReceiveRow } from "@/components/flow/ReceiveRow";
 import { SlippagePopover } from "@/components/flow/SlippagePopover";
@@ -19,7 +20,10 @@ import { lp, musd } from "@/components/lp/units";
 import { PairIcon, TokenIcon } from "@/components/ui/TokenIcon";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/Skeleton";
+import { lpSignFacts } from "@/lib/flow/sign-facts";
+import { exitPositionRows } from "@/lib/positions/view";
 import { useNetwork } from "@/lib/config/network-context";
 import { GAUGE_READ_FAILED_EXIT } from "@/lib/gauge/copy";
 import { formatToken } from "@/lib/format";
@@ -33,17 +37,17 @@ import { hasStarted } from "@/lib/tx/stepper";
 import { useNow } from "@/lib/useNow";
 import type { WalletKind } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
-import { ExitNotes, exitOverview } from "./ExitPreviewCard";
+import { ExitNotes, exitDetailRows, exitOverview } from "./ExitPreviewCard";
 import { ExitStepper } from "./ExitStepper";
 
 /** Spec §9 screen 6a; U11 §6.2: one action card (share, overview, steps), the notes behind Details. */
 export default function ExitPage() {
-  return <RequireWallet>{(account) => <ExitRoute account={account} />}</RequireWallet>;
+  return <RequireWallet flow>{(account) => <ExitRoute account={account} />}</RequireWallet>;
 }
 
 function ExitRoute({ account }: { account: Address }) {
   const { network } = useNetwork();
-  if (!network.executor) return <NoExecutorCard />;
+  if (!network.executor) return <FlowState><NoExecutorCard /></FlowState>;
   return <ExitLoader account={account} executor={network.executor.address} />;
 }
 
@@ -55,9 +59,9 @@ function ExitLoader({ account, executor }: { account: Address; executor: Address
 
   if (!data || !walletKind) {
     return error ? (
-      <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
+      <FlowState><LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} /></FlowState>
     ) : (
-      <LoadingCard label="Loading the quote" />
+      <FlowState><LoadingCard label="Loading the quote" /></FlowState>
     );
   }
   return (
@@ -108,6 +112,16 @@ function ExitFlowView(props: {
   return (
     <FlowColumn
       header={<PageHeader back={{ href: "/positions/", label: "Positions" }} step={locked ? 2 : 1} title="Exit the MUSD/BTC pool to MUSD" />}
+      aside={
+        <>
+          <Card title="Your position">
+            <Overview rows={exitPositionRows(props.data.snapshot)} className="mt-3" />
+          </Card>
+          <BeforeYouSign
+            facts={lpSignFacts(network, { feeBps: 0n, capMusd: null, blockNumber: props.data.snapshot.blockNumber, exit: { walletKind: props.walletKind } })}
+          />
+        </>
+      }
     >
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <ActionCard
@@ -145,14 +159,16 @@ function ExitFlowView(props: {
             <Overview rows={exitOverview({ quote: preview.quote, minimums: preview.minimums, steps: preview.steps, unstake: preview.unstake, gasCost: preview.gasCost })} />
           </>
         )}
-        {exitCopy(preview.steps).unstakeNote && <p className="text-sm text-muted">{exitCopy(preview.steps).unstakeNote}</p>}
         {props.intent.slippageBps === 200n && (
           <Notice tone="warning">2% slippage lets this exit fill up to 2% below the quote. Use it only if lower settings keep failing.</Notice>
         )}
         <ExitStepper stepper={stepper} run={run} restart={restart} block={preview.block} plan={preview.steps} />
       </ActionCard>
       <Details>
-        <ExitNotes unstakeNote={null} blockNumber={props.data.snapshot.blockNumber} />
+        <div className="space-y-4">
+          {preview.quote && <Overview rows={exitDetailRows({ quote: preview.quote, gasCost: preview.gasCost })} />}
+          <ExitNotes unstakeNote={exitCopy(preview.steps).unstakeNote} blockNumber={props.data.snapshot.blockNumber} />
+        </div>
       </Details>
     </FlowColumn>
   );

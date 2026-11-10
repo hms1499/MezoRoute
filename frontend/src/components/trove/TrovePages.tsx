@@ -6,9 +6,12 @@ import { formatUnits, parseUnits, type Address } from "viem";
 import { useAccount, useGasPrice } from "wagmi";
 import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { ActionCard } from "@/components/flow/ActionCard";
-import { ConfirmCard } from "@/components/flow/ConfirmCard";
+import { ConfirmAside, ConfirmCard } from "@/components/flow/ConfirmCard";
+import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
+import { troveFieldError } from "@/lib/flow/field-error";
+import { troveSignFacts } from "@/lib/flow/sign-facts";
 import { Details } from "@/components/flow/Details";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { Overview } from "@/components/flow/Overview";
 import { SlippagePopover } from "@/components/flow/SlippagePopover";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
@@ -30,19 +33,19 @@ import { quoteFor, troveSteps } from "@/lib/leverage/steps";
 import { cr, nominalCr, type TroveState } from "@/lib/leverage/trove-math";
 import { useDirectTroveCall } from "@/lib/leverage/useDirectTroveCall";
 import { useTroveSnapshot, type TroveData } from "@/lib/leverage/useTroveSnapshot";
-import { crPresets, leverageMaxNote, maxTarget, maxTargetText, openBtcMax, openMaxNote, openReachNote, pageNotice, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "@/lib/leverage/view";
+import { confirmQueue, crPresets, leverageMaxNote, leverageNoRoomNote, maxTarget, troveNowRows, maxTargetText, openBtcMax, openMaxNote, openReachNote, pageNotice, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "@/lib/leverage/view";
 import { openMaxCr } from "@/lib/leverage/quote-open";
 import { unwindMaxCr } from "@/lib/leverage/quote-unwind";
 import { leverageMax, leverageQuoteAt } from "@/lib/leverage/quote-leverage";
 import { Notice } from "@/components/ui/Notice";
-import { queueLine } from "@/lib/leverage/copy";
 import { LEVERAGE_CR_FLOOR, ORACLE_BOUND_DEFAULT_BPS } from "@/lib/trove/constants";
 import { useNow } from "@/lib/useNow";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import type { SlippageBps } from "@/lib/quote/entry";
+import { TroveAside } from "./TroveAside";
 import { TroveStepper } from "./TroveStepper";
-import { CrField, QueueLine, TroveNotice } from "./TroveViews";
+import { CrField, TroveNotice } from "./TroveViews";
 
 const TITLES: Record<TroveAction, { amount: string; confirm: string; card: string }> = {
   unwind: { amount: "Unwind your Trove", confirm: "Review your unwind", card: "Unwind" },
@@ -93,13 +96,13 @@ function useTroveView(action: TroveAction, account: Address, data: TroveData, qu
 }
 
 function Loading({ error, retry, label }: { error: Error | null; retry: () => void; label: string }) {
-  return error ? <LoadError error={error} onRetry={retry} /> : <LoadingCard label={label} />;
+  return <FlowState>{error ? <LoadError error={error} onRetry={retry} /> : <LoadingCard label={label} />}</FlowState>;
 }
 
 // ---------------------------------------------------------------------------------- amount page
 
 export function TroveAmountPage({ action }: { action: TroveAction }) {
-  return <RequireWallet>{(account) => <AmountFlow action={action} account={account} />}</RequireWallet>;
+  return <RequireWallet flow>{(account) => <AmountFlow action={action} account={account} />}</RequireWallet>;
 }
 
 function AmountFlow({ action, account }: { action: TroveAction; account: Address }) {
@@ -203,13 +206,28 @@ function AmountCard(props: {
     max && max.btc > 0n && snapshot.trove && network.leverage
       ? leverageQuoteAt(snapshot.trove, snapshot.pool, snapshot.market, max.btc, intent.slippageBps, network.leverage.feeBps).crAfter
       : null;
+  // U14 B1: with no room, the page says which limit binds (the oracle cost at the smallest size when that is it),
+  // disables the target, and shows no Review: there is nothing to do here, and the header's Dashboard link is the way out.
+  const noRoom = max !== null && max.btc === 0n;
+  // U14 B3: a block the typed BTC or target causes is said at that field, not under the overview.
+  const fieldError = troveFieldError(view.block, { btc: action === "open", cr: action !== "close" });
+  const noRoomNote =
+    noRoom && snapshot.trove && network.leverage
+      ? leverageNoRoomNote(max, snapshot.trove, snapshot.pool, snapshot.market, intent.slippageBps, network.leverage.feeBps)
+      : undefined;
   const confirmHref = `/trove/${action}/confirm/?${intentQuery(action, intent)}`;
   const repay = () =>
     snapshot.trove &&
     direct.run({ kind: "repay", amount: snapshot.walletMusd < snapshot.trove.debt - 2_000n * 10n ** 18n ? snapshot.walletMusd : snapshot.trove.debt - 2_000n * 10n ** 18n, trove: snapshot.trove, troveCount: snapshot.system.troveCount });
 
+  // In Recovery Mode the notice's Repay from wallet is the page's only action, so the facts are that call's.
+  const repayOnly = view.notice?.actions.includes("repay") ?? false;
+  const facts = network.leverage
+    ? troveSignFacts(network, { feeBps: network.leverage.feeBps, maxBtcFlash: network.leverage.maxBtcFlash, maxMusdFlash: network.leverage.maxMusdFlash, blockNumber: snapshot.block.number, repayOnly })
+    : null;
   return (
     <FlowColumn
+      aside={<TroveAside rows={troveNowRows(snapshot)} queue={{ before: view.queueBefore, after: view.queueAfter }} facts={facts} />}
       header={
         <>
           <PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title={TITLES[action].amount} />
@@ -227,7 +245,7 @@ function AmountCard(props: {
         settings={<SlippagePopover slippageBps={intent.slippageBps as SlippageBps} onChange={props.onSlippage} action={action === "unwind" || action === "close" ? "sale" : "purchase"} />}
         risk={troveRisks(action)[0]}
         action={
-          canReview ? (
+          noRoom ? undefined : canReview ? (
             <ButtonLink href={confirmHref} size="lg" arrow className="w-full">
               Review
             </ButtonLink>
@@ -248,6 +266,7 @@ function AmountCard(props: {
             balance={snapshot.walletBtc}
             max={btcMax}
             note="Max keeps enough BTC for gas. A Trove needs at least 1,800 MUSD of debt; MUSD beyond what the pool needs stays in your wallet, still owed."
+            error={fieldError?.field === "btc" ? fieldError.message : undefined}
           />
         )}
         {action !== "close" && (
@@ -256,9 +275,12 @@ function AmountCard(props: {
             onChange={props.onCr}
             presets={presets}
             label={action === "unwind" ? "Target collateral ratio (higher)" : "Target collateral ratio (200% or more)"}
+            disabled={noRoom}
+            description={noRoomNote}
+            error={fieldError?.field === "cr" ? fieldError.message : undefined}
           />
         )}
-        {max && (
+        {max && !noRoom && (
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
             <span>{leverageMaxNote(max, LEVERAGE_CR_FLOOR)}</span>
             {maxCr !== null && (
@@ -292,12 +314,11 @@ function AmountCard(props: {
           </Notice>
         )}
         {view.rows.length > 0 && <Overview rows={view.rows} />}
-        {view.block?.outcome && view.block.reason !== "recovery-mode" && view.block.reason !== "smart-account" && (
+        {view.block?.outcome && view.block.reason !== "recovery-mode" && view.block.reason !== "smart-account" && fieldError === null && (
           <p role="status" className="text-sm text-danger">
             {view.block.outcome.message}
           </p>
         )}
-        <QueueLine before={view.queueBefore} after={view.queueAfter} />
       </ActionCard>
       {view.after && (
         <Details summary="If BTC moves">
@@ -344,7 +365,7 @@ function troveOnlySnapshot(s: TroveSnapshot, t: TroveState): DashboardSnapshot {
 // ---------------------------------------------------------------------------------- confirm page
 
 export function TroveConfirmPage({ action }: { action: TroveAction }) {
-  return <RequireWallet>{(account) => <ConfirmFlow action={action} account={account} />}</RequireWallet>;
+  return <RequireWallet flow>{(account) => <ConfirmFlow action={action} account={account} />}</RequireWallet>;
 }
 
 function ConfirmFlow({ action, account }: { action: TroveAction; account: Address }) {
@@ -377,9 +398,20 @@ function ConfirmBody(props: {
       ? maxTarget(openMaxCr(intent.btc, snapshot.pool, snapshot.market, intent.slippageBps, network.leverage.feeBps, network.leverage.maxBtcFlash), true)
       : null;
   const openReach = action === "open" ? openNote(view.quote, intent, openHighest) : null;
-  const queueFirst = (action === "leverage" || action === "open") && view.queueAfter ? [`After this: ${queueLine(view.queueAfter)}`, ...risks] : risks;
+  const queue = confirmQueue(action, view.queueBefore, view.queueAfter);
+  const queueFirst = queue.risk ? [queue.risk, ...risks] : risks;
+  const facts = network.leverage
+    ? troveSignFacts(network, { feeBps: network.leverage.feeBps, maxBtcFlash: network.leverage.maxBtcFlash, maxMusdFlash: network.leverage.maxMusdFlash, blockNumber: snapshot.block.number })
+    : null;
   return (
+    // U14 §A: the amount page's grid; the risks sit beside the card from lg (in it, above the steps, below), then the
+    // redemption queue and Before you sign.
     <FlowColumn
+      aside={
+        <ConfirmAside risks={queueFirst}>
+          <TroveAside queue={queue.card} facts={facts} />
+        </ConfirmAside>
+      }
       header={
         <>
           <PageHeader back={{ href: `/trove/${action}/?${intentQuery(action, intent)}`, label: "Change" }} step={2} title={TITLES[action].confirm} />
@@ -393,8 +425,8 @@ function ConfirmBody(props: {
         title={TITLES[action].card}
         subtitle="Your Trove, in one transaction"
         overview={view.rows}
-        quote={<QueueLine before={view.queueBefore} after={view.queueAfter} />}
         risks={queueFirst}
+        risksPlacement="aside-from-lg"
         footnote={
           (refinanceNote(capacity) ?? openReach?.text) && (
             <Notice tone="neutral" role="note">

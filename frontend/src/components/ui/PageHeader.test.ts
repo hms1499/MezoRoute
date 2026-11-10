@@ -25,3 +25,19 @@ describe("PageHeader", () => {
     expect(heading).not.toContain("Earn swap fees");
   });
 });
+
+// U14 B2: the back link and the progress share one row from sm, which gives the card back about 30 px of height.
+describe("PageHeader row", () => {
+  it("puts the back link and the progress side by side from sm", () => {
+    const out = renderToStaticMarkup(createElement(PageHeader, { back: { href: "/", label: "Dashboard" }, step: 2, title: "Review" }));
+    expect(out).toMatch(/<div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"><a [^>]*href="\/"[\s\S]*<ol aria-label="Progress"/);
+  });
+});
+
+// U14 final review: below 640 px the back link is the size of its label, not a full-row tap target.
+describe("PageHeader back link", () => {
+  it("keeps the link to its own width when the row stacks", () => {
+    const out = renderToStaticMarkup(createElement(PageHeader, { back: { href: "/", label: "Dashboard" }, step: 1 }));
+    expect(out).toMatch(/<div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">/);
+  });
+});

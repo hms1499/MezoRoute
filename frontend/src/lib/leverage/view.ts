@@ -2,15 +2,17 @@ import type { OverviewRow } from "@/components/flow/Overview";
 import type { NetworkConfig } from "@/lib/config/networks";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import { WAD } from "@/lib/math";
-import { LEVERAGE_CR_FLOOR } from "@/lib/trove/constants";
+import { LEVERAGE_CR_FLOOR, ORACLE_BOUND_DEFAULT_BPS } from "@/lib/trove/constants";
 import { troveGasBudget } from "@/lib/quote/gas";
-import { EVM_ONLY, MAINNET_NOT_RUN, RECOVERY_MODE_BLOCK } from "./copy";
+import { EVM_ONLY, MAINNET_NOT_RUN, queueLine, RECOVERY_MODE_BLOCK } from "./copy";
 import type { GateQuote, TroveBlockReason } from "./gate";
 import type { TroveAction } from "./intent";
 import type { TroveSnapshot } from "./snapshot";
 import type { CapacityCheck } from "./capacity";
 import { QUOTE_CR_BUFFER_BPS } from "./steps";
-import type { LeverageLimit } from "./quote-leverage";
+import { leverageQuoteAt, MIN_LEVERAGE_BTC, type LeverageLimit } from "./quote-leverage";
+import type { QueuePosition } from "./queue";
+import type { Market, PoolState } from "./trove-math";
 import { cr, liquidationPriceOf, type TroveState } from "./trove-math";
 
 const musd = (v: bigint) => `${formatToken(v, 18, 2)} MUSD`;
@@ -34,6 +36,18 @@ function troveRows(before: TroveState | null, after: TroveState, snapshot: Trove
     { label: "Collateral", value: arrow(before ? btc(before.coll) : "—", btc(after.coll)), tone: "btc" },
     { label: "Debt", value: arrow(before ? musd(before.debt) : "—", musd(after.debt)) },
     { label: "Collateral ratio", value: arrow(ratio(before), ratio(after)) },
+    { label: "Liquidation price", value: liq === null ? "—" : `${formatToken(liq, 18, 0, "up")} MUSD / BTC` },
+  ];
+}
+
+/** The Trove pages' aside (U14): the Trove as it stands; the ratio is the card's headline figure, so it is not repeated. */
+export function troveNowRows(snapshot: TroveSnapshot): OverviewRow[] {
+  const t = snapshot.trove;
+  if (!t) return [{ label: "Trove", value: "None yet" }, { label: "Your BTC", value: btc(snapshot.walletBtc), tone: "btc" }];
+  const liq = liquidationPriceOf(t, snapshot.market.mcr);
+  return [
+    { label: "Collateral", value: btc(t.coll), tone: "btc" },
+    { label: "Debt", value: musd(t.debt) },
     { label: "Liquidation price", value: liq === null ? "—" : `${formatToken(liq, 18, 0, "up")} MUSD / BTC` },
   ];
 }
@@ -119,10 +133,13 @@ export function pageNotice(input: { action: TroveAction; snapshot: TroveSnapshot
   return input.network.id === "mainnet" && input.block === null ? { tone: "neutral", text: MAINNET_NOT_RUN, actions: [] } : null;
 }
 
-/** What stops the largest Leverage the page offers (`leverageMax`). */
-export function leverageMaxNote(max: { btc: bigint; limitedBy: LeverageLimit }, floor: bigint): string {
+/**
+ * What stops the largest Leverage the page offers (`leverageMax`). At zero it names the limit that binds (U14 B1):
+ * `costBps` is the swap's cost against the oracle at the smallest size, shown when the page has it.
+ */
+export function leverageMaxNote(max: { btc: bigint; limitedBy: LeverageLimit }, floor: bigint, costBps?: bigint): string {
   const pct = formatPercent(floor, 0);
-  if (max.btc === 0n) return `Your Trove is already at or below ${pct}: there is no room to leverage.`;
+  if (max.btc === 0n) return leverageZeroNote(max.limitedBy, pct, costBps);
   const amount = `Up to ${formatToken(max.btc, 18, 6)} BTC`;
   switch (max.limitedBy) {
     case "floor":
@@ -133,6 +150,22 @@ export function leverageMaxNote(max: { btc: bigint; limitedBy: LeverageLimit }, 
       return `${amount}: your Trove's borrowing capacity, even after a refinance.`;
     case "oracle":
       return `${amount}: beyond this the pool's price would sit more than 5% from Mezo's oracle.`;
+  }
+}
+
+function leverageZeroNote(limitedBy: LeverageLimit, floorPct: string, costBps?: bigint): string {
+  switch (limitedBy) {
+    case "floor":
+      return `Your Trove is already at or below ${floorPct}: there is no room to leverage.`;
+    case "oracle": {
+      const bound = formatBps(ORACLE_BOUND_DEFAULT_BPS);
+      const gap = costBps === undefined ? `more than ${bound}` : `about ${(Number(costBps) / 100).toFixed(1)}%`;
+      return `The pool's BTC price is ${gap} above Mezo's oracle, past the ${bound} limit, so leverage would overpay for BTC. Try again when the pool is back within ${bound}.`;
+    }
+    case "capacity":
+      return "Your Trove has no borrowing capacity left, even after a refinance.";
+    case "cap":
+      return "MezoRoute's per-transaction cap allows no leverage right now.";
   }
 }
 
@@ -211,4 +244,33 @@ export function unwindMaxNote(maxCr: bigint): string {
 
 export function openMaxNote(btc: bigint, highest: bigint): string {
   return `With ${formatToken(btc, 18, 6)} BTC, up to ${formatPercent(highest, 1)}: past that the debt would fall under the 1,800 MUSD minimum.`;
+}
+
+/**
+ * U14 B1: the Leverage page's note when there is no room: the binding limit, with the oracle gap read at the search's
+ * smallest size (`MIN_LEVERAGE_BTC`). Undefined while there is room.
+ */
+export function leverageNoRoomNote(
+  max: { btc: bigint; limitedBy: LeverageLimit },
+  t: TroveState,
+  pool: PoolState,
+  market: Market,
+  slippageBps: bigint,
+  feeBps: bigint,
+): string | undefined {
+  if (max.btc !== 0n) return undefined;
+  return leverageMaxNote(max, LEVERAGE_CR_FLOOR, leverageQuoteAt(t, pool, market, MIN_LEVERAGE_BTC, slippageBps, feeBps).costBps);
+}
+
+/**
+ * The redemption queue on a Trove Confirm. After a Leverage or Open the Trove moves toward the front, a risk: said once,
+ * first in the risks (above Sign below lg), while the queue card shows only where the Trove stands now.
+ */
+export function confirmQueue(
+  action: TroveAction,
+  before: QueuePosition | null,
+  after: QueuePosition | null,
+): { risk: string | null; card: { before: QueuePosition | null; after: QueuePosition | null } } {
+  if ((action === "leverage" || action === "open") && after) return { risk: `After this: ${queueLine(after)}`, card: { before, after: null } };
+  return { risk: null, card: { before, after } };
 }

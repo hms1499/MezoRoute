@@ -26,6 +26,8 @@ import { CR_SAFETY_FLOOR } from "@/lib/trove/constants";
 
 /** 5% (PRODUCT_SPEC §12, provisional until integration tests); 1e18 = 100%. */
 export const PRICE_IMPACT_LIMIT = 50_000_000_000_000_000n;
+/** U14 B3: from 1% the price-impact row reads as a warning, before the 5% limit blocks the entry. */
+export const PRICE_IMPACT_WARN = 10_000_000_000_000_000n;
 /** A quote's lifetime (PRODUCT_SPEC §12). */
 export const QUOTE_TTL_MS = 60_000;
 

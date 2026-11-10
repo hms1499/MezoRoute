@@ -4,8 +4,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
-import { ConfirmCard } from "@/components/flow/ConfirmCard";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
+import { ConfirmAside, ConfirmCard } from "@/components/flow/ConfirmCard";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { Notice } from "@/components/ui/Notice";
 import { PairIcon } from "@/components/ui/TokenIcon";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -15,6 +16,7 @@ import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { useNetwork } from "@/lib/config/network-context";
 import { entryRisks } from "@/lib/flow/risks";
+import { lpSignFacts } from "@/lib/flow/sign-facts";
 import { entryQuery, intentAmount, parseEntryIntent } from "@/lib/routes/musd-btc-lp/intent";
 import { entryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import { useLpRouteSnapshot } from "@/lib/routes/musd-btc-lp/useLpRouteSnapshot";
@@ -26,12 +28,12 @@ import { NoExecutorCard } from "./NoExecutorCard";
 
 /** Spec §9 screen 3a: a fresh quote with a 60 s expiry, then the permit/approve → send stepper. */
 export default function LpConfirmPage() {
-  return <RequireWallet>{(account) => <LpConfirm account={account} />}</RequireWallet>;
+  return <RequireWallet flow>{(account) => <LpConfirm account={account} />}</RequireWallet>;
 }
 
 function LpConfirm({ account }: { account: Address }) {
   const { network } = useNetwork();
-  if (!network.executor) return <NoExecutorCard />;
+  if (!network.executor) return <FlowState><NoExecutorCard /></FlowState>;
   return <ConfirmFlow account={account} executor={network.executor.address} />;
 }
 
@@ -52,16 +54,25 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
   if (intentAmount(intent) === null) return null;
   if (!data || !walletKind) {
     return error ? (
-      <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
+      <FlowState><LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} /></FlowState>
     ) : (
-      <LoadingCard label="Loading the quote" />
+      <FlowState><LoadingCard label="Loading the quote" /></FlowState>
     );
   }
 
   const preview = entryPreview({ network, data, intent, walletKind, walletChainId: chainId, now });
+  const risks = entryRisks({ borrow: intent.mode === "borrow", fromBtc: intent.asset === "btc" });
   return (
-    // U11 §6.2: the same column as the amount page; the full risk list is always visible before signing.
+    // U11 §6.2, U14 §A: the amount page's grid; the full risk list is always visible before signing (beside the card
+    // from lg, in it above the steps below).
     <FlowColumn
+      aside={
+        <ConfirmAside risks={risks}>
+          <BeforeYouSign
+            facts={lpSignFacts(network, { feeBps: data.snapshot.executorFeeBps, capMusd: data.snapshot.maxMusdIn, blockNumber: data.snapshot.blockNumber })}
+          />
+        </ConfirmAside>
+      }
       header={
         <>
           <PageHeader
@@ -79,7 +90,8 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
         subtitle="MUSD/BTC pool on Tigris"
         overview={confirmOverview({ preview, data, slippageBps: intent.slippageBps })}
         quote={<QuoteBlock data={data} now={now} onRefresh={() => void refresh().catch(() => undefined)} />}
-        risks={entryRisks({ borrow: intent.mode === "borrow", fromBtc: intent.asset === "btc" })}
+        risks={risks}
+        risksPlacement="aside-from-lg"
         steps={
           <EntryStepper
             account={account}

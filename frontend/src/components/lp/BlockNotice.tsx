@@ -7,12 +7,16 @@ import type { NoticeAction } from "@/lib/flow/notice-action";
 
 export type { NoticeAction };
 
-/** Why the primary action is disabled, in the §13 wording, and the ways out (U3 §5.4); nothing when there is no message. */
+/**
+ * Why the primary action is disabled, in the §13 wording, and the ways out (U3 §5.4); nothing when there is neither.
+ * A block the amount field already says (U14 B3) comes with a null outcome: only its ways out render here.
+ */
 export function BlockNotice({ block, actions = [] }: { block: { outcome: Outcome | null } | null; actions?: NoticeAction[] }) {
-  if (!block?.outcome) return null;
+  if (!block?.outcome && actions.length === 0) return null;
   return (
     <div role="status" className="space-y-2">
       {/* U11 §5.5: a "nothing to do" outcome reads neutral, not as an error. */}
+      {block?.outcome && (
       <p className={block.outcome.tone === "neutral" ? "flex items-start gap-2 text-sm text-muted" : "flex items-start gap-2 text-sm text-danger"}>
         {block.outcome.tone === "neutral" ? (
           <Info aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
@@ -21,6 +25,7 @@ export function BlockNotice({ block, actions = [] }: { block: { outcome: Outcome
         )}
         <span>{block.outcome.message}</span>
       </p>
+      )}
       {actions.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {actions.map((action) =>

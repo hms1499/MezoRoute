@@ -47,9 +47,6 @@ export function ModeToggle({
         onChange={onChange}
       />
       {borrow.note && <p id="funding-note" className="mt-1 text-sm text-muted">{withTerm(borrow.note)}</p>}
-      {mode === "borrow" && !borrow.disabled && (
-        <p className="mt-1 text-sm text-muted">Borrow MUSD against your Trove and deposit it in one transaction.</p>
-      )}
     </div>
   );
 }

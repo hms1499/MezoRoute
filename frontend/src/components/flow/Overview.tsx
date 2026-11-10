@@ -5,11 +5,16 @@ import { cx } from "@/lib/ui/cx";
 // U13 follow-up: a row may name a `group`; consecutive rows of the same group share one caption and a hairline, so a
 // Confirm card reads as "You pay / You receive / Terms" instead of a flat wall of eight equal rows.
 
-export type OverviewRow = { label: ReactNode; value: ReactNode; sub?: ReactNode; tone?: "btc" | "positive" | "negative"; group?: string };
+export type OverviewRow = { label: ReactNode; value: ReactNode; sub?: ReactNode; tone?: "btc" | "positive" | "negative" | "warning"; group?: string };
 
-const TONE: Record<NonNullable<OverviewRow["tone"]>, string> = { btc: "text-btc", positive: "text-positive", negative: "text-negative" };
+// `warning` (U14 B3): a figure that is still allowed but costly (price impact from 1%), never a signed result.
+// Literal classes, so Tailwind sees them: the reading order of up to six groups below lg.
+const ORDER = ["order-1", "order-2", "order-3", "order-4", "order-5", "order-6"];
 
-export function Overview({ rows, className }: { rows: OverviewRow[]; className?: string }) {
+const TONE: Record<NonNullable<OverviewRow["tone"]>, string> = { btc: "text-btc", positive: "text-positive", negative: "text-negative", warning: "text-warning-ink" };
+
+/** `columns={2}` lays two or more groups side by side from lg (U14: a Confirm card at page width). */
+export function Overview({ rows, className, columns = 1 }: { rows: OverviewRow[]; className?: string; columns?: 1 | 2 }) {
   const groups = rows.reduce<{ label: string | null; rows: OverviewRow[] }[]>((all, row) => {
     const label = row.group ?? null;
     const last = all[all.length - 1];
@@ -17,27 +22,36 @@ export function Overview({ rows, className }: { rows: OverviewRow[]; className?:
     else all.push({ label, rows: [row] });
     return all;
   }, []);
+  // One group (the Trove Confirm's rows) has nothing to sit beside: two columns would leave it in half the card.
+  const split = columns === 2 && groups.length > 1;
+  const renderGroup = (group: (typeof groups)[number], groupIndex: number, className?: string) => (
+    <div key={`${group.label ?? "rows"}-${groupIndex}`} className={cx(groupIndex > 0 && "border-t border-line", className)}>
+      {group.label && <p className="pt-2 text-xs font-medium text-muted">{group.label}</p>}
+      <dl>
+        {group.rows.map((row, index) => (
+          // At 360 two columns squeezed both sides; the label sits above its value there.
+          <div key={index} className="flex flex-col gap-0.5 border-b border-line py-2 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+            {/* The value column took its content's width and squeezed short labels into two lines. */}
+            <dt className="shrink-0 text-sm font-medium text-muted">{row.label}</dt>
+            {/* No `text-wrap: balance` here: it split "123.6015" from "MUSD" to even out the lines. */}
+            <dd className={cx("min-w-0 text-left text-sm font-medium sm:text-right", row.tone ? TONE[row.tone] : "text-ink")}>
+              {row.value}
+              {row.sub && <span className="block text-xs font-normal text-muted">{row.sub}</span>}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+  if (!split) return <div className={cx("rounded-inset border border-line px-4", className)}>{groups.map((group, i) => renderGroup(group, i))}</div>;
+  // U14 §B2: from lg the even groups (You pay, Terms) stack on the left and the odd ones (You receive, …) on the right,
+  // each column at its own height. Below lg the columns dissolve (`contents`) and `order` restores the reading order.
+  const column = (parity: 0 | 1) =>
+    groups.map((group, i) => (i % 2 === parity ? renderGroup(group, i, cx(ORDER[i], i === 1 && "lg:border-t-0")) : null));
   return (
-    <div className={cx("rounded-inset border border-line px-4", className)}>
-      {groups.map((group, groupIndex) => (
-        <div key={`${group.label ?? "rows"}-${groupIndex}`} className={cx(groupIndex > 0 && "border-t border-line")}>
-          {group.label && <p className="pt-2 text-xs font-medium text-muted">{group.label}</p>}
-          <dl>
-            {group.rows.map((row, index) => (
-              // At 360 two columns squeezed both sides; the label sits above its value there.
-              <div key={index} className="flex flex-col gap-0.5 border-b border-line py-2 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                {/* The value column took its content's width and squeezed short labels into two lines. */}
-                <dt className="shrink-0 text-sm font-medium text-muted">{row.label}</dt>
-                {/* No `text-wrap: balance` here: it split "123.6015" from "MUSD" to even out the lines. */}
-                <dd className={cx("min-w-0 text-left text-sm font-medium sm:text-right", row.tone ? TONE[row.tone] : "text-ink")}>
-                  {row.value}
-                  {row.sub && <span className="block text-xs font-normal text-muted">{row.sub}</span>}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      ))}
+    <div className={cx("flex flex-col rounded-inset border border-line px-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6", className)}>
+      <div className="contents lg:block">{column(0)}</div>
+      <div className="contents lg:block">{column(1)}</div>
     </div>
   );
 }

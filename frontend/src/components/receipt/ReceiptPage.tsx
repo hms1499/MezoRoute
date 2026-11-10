@@ -6,13 +6,14 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import type { Address, Hash, TransactionReceipt } from "viem";
 import { useAccount, useConfig } from "wagmi";
+import { FactList } from "@/components/flow/BeforeYouSign";
 import { FlowColumn } from "@/components/flow/FlowColumn";
 import { Overview } from "@/components/flow/Overview";
+import { Card } from "@/components/ui/Card";
 import { DotWave } from "@/components/ui/DotWave";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ReceiptCard } from "./ReceiptCard";
 import { useNetwork } from "@/lib/config/network-context";
-import { explorerTxUrl } from "@/lib/config/networks";
 import { decodeError } from "@/lib/errors/decode";
 import { useDashboardSnapshot } from "@/lib/dashboard/useDashboardSnapshot";
 import { formatPercent, formatToken, shortAddress } from "@/lib/format";
@@ -22,6 +23,7 @@ import { enteredFromBtcRows, enteredRows, exitedRows } from "@/lib/routes/musd-b
 import { TROVE_RECEIPT_TITLES, troveReceiptRows } from "@/lib/leverage/receipt";
 import { spReceiptRows } from "@/lib/stability-pool/receipt";
 import { collateralRatio } from "@/lib/trove/health";
+import { txRows } from "@/lib/receipt/tx-rows";
 import { receiptKind } from "@/lib/tx/receipt-kind";
 import { receiptState, type ReceiptState } from "@/lib/tx/receipt-state";
 import { confirmCall, isTxHash } from "@/lib/tx/send";
@@ -62,22 +64,26 @@ function Receipt({ hash }: { hash: Hash }) {
     }
   }, [receipt.isSuccess, queryClient]);
 
-  const explorer = explorerTxUrl(network, receipt.data?.transactionHash ?? hash);
   const state = receiptState({ isSuccess: receipt.isSuccess, errorKind: receipt.error ? decodeError(receipt.error, network).kind : null });
   const icon = <StatusIcon state={state} />;
   return (
-    // U11 §6.2: the flow's column; the receipt is one centred card.
-    <FlowColumn header={<PageHeader back={{ href: "/", label: "Dashboard" }} {...receiptHeader(state)} labels={["Amount", "Confirm", "Done"]} />}>
+    // U11 §6.2, U14 §A: the card says what happened; the aside says which transaction, and the Trove after it.
+    <FlowColumn
+      header={<PageHeader back={{ href: "/", label: "Dashboard" }} {...receiptHeader(state)} labels={["Amount", "Confirm", "Done"]} />}
+      aside={
+        <>
+          <Card title="Transaction">
+            <FactList facts={txRows(receipt.data ?? { transactionHash: hash }, network)} />
+          </Card>
+          {receipt.isSuccess && showsTroveNow(receipt.data, network) && <TroveNow />}
+        </>
+      }
+    >
       {receipt.isPending && (
-        <ReceiptCard
-          icon={icon}
-          title="Confirming…"
-          message={`Transaction ${shortAddress(hash)} is submitted. This usually takes a few seconds.`}
-          explorer={explorer}
-        />
+        <ReceiptCard icon={icon} title="Confirming…" message={`Transaction ${shortAddress(hash)} is submitted. This usually takes a few seconds.`} />
       )}
-      {receipt.isError && <Failed error={receipt.error} icon={icon} explorer={explorer} />}
-      {receipt.isSuccess && <Confirmed receipt={receipt.data} icon={icon} explorer={explorer} />}
+      {receipt.isError && <Failed error={receipt.error} icon={icon} />}
+      {receipt.isSuccess && <Confirmed receipt={receipt.data} icon={icon} />}
     </FlowColumn>
   );
 }
@@ -94,11 +100,17 @@ const TITLES = {
   "sp-claim": "BTC gain claimed",
 } as const;
 
-function Confirmed({ receipt, icon, explorer }: { receipt: TransactionReceipt; icon: ReactNode; explorer: string }) {
+/** A borrow, or a Trove action that leaves the Trove open, shows the Trove as it is now (Flow D step 7). */
+function showsTroveNow(receipt: TransactionReceipt, network: Parameters<typeof receiptKind>[1]): boolean {
+  const result = receiptKind(receipt.logs, network);
+  return result !== null && ((result.kind === "entered" && result.event.musdBorrowed > 0n) || (result.kind === "trove" && result.event.kind !== "closed"));
+}
+
+function Confirmed({ receipt, icon }: { receipt: TransactionReceipt; icon: ReactNode }) {
   const { network } = useNetwork();
   const result = receiptKind(receipt.logs, network);
   if (!result) {
-    return <ReceiptCard icon={icon} title="Transaction confirmed" message="This transaction has no MezoRoute action." explorer={explorer} />;
+    return <ReceiptCard icon={icon} title="Transaction confirmed" message="This transaction has no MezoRoute action." />;
   }
   const borrowed = result.kind === "entered" && result.event.musdBorrowed > 0n;
   const rows =
@@ -127,13 +139,7 @@ function Confirmed({ receipt, icon, explorer }: { receipt: TransactionReceipt; i
               ? TROVE_RECEIPT_TITLES[result.event.kind]
               : TITLES[result.kind]
       }
-      rows={[
-        ...rows.map((row) => ({ label: row.label, value: row.value })),
-        { label: "Gas used", value: formatToken(receipt.gasUsed, 0, 0) },
-        { label: "Block", value: receipt.blockNumber.toString() },
-      ]}
-      extra={(borrowed || (result.kind === "trove" && result.event.kind !== "closed")) && <TroveNow />}
-      explorer={explorer}
+      rows={rows.map((row) => ({ label: row.label, value: row.value }))}
     />
   );
 }
@@ -150,24 +156,22 @@ function TroveNowFor({ account }: { account: Address }) {
   if (!data || !trove) return null;
   const cr = collateralRatio(trove, data.snapshot.price);
   return (
-    <section aria-labelledby="trove-now" className="space-y-2">
-      <h2 id="trove-now" className="text-sm font-semibold">
-        Your Trove now
-      </h2>
+    <Card title="Your Trove now">
       <Overview
+        className="mt-3"
         rows={[
           { label: "Debt", value: `${formatToken(trove.debt, 18, 2)} MUSD` },
           { label: "Collateral ratio", value: cr === null ? "—" : formatPercent(cr, 1) },
         ]}
       />
-    </section>
+    </Card>
   );
 }
 
-function Failed({ error, icon, explorer }: { error: Error; icon: ReactNode; explorer: string }) {
+function Failed({ error, icon }: { error: Error; icon: ReactNode }) {
   const { network } = useNetwork();
   const decoded = decodeError(error, network);
-  return <ReceiptCard icon={icon} title={decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Transaction failed"} message={decoded.message} explorer={explorer} />;
+  return <ReceiptCard icon={icon} title={decoded.kind === "unconfirmed" ? "Not confirmed yet" : "Transaction failed"} message={decoded.message} />;
 }
 
 function StatusIcon({ state }: { state: ReceiptState }) {

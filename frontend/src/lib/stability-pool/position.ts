@@ -1,3 +1,5 @@
+import type { OverviewRow } from "@/components/flow/Overview";
+import { formatToken } from "@/lib/format";
 import { WAD } from "@/lib/math";
 import type { SpCostBasis } from "./cost-basis";
 import type { SpSnapshot } from "./snapshot";
@@ -29,4 +31,13 @@ export function spView(snapshot: SpSnapshot, basis: SpCostBasis | null): SpView 
       absorbed: basis.lossRealised + pendingLoss,
     },
   };
+}
+
+/** The Stability Pool aside's rows (U14): the deposit and its BTC gain, or null when there is neither. */
+export function spDepositRows(sp: { deposit: bigint; btcGain: bigint }): OverviewRow[] | null {
+  if (sp.deposit === 0n && sp.btcGain === 0n) return null;
+  return [
+    { label: "Deposit", value: `${formatToken(sp.deposit, 18, 4)} MUSD` },
+    { label: "BTC gain", value: `${formatToken(sp.btcGain, 18, 8)} BTC` },
+  ];
 }

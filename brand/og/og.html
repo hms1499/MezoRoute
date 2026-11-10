@@ -1,0 +1,81 @@
+<!doctype html>
+<!-- U14 B5: the share card, 1200x630. Colours are the light palette in frontend/src/lib/ui/tokens.ts; the face is
+     Geist Mono (frontend/src/fonts, OFL). Render to frontend/public/og.png with a headless browser at 1200x630. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: "Geist Mono";
+        src: url("../../frontend/src/fonts/GeistMono-Variable.woff2") format("woff2");
+        font-weight: 100 900;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1200px;
+        height: 630px;
+        background: #eef4f2;
+        color: #0b2523;
+        font-family: "Geist Mono", monospace;
+      }
+      .card {
+        box-sizing: border-box;
+        width: 1200px;
+        height: 630px;
+        padding: 88px 96px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background: radial-gradient(circle at 85% 20%, #d3ebe5 0, rgba(211, 235, 229, 0) 55%);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+      }
+      .brand svg {
+        width: 96px;
+        height: 96px;
+      }
+      .word {
+        font-size: 72px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      .line {
+        max-width: 1008px;
+        font-size: 40px;
+        font-weight: 400;
+        line-height: 1.3;
+      }
+      .foot {
+        display: flex;
+        justify-content: space-between;
+        border-top: 2px solid #d5e1de;
+        padding-top: 28px;
+        font-size: 26px;
+        font-weight: 500;
+        color: #3f5551;
+      }
+      .foot b {
+        color: #0f766e;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="brand">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="#0F766E" />
+          <path d="M8 10c5 0 7 6 12 6M8 22c5 0 7-6 12-6h4" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="20" cy="16" r="2.5" fill="#fff" />
+        </svg>
+        <span class="word">MezoRoute</span>
+      </div>
+      <div class="line">Put your MUSD to work on Mezo, and see what each route does to your BTC risk.</div>
+      <div class="foot"><span>MUSD/BTC pool · Stability Pool · Trove</span><b>mezoroute.vercel.app</b></div>
+    </div>
+  </body>
+</html>

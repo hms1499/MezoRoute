@@ -1,5 +1,6 @@
 "use client";
 
+import { CircleAlert } from "lucide-react";
 import { ButtonLink } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Segmented } from "@/components/ui/Segmented";
@@ -27,18 +28,26 @@ export function QueueLine({ before, after }: { before: QueuePosition | null; aft
   );
 }
 
-/** Target collateral ratio: presets plus a field (percent). */
+/** Target collateral ratio: presets plus a field (percent). `disabled` with a `description` says why nothing fits (U14 B1). */
 export function CrField({
   value,
   onChange,
   presets,
   label,
+  disabled = false,
+  description,
+  error,
 }: {
   value: string;
   onChange: (value: string) => void;
   presets: bigint[];
   label: string;
+  disabled?: boolean;
+  description?: string;
+  /** U14 B3: a size limit the target hits, said at the field. */
+  error?: string | null;
 }) {
+  const describedBy = [description ? "target-cr-description" : null, error ? "target-cr-error" : null].filter(Boolean).join(" ") || undefined;
   const options = presets.map((p) => ({ value: formatPercent(p, 0).replace("%", ""), label: formatPercent(p, 0) }));
   return (
     <div className="space-y-2">
@@ -48,17 +57,31 @@ export function CrField({
       <div className="flex items-center gap-2 rounded-inset border border-line px-4 py-2">
         <input
           id="target-cr"
+          aria-describedby={describedBy}
+          aria-invalid={error ? true : undefined}
           inputMode="decimal"
           autoComplete="off"
           placeholder="250"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-title font-semibold outline-none placeholder:text-muted/60"
+          className="min-w-0 flex-1 bg-transparent text-title font-semibold outline-none placeholder:text-muted/60 disabled:cursor-not-allowed"
+          disabled={disabled}
         />
         <span className="text-sm text-muted">%</span>
       </div>
       {/* One preset is not a choice: a lone chip in a track reads as a stray control. */}
-      {options.length > 1 && (
+      {description && (
+        <p id="target-cr-description" className="text-sm text-muted">
+          {description}
+        </p>
+      )}
+      {error && (
+        <p id="target-cr-error" className="flex items-start gap-2 text-sm text-danger">
+          <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </p>
+      )}
+      {options.length > 1 && !disabled && (
         <Segmented label={`${label} presets`} options={options} value={options.find((o) => o.value === value)?.value ?? ("" as string)} onChange={onChange} size="sm" />
       )}
     </div>

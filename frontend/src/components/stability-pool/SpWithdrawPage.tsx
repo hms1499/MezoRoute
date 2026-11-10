@@ -10,10 +10,15 @@ import { LoadError } from "@/components/LoadError";
 import { BlockNotice } from "@/components/lp/BlockNotice";
 import { btc, musd } from "@/components/lp/units";
 import { ActionCard } from "@/components/flow/ActionCard";
-import { FlowColumn } from "@/components/flow/FlowColumn";
+import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
+import { spSignFacts } from "@/lib/flow/sign-facts";
+import { spWithdrawState } from "@/lib/stability-pool/withdraw-state";
+import { SpDepositAside } from "./SpDepositAside";
+import { SpGainOnlyCard } from "./SpGainOnlyCard";
 import { Overview } from "@/components/flow/Overview";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TokenIcon } from "@/components/ui/TokenIcon";
@@ -34,7 +39,7 @@ import { useWalletKind } from "@/lib/wallet/useWalletKind";
 
 /** Spec §9 screen 6b: share or Max, simulated first; a paused pool shows the blocked state with Claim BTC gain. U11 §6.2: one action card. */
 export default function SpWithdrawPage() {
-  return <RequireWallet>{(account) => <SpWithdraw account={account} />}</RequireWallet>;
+  return <RequireWallet flow>{(account) => <SpWithdraw account={account} />}</RequireWallet>;
 }
 
 function SpWithdraw({ account }: { account: Address }) {
@@ -43,9 +48,9 @@ function SpWithdraw({ account }: { account: Address }) {
   const { data, error, refresh } = useSpSnapshot(account);
   if (!data) {
     return error ? (
-      <LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} />
+      <FlowState><LoadError error={error} onRetry={() => void refresh().catch(() => undefined)} /></FlowState>
     ) : (
-      <LoadingCard label="Loading your deposit" />
+      <FlowState><LoadingCard label="Loading your deposit" /></FlowState>
     );
   }
   return (
@@ -102,19 +107,51 @@ function WithdrawView(props: {
     </Button>
   );
 
-  return (
-    <FlowColumn
-      header={
-        <PageHeader
-          back={{ href: "/positions/", label: "Positions" }}
-          title={
-            <>
-              Withdraw from the <Term id="stabilityPool">Stability Pool</Term>
-            </>
-          }
-        />
+  const sp = props.data.snapshot.dashboard.sp;
+  const state = spWithdrawState(sp.deposit, sp.btcGain);
+  const header = (
+    <PageHeader
+      back={{ href: "/positions/", label: "Positions" }}
+      title={
+        <>
+          Withdraw from the <Term id="stabilityPool">Stability Pool</Term>
+        </>
       }
-    >
+    />
+  );
+  const aside = <SpDepositAside sp={sp} facts={spSignFacts(network, props.data.snapshot.blockNumber, "withdraw")} />;
+
+  // U14 B6: nothing deposited is an empty state that leads to a deposit, not a form of zeros with a disabled button.
+  if (state !== "form") {
+    return (
+      <FlowColumn aside={aside} header={header}>
+        {chainId !== network.chainId && <WrongNetworkAlert />}
+        {state === "empty" ? (
+          <Card title="No Stability Pool deposit" subtitle="Deposit MUSD to the Stability Pool first. You can withdraw it, and any BTC it earns, here afterwards.">
+            <div className="mt-4 grid gap-2 sm:flex">
+              <ButtonLink href="/route/stability-pool/" arrow>
+                Deposit to the Stability Pool
+              </ButtonLink>
+              <ButtonLink href="/positions/" variant="secondary">
+                Back to Positions
+              </ButtonLink>
+            </div>
+          </Card>
+        ) : (
+          <SpGainOnlyCard
+            gain={sp.btcGain}
+            claimBlock={claimBlock}
+            busy={busy}
+            pending={actions.pending === "claim" ? "wallet" : null}
+            onClaim={actions.claim}
+          />
+        )}
+      </FlowColumn>
+    );
+  }
+
+  return (
+    <FlowColumn aside={aside} header={header}>
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <ActionCard
         icon={<TokenIcon token="musd" size={24} />}
