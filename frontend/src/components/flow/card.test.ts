@@ -65,6 +65,23 @@ describe("FlowColumn", () => {
     expect(out).toContain("max-w-[520px]");
     expect(out).toContain("mx-auto");
   });
+
+  it("adds a 340 px aside beside the 520 px flow from lg", () => {
+    const out = renderToStaticMarkup(
+      createElement(FlowColumn, { header: createElement("h1", null, "T"), aside: createElement("p", { id: "aside" }, "side") }, "c"),
+    );
+    expect(out).toContain("max-w-[876px]");
+    expect(out).toContain("lg:grid-cols-[520px_340px]");
+    expect(out).toContain('id="aside"');
+    // The aside follows the flow's children in source order, so a narrow screen stacks it under them.
+    expect(out.indexOf('id="aside"')).toBeGreaterThan(out.indexOf(">c<"));
+  });
+
+  it("keeps today's centred column without an aside", () => {
+    const out = renderToStaticMarkup(createElement(FlowColumn, { header: createElement("h1", null, "T") }, "c"));
+    expect(out).toContain("max-w-[520px]");
+    expect(out).not.toContain("876");
+  });
 });
 
 // Final review: the trigger wraps under the tabs at 360 px; it must stay at the card's right edge, or the right-anchored
