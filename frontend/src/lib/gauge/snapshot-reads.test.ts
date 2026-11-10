@@ -30,6 +30,15 @@ describe("unwrapSnapshotReads", () => {
     expect(() => unwrapSnapshotReads([ok(1n), failed("gauge"), ok(3n), failed("tail")], range)).toThrow("tail");
   });
 
+  it("substitutes a tolerated failure and keeps every position (U13)", () => {
+    const results = unwrapSnapshotReads([ok(1n), failed("btc allowance"), ok(3n)], { start: 3, count: 0 }, new Map([[1, 0n]]));
+    expect(results).toEqual({ results: [1n, 0n, 3n], gaugeReadFailed: false });
+  });
+
+  it("still raises a failure nobody tolerated", () => {
+    expect(() => unwrapSnapshotReads([ok(1n), failed("btc allowance")], { start: 2, count: 0 }, new Map([[0, 0n]]))).toThrow("btc allowance");
+  });
+
   it("has nothing to fail on a network without a gauge", () => {
     expect(unwrapSnapshotReads([ok(1n)], { start: 1, count: 0 })).toEqual({ results: [1n], gaugeReadFailed: false });
   });

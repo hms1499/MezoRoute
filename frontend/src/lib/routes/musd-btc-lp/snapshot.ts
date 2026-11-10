@@ -37,6 +37,13 @@ const LP_ROUTE_READS = 13;
 /** Where `lpRouteContracts`' gauge reads start. */
 export const LP_ROUTE_GAUGE_START = DASHBOARD_READS + LP_ROUTE_READS;
 
+/**
+ * The BTC allowance in the LP route's tail (the twelfth read). The BTC token is a chain precompile, and
+ * `allowance(0x0, executor)` reverts there (measured 10 Nov 2026 through this very multicall on rpc.test.mezo.org),
+ * so the planner tolerates that one read as `0n`: a wallet that is not connected has no allowance.
+ */
+export const LP_ROUTE_BTC_ALLOWANCE_INDEX = DASHBOARD_READS + 11;
+
 type LpRouteTail = readonly [
   allowance: bigint,
   permitNonce: bigint,

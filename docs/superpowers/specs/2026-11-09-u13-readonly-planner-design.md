@@ -60,6 +60,8 @@ Addresses used: testnet TroveManager `0xE47c…6bb0`, StabilityPool `0x1CCA…68
 
 Mainnet uses the same Liquity/Tigris implementations and getters. The QA pass loads the mainnet planner read-only and records the block; if any read reverts there, the fallback is a planner-only snapshot that drops account-scoped calls (see Risks).
 
+**One read is not safe, and the 9 Nov table missed it** (found in the U13 browser QA, 10 Nov 2026): the BTC token is a chain precompile and `BTC.allowance(0x0, executor)` reverts — the same 32-call multicall that runs on the planner failed only that sub-call on `rpc.test.mezo.org`, while `BTC.nonces(0x0)` returned `0`. `useLpRouteSnapshot` therefore tolerates exactly that read while unconnected and substitutes `0n` (a wallet that is not connected has no allowance), so the snapshot keeps its positional shape; the general `tolerate` hook lives in `useSnapshotReads` and is unit-tested. No account-scoped read is made with a real address before the visitor connects.
+
 This is why no separate "planner snapshot" type is needed: `parseLpRouteSnapshot` already turns status `0` into `trove: null` and every balance into `0n`.
 
 ## UX

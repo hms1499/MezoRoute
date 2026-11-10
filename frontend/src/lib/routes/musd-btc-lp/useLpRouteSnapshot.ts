@@ -4,7 +4,14 @@ import { zeroAddress, type Address } from "viem";
 import { useBalance, useGasPrice } from "wagmi";
 import { useNetwork } from "@/lib/config/network-context";
 import { useSnapshotReads, type SnapshotReads } from "@/lib/gauge/snapshot-reads";
-import { LP_ROUTE_GAUGE_START, lpRouteContracts, parseLpRouteSnapshot, type LpRouteData, type LpRouteResults } from "./snapshot";
+import {
+  LP_ROUTE_BTC_ALLOWANCE_INDEX,
+  LP_ROUTE_GAUGE_START,
+  lpRouteContracts,
+  parseLpRouteSnapshot,
+  type LpRouteData,
+  type LpRouteResults,
+} from "./snapshot";
 
 /** New quote every 15 s; a quote older than 60 s is blocked (gate). */
 export const QUOTE_REFRESH_MS = 15_000;
@@ -28,6 +35,8 @@ export function useLpRouteSnapshot(
     network,
     contracts: lpRouteContracts(network, executor, account ?? zeroAddress),
     gaugeStart: LP_ROUTE_GAUGE_START,
+    // The BTC precompile reverts `allowance(0x0, …)`: with no wallet there is no allowance, and 0n says exactly that.
+    tolerate: connected ? undefined : new Map([[LP_ROUTE_BTC_ALLOWANCE_INDEX, 0n]]),
     refetchInterval: QUOTE_REFRESH_MS,
   });
   const gas = useBalance({
