@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PAGES, pageMetadata } from "./pages";
+import { PAGES, SHARE_IMAGE, pageMetadata } from "./pages";
 
 // U14 B5: every route has its own title (static metadata from a segment layout: every page.tsx is a client module and
 // share crawlers do not run JavaScript); the root template adds " | MezoRoute".
@@ -43,8 +43,17 @@ describe("page metadata", () => {
 
   it("fills the share card from the same title and description", () => {
     const meta = pageMetadata("/route/lp/");
-    expect(meta.title).toBe("Add liquidity");
+    // Absolute, because a segment that sets a plain title drops the root template for its children (the Confirm pages
+    // under /route/lp/ and /trove/*/ rendered "Review your deposit" with no brand).
+    expect(meta.title).toEqual({ absolute: "Add liquidity | MezoRoute" });
+    expect(pageMetadata("/route/lp/confirm/").title).toEqual({ absolute: "Review your deposit | MezoRoute" });
     expect(meta.openGraph).toMatchObject({ title: "Add liquidity", description: PAGES["/route/lp/"].description });
     expect(pageMetadata("/route/lp/confirm/").robots).toEqual({ index: false });
+  });
+
+  it("keeps the share image on every page, because Next replaces a parent's openGraph instead of merging it", () => {
+    for (const route of Object.keys(PAGES) as (keyof typeof PAGES)[]) {
+      expect(pageMetadata(route).openGraph, route).toMatchObject({ siteName: "MezoRoute", images: [SHARE_IMAGE] });
+    }
   });
 });

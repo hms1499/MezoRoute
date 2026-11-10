@@ -7,7 +7,7 @@
     "dev": "next dev",
     "prebuild": "node scripts/icloud-ignore.mjs && node scripts/patch-relayer.mjs && node scripts/check-env.mjs",
     "build": "next build",
-    "postbuild": "node scripts/check-relayer-bundle.mjs",
+    "postbuild": "node scripts/check-relayer-bundle.mjs && node scripts/check-metadata.mjs",
     "lint": "next lint",
     "test": "vitest run",
     "quote-accuracy": "vitest run -c vitest.live.config.ts scripts/live/quote-accuracy.live.ts",

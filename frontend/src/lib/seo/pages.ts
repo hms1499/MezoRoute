@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 // U14 B5: one title and description per route, the static metadata each segment `layout.tsx` exports (every
-// page.tsx is a client module, so it cannot). The root layout's template adds " | MezoRoute". Titles follow each
+// page.tsx is a client module, so it cannot). Each title gets " | MezoRoute" here (see pageMetadata). Titles follow each
 // page's h1 where it is static. Confirm, exit, withdraw, and receipt pages stay out of search results.
 
 type Page = { title: string; description: string; noindex?: true };
@@ -29,12 +29,19 @@ export const PAGES = {
 
 export type PageRoute = keyof typeof PAGES;
 
+/** The one share card (public/og.png, rendered from brand/og/og.html). Next replaces a parent's `openGraph` with a
+ * child's instead of merging it, so every page repeats the image and site name, and the root layout uses it too. */
+export const SHARE_IMAGE = { url: "/og.png", width: 1200, height: 630, alt: "MezoRoute" };
+export const SITE_OPEN_GRAPH = { siteName: "MezoRoute", type: "website" as const, images: [SHARE_IMAGE] };
+
 export function pageMetadata(route: PageRoute): Metadata {
   const page: Page = PAGES[route];
   return {
-    title: page.title,
+    // Absolute: a segment with a plain title drops the root template for its children, so nested pages (Confirm, exit,
+    // withdraw) would lose the brand. One rule for every page instead of relying on the template.
+    title: { absolute: `${page.title} | MezoRoute` },
     description: page.description,
     ...(page.noindex ? { robots: { index: false } } : {}),
-    openGraph: { title: page.title, description: page.description },
+    openGraph: { ...SITE_OPEN_GRAPH, title: page.title, description: page.description },
   };
 }

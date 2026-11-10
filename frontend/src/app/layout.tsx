@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
+import { SITE_OPEN_GRAPH } from "@/lib/seo/pages";
 import { THEME_INIT_SCRIPT } from "@/lib/ui/theme";
 import ClientProviders from "./client-providers";
 import "./globals.css";
@@ -14,9 +15,16 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
+// U14 B5: each route's segment layout sets its own branded title (src/lib/seo/pages.ts); the template brands the 404.
+// metadataBase turns /og.png into the absolute URL share cards need. postbuild checks the export (check-metadata).
+const description = "Compare MUSD routes on Mezo and see what each one does to your BTC risk.";
+
 export const metadata: Metadata = {
-  title: "MezoRoute",
-  description: "Compare MUSD routes on Mezo and see what each one does to your BTC risk.",
+  metadataBase: new URL("https://mezoroute.vercel.app"),
+  title: { default: "MezoRoute", template: "%s | MezoRoute" },
+  description,
+  openGraph: { ...SITE_OPEN_GRAPH, title: "MezoRoute", description },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
