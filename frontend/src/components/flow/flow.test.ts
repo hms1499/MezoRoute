@@ -39,6 +39,12 @@ describe("TokenAmountInput", () => {
     expect(out).toContain(">x<");
   });
 
+  it("ties the error to the input, so a screen reader hears why Review is off (U14 final review)", () => {
+    const out = render({ error: "Amount exceeds your available MUSD." });
+    expect(out).toMatch(/<input[^>]*aria-describedby="[^"]*\bamount-error\b[^"]*"/);
+    expect(out).toMatch(/<p[^>]*id="amount-error"[^>]*role="alert"/);
+  });
+
   it("keeps the input's decimal keyboard and its description", () => {
     const out = render({ note: "keeps gas" });
     expect(out).toMatch(/<input[^>]*inputMode="decimal"/);
@@ -118,6 +124,20 @@ describe("Overview", () => {
     expect(out.match(/<dt/g)).toHaveLength(3);
     expect(out.match(/<dd/g)).toHaveLength(3);
     expect(out).toContain("text-btc");
+  });
+});
+
+describe("Overview columns", () => {
+  it("keeps one group at the card's full width even when two columns are asked for (the Trove Confirm)", () => {
+    const out = renderToStaticMarkup(createElement(Overview, { columns: 2, rows: [{ label: "Debt", value: "1" }, { label: "Collateral", value: "2" }] }));
+    expect(out).not.toContain("lg:grid-cols-2");
+  });
+
+  it("lays two groups side by side from lg", () => {
+    const out = renderToStaticMarkup(
+      createElement(Overview, { columns: 2, rows: [{ label: "You deposit", value: "1", group: "You pay" }, { label: "LP", value: "2", group: "You receive" }] }),
+    );
+    expect(out).toContain("lg:grid-cols-2");
   });
 });
 

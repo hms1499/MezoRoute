@@ -41,6 +41,12 @@ describe("lpSignFacts", () => {
 describe("spSignFacts", () => {
   const facts = spSignFacts(testnet, 16_700_000n);
 
+  it("says a withdraw or claim needs no approval (U14 final review)", () => {
+    const withdraw = spSignFacts(testnet, 16_700_000n, "withdraw");
+    expect(labels(withdraw)).toEqual(["Contract", "MezoRoute fee", "Approval", "Audit", "Reads"]);
+    expect(withdraw[2]).toEqual({ label: "Approval", value: "None needed" });
+  });
+
   it("names Mezo's pool, no fee, the exact approval, and the block", () => {
     expect(labels(facts)).toEqual(["Contract", "MezoRoute fee", "Approval", "Audit", "Reads"]);
     expect(facts[0]).toEqual({ label: "Contract", value: "Stability Pool", href: explorerAddressUrl(testnet, testnet.addresses.stabilityPool) });

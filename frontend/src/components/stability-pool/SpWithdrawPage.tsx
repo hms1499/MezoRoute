@@ -14,6 +14,7 @@ import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { spSignFacts } from "@/lib/flow/sign-facts";
 import { spWithdrawState } from "@/lib/stability-pool/withdraw-state";
 import { SpDepositAside } from "./SpDepositAside";
+import { SpGainOnlyCard } from "./SpGainOnlyCard";
 import { Overview } from "@/components/flow/Overview";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -118,7 +119,7 @@ function WithdrawView(props: {
       }
     />
   );
-  const aside = <SpDepositAside sp={sp} facts={spSignFacts(network, props.data.snapshot.blockNumber)} />;
+  const aside = <SpDepositAside sp={sp} facts={spSignFacts(network, props.data.snapshot.blockNumber, "withdraw")} />;
 
   // U14 B6: nothing deposited is an empty state that leads to a deposit, not a form of zeros with a disabled button.
   if (state !== "form") {
@@ -137,13 +138,13 @@ function WithdrawView(props: {
             </div>
           </Card>
         ) : (
-          <Card title="Your deposit is fully withdrawn" subtitle={`A BTC gain of ${btc(sp.btcGain)} is still waiting.`}>
-            <div className="mt-4">
-              <Button disabled={claimBlock !== null || busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim}>
-                Claim BTC gain
-              </Button>
-            </div>
-          </Card>
+          <SpGainOnlyCard
+            gain={sp.btcGain}
+            claimBlock={claimBlock}
+            busy={busy}
+            pending={actions.pending === "claim" ? "wallet" : null}
+            onClaim={actions.claim}
+          />
         )}
       </FlowColumn>
     );

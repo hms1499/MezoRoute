@@ -154,7 +154,9 @@ export function TokenAmountInput({
   const unit = FLOW_TOKEN_UNIT[token];
   const helpId = `${id}-help`;
   const noteId = `${id}-note`;
-  const describedBy = note ? `${helpId} ${noteId}` : helpId;
+  const errorId = `${id}-error`;
+  // U14 B3: the reason a typed amount is blocked lives at the field, so it is part of the input's description.
+  const describedBy = [helpId, note ? noteId : null, error ? errorId : null].filter(Boolean).join(" ");
   const menu = token !== "lp" && tokens && tokens.length === 2 && onToken ? { token, tokens, onToken } : null;
 
   return (
@@ -219,7 +221,7 @@ export function TokenAmountInput({
         </fieldset>
       )}
       {error && (
-        <p className="flex items-start gap-2 text-sm text-danger">
+        <p id={errorId} role="alert" className="flex items-start gap-2 text-sm text-danger">
           <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{error}</span>
         </p>

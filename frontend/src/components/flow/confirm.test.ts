@@ -79,7 +79,7 @@ describe("SpEntryCard", () => {
 describe("Confirm risks beside the card", () => {
   const risks = ["Impermanent loss", "Smart-contract risk"];
   const wide = renderToStaticMarkup(
-    createElement(ConfirmCard, { icon: null, title: "T", overview: [{ label: "A", value: "1", group: "You pay" }], risks, steps, risksPlacement: "aside-from-lg" }),
+    createElement(ConfirmCard, { icon: null, title: "T", overview: [{ label: "A", value: "1", group: "You pay" }, { label: "B", value: "2", group: "You receive" }], risks, steps, risksPlacement: "aside-from-lg" }),
   );
   const aside = renderToStaticMarkup(createElement(ConfirmAside, { risks }, createElement("p", { id: "facts" }, "facts")));
 

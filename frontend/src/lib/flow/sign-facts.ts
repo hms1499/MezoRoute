@@ -31,12 +31,15 @@ export function lpSignFacts(
   ];
 }
 
-/** The Stability Pool is Mezo's own contract, called directly: no MezoRoute fee and no MezoRoute code. */
-export function spSignFacts(network: NetworkConfig, blockNumber: bigint): SignFact[] {
+/**
+ * The Stability Pool is Mezo's own contract, called directly: no MezoRoute fee and no MezoRoute code. A deposit
+ * approves the exact amount; a withdraw or a claim moves MUSD and BTC out of the pool, so it needs no approval.
+ */
+export function spSignFacts(network: NetworkConfig, blockNumber: bigint, action: "deposit" | "withdraw" = "deposit"): SignFact[] {
   return [
     { label: "Contract", value: "Stability Pool", href: explorerAddressUrl(network, network.addresses.stabilityPool) },
     { label: "MezoRoute fee", value: "None" },
-    { label: "Approval", value: "Exact amount" },
+    { label: "Approval", value: action === "withdraw" ? "None needed" : "Exact amount" },
     { label: "Audit", value: "Mezo's contract; MezoRoute adds none" },
     reads(blockNumber),
   ];
