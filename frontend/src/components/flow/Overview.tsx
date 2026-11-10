@@ -9,7 +9,8 @@ export type OverviewRow = { label: ReactNode; value: ReactNode; sub?: ReactNode;
 
 const TONE: Record<NonNullable<OverviewRow["tone"]>, string> = { btc: "text-btc", positive: "text-positive", negative: "text-negative" };
 
-export function Overview({ rows, className }: { rows: OverviewRow[]; className?: string }) {
+/** `columns={2}` lays the groups side by side from lg, in source order (U14: a Confirm card at page width). */
+export function Overview({ rows, className, columns = 1 }: { rows: OverviewRow[]; className?: string; columns?: 1 | 2 }) {
   const groups = rows.reduce<{ label: string | null; rows: OverviewRow[] }[]>((all, row) => {
     const label = row.group ?? null;
     const last = all[all.length - 1];
@@ -18,9 +19,9 @@ export function Overview({ rows, className }: { rows: OverviewRow[]; className?:
     return all;
   }, []);
   return (
-    <div className={cx("rounded-inset border border-line px-4", className)}>
+    <div className={cx("rounded-inset border border-line px-4", columns === 2 && "grid grid-cols-1 lg:grid-cols-2 lg:gap-x-6", className)}>
       {groups.map((group, groupIndex) => (
-        <div key={`${group.label ?? "rows"}-${groupIndex}`} className={cx(groupIndex > 0 && "border-t border-line")}>
+        <div key={`${group.label ?? "rows"}-${groupIndex}`} className={cx(groupIndex > 0 && "border-t border-line", columns === 2 && groupIndex === 1 && "lg:border-t-0")}>
           {group.label && <p className="pt-2 text-xs font-medium text-muted">{group.label}</p>}
           <dl>
             {group.rows.map((row, index) => (

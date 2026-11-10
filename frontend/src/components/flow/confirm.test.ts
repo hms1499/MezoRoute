@@ -5,7 +5,7 @@ import { SpEntryCard } from "@/components/stability-pool/SpEntryCard";
 import { StepList } from "@/components/ui/StepList";
 import { entryRisks } from "@/lib/flow/risks";
 import { LP_BTC_RISKS, LP_RISKS, SP_RISKS } from "@/lib/routes/copy";
-import { ConfirmCard } from "./ConfirmCard";
+import { ConfirmAside, ConfirmCard } from "./ConfirmCard";
 
 // U11 §6.2: Confirm pages show the full risk list (anti-goal: no risk hidden before signing); the active step's button
 // is the page's one primary. The Stability Pool card never shows a rate.
@@ -71,5 +71,35 @@ describe("SpEntryCard", () => {
   it("has one primary button and Details", () => {
     expect(primaries(out)).toBe(1);
     expect(out).toContain('id="details"');
+  });
+});
+
+// U14 §A: on a wide Confirm page the risks sit in the aside from lg; below lg they stay in the card above the steps.
+// Exactly one copy is displayed at any width, and the hidden one is out of the accessibility tree (display: none).
+describe("Confirm risks beside the card", () => {
+  const risks = ["Impermanent loss", "Smart-contract risk"];
+  const wide = renderToStaticMarkup(
+    createElement(ConfirmCard, { icon: null, title: "T", overview: [{ label: "A", value: "1", group: "You pay" }], risks, steps, risksPlacement: "aside-from-lg" }),
+  );
+  const aside = renderToStaticMarkup(createElement(ConfirmAside, { risks }, createElement("p", { id: "facts" }, "facts")));
+
+  it("hides the card's copy from lg", () => {
+    expect(wide).toMatch(/<section[^>]*aria-labelledby="confirm-risks-card"[^>]*class="[^"]*\blg:hidden\b/);
+  });
+
+  it("shows the aside's copy from lg only, with every risk, before the aside's other panels", () => {
+    expect(aside).toMatch(/^<div class="hidden lg:block">/);
+    for (const risk of risks) expect(aside).toContain(risk);
+    expect(aside.indexOf("Smart-contract risk")).toBeLessThan(aside.indexOf('id="facts"'));
+  });
+
+  it("gives the two headings different ids", () => {
+    expect(wide).toContain('id="confirm-risks-card"');
+    expect(aside).toContain('id="confirm-risks-aside"');
+  });
+
+  it("lays the overview groups in two columns from lg on a wide card only", () => {
+    expect(wide).toContain("lg:grid-cols-2");
+    expect(confirm(risks)).not.toContain("lg:grid-cols-2");
   });
 });

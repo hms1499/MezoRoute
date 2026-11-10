@@ -4,7 +4,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
-import { ConfirmCard } from "@/components/flow/ConfirmCard";
+import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
+import { ConfirmAside, ConfirmCard } from "@/components/flow/ConfirmCard";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { Notice } from "@/components/ui/Notice";
 import { PairIcon } from "@/components/ui/TokenIcon";
@@ -15,6 +16,7 @@ import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { useNetwork } from "@/lib/config/network-context";
 import { entryRisks } from "@/lib/flow/risks";
+import { lpSignFacts } from "@/lib/flow/sign-facts";
 import { entryQuery, intentAmount, parseEntryIntent } from "@/lib/routes/musd-btc-lp/intent";
 import { entryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import { useLpRouteSnapshot } from "@/lib/routes/musd-btc-lp/useLpRouteSnapshot";
@@ -59,9 +61,18 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
   }
 
   const preview = entryPreview({ network, data, intent, walletKind, walletChainId: chainId, now });
+  const risks = entryRisks({ borrow: intent.mode === "borrow", fromBtc: intent.asset === "btc" });
   return (
-    // U11 §6.2: the same column as the amount page; the full risk list is always visible before signing.
+    // U11 §6.2, U14 §A: the amount page's grid; the full risk list is always visible before signing (beside the card
+    // from lg, in it above the steps below).
     <FlowColumn
+      aside={
+        <ConfirmAside risks={risks}>
+          <BeforeYouSign
+            facts={lpSignFacts(network, { feeBps: data.snapshot.executorFeeBps, capMusd: data.snapshot.maxMusdIn, blockNumber: data.snapshot.blockNumber })}
+          />
+        </ConfirmAside>
+      }
       header={
         <>
           <PageHeader
@@ -79,7 +90,8 @@ function ConfirmFlow({ account, executor }: { account: Address; executor: Addres
         subtitle="MUSD/BTC pool on Tigris"
         overview={confirmOverview({ preview, data, slippageBps: intent.slippageBps })}
         quote={<QuoteBlock data={data} now={now} onRefresh={() => void refresh().catch(() => undefined)} />}
-        risks={entryRisks({ borrow: intent.mode === "borrow", fromBtc: intent.asset === "btc" })}
+        risks={risks}
+        risksPlacement="aside-from-lg"
         steps={
           <EntryStepper
             account={account}
