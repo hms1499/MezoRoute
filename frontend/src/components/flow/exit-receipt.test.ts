@@ -34,7 +34,6 @@ describe("ReceiptCard", () => {
       icon: null,
       title: "Deposit confirmed",
       rows: [{ label: "LP received", value: "1 LP" }],
-      explorer: "https://explorer.mezo.org/tx/0x1",
     }),
   );
 
@@ -43,8 +42,8 @@ describe("ReceiptCard", () => {
     expect((out.match(/<(?:button|a)\b[^>]*class="[^"]*\bbg-accent(?![-\w/])/g) ?? []).length).toBe(1);
   });
 
-  it("links the explorer and positions", () => {
-    expect(out).toContain("View on explorer");
+  it("links positions; the explorer link lives in the page's aside (U14)", () => {
+    expect(out).not.toContain("View on explorer");
     expect(out).toMatch(/href="\/positions\/?"/);
   });
 });

@@ -3,7 +3,7 @@ import type { EnteredEvent } from "@/lib/routes/musd-btc-lp/receipt";
 import type { HistoryEvent } from "./history";
 import type { GaugeState } from "@/lib/gauge/state";
 import { LIVE_EXIT_LIQUIDITY, LIVE_EXIT_POOL, ONE, positionsSnapshotWith } from "./test-fixtures";
-import { positionView, showsNoPositions } from "./view";
+import { exitPositionRows, positionView, showsNoPositions } from "./view";
 
 const ME = "0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49";
 
@@ -110,5 +110,21 @@ describe("showsNoPositions", () => {
 
   it("never reads as no positions when the gauge could not be read: the LP may all be staked", () => {
     expect(showsNoPositions(empty, pool, true)).toBe(false);
+  });
+});
+
+// U14 §A: LP exit's aside shows the position the page already read: wallet LP, staked LP, and the fees to claim.
+describe("exitPositionRows", () => {
+  it("names the wallet LP and the fees, without a staked row on a network with no gauge", () => {
+    const rows = exitPositionRows(positionsSnapshotWith({ fees: { musd: ONE, btc: 10n ** 13n } }));
+    expect(rows).toEqual([
+      { label: "In your wallet", value: "0.142328 LP" },
+      { label: "Pool fees to claim", value: "1 MUSD", sub: "+ 0.00001 BTC" },
+    ]);
+  });
+
+  it("adds the staked LP, or says it is unknown when the gauge read failed", () => {
+    expect(exitPositionRows(positionsSnapshotWith({ gauge: gaugeState({ staked: ONE / 2n }) }))[1]).toEqual({ label: "Staked", value: "0.5 LP" });
+    expect(exitPositionRows(positionsSnapshotWith({ gauge: gaugeState(), gaugeReadFailed: true }))[1]).toEqual({ label: "Staked", value: "Unknown" });
   });
 });

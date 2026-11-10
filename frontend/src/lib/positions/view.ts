@@ -1,3 +1,5 @@
+import type { OverviewRow } from "@/components/flow/Overview";
+import { formatToken } from "@/lib/format";
 import { WAD } from "@/lib/math";
 import { quoteExit, type ExitQuote } from "@/lib/quote/exit";
 import { costBasis, type CostBasis } from "./cost-basis";
@@ -58,4 +60,14 @@ export function positionView(snapshot: PositionsSnapshot, events: HistoryEvent[]
 /** Whether Positions says "you have no positions": both sides known empty. A failed gauge read cannot tell, because the LP may all be staked. */
 export function showsNoPositions(view: PositionView, pool: { empty: boolean } | null, gaugeReadFailed: boolean): boolean {
   return view.empty && pool?.empty === true && !gaugeReadFailed;
+}
+
+/** LP exit's aside (U14): wallet LP, staked LP (unknown when the gauge read failed), and the pool fees to claim. */
+export function exitPositionRows(s: PositionsSnapshot): OverviewRow[] {
+  const lp = (v: bigint) => `${formatToken(v)} LP`;
+  return [
+    { label: "In your wallet", value: lp(s.lpBalance) },
+    ...(s.gauge ? [{ label: "Staked", value: s.gaugeReadFailed ? "Unknown" : lp(s.gauge.staked) }] : []),
+    { label: "Pool fees to claim", value: `${formatToken(s.fees.musd, 18, 4)} MUSD`, sub: `+ ${formatToken(s.fees.btc, 18, 8)} BTC` },
+  ];
 }

@@ -9,6 +9,7 @@ import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { NoExecutorCard } from "@/components/lp/NoExecutorCard";
 import { ActionCard } from "@/components/flow/ActionCard";
+import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
 import { Details } from "@/components/flow/Details";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { Overview } from "@/components/flow/Overview";
@@ -19,7 +20,10 @@ import { lp, musd } from "@/components/lp/units";
 import { PairIcon, TokenIcon } from "@/components/ui/TokenIcon";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
 import { LoadingCard } from "@/components/ui/Skeleton";
+import { lpSignFacts } from "@/lib/flow/sign-facts";
+import { exitPositionRows } from "@/lib/positions/view";
 import { useNetwork } from "@/lib/config/network-context";
 import { GAUGE_READ_FAILED_EXIT } from "@/lib/gauge/copy";
 import { formatToken } from "@/lib/format";
@@ -108,6 +112,16 @@ function ExitFlowView(props: {
   return (
     <FlowColumn
       header={<PageHeader back={{ href: "/positions/", label: "Positions" }} step={locked ? 2 : 1} title="Exit the MUSD/BTC pool to MUSD" />}
+      aside={
+        <>
+          <Card title="Your position">
+            <Overview rows={exitPositionRows(props.data.snapshot)} className="mt-3" />
+          </Card>
+          <BeforeYouSign
+            facts={lpSignFacts(network, { feeBps: 0n, capMusd: null, blockNumber: props.data.snapshot.blockNumber, exit: { walletKind: props.walletKind } })}
+          />
+        </>
+      }
     >
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <ActionCard

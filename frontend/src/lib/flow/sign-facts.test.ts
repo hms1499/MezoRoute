@@ -24,11 +24,12 @@ describe("lpSignFacts", () => {
     expect(lpSignFacts.length).toBe(2);
   });
 
-  it("on exit, says how the LP is pulled instead of the entry cap", () => {
-    const evm = lpSignFacts(testnet, { feeBps: 10n, capMusd: null, blockNumber: 1n, exit: { walletKind: "evm" } });
-    const smart = lpSignFacts(testnet, { feeBps: 10n, capMusd: null, blockNumber: 1n, exit: { walletKind: "smart" } });
-    expect(labels(evm)).toEqual(["Executor", "MezoRoute fee", "Approval", "Audit", "Reads"]);
-    expect(evm?.[2].value).toBe("LP permit (a signature)");
+  it("on exit, charges no fee and says how the LP is pulled instead of the entry cap", () => {
+    const eoa = lpSignFacts(testnet, { feeBps: 10n, capMusd: null, blockNumber: 1n, exit: { walletKind: "eoa" } });
+    const smart = lpSignFacts(testnet, { feeBps: 10n, capMusd: null, blockNumber: 1n, exit: { walletKind: "smart-account" } });
+    expect(labels(eoa)).toEqual(["Executor", "MezoRoute fee", "Approval", "Audit", "Reads"]);
+    expect(eoa?.[1].value).toBe("None");
+    expect(eoa?.[2].value).toBe("LP permit (a signature)");
     expect(smart?.[2].value).toBe("Exact LP approval");
   });
 

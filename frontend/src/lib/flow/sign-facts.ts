@@ -1,6 +1,7 @@
 import { REPOSITORY } from "@/lib/config/links";
 import { explorerAddressUrl, type NetworkConfig } from "@/lib/config/networks";
 import { formatBps, formatToken, shortAddress } from "@/lib/format";
+import type { WalletKind } from "@/lib/wallet/capabilities";
 
 // U14 §A: "Before you sign" on every flow page. What a person gives up the moment they sign, from values the page
 // already read (the fee is the chain's, the block is the one every figure came from). Each list ends with Audit
@@ -11,19 +12,19 @@ export type SignFact = { label: string; value: string; href?: string };
 const reads = (blockNumber: bigint): SignFact => ({ label: "Reads", value: `Block ${formatToken(blockNumber, 0, 0)}` });
 const unaudited: SignFact = { label: "Audit", value: "Unaudited software", href: REPOSITORY };
 
-/** The LP executor's facts; on exit the approval replaces the entry cap. Null without an executor. */
+/** The LP executor's facts; an exit charges no fee, and its approval replaces the entry cap. Null without an executor. */
 export function lpSignFacts(
   network: NetworkConfig,
-  input: { feeBps: bigint; capMusd: bigint | null; blockNumber: bigint; exit?: { walletKind: "evm" | "smart" } },
+  input: { feeBps: bigint; capMusd: bigint | null; blockNumber: bigint; exit?: { walletKind: WalletKind } },
 ): SignFact[] | null {
   const executor = network.executor;
   if (!executor) return null;
   const third: SignFact = input.exit
-    ? { label: "Approval", value: input.exit.walletKind === "smart" ? "Exact LP approval" : "LP permit (a signature)" }
+    ? { label: "Approval", value: input.exit.walletKind === "smart-account" ? "Exact LP approval" : "LP permit (a signature)" }
     : { label: "Entry cap", value: `${formatToken(input.capMusd ?? 0n, 18, 0)} MUSD` };
   return [
     { label: "Executor", value: shortAddress(executor.address), href: explorerAddressUrl(network, executor.address) },
-    { label: "MezoRoute fee", value: formatBps(input.feeBps) },
+    { label: "MezoRoute fee", value: input.exit ? "None" : formatBps(input.feeBps) },
     third,
     unaudited,
     reads(input.blockNumber),
