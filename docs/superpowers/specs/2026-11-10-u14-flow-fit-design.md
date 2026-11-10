@@ -1,4 +1,4 @@
-# U14: LP Confirm at page width and six product fixes (design)
+# U14: Every flow at page width, and six product fixes (design)
 
 Date: 10 Nov 2026 · Branch: `feat/u14-flow-fit` (from `main` at `d07f459`, which carries `fix/flow-left-edge`)
 
@@ -6,7 +6,7 @@ Date: 10 Nov 2026 · Branch: `feat/u14-flow-fit` (from `main` at `d07f459`, whic
 
 The 10 Nov review rated the app a good beta. Two problems keep it from feeling finished.
 
-First, the LP flow is not one page grammar. Since `b94cb1d`, the LP Amount page fills the page width in Positions' grid. LP Confirm is still a 520 px centred column, so the left edge jumps from 168 px to 460 px at 1440 px when the user presses Review.
+First, the app has two page grammars. Since `b94cb1d`, the LP Amount page fills the page width in Positions' grid. Every other flow page (LP Confirm, the Stability Pool and Trove amount and confirm pages, LP exit, Stability Pool withdraw, the receipt) is a 520 px centred column. At 1440 px the left edge jumps from 168 px to 460 px when the user presses Review on LP. Moving between the Dashboard and any flow, the page changes shape. The user chose one grammar for all of them (10 Nov): every flow page is two columns at the page width of Dashboard and Positions.
 
 Second, the review found six faults a real user hits on the first try:
 
@@ -17,7 +17,7 @@ Second, the review found six faults a real user hits on the first try:
 5. Every page has the same title, and none has a share card.
 6. Withdrawing from the Stability Pool with no deposit shows a dead form.
 
-This spec fixes all seven. It changes no contract, quote, gate rule, or transaction payload.
+This spec does both. It changes no contract, quote, gate rule, or transaction payload.
 
 ## Evidence (measured 10 Nov on the `main` build, keyless mock wallet, Playwright at 1440×1000)
 
@@ -41,9 +41,9 @@ So `limitedBy` is `"oracle"`. `leverageMaxNote` returns the floor sentence for a
 
 ## Goals
 
-- **A.** LP Amount and LP Confirm share one page grammar: the same width, the same left edge, and Positions' grid. The full risk list stays visible before signing at every width.
+- **A.** Every page has one width and one left edge: the shell's 1104 px content box. Flow pages use Positions' grid, with the working card at two thirds and an aside at one third from `lg`, and one column below. The full risk list stays visible before signing at every width.
 - **B1.** When Leverage has no room, the page says what stops it, from the same `limitedBy` the non-zero cases use, and offers a way forward.
-- **B2.** At 1440×1000, the primary action of LP Amount and LP Confirm is fully above the fold with the mainnet banner shown.
+- **B2.** At 1440×1000, the primary action of every amount and confirm page is fully above the fold with the mainnet banner shown, for the default state QA uses.
 - **B3.** An amount that the user's balance or the pool cannot take marks the field itself (`aria-invalid` plus a message under it). A heavy price impact is visibly a warning before it becomes a block.
 - **B4.** An unknown URL shows a MezoRoute page with the app's shell, one h1, and ways back.
 - **B5.** Every route has its own title, and the exported HTML carries Open Graph and Twitter cards.
@@ -51,8 +51,9 @@ So `limitedBy` is `"oracle"`. `leverageMaxNote` returns the floor sentence for a
 
 ## Non-goals
 
-- Making the Stability Pool, Trove, exit, or withdraw Confirm pages wide. They have no aside, and their flows stay 520 px columns.
-- Moving the receipt (`/tx/`). It stays one centred card: a single result with no aside. That the left edge moves on the Done step is accepted and written down in DESIGN.md.
+- New data reads for the asides. Every aside shows what the page's snapshot already holds. No aside adds a multicall or a history scan.
+- A comparison card on the Stability Pool amount page. The LP rate is not in its snapshot.
+- Changing what any card does: its inputs, gate, steps, and copy stay, except where B1–B6 say otherwise or a block moves to the aside.
 - Changing the oracle bound (500 bps), the price-impact limit (5%), `PRICE_IMPACT_LIMIT`, or any gate order.
 - The review's polish list (table unit wrapping, landing illustrations, number formats, receipt rows, duplicated content, the RainbowKit modal copy). It is the next branch.
 - A stepper on Stability Pool withdraw. It is one transaction, and `Button`'s `pending` already shows wallet, confirming, and done. A one-item `StepList` would add chrome without information.
@@ -68,28 +69,60 @@ The design fails, even if it builds, if:
 - a Leverage zero still names the floor when the floor is not what binds;
 - a price impact over 5% reads in the neutral colour;
 - `<title>` comes from client JavaScript (share crawlers do not run it);
-- a flow route outside `WIDE_ROUTES` loses its 520 px frame (`layout.test.ts` must keep passing).
+- any page's left edge differs from the Dashboard's at the same width;
+- a flow route ships without an aside from `lg` (except its loading, error, and connect states, which keep the right column empty so the card's edge and width hold);
+- a fact appears in both the card and the aside on the same screen.
 
 ## Design
 
-### A. LP Confirm at page width
+### A. Every flow at page width
 
-`/route/lp/confirm/` joins `WIDE_ROUTES` in `src/lib/ui/layout.ts`. Its `page.tsx` frames with `Column` instead of `FlowPage`, so the banner spans the page and `layout.test.ts` keeps holding.
+**One width.** The 520 px flow column is retired. `FlowColumn` always renders Positions' grid: header across the top, then `grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start`, with the children in `lg:col-span-2` and the aside in the third column. With no aside (loading, error, connect, `NoExecutorCard`), the third column stays empty, so the card keeps its edge and width when the data arrive.
 
-`LpConfirmPage` passes an `aside` to `FlowColumn`. From `lg` this gives the same grid as Amount: the card takes two thirds, the aside one third. The aside holds:
+- `isFlowPath`, `WIDE_ROUTES`, `FLOW_WIDTH`, and `FlowPage` are deleted.
+- Every `page.tsx` frames with `Column`.
+- `AppShell`'s banner always spans the page.
+- `layout.test.ts` becomes: every `app/**/page.tsx` uses `Column` (or its own layout, for `/`), and none imports `FlowPage` or writes `max-w-[520px]`.
+- DESIGN.md's Layout section goes from "two page widths" to one.
 
-1. **Risks:** the full `entryRisks(...)` list, under the same `h3` (warning icon, "Risks").
-2. **`BeforeYouSign`:** the executor address, permit, fee, and cap, the same component Amount uses.
+**One fact panel.** `BeforeYouSign` becomes generic: `BeforeYouSign({ rows })`. The rows come from pure helpers in `src/lib/flow/sign-facts.ts`, each tested, and every helper ends with Audit and Reads (the block):
 
-The `ConfirmCard` keeps the overview, the quote block, the steps, and the footnote. It gets a `risksPlacement: "card" | "aside-from-lg"` prop. With `"aside-from-lg"` the card's risk section is `lg:hidden`, and the aside's copy is `hidden lg:block`. Below `lg` the risks therefore stay in the card above the steps, as they do today, and the aside (Before you sign only) stacks under the card. Exactly one copy is ever displayed, and `display: none` keeps the other out of the accessibility tree.
+| Helper | Rows |
+| --- | --- |
+| `lpSignFacts` | Executor (explorer link), MezoRoute fee, Entry cap, Audit, Reads. These are today's rows. Exit uses the same helper and replaces Entry cap with "LP permit, or exact approval for a smart account". |
+| `spSignFacts` | Contract: the Stability Pool (explorer link). MezoRoute fee: none. Approval: exact amount. Audit: "Mezo's contract; MezoRoute adds none". Reads. |
+| `troveSignFacts` | Contract: `MezoRouteLeverage` (explorer link), or BorrowerOperations for Open, Repay, and Claim surplus. MezoRoute fee. Per-transaction caps. Signatures: Trove authorisation and permit, from the plan's steps. Audit. Reads. |
 
-The other Confirm pages pass nothing and keep `"card"`.
+**Risks on Confirm.** `ConfirmCard` takes `risksPlacement: "card" | "aside-from-lg"`. All three Confirm components (LP, Stability Pool, Trove) pass `"aside-from-lg"`.
 
-From `lg`, `Overview`'s groups lay out in two columns inside the wide card. You pay and Terms go on the left, You receive on the right. The rows already carry `group` (U13), so this is a grid on the group wrappers: `lg:grid-cols-2`, one column below. This applies only when the card is wide: `ConfirmCard` passes `columns={2}` for `"aside-from-lg"`, and `Overview` defaults to one column.
+- The card's risk section is `lg:hidden`, and the aside's copy is `hidden lg:block`.
+- Below `lg` the risks stay in the card above the steps, as today. Only one copy is ever displayed, and `display: none` keeps the other out of the accessibility tree.
+- From `lg`, the card's `Overview` groups take two columns (`columns={2}`: You pay and Terms left, You receive right, or the Trove's groups in the same order). `Overview` defaults to one column.
 
-Every state the route renders (loading, error, the `RequireWallet` connect, `NoExecutorCard`) is drawn in the two-thirds column. Today they would span the page. A `FlowColumn` aside layout with an empty aside keeps them on the card's left edge and width.
+**What each page puts in the aside** (top to bottom; below `lg` the aside stacks under the card):
 
-Expected result at 1440×1000: the card and aside start at 168 px like Amount. Sign starts near 1253 − 216 (risks moved) − about 200 (two-column overview), which is about 840 px.
+| Page | Card (two thirds) | Aside (one third) |
+| --- | --- | --- |
+| LP Amount `/route/lp/` | unchanged, plus B2's changes | Compare with the Stability Pool (deposit mode), Before you sign (`lpSignFacts`). This is today's aside. |
+| LP Confirm `/route/lp/confirm/` | overview (two columns), quote, steps, footnote | Risks (from `lg`), Before you sign (`lpSignFacts`) |
+| SP Amount `/route/stability-pool/` | the entry card | Your deposit (deposit, BTC gain, from the snapshot; hidden when both are 0), Before you sign (`spSignFacts`) |
+| SP Confirm `/route/stability-pool/confirm/` | overview, steps | Risks (from `lg`), Before you sign (`spSignFacts`) |
+| Trove Amount `/trove/{open,leverage,unwind,close}/` | the action card, without the Redemption queue block | Your Trove now (collateral, debt, CR, liquidation price; Open: "No Trove yet" and the BTC balance), the Redemption queue (`QueueLine`, moved out of the card), Before you sign (`troveSignFacts`) |
+| Trove Confirm `/trove/*/confirm/` | overview (two columns), steps | Risks (from `lg`), the Redemption queue after, Before you sign (`troveSignFacts`) |
+| LP exit `/positions/lp/exit/` | the exit card with its steps | Your position (wallet LP, staked LP, claimable fees: `LpDetails` rows), Before you sign (`lpSignFacts`, exit variant) |
+| SP withdraw `/positions/stability-pool/withdraw/` | the withdraw card, or B6's empty card | Your deposit (`SpDetails` rows) when there is one, Before you sign (`spSignFacts`) |
+| Receipt `/tx/` | what happened: the outcome, the amounts moved, the next action | Transaction: hash (explorer link), block, gas used, network fee (whatever the receipt already reads). These rows leave the card. Then Next: links to Positions and the Dashboard. |
+| Connect (`ConnectPage`), loading, error | the card | empty |
+
+The Trove Amount card loses its 166 px Redemption block to the aside, which also serves B2. The queue explanation already appears on the Dashboard. In the aside it sits once per screen, never in both places.
+
+**Mobile.** Below `lg`, every page is one column: header, card, then the aside's panels. Nothing moves above the card. Confirm's risks stay inside the card before the steps.
+
+**Expected result at 1440×1000:**
+
+- Every flow page's banner, h1, and card start at 168 px, like Dashboard and Positions.
+- The card spans 168–899 and the aside 915–1272, as LP Amount measured on `b94cb1d`.
+- LP Confirm's Sign moves from 1253 px to about 840 px: the risks (216 px) go to the aside, and the two-column overview saves about 200 px.
 
 ### B1. Leverage with no room
 
@@ -119,9 +152,9 @@ Tests (`view.test.ts`): one case per `limitedBy` at zero, plus the BORROWER live
 - **The mode tabs drop their description line** (about −24 px). "Borrow MUSD from your Trove…" moves to the Borrow & Deploy panel's first line, where `Term` already lives.
 - **`PageHeader` puts the back link and the progress on one row from `sm`** (about −30 px). The back link goes left and the progress right. Below `sm` they stay stacked.
 
-**LP Confirm** gets its fix from A.
+**Confirm pages and Trove Amount** get their fix from A: the risks and the Redemption queue move to the aside, and the overview splits into two columns.
 
-**Guard:** a Playwright check in QA, not in `npm test`. At 1440×1000 on mainnet with the banner, the bottom of the primary is at most 1000 px on LP Amount (deposit, connected, amount 10) and on LP Confirm (amount 10). QA also records the primary's position on every other amount and confirm page and reports any that fall below the fold. Fixing those is out of scope unless one of the levers above already fixes it.
+**Guard:** a Playwright check in QA, not in `npm test`. At 1440×1000 on mainnet with the banner, the bottom of the primary is at most 1000 px on every amount and confirm page in its QA state (the table under Testing and QA). A page that still misses after A and B2 is reported to the user with its measured position before the branch merges. Its fix is not invented in the plan.
 
 ### B3. Errors at the field
 
@@ -188,7 +221,7 @@ Guard (`src/lib/seo/pages.test.ts`):
 
 `SpWithdrawPage` handles a `deposit === 0n` case before the form:
 
-- **`deposit === 0n` and `gain === 0n`:** the page keeps its header (back to Positions, the h1 with its `Term`) and shows one card in the flow column, using the empty-state grammar of the Positions empty state (U13 follow-up: heading, sentence, no decorative glyph). The heading is "No Stability Pool deposit". The sentence is "Deposit MUSD to the Stability Pool first. You can withdraw it, and any BTC it earns, here afterwards." It has one primary `ButtonLink`, "Deposit to the Stability Pool", to `/route/stability-pool/`, and a secondary "Back to Positions". The red notice, the 0 rows, and the disabled Withdraw are gone.
+- **`deposit === 0n` and `gain === 0n`:** the page keeps its header and the grid (Before you sign in the aside) (back to Positions, the h1 with its `Term`) and shows one card in the flow column, using the empty-state grammar of the Positions empty state (U13 follow-up: heading, sentence, no decorative glyph). The heading is "No Stability Pool deposit". The sentence is "Deposit MUSD to the Stability Pool first. You can withdraw it, and any BTC it earns, here afterwards." It has one primary `ButtonLink`, "Deposit to the Stability Pool", to `/route/stability-pool/`, and a secondary "Back to Positions". The red notice, the 0 rows, and the disabled Withdraw are gone.
 - **`deposit === 0n` and `gain > 0n`:** the same card says "Your deposit is fully withdrawn. A BTC gain of X is still waiting." Its primary is "Claim BTC gain" (the existing claim action, now the primary, not secondary).
 - **`deposit > 0n`:** unchanged.
 
@@ -198,7 +231,8 @@ A pure `spWithdrawState(deposit, gain): "empty" | "gain-only" | "form"` in `src/
 
 | Area | Files |
 | --- | --- |
-| Layout and wide confirm | `src/lib/ui/layout.ts`, `layout.test.ts`, `src/app/route/lp/confirm/page.tsx`, `src/components/flow/{FlowColumn,ConfirmCard,Overview}.tsx`, `card.test.ts`, `confirm.test.ts`, `src/components/lp/LpConfirmPage.tsx` |
+| One width | `src/lib/ui/layout.ts` (deleted or reduced), `layout.test.ts`, every flow `src/app/**/page.tsx`, `src/components/AppShell.tsx`, `src/components/flow/{FlowColumn,FlowPage (deleted),ConfirmCard,Overview}.tsx`, `card.test.ts`, `confirm.test.ts` |
+| Asides | `src/components/lp/BeforeYouSign.tsx` (generic, moves to `components/flow/`), `src/lib/flow/sign-facts.ts` (new) and test, `LpConfirmPage`, `SpRoutePage`, `SpConfirmPage`, `SpWithdrawPage`, `TrovePages`, `TroveViews`, `ExitPage`, `ReceiptPage`, `ReceiptCard`, `ConnectPage` |
 | Leverage | `src/lib/leverage/view.ts`, `view.test.ts`, `src/components/trove/TrovePages.tsx` |
 | Fold | `src/components/lp/{LpEntryCard,LpRoutePage,StakeToggle,ModeToggle}.tsx`, `src/components/ui/PageHeader.tsx`, `src/lib/glossary.ts` |
 | Field errors | `src/lib/flow/field-error.ts` (new) and test, `src/components/lp/BlockNotice.tsx`, `src/components/flow/{TokenAmountInput,Overview}.tsx`, `src/lib/routes/musd-btc-lp/gate.ts` (`PRICE_IMPACT_WARN`), the SP and Trove amount cards |
@@ -211,9 +245,15 @@ A pure `spWithdrawState(deposit, gain): "empty" | "gain-only" | "form"` in `src/
 
 - TDD per part. `npm test` and `npm run build` must pass, including every existing guard (`layout`, `colour-roles`, `design-doc`, `typography`, `heading-guard`, `control-guard`).
 - Mock-wallet QA (Playwright, the keyless EIP-1193 mock, the QA accounts in STATUS):
-  - **A:** left edges of the banner, h1, card, and aside on LP Amount and LP Confirm at 390, 1024, 1440, and 1920 (same numbers on both pages). Below 1024, the risks come before Sign.
+  - **A:** left edges of the banner, h1, card, and aside on all 19 pages at 360, 390, 768, 1024, 1440, and 1920. Every page shows the same numbers as the Dashboard at each width, and nothing scrolls horizontally. Below 1024, each Confirm page shows its risks before Sign. QA states:
+  - LP Amount and LP Confirm: MAIN on mainnet.
+  - SP Amount, SP Confirm, and SP withdraw: MAIN, plus EMPTY for the empty state.
+  - Trove Amount and Confirm: BORROWER on testnet, and MAIN on mainnet for Close.
+  - Open: EMPTY on testnet.
+  - LP exit: MAIN.
+  - Receipt: the recorded mainnet hash in STATUS.
   - **B1:** BORROWER on testnet Leverage shows the oracle sentence (while the testnet pool stays more than 5% off).
-  - **B2:** primary bottom ≤ 1000 px at 1440×1000 on LP Amount and LP Confirm (mainnet, MAIN). Report every other amount or confirm page's primary position.
+  - **B2:** primary bottom ≤ 1000 px at 1440×1000 on every amount and confirm page in the states above.
   - **B3:** `/route/lp/?amount=999999` with BORROWER shows the message under the field and `aria-invalid="true"`. A 2% impact reads amber.
   - **B4:** `/nope/` shows the header, the h1, and both links in both themes.
   - **B5:** the titles of 5 routes and `og:image` in the exported HTML.
@@ -222,7 +262,9 @@ A pure `spWithdrawState(deposit, gain): "empty" | "gain-only" | "form"` in `src/
 
 ## Decisions taken (senior calls)
 
+- **One page width for everything (the user's call, 10 Nov).** The 520 px column, `FlowPage`, and `isFlowPath` go. Each flow gets an aside built from data its page already reads.
 - **Risks in the aside from `lg`, in the card below it.** This is the only layout that shortens Confirm on desktop without putting a risk after Sign on mobile.
+- **The receipt's technical rows go to the aside.** The card answers "what happened" and the aside "which transaction". This also starts on the review's "13 raw rows" polish item, without the rest of the polish list.
 - **Staking becomes an overview row, not a removed feature.** It deletes a duplicate row and is the biggest single height cut.
 - **No stepper for SP withdraw.** It is one transaction, as stated under Non-goals.
 - **One Open Graph image.** Per-page images add build complexity for little gain at this stage.
