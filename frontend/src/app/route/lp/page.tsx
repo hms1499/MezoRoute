@@ -1,15 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Column } from "@/components/ui/Column";
+import { FlowPage } from "@/components/flow/FlowPage";
 
 // Reads wallet state, so it renders only on the client (wagmi hooks are browser-only).
 const LpRoutePage = dynamic(() => import("@/components/lp/LpRoutePage"), { ssr: false });
 
 export default function Page() {
   return (
-    <Column width="wide">
+    <FlowPage>
       <LpRoutePage />
-    </Column>
+    </FlowPage>
   );
 }

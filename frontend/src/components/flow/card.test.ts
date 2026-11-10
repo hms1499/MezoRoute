@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ActionCard } from "./ActionCard";
 import { Details } from "./Details";
 import { FlowColumn } from "./FlowColumn";
+import { FlowPage } from "./FlowPage";
 import { SlippagePopover } from "./SlippagePopover";
 
 // U11 §6.1-6.2: the flow's one card, its disclosure, the slippage popover, and the centred column.
@@ -66,21 +67,36 @@ describe("FlowColumn", () => {
     expect(out).toContain("mx-auto");
   });
 
-  it("adds a 340 px aside beside the 520 px flow from lg", () => {
+  it("keeps the flow centred and puts the aside in the right rail from xl", () => {
     const out = renderToStaticMarkup(
       createElement(FlowColumn, { header: createElement("h1", null, "T"), aside: createElement("p", { id: "aside" }, "side") }, "c"),
     );
-    expect(out).toContain("max-w-[876px]");
-    expect(out).toContain("lg:grid-cols-[520px_340px]");
+    // Equal rails either side of the 520 px column keep its left edge where every other flow page has it.
+    expect(out).toContain("xl:grid-cols-[minmax(0,1fr)_520px_minmax(0,1fr)]");
+    expect(out).toContain("xl:col-start-2");
+    expect(out).toContain("xl:col-start-3");
+    expect(out).toContain("data-flow-aside");
+    expect(out).not.toContain("876");
+    expect(out).not.toMatch(/\blg:/);
     expect(out).toContain('id="aside"');
-    // The aside follows the flow's children in source order, so a narrow screen stacks it under them.
+    // The aside follows the flow's children in source order, so a narrower screen stacks it under them.
     expect(out.indexOf('id="aside"')).toBeGreaterThan(out.indexOf(">c<"));
   });
 
   it("keeps today's centred column without an aside", () => {
     const out = renderToStaticMarkup(createElement(FlowColumn, { header: createElement("h1", null, "T") }, "c"));
     expect(out).toContain("max-w-[520px]");
-    expect(out).not.toContain("876");
+    expect(out).not.toContain("data-flow-aside");
+  });
+});
+
+describe("FlowPage", () => {
+  it("frames every state of a flow route in the flow column, and lets an aside take the page from xl", () => {
+    const out = renderToStaticMarkup(createElement(FlowPage, null, createElement("p", { id: "loading" }, "Loading")));
+    expect(out).toContain("max-w-[520px]");
+    expect(out).toContain("mx-auto");
+    expect(out).toContain("xl:has-[[data-flow-aside]]:max-w-none");
+    expect(out).toContain('id="loading"');
   });
 });
 

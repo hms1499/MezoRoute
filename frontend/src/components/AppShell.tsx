@@ -1,15 +1,21 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { FLOW_WIDTH, isFlowPath } from "@/lib/ui/layout";
+import { cx } from "@/lib/ui/cx";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
 import { MainnetBanner } from "./MainnetBanner";
 
 /**
- * The frame of every page: skip link, header, mainnet banner, the page, footer. Pages set their own width (`Column`).
- * Light or dark everywhere (U9, `data-theme` on <html>); the landing adds its own glow behind the page.
+ * The frame of every page: skip link, header, mainnet banner, the page, footer. Pages set their own width (`Column`
+ * on wide pages, `FlowPage` on flow routes). On a flow route the banner takes the flow column's width, so the page
+ * has one left edge under the header. Light or dark everywhere (U9, `data-theme` on <html>); the landing adds its own
+ * glow behind the page.
  */
 export function AppShell({ children }: { children: ReactNode }) {
+  const flow = isFlowPath(usePathname());
   return (
     <div className="flex min-h-dvh flex-col">
       <a
@@ -24,7 +30,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 sm:px-6">
-        <MainnetBanner />
+        {/* `w-full`: an auto-margined flex item would otherwise shrink to its content. */}
+        <div className={cx("w-full", flow && cx("mx-auto", FLOW_WIDTH))}>
+          <MainnetBanner />
+        </div>
         <main id="main" className="mt-4 flex-1 pb-8">
           {children}
         </main>

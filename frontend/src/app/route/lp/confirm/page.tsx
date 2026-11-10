@@ -1,14 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Column } from "@/components/ui/Column";
+import { FlowPage } from "@/components/flow/FlowPage";
 
 const LpConfirmPage = dynamic(() => import("@/components/lp/LpConfirmPage"), { ssr: false });
 
 export default function Page() {
   return (
-    <Column width="wide">
+    <FlowPage>
       <LpConfirmPage />
-    </Column>
+    </FlowPage>
   );
 }

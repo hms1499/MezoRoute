@@ -48,15 +48,20 @@ export function PlannerComparison({
       <p className="mt-4 text-xs text-muted">{PLANNER_COMPARE_NOTE}</p>
       {spHref !== null && (
         <ButtonLink href={spHref} variant="secondary" size="md" className="mt-4 w-full">
-          {/* "… instead" wrapped to two lines in the 340 px aside; the card's own heading carries the comparison. */}
-          Deposit to Stability Pool
+          {/* The Dashboard's Compare card names this action the same; "Deposit to Stability Pool" wrapped in the 276 px
+              rail. The card's own heading carries the comparison. */}
+          Choose Stability Pool
         </ButtonLink>
       )}
     </Card>
   );
 }
 
-/** One route: a coloured dot, then label/value rows. */
+/**
+ * One route: a coloured dot, then label/value rows. In the 276 px right rail (`xl`) a value such as "Variable · paid
+ * in bursts" no longer fits beside its label, so each row stacks there, label over value; under the flow (below `xl`)
+ * the card is 520 px wide and the rows sit side by side.
+ */
 function Route({ name, tone, rows }: { name: string; tone: "accent" | "sp"; rows: PlannerCompareRow[] }) {
   return (
     <section>
@@ -66,9 +71,9 @@ function Route({ name, tone, rows }: { name: string; tone: "accent" | "sp"; rows
       </h3>
       <dl className="mt-2 space-y-2 text-sm">
         {rows.map((row) => (
-          <div key={row.label} className="flex items-start justify-between gap-3">
+          <div key={row.label} className="flex items-start justify-between gap-3 xl:block">
             <dt className="text-muted">{row.label}</dt>
-            <dd className="text-right">
+            <dd className="text-right xl:text-left">
               {row.value}
               {row.sub && <span className="block text-xs text-muted">{row.sub}</span>}
             </dd>
