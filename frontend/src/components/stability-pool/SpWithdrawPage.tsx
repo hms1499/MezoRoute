@@ -12,10 +12,12 @@ import { btc, musd } from "@/components/lp/units";
 import { ActionCard } from "@/components/flow/ActionCard";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { spSignFacts } from "@/lib/flow/sign-facts";
+import { spWithdrawState } from "@/lib/stability-pool/withdraw-state";
 import { SpDepositAside } from "./SpDepositAside";
 import { Overview } from "@/components/flow/Overview";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TokenIcon } from "@/components/ui/TokenIcon";
@@ -104,20 +106,51 @@ function WithdrawView(props: {
     </Button>
   );
 
-  return (
-    <FlowColumn
-      aside={<SpDepositAside sp={props.data.snapshot.dashboard.sp} facts={spSignFacts(network, props.data.snapshot.blockNumber)} />}
-      header={
-        <PageHeader
-          back={{ href: "/positions/", label: "Positions" }}
-          title={
-            <>
-              Withdraw from the <Term id="stabilityPool">Stability Pool</Term>
-            </>
-          }
-        />
+  const sp = props.data.snapshot.dashboard.sp;
+  const state = spWithdrawState(sp.deposit, sp.btcGain);
+  const header = (
+    <PageHeader
+      back={{ href: "/positions/", label: "Positions" }}
+      title={
+        <>
+          Withdraw from the <Term id="stabilityPool">Stability Pool</Term>
+        </>
       }
-    >
+    />
+  );
+  const aside = <SpDepositAside sp={sp} facts={spSignFacts(network, props.data.snapshot.blockNumber)} />;
+
+  // U14 B6: nothing deposited is an empty state that leads to a deposit, not a form of zeros with a disabled button.
+  if (state !== "form") {
+    return (
+      <FlowColumn aside={aside} header={header}>
+        {chainId !== network.chainId && <WrongNetworkAlert />}
+        {state === "empty" ? (
+          <Card title="No Stability Pool deposit" subtitle="Deposit MUSD to the Stability Pool first. You can withdraw it, and any BTC it earns, here afterwards.">
+            <div className="mt-4 grid gap-2 sm:flex">
+              <ButtonLink href="/route/stability-pool/" arrow>
+                Deposit to the Stability Pool
+              </ButtonLink>
+              <ButtonLink href="/positions/" variant="secondary">
+                Back to Positions
+              </ButtonLink>
+            </div>
+          </Card>
+        ) : (
+          <Card title="Your deposit is fully withdrawn" subtitle={`A BTC gain of ${btc(sp.btcGain)} is still waiting.`}>
+            <div className="mt-4">
+              <Button disabled={claimBlock !== null || busy} pending={actions.pending === "claim" ? "wallet" : null} onClick={actions.claim}>
+                Claim BTC gain
+              </Button>
+            </div>
+          </Card>
+        )}
+      </FlowColumn>
+    );
+  }
+
+  return (
+    <FlowColumn aside={aside} header={header}>
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <ActionCard
         icon={<TokenIcon token="musd" size={24} />}
