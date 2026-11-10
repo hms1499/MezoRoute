@@ -35,7 +35,7 @@ import { useTroveSnapshot, type TroveData } from "@/lib/leverage/useTroveSnapsho
 import { crPresets, leverageMaxNote, maxTarget, troveNowRows, maxTargetText, openBtcMax, openMaxNote, openReachNote, pageNotice, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "@/lib/leverage/view";
 import { openMaxCr } from "@/lib/leverage/quote-open";
 import { unwindMaxCr } from "@/lib/leverage/quote-unwind";
-import { leverageMax, leverageQuoteAt } from "@/lib/leverage/quote-leverage";
+import { leverageMax, leverageQuoteAt, MIN_LEVERAGE_BTC } from "@/lib/leverage/quote-leverage";
 import { Notice } from "@/components/ui/Notice";
 import { queueLine } from "@/lib/leverage/copy";
 import { LEVERAGE_CR_FLOOR, ORACLE_BOUND_DEFAULT_BPS } from "@/lib/trove/constants";
@@ -206,6 +206,13 @@ function AmountCard(props: {
     max && max.btc > 0n && snapshot.trove && network.leverage
       ? leverageQuoteAt(snapshot.trove, snapshot.pool, snapshot.market, max.btc, intent.slippageBps, network.leverage.feeBps).crAfter
       : null;
+  // U14 B1: with no room, the page says which limit binds (the oracle cost at the smallest size when that is it),
+  // disables the target, and shows no Review: there is nothing to do here, and the header's Dashboard link is the way out.
+  const noRoom = max !== null && max.btc === 0n;
+  const noRoomNote =
+    noRoom && snapshot.trove && network.leverage
+      ? leverageMaxNote(max, LEVERAGE_CR_FLOOR, leverageQuoteAt(snapshot.trove, snapshot.pool, snapshot.market, MIN_LEVERAGE_BTC, intent.slippageBps, network.leverage.feeBps).costBps)
+      : undefined;
   const confirmHref = `/trove/${action}/confirm/?${intentQuery(action, intent)}`;
   const repay = () =>
     snapshot.trove &&
@@ -234,7 +241,7 @@ function AmountCard(props: {
         settings={<SlippagePopover slippageBps={intent.slippageBps as SlippageBps} onChange={props.onSlippage} action={action === "unwind" || action === "close" ? "sale" : "purchase"} />}
         risk={troveRisks(action)[0]}
         action={
-          canReview ? (
+          noRoom ? undefined : canReview ? (
             <ButtonLink href={confirmHref} size="lg" arrow className="w-full">
               Review
             </ButtonLink>
@@ -263,9 +270,11 @@ function AmountCard(props: {
             onChange={props.onCr}
             presets={presets}
             label={action === "unwind" ? "Target collateral ratio (higher)" : "Target collateral ratio (200% or more)"}
+            disabled={noRoom}
+            description={noRoomNote}
           />
         )}
-        {max && (
+        {max && !noRoom && (
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
             <span>{leverageMaxNote(max, LEVERAGE_CR_FLOOR)}</span>
             {maxCr !== null && (

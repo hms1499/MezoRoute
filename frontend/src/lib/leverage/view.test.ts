@@ -81,6 +81,28 @@ describe("leverageMaxNote", () => {
   });
 });
 
+// U14 B1: a zero names the limit that binds. On testnet (10 Nov) BORROWER sat at 306% CR with the floor allowing
+// 0.0307 BTC, capacity 0.0545, the cap 12, and the oracle 0: the pool priced BTC 504 bps above the oracle.
+describe("leverageMaxNote at zero", () => {
+  it("names the oracle bound, with the pool's measured gap when the page has it", () => {
+    expect(leverageMaxNote({ btc: 0n, limitedBy: "oracle" }, 2n * ONE, 504n)).toBe(
+      "The pool's BTC price is about 5.0% above Mezo's oracle, past the 5% limit, so leverage would overpay for BTC. Try again when the pool is back within 5%.",
+    );
+    expect(leverageMaxNote({ btc: 0n, limitedBy: "oracle" }, 2n * ONE)).toBe(
+      "The pool's BTC price is more than 5% above Mezo's oracle, past the 5% limit, so leverage would overpay for BTC. Try again when the pool is back within 5%.",
+    );
+  });
+
+  it("names the borrowing capacity and the cap", () => {
+    expect(leverageMaxNote({ btc: 0n, limitedBy: "capacity" }, 2n * ONE)).toBe("Your Trove has no borrowing capacity left, even after a refinance.");
+    expect(leverageMaxNote({ btc: 0n, limitedBy: "cap" }, 2n * ONE)).toBe("MezoRoute's per-transaction cap allows no leverage right now.");
+  });
+
+  it("never names the floor for an oracle zero, whatever the cost", () => {
+    expect(leverageMaxNote({ btc: 0n, limitedBy: "oracle" }, 2n * ONE, 900n)).not.toContain("at or below");
+  });
+});
+
 describe("refinanceNote", () => {
   it("explains the extra step only when the plan has it", () => {
     expect(refinanceNote("refinance")).toContain("Refinance first");

@@ -2,7 +2,7 @@ import type { OverviewRow } from "@/components/flow/Overview";
 import type { NetworkConfig } from "@/lib/config/networks";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import { WAD } from "@/lib/math";
-import { LEVERAGE_CR_FLOOR } from "@/lib/trove/constants";
+import { LEVERAGE_CR_FLOOR, ORACLE_BOUND_DEFAULT_BPS } from "@/lib/trove/constants";
 import { troveGasBudget } from "@/lib/quote/gas";
 import { EVM_ONLY, MAINNET_NOT_RUN, RECOVERY_MODE_BLOCK } from "./copy";
 import type { GateQuote, TroveBlockReason } from "./gate";
@@ -131,10 +131,13 @@ export function pageNotice(input: { action: TroveAction; snapshot: TroveSnapshot
   return input.network.id === "mainnet" && input.block === null ? { tone: "neutral", text: MAINNET_NOT_RUN, actions: [] } : null;
 }
 
-/** What stops the largest Leverage the page offers (`leverageMax`). */
-export function leverageMaxNote(max: { btc: bigint; limitedBy: LeverageLimit }, floor: bigint): string {
+/**
+ * What stops the largest Leverage the page offers (`leverageMax`). At zero it names the limit that binds (U14 B1):
+ * `costBps` is the swap's cost against the oracle at the smallest size, shown when the page has it.
+ */
+export function leverageMaxNote(max: { btc: bigint; limitedBy: LeverageLimit }, floor: bigint, costBps?: bigint): string {
   const pct = formatPercent(floor, 0);
-  if (max.btc === 0n) return `Your Trove is already at or below ${pct}: there is no room to leverage.`;
+  if (max.btc === 0n) return leverageZeroNote(max.limitedBy, pct, costBps);
   const amount = `Up to ${formatToken(max.btc, 18, 6)} BTC`;
   switch (max.limitedBy) {
     case "floor":
@@ -145,6 +148,22 @@ export function leverageMaxNote(max: { btc: bigint; limitedBy: LeverageLimit }, 
       return `${amount}: your Trove's borrowing capacity, even after a refinance.`;
     case "oracle":
       return `${amount}: beyond this the pool's price would sit more than 5% from Mezo's oracle.`;
+  }
+}
+
+function leverageZeroNote(limitedBy: LeverageLimit, floorPct: string, costBps?: bigint): string {
+  switch (limitedBy) {
+    case "floor":
+      return `Your Trove is already at or below ${floorPct}: there is no room to leverage.`;
+    case "oracle": {
+      const bound = formatBps(ORACLE_BOUND_DEFAULT_BPS);
+      const gap = costBps === undefined ? `more than ${bound}` : `about ${(Number(costBps) / 100).toFixed(1)}%`;
+      return `The pool's BTC price is ${gap} above Mezo's oracle, past the ${bound} limit, so leverage would overpay for BTC. Try again when the pool is back within ${bound}.`;
+    }
+    case "capacity":
+      return "Your Trove has no borrowing capacity left, even after a refinance.";
+    case "cap":
+      return "MezoRoute's per-transaction cap allows no leverage right now.";
   }
 }
 

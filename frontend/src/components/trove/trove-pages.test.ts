@@ -30,3 +30,26 @@ describe("CrField", () => {
     expect(html).toContain("250%");
   });
 });
+
+// U14 B1: with no room to leverage, the field is disabled and says why; its presets go, since none can be chosen.
+describe("CrField with no room", () => {
+  const html = renderToStaticMarkup(
+    createElement(CrField, {
+      value: "",
+      onChange: () => undefined,
+      presets: [2n * ONE, (25n * ONE) / 10n],
+      label: "Target collateral ratio",
+      disabled: true,
+      description: "The pool's BTC price is about 5.0% above Mezo's oracle.",
+    }),
+  );
+
+  it("disables the input and describes it with the reason", () => {
+    expect(html).toMatch(/<input[^>]*id="target-cr"[^>]*aria-describedby="target-cr-description"[^>]*disabled=""/);
+    expect(html).toMatch(/id="target-cr-description"[^>]*>The pool&#x27;s BTC price is about 5.0% above Mezo&#x27;s oracle.</);
+  });
+
+  it("shows no presets", () => {
+    expect(html).not.toContain('role="radiogroup"');
+  });
+});

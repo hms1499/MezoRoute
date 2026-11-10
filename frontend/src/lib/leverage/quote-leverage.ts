@@ -65,7 +65,9 @@ export function largestWhere(lo: bigint, hi: bigint, ok: (y: bigint) => boolean)
   return lo;
 }
 
-const MIN_BTC = 10n ** 9n;
+/** The smallest Leverage size the search tries (1 gwei of BTC); also where the page reads the oracle cost at zero room. */
+export const MIN_LEVERAGE_BTC = 10n ** 9n;
+const MIN_BTC = MIN_LEVERAGE_BTC;
 
 /** The most BTC whose Trove still ends at or above `targetCr`; null when the target is not below today's CR. */
 export function quoteLeverage(
