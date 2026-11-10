@@ -133,6 +133,28 @@ describe("Overview columns", () => {
     expect(out).not.toContain("lg:grid-cols-2");
   });
 
+  it("stacks You pay and Terms on the left and You receive on the right from lg, in reading order below it", () => {
+    const out = renderToStaticMarkup(
+      createElement(Overview, {
+        columns: 2,
+        rows: [
+          { label: "You deposit", value: "1", group: "You pay" },
+          { label: "LP", value: "2", group: "You receive" },
+          { label: "Slippage", value: "1%", group: "Terms" },
+        ],
+      }),
+    );
+    const columns = out.split('class="contents lg:block"').slice(1);
+    expect(columns).toHaveLength(2);
+    expect(columns[0]).toContain(">You pay<");
+    expect(columns[0]).toContain(">Terms<");
+    expect(columns[0]).not.toContain(">You receive<");
+    expect(columns[1]).toContain(">You receive<");
+    expect(out).toMatch(/order-1[^>]*><p[^>]*>You pay/);
+    expect(out).toMatch(/order-2[^>]*><p[^>]*>You receive/);
+    expect(out).toMatch(/order-3[^>]*><p[^>]*>Terms/);
+  });
+
   it("lays two groups side by side from lg", () => {
     const out = renderToStaticMarkup(
       createElement(Overview, { columns: 2, rows: [{ label: "You deposit", value: "1", group: "You pay" }, { label: "LP", value: "2", group: "You receive" }] }),

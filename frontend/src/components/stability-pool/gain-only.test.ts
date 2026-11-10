@@ -22,3 +22,11 @@ describe("SpGainOnlyCard", () => {
     expect(out).toContain("You need a little BTC for gas.");
   });
 });
+
+describe("SpGainOnlyCard title", () => {
+  it("says no MUSD is left, which fits a withdrawal and a deposit used up by liquidations alike", () => {
+    const out = render({ claimBlock: null });
+    expect(out).toContain(">No MUSD left in your deposit<");
+    expect(out).not.toContain("fully withdrawn");
+  });
+});

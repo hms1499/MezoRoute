@@ -37,7 +37,7 @@ import { hasStarted } from "@/lib/tx/stepper";
 import { useNow } from "@/lib/useNow";
 import type { WalletKind } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
-import { ExitNotes, exitOverview } from "./ExitPreviewCard";
+import { ExitNotes, exitDetailRows, exitOverview } from "./ExitPreviewCard";
 import { ExitStepper } from "./ExitStepper";
 
 /** Spec §9 screen 6a; U11 §6.2: one action card (share, overview, steps), the notes behind Details. */
@@ -159,14 +159,16 @@ function ExitFlowView(props: {
             <Overview rows={exitOverview({ quote: preview.quote, minimums: preview.minimums, steps: preview.steps, unstake: preview.unstake, gasCost: preview.gasCost })} />
           </>
         )}
-        {exitCopy(preview.steps).unstakeNote && <p className="text-sm text-muted">{exitCopy(preview.steps).unstakeNote}</p>}
         {props.intent.slippageBps === 200n && (
           <Notice tone="warning">2% slippage lets this exit fill up to 2% below the quote. Use it only if lower settings keep failing.</Notice>
         )}
         <ExitStepper stepper={stepper} run={run} restart={restart} block={preview.block} plan={preview.steps} />
       </ActionCard>
       <Details>
-        <ExitNotes unstakeNote={null} blockNumber={props.data.snapshot.blockNumber} />
+        <div className="space-y-4">
+          {preview.quote && <Overview rows={exitDetailRows({ quote: preview.quote, gasCost: preview.gasCost })} />}
+          <ExitNotes unstakeNote={exitCopy(preview.steps).unstakeNote} blockNumber={props.data.snapshot.blockNumber} />
+        </div>
       </Details>
     </FlowColumn>
   );

@@ -23,7 +23,7 @@ export function SpGainOnlyCard({
   onClaim: () => void;
 }) {
   return (
-    <Card title="Your deposit is fully withdrawn" subtitle={`A BTC gain of ${btc(gain)} is still waiting.`}>
+    <Card title="No MUSD left in your deposit" subtitle={`A BTC gain of ${btc(gain)} is still waiting.`}>
       <div className="mt-4 space-y-3">
         <Button disabled={claimBlock !== null || busy} pending={pending} onClick={onClaim}>
           Claim BTC gain

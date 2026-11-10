@@ -22,6 +22,11 @@ describe("stakeRowCopy", () => {
     expect(stakeRowCopy({ ...input, on: false })?.sub).not.toContain("APR");
   });
 
+  it("says what staking would do, in the conditional, while it is off (U14 final review)", () => {
+    const sub = stakeRowCopy({ ...input, on: false })?.sub;
+    expect(sub).toBe("Not staked: this deposit keeps its swap fees. Staking would earn ≈ 12 MEZO a week at this week's rate, and its swap fees would go to veBTC voters.");
+  });
+
   it("between weeks says the rate is not set yet and keeps the switch", () => {
     const row = stakeRowCopy({ ...input, availability: "between-weeks", mezoPerWeek: null, aprLabel: null });
     expect(row?.switchable).toBe(true);

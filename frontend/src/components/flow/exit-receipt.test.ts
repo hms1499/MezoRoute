@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { exitOverview } from "@/components/positions/ExitPreviewCard";
+import { exitDetailRows, exitOverview } from "@/components/positions/ExitPreviewCard";
 import { ReceiptCard } from "@/components/receipt/ReceiptCard";
 import type { ExitMinimums, ExitQuote } from "@/lib/quote/exit";
 import { Overview } from "./Overview";
@@ -25,6 +25,17 @@ describe("exitOverview", () => {
 
   it("shows the minimum MUSD", () => {
     expect(render(["permit", "exit"], 0n)).toContain("9 MUSD");
+  });
+
+  // U14 final review (B2): the exit's primary was at 1179 px with staked LP; the breakdown moves behind Details.
+  it("keeps only the decision rows in the card", () => {
+    const labels = exitOverview({ quote, minimums, steps: ["unstake", "permit", "exit"], unstake: E18 / 2n, gasCost: null }).map((r) => r.label);
+    expect(labels).toEqual(["LP to exit", "Unstake first", "Minimum you receive"]);
+  });
+
+  it("puts the pool breakdown, impact, and fees in Details", () => {
+    const labels = exitDetailRows({ quote, gasCost: null }).map((r) => r.label);
+    expect(labels).toEqual(["MUSD from the pool", "BTC from the pool", "Price impact", "MezoRoute fee", "Network fee (estimated)"]);
   });
 });
 

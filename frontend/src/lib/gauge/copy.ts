@@ -53,6 +53,16 @@ export function stakeRowCopy(input: {
 }): { switchable: boolean; sub: string } | null {
   if (input.readFailed) return { switchable: false, sub: GAUGE_READ_FAILED_ENTRY };
   if (input.availability === "unavailable") return null;
-  const apr = input.on && input.availability === "open" && input.aprLabel !== null ? [`Emissions APR ≈ ${input.aprLabel} at this week's rate.`] : [];
+  // Off, the row says what this deposit keeps and what staking would do, so it never reads as this deposit's terms.
+  if (!input.on) return { switchable: true, sub: stakeOffLine(input.availability, input.mezoPerWeek) };
+  const apr = input.availability === "open" && input.aprLabel !== null ? [`Emissions APR ≈ ${input.aprLabel} at this week's rate.`] : [];
   return { switchable: true, sub: [...stakeLines(input.availability, input.mezoPerWeek), ...apr].join(" ") };
+}
+
+function stakeOffLine(availability: StakeAvailability, mezoPerWeek: bigint | null): string {
+  const kept = "Not staked: this deposit keeps its swap fees.";
+  const fees = "its swap fees would go to veBTC voters.";
+  if (availability === "between-weeks") return `${kept} The new week's MEZO rate is not set yet; if staked, ${fees}`;
+  if (mezoPerWeek === null) return `${kept} If staked, it would earn MEZO and ${fees}`;
+  return `${kept} Staking would earn ≈ ${formatToken(mezoPerWeek, 18, 4)} MEZO a week at this week's rate, and ${fees}`;
 }

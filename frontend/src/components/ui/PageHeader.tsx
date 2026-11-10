@@ -27,8 +27,9 @@ export function PageHeader({
 }) {
   return (
     <div className="space-y-3">
-      {/* U14 B2: one row from sm (back left, progress right), so the card starts about 30 px higher. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* U14 B2: one row from sm (back left, progress right), so the card starts about 30 px higher. Stacked below sm,
+          items-start keeps the back link the size of its label instead of a full-row tap target. */}
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link href={back.href} className="hit inline-flex min-h-9 items-center gap-2 rounded-full text-sm font-medium text-muted hover:text-accent">
           <ArrowLeft aria-hidden className="h-4 w-4" />
           {back.label}

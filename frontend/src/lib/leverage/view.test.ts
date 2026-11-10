@@ -4,6 +4,8 @@ import { quoteClose } from "./quote-close";
 import { quoteUnwind } from "./quote-unwind";
 import type { TroveSnapshot } from "./snapshot";
 import { HARNESS_MARKET, HARNESS_POOL, ONE, trove } from "./test-fixtures";
+import { confirmQueue, leverageNoRoomNote } from "./view";
+import { leverageQuoteAt, MIN_LEVERAGE_BTC } from "./quote-leverage";
 import { costText, crPresets, leverageMaxNote, maxTargetText, openMaxNote, pageNotice, openBtcMax, openReachNote, presetsWithin, refinanceNote, troveNowRows, troveOverviewRows, unwindMaxNote, unwindReachNote } from "./view";
 
 const t = trove(ONE, 40_000n * ONE);
@@ -193,5 +195,39 @@ describe("troveNowRows", () => {
       { label: "Trove", value: "None yet" },
       { label: "Your BTC", value: "1 BTC", tone: "btc" },
     ]);
+  });
+});
+
+// U14 final review: the queue after a Leverage or Open is a risk, said once: in the risks (above Sign below lg), not
+// again in the queue card, which then shows only where the Trove stands now.
+describe("confirmQueue", () => {
+  const before = { debtAhead: 1_000n * ONE, rank: 5, total: 10 };
+  const after = { debtAhead: 100n * ONE, rank: 2, total: 10 };
+
+  it("puts the queue after a Leverage or Open in the risks, and only today's place in the card", () => {
+    for (const action of ["leverage", "open"] as const) {
+      expect(confirmQueue(action, before, after)).toEqual({ risk: "After this: 100 MUSD of debt would be redeemed before yours (2 of 10).", card: { before, after: null } });
+    }
+  });
+
+  it("leaves Unwind and Close, which move the Trove away from redemption, in the card", () => {
+    expect(confirmQueue("unwind", before, after)).toEqual({ risk: null, card: { before, after } });
+    expect(confirmQueue("close", before, null)).toEqual({ risk: null, card: { before, after: null } });
+  });
+});
+
+// U14 B1 / final review: the page's zero note reads the oracle cost at the search's smallest size.
+describe("leverageNoRoomNote", () => {
+  it("is absent while there is room", () => {
+    expect(leverageNoRoomNote({ btc: ONE / 100n, limitedBy: "floor" }, t, HARNESS_POOL, HARNESS_MARKET, 100n, 10n)).toBeUndefined();
+  });
+
+  it("names the oracle gap measured at MIN_LEVERAGE_BTC", () => {
+    const cost = leverageQuoteAt(t, HARNESS_POOL, HARNESS_MARKET, MIN_LEVERAGE_BTC, 100n, 10n).costBps;
+    expect(leverageNoRoomNote({ btc: 0n, limitedBy: "oracle" }, t, HARNESS_POOL, HARNESS_MARKET, 100n, 10n)).toBe(leverageMaxNote({ btc: 0n, limitedBy: "oracle" }, 2n * ONE, cost));
+  });
+
+  it("names the floor when the floor binds", () => {
+    expect(leverageNoRoomNote({ btc: 0n, limitedBy: "floor" }, t, HARNESS_POOL, HARNESS_MARKET, 100n, 10n)).toContain("at or below 200%");
   });
 });

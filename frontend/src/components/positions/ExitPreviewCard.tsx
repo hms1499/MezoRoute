@@ -22,9 +22,15 @@ export function exitOverview({
   return [
     { label: "LP to exit", value: lp(quote.liquidityIn) },
     ...(steps.includes("unstake") ? [{ label: "Unstake first", value: lp(unstake), sub: "from the gauge, in its own transaction" }] : []),
+    { label: "Minimum you receive", value: musd(minimums.minMusdOut) },
+  ];
+}
+
+/** U14 B2 (final review): the exit's breakdown behind Details, so the card keeps its decision rows and the steps. */
+export function exitDetailRows({ quote, gasCost }: { quote: ExitQuote; gasCost: bigint | null }): OverviewRow[] {
+  return [
     { label: "MUSD from the pool", value: musd(quote.musdRemoved) },
     { label: "BTC from the pool", value: btc(quote.btcRemoved), sub: `sold for ${musd(quote.musdFromSwap)}` },
-    { label: "Minimum you receive", value: musd(minimums.minMusdOut) },
     { label: "Price impact", value: formatPercent(quote.priceImpact, 2) },
     { label: "MezoRoute fee", value: "None on exit" },
     { label: "Network fee (estimated)", value: gasCost === null ? "—" : btc(gasCost) },

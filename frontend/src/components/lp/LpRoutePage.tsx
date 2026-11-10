@@ -155,7 +155,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
           ? []
           : [
               {
-                label: <Term id="gauge">Staking</Term>,
+                label: <Term id="staking">Staking</Term>,
                 value: stakeRow.switchable ? <StakeSwitch on={preview.stake.on} onChange={(stake) => update({ ...intent, stake })} /> : "Off",
                 sub: stakeRow.sub,
               },

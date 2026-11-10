@@ -4,13 +4,15 @@ import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import { WAD } from "@/lib/math";
 import { LEVERAGE_CR_FLOOR, ORACLE_BOUND_DEFAULT_BPS } from "@/lib/trove/constants";
 import { troveGasBudget } from "@/lib/quote/gas";
-import { EVM_ONLY, MAINNET_NOT_RUN, RECOVERY_MODE_BLOCK } from "./copy";
+import { EVM_ONLY, MAINNET_NOT_RUN, queueLine, RECOVERY_MODE_BLOCK } from "./copy";
 import type { GateQuote, TroveBlockReason } from "./gate";
 import type { TroveAction } from "./intent";
 import type { TroveSnapshot } from "./snapshot";
 import type { CapacityCheck } from "./capacity";
 import { QUOTE_CR_BUFFER_BPS } from "./steps";
-import type { LeverageLimit } from "./quote-leverage";
+import { leverageQuoteAt, MIN_LEVERAGE_BTC, type LeverageLimit } from "./quote-leverage";
+import type { QueuePosition } from "./queue";
+import type { Market, PoolState } from "./trove-math";
 import { cr, liquidationPriceOf, type TroveState } from "./trove-math";
 
 const musd = (v: bigint) => `${formatToken(v, 18, 2)} MUSD`;
@@ -242,4 +244,33 @@ export function unwindMaxNote(maxCr: bigint): string {
 
 export function openMaxNote(btc: bigint, highest: bigint): string {
   return `With ${formatToken(btc, 18, 6)} BTC, up to ${formatPercent(highest, 1)}: past that the debt would fall under the 1,800 MUSD minimum.`;
+}
+
+/**
+ * U14 B1: the Leverage page's note when there is no room: the binding limit, with the oracle gap read at the search's
+ * smallest size (`MIN_LEVERAGE_BTC`). Undefined while there is room.
+ */
+export function leverageNoRoomNote(
+  max: { btc: bigint; limitedBy: LeverageLimit },
+  t: TroveState,
+  pool: PoolState,
+  market: Market,
+  slippageBps: bigint,
+  feeBps: bigint,
+): string | undefined {
+  if (max.btc !== 0n) return undefined;
+  return leverageMaxNote(max, LEVERAGE_CR_FLOOR, leverageQuoteAt(t, pool, market, MIN_LEVERAGE_BTC, slippageBps, feeBps).costBps);
+}
+
+/**
+ * The redemption queue on a Trove Confirm. After a Leverage or Open the Trove moves toward the front, a risk: said once,
+ * first in the risks (above Sign below lg), while the queue card shows only where the Trove stands now.
+ */
+export function confirmQueue(
+  action: TroveAction,
+  before: QueuePosition | null,
+  after: QueuePosition | null,
+): { risk: string | null; card: { before: QueuePosition | null; after: QueuePosition | null } } {
+  if ((action === "leverage" || action === "open") && after) return { risk: `After this: ${queueLine(after)}`, card: { before, after: null } };
+  return { risk: null, card: { before, after } };
 }

@@ -33,12 +33,11 @@ import { quoteFor, troveSteps } from "@/lib/leverage/steps";
 import { cr, nominalCr, type TroveState } from "@/lib/leverage/trove-math";
 import { useDirectTroveCall } from "@/lib/leverage/useDirectTroveCall";
 import { useTroveSnapshot, type TroveData } from "@/lib/leverage/useTroveSnapshot";
-import { crPresets, leverageMaxNote, maxTarget, troveNowRows, maxTargetText, openBtcMax, openMaxNote, openReachNote, pageNotice, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "@/lib/leverage/view";
+import { confirmQueue, crPresets, leverageMaxNote, leverageNoRoomNote, maxTarget, troveNowRows, maxTargetText, openBtcMax, openMaxNote, openReachNote, pageNotice, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "@/lib/leverage/view";
 import { openMaxCr } from "@/lib/leverage/quote-open";
 import { unwindMaxCr } from "@/lib/leverage/quote-unwind";
-import { leverageMax, leverageQuoteAt, MIN_LEVERAGE_BTC } from "@/lib/leverage/quote-leverage";
+import { leverageMax, leverageQuoteAt } from "@/lib/leverage/quote-leverage";
 import { Notice } from "@/components/ui/Notice";
-import { queueLine } from "@/lib/leverage/copy";
 import { LEVERAGE_CR_FLOOR, ORACLE_BOUND_DEFAULT_BPS } from "@/lib/trove/constants";
 import { useNow } from "@/lib/useNow";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
@@ -214,15 +213,17 @@ function AmountCard(props: {
   const fieldError = troveFieldError(view.block, { btc: action === "open", cr: action !== "close" });
   const noRoomNote =
     noRoom && snapshot.trove && network.leverage
-      ? leverageMaxNote(max, LEVERAGE_CR_FLOOR, leverageQuoteAt(snapshot.trove, snapshot.pool, snapshot.market, MIN_LEVERAGE_BTC, intent.slippageBps, network.leverage.feeBps).costBps)
+      ? leverageNoRoomNote(max, snapshot.trove, snapshot.pool, snapshot.market, intent.slippageBps, network.leverage.feeBps)
       : undefined;
   const confirmHref = `/trove/${action}/confirm/?${intentQuery(action, intent)}`;
   const repay = () =>
     snapshot.trove &&
     direct.run({ kind: "repay", amount: snapshot.walletMusd < snapshot.trove.debt - 2_000n * 10n ** 18n ? snapshot.walletMusd : snapshot.trove.debt - 2_000n * 10n ** 18n, trove: snapshot.trove, troveCount: snapshot.system.troveCount });
 
+  // In Recovery Mode the notice's Repay from wallet is the page's only action, so the facts are that call's.
+  const repayOnly = view.notice?.actions.includes("repay") ?? false;
   const facts = network.leverage
-    ? troveSignFacts(network, { feeBps: network.leverage.feeBps, maxBtcFlash: network.leverage.maxBtcFlash, maxMusdFlash: network.leverage.maxMusdFlash, blockNumber: snapshot.block.number })
+    ? troveSignFacts(network, { feeBps: network.leverage.feeBps, maxBtcFlash: network.leverage.maxBtcFlash, maxMusdFlash: network.leverage.maxMusdFlash, blockNumber: snapshot.block.number, repayOnly })
     : null;
   return (
     <FlowColumn
@@ -397,7 +398,8 @@ function ConfirmBody(props: {
       ? maxTarget(openMaxCr(intent.btc, snapshot.pool, snapshot.market, intent.slippageBps, network.leverage.feeBps, network.leverage.maxBtcFlash), true)
       : null;
   const openReach = action === "open" ? openNote(view.quote, intent, openHighest) : null;
-  const queueFirst = (action === "leverage" || action === "open") && view.queueAfter ? [`After this: ${queueLine(view.queueAfter)}`, ...risks] : risks;
+  const queue = confirmQueue(action, view.queueBefore, view.queueAfter);
+  const queueFirst = queue.risk ? [queue.risk, ...risks] : risks;
   const facts = network.leverage
     ? troveSignFacts(network, { feeBps: network.leverage.feeBps, maxBtcFlash: network.leverage.maxBtcFlash, maxMusdFlash: network.leverage.maxMusdFlash, blockNumber: snapshot.block.number })
     : null;
@@ -407,7 +409,7 @@ function ConfirmBody(props: {
     <FlowColumn
       aside={
         <ConfirmAside risks={queueFirst}>
-          <TroveAside queue={{ before: view.queueBefore, after: view.queueAfter }} facts={facts} />
+          <TroveAside queue={queue.card} facts={facts} />
         </ConfirmAside>
       }
       header={

@@ -15,7 +15,8 @@ export type TermId =
   | "gauge"
   | "emissions"
   | "redemption"
-  | "refinance";
+  | "refinance"
+  | "staking";
 
 /**
  * One sentence per Mezo term, shown by `Term` (U8). Readers know basic DeFi (LP, slippage, approvals),
@@ -36,4 +37,5 @@ export const GLOSSARY: Record<TermId, string> = {
   emissions: "MEZO paid to a gauge each week. veBTC voters decide how much each gauge gets.",
   redemption: "Swapping MUSD for BTC at $1 per MUSD, taken from the lowest-ratio Troves first to repay their debt.",
   refinance: "Resets your Trove's borrowing limit from today's collateral and moves it to the current interest rate.",
+  staking: "Putting your LP in the pool's gauge to earn MEZO. While staked, its swap fees go to veBTC voters.",
 };

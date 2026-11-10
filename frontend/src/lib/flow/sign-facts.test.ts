@@ -72,3 +72,16 @@ describe("troveSignFacts", () => {
     expect(troveSignFacts({ ...testnet, leverage: null }, { feeBps: 10n, maxBtcFlash: 1n, maxMusdFlash: 1n, blockNumber: 1n })).toBeNull();
   });
 });
+
+// U14 final review: in Recovery Mode the Trove page's only action is Repay from wallet, a direct BorrowerOperations call.
+describe("troveSignFacts for Repay from wallet", () => {
+  const facts = troveSignFacts(testnet, { feeBps: 10n, maxBtcFlash: 10n ** 18n, maxMusdFlash: 10n ** 21n, blockNumber: 1n, repayOnly: true });
+
+  it("names BorrowerOperations, no fee, and no signature", () => {
+    expect(labels(facts)).toEqual(["Contract", "MezoRoute fee", "Signatures", "Audit", "Reads"]);
+    expect(facts?.[0]).toEqual({ label: "Contract", value: "BorrowerOperations", href: explorerAddressUrl(testnet, testnet.addresses.borrowerOperations) });
+    expect(facts?.[1].value).toBe("None");
+    expect(facts?.[2].value).toBe("None: a direct call from any wallet");
+    expect(facts?.[3].value).toBe("Mezo's contract; MezoRoute adds none");
+  });
+});

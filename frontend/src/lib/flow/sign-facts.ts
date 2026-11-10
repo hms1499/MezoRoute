@@ -45,11 +45,23 @@ export function spSignFacts(network: NetworkConfig, blockNumber: bigint, action:
   ];
 }
 
-/** MezoRouteLeverage's facts (Open, Leverage, Unwind, Close). Null where it is not deployed. */
+/**
+ * MezoRouteLeverage's facts (Open, Leverage, Unwind, Close). Null where it is not deployed. `repayOnly`: the page's
+ * one action is Repay from wallet (Recovery Mode), a direct BorrowerOperations call with no fee and no signature.
+ */
 export function troveSignFacts(
   network: NetworkConfig,
-  input: { feeBps: bigint; maxBtcFlash: bigint; maxMusdFlash: bigint; blockNumber: bigint },
+  input: { feeBps: bigint; maxBtcFlash: bigint; maxMusdFlash: bigint; blockNumber: bigint; repayOnly?: boolean },
 ): SignFact[] | null {
+  if (input.repayOnly) {
+    return [
+      { label: "Contract", value: "BorrowerOperations", href: explorerAddressUrl(network, network.addresses.borrowerOperations) },
+      { label: "MezoRoute fee", value: "None" },
+      { label: "Signatures", value: "None: a direct call from any wallet" },
+      { label: "Audit", value: "Mezo's contract; MezoRoute adds none" },
+      reads(input.blockNumber),
+    ];
+  }
   const leverage = network.leverage;
   if (!leverage) return null;
   return [
