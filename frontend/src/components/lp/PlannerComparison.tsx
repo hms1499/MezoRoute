@@ -28,10 +28,13 @@ export function PlannerComparison({
         </>
       }
       aside={
-        <div className="text-right">
-          <Badge>{formatToken(amountMusd, 18, 2)} MUSD</Badge>
-          {example && <p className="mt-1 text-xs text-muted">Example amount</p>}
-        </div>
+        // No amount to show when the field holds none: a zero badge would read as an amount the visitor typed.
+        state.kind === "rows" ? (
+          <div className="text-right">
+            <Badge>{formatToken(amountMusd, 18, 2)} MUSD</Badge>
+            {example && <p className="mt-1 text-xs text-muted">Example amount</p>}
+          </div>
+        ) : undefined
       }
     >
       {state.kind === "message" ? (
