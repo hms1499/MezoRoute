@@ -4,6 +4,7 @@ import { LogoMark } from "@/components/ui/Logo";
 import { MEZO_SITE, REPOSITORY } from "@/lib/config/links";
 import { useNetwork } from "@/lib/config/network-context";
 import { explorerAddressUrl } from "@/lib/config/networks";
+import { contractLinks } from "@/lib/landing/caps";
 import { ThemeSwitch } from "./ThemeToggle";
 
 /** Brand and project links on top, the standing disclaimer underneath; the hairlines span the viewport. */
@@ -20,15 +21,15 @@ export function Footer() {
               MezoRoute
             </p>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Compare the MUSD/BTC pool and the Stability Pool on Mezo, then enter and exit in MUSD.
+              Route MUSD on Mezo, see the BTC risk, and manage your Trove in one transaction.
             </p>
           </div>
           <nav aria-label="Project links" className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
-            {network.executor && (
-              <a href={explorerAddressUrl(network, network.executor.address)} target="_blank" rel="noreferrer" className={link}>
-                Executor contract
+            {contractLinks(network).map((contract) => (
+              <a key={contract.address} href={explorerAddressUrl(network, contract.address)} target="_blank" rel="noreferrer" className={link}>
+                {contract.label}
               </a>
-            )}
+            ))}
             <a href={REPOSITORY} target="_blank" rel="noreferrer" className={link}>
               Source code
             </a>

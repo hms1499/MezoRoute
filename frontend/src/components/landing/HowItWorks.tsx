@@ -1,15 +1,13 @@
 "use client";
 
+import { Calculator, PenLine, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import { useInView } from "./hooks";
 
-const STEPS = [
-  { n: "1", title: "Compare", detail: "Both routes for one amount: fees, BTC exposure, and the last 30 days on chain." },
-  { n: "2", title: "Preview", detail: "Exact amounts and minimums from one block, with a live quote timer." },
-  {
-    n: "3",
-    title: "Sign and exit",
-    detail: "One transaction in after any approval your wallet needs; unstake if staked, then exit to MUSD.",
-  },
+// U16: plan, sign, manage, each step marked by an icon and one short line.
+const STEPS: { icon: LucideIcon; title: string; detail: string }[] = [
+  { icon: Calculator, title: "Plan", detail: "Both routes for one amount. No wallet needed." },
+  { icon: PenLine, title: "Sign", detail: "Exact amounts from one block, one transaction in." },
+  { icon: SlidersHorizontal, title: "Manage", detail: "Stake, claim, exit, or unwind your Trove." },
 ];
 
 export function HowItWorks() {
@@ -26,19 +24,21 @@ export function HowItWorks() {
         <span className="eyebrow">How it works</span>
       </p>
       <h2 id="how-heading" className="mt-4 text-headline text-ink">
-        Three steps, every number shown before you sign
+        Plan, sign, manage
       </h2>
       <div aria-hidden className="relative mt-8 hidden h-px bg-line sm:block">
         <span data-seen={seen} className="landing-fill absolute inset-0 origin-left bg-accent" />
       </div>
       <ol className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
-        {STEPS.map((step) => (
-          <li key={step.n}>
+        {STEPS.map(({ icon: Icon, title, detail }) => (
+          <li key={title}>
             <p className="flex items-center gap-3 text-base font-semibold text-ink">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full border border-accent text-sm text-accent">{step.n}</span>
-              {step.title}
+              <span className="landing-trust-icon text-accent">
+                <Icon aria-hidden className="h-4 w-4" />
+              </span>
+              {title}
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-night-muted">{step.detail}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted">{detail}</p>
           </li>
         ))}
       </ol>
