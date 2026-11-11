@@ -9,7 +9,7 @@ MezoRoute shows Mezo borrowers where to put their MUSD (the MUSD/BTC liquidity p
 - **Mainnet Trove actions:** [`0xA82059CEaAa50678e0295610106c46D0bd26F6C6`](https://explorer.mezo.org/address/0xA82059CEaAa50678e0295610106c46D0bd26F6C6) (`MezoRouteLeverage`, verified, capped at 0.0125 BTC or 2,500 MUSD per call)
 - **Hackathon:** Build with MUSD and MEZO, AKINDO WaveHack, Wave 2 (Wave 1 submitted 24 Oct 2026). Track 1 (DeFi) and Track 2 (Access and Distribution)
 - **Deck:** [Wave 2 (PDF)](docs/submission/mezoroute-wave2-deck.pdf) · [Wave 1 (PDF)](docs/submission/mezoroute-wave1-deck.pdf)
-- **Demo video (Wave 1):** https://www.youtube.com/watch?v=wDJtaaEwrnk
+- **Demo video:** [Wave 2 (2:07)](https://youtu.be/IwyHx5wMluQ) · [Wave 1](https://www.youtube.com/watch?v=wDJtaaEwrnk)
 
 ## What's new in Wave 2
 
