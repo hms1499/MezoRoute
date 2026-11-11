@@ -316,3 +316,4 @@ The readiness gaps identified on 12 Oct were mainnet (M1), a public URL (V1), an
   - U1 added to the backlog.
   - M1a pre-flight passed; the user chose MetaMask for M1.
   - `AGENTS.md`, `docs/STATUS.md`, and the session protocol set up for multi-agent handover.
+- **11 Nov 2026, late (Claude Code):** `GAUGE_WITHDRAW_GAS` 155,000 → 185,000 (branch `fix/unstake-gas-budget`): a mainnet unstake (tx `0x0ce0220d16e62ea18d2845d9de8ace9a3c7c514e34c2713f088ca97c39d3a657`) used 166,286 gas with an estimate of 176,067, above the old budget; the send only succeeded because the limit followed the estimate × 1.2. Affects Unstake all and the exit's unstake step. `npm test` (1,674) and `npm run build` pass.
