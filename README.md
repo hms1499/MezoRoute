@@ -2,13 +2,26 @@
 
 **Where should your MUSD go, and what does it do to your BTC risk?**
 
-MezoRoute shows Mezo borrowers where to put their MUSD (the MUSD/BTC liquidity pool or the MUSD Stability Pool) by what each choice does to their BTC exposure, then executes the choice safely. Borrow → swap → add liquidity happens in **one transaction and two off-chain signatures**, and every number on a receipt comes from on-chain events, not wallet balance changes.
+MezoRoute shows Mezo borrowers where to put their MUSD (the MUSD/BTC liquidity pool or the MUSD Stability Pool) by what each choice does to their BTC exposure, then executes the choice safely. Borrow → swap → add liquidity happens in **one transaction and two off-chain signatures**, and every number on a receipt comes from on-chain events, not wallet balance changes. Since Wave 2 it also manages the Trove behind it: **Unwind, Close, and Leverage in one transaction**, MEZO staking in the same transaction as the deposit, and entry straight from BTC.
 
 - **Live app:** https://mezoroute.vercel.app (testnet by default; switch to mainnet in the header)
 - **Mainnet executor:** [`0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915`](https://explorer.mezo.org/address/0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915) (V2, verified, capped at 1,000 MUSD or 0.0125 BTC per entry)
-- **Hackathon:** Build with MUSD and MEZO, AKINDO WaveHack, Wave 1. Track 2 (Access and Distribution) and Track 1 (DeFi)
-- **Demo video:** https://www.youtube.com/watch?v=wDJtaaEwrnk
-- **Deck:** [docs/submission/mezoroute-wave1-deck.pdf](docs/submission/mezoroute-wave1-deck.pdf)
+- **Mainnet Trove actions:** [`0xA82059CEaAa50678e0295610106c46D0bd26F6C6`](https://explorer.mezo.org/address/0xA82059CEaAa50678e0295610106c46D0bd26F6C6) (`MezoRouteLeverage`, verified, capped at 0.0125 BTC or 2,500 MUSD per call)
+- **Hackathon:** Build with MUSD and MEZO, AKINDO WaveHack, Wave 2 (Wave 1 submitted 24 Oct 2026). Track 1 (DeFi) and Track 2 (Access and Distribution)
+- **Deck:** [Wave 2 (PDF)](docs/submission/mezoroute-wave2-deck.pdf) · [Wave 1 (PDF)](docs/submission/mezoroute-wave1-deck.pdf)
+- **Demo video (Wave 1):** https://www.youtube.com/watch?v=wDJtaaEwrnk
+
+## What's new in Wave 2
+
+| | |
+|---|---|
+| **Unwind, Close, Leverage** | One transaction on your own Trove through `MezoRouteLeverage` and a flash swap on the MUSD/BTC pool. Every page leads with the swap's cost against Mezo's oracle and your place in the redemption queue before and after. Ran end to end on testnet with a real MetaMask (open with leverage → unwind → leverage → close); deployed, capped, and verified on mainnet. |
+| **Leverage, done carefully** | Plans a Refinance step when borrowing capacity runs short; blocks the flash actions in Recovery Mode and offers Repay from wallet; reads pending redistribution once (`getEntireDebtAndColl`); a Claim surplus button after a redemption; every swap bounded by Mezo's `PriceFeed` (5% default, 10% at most); no owner, admin, or proxy. |
+| **MEZO staking** | The MUSD/BTC pool's gauge now pays MEZO. `MezoRouteExecutorV2` stakes the new LP for you in the same transaction; Positions claims, stakes, and unstakes. Rates are always this week's, and the app says that staked LP gives its swap fees to veBTC voters. |
+| **Enter from BTC** | BTC in, no MUSD needed first: the executor swaps about half and adds liquidity, with the same 10 bps fee and a gas reserve kept back. |
+| **Plan before you connect** | The LP planner works without a wallet; one design system across the app (light and dark), and every flow has a "Before you sign" panel built from the same on-chain snapshot. |
+
+Real round trips through the app (hashes in [`PRODUCT_SPEC.md`](PRODUCT_SPEC.md) §20): mainnet, 6 Nov 2026, 10 MUSD in with stake, claim MEZO, unstake and exit, then 0.00003 BTC in with stake; testnet, 7 Nov 2026, the full Trove cycle. The contracts held nothing afterwards each time.
 
 ## Try it in five minutes (testnet)
 
@@ -65,7 +78,13 @@ flowchart LR
     E --> BOS[BorrowerOperationsSignatures]
     E --> R[Tigris Router]
     UI -->|provideToSP, withdrawFromSP| SP
-    E --> L[Executor events]
+    E --> G[MEZO gauge]
+    UI --> LV[MezoRouteLeverage]
+    LV -->|flash swap| P
+    LV --> BOS
+    LV --> PF[PriceFeed bound]
+    E --> L[Contract events]
+    LV --> L
     L --> UI
 ```
 
@@ -75,6 +94,7 @@ flowchart LR
   - `borrowAndEnter(borrow, musdPermit, params)`: borrows MUSD to the caller with their EIP-712 authorisation, then the same entry.
   - `exit(params, lpPermit)`: LP → remove liquidity → swap BTC back → MUSD to the recipient.
   - `MezoRouteExecutorV2` ([`contracts/src/MezoRouteExecutorV2.sol`](contracts/src/MezoRouteExecutorV2.sol), mainnet `0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915`, testnet `0x1281cC769c136F9F4f291B390c8992a3Cd556288`) adds a `stake` flag to `enter` and `borrowAndEnter` and `enterFromBtc(params, btcPermit)`, with its own immutable BTC cap. It keeps every V1 safety property and adds: no LP or MEZO is ever held, the gauge allowance is reset to 0, and staked LP is credited only to the recipient.
+- **`MezoRouteLeverage`** ([`contracts/src/MezoRouteLeverage.sol`](contracts/src/MezoRouteLeverage.sol), mainnet `0xA82059CEaAa50678e0295610106c46D0bd26F6C6`, testnet `0x14bEdE8de5Cc60342492934B207Ce99eAf986d88`) flash-swaps the MUSD/BTC pool and acts through `BorrowerOperationsSignatures` with borrower = recipient = the caller: `unwind`, `close`, `leverage`, and `openLeveraged`. The flash-swap hook authenticates the pool, the sender, and the operation in flight before decoding; every swap is bounded by `PriceFeed`; the wallet pays the pool the exact amount after a permit and allowances end at 0; every call ends with the contract's MUSD and BTC balances unchanged.
 
 ### Safety properties
 
@@ -95,7 +115,7 @@ Each invariant is mapped to its tests in [`contracts/SELF_AUDIT.md`](contracts/S
 | Contract | Mezo mainnet (31612) | Mezo testnet (31611) |
 |---|---|---|
 | **MezoRouteExecutorV2** | [`0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915`](https://explorer.mezo.org/address/0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915) (caps 1,000 MUSD and 0.0125 BTC, fee 10 bps) | [`0x1281cC769c136F9F4f291B390c8992a3Cd556288`](https://explorer.test.mezo.org/address/0x1281cC769c136F9F4f291B390c8992a3Cd556288) (caps 1,000,000 MUSD and 12 BTC, fee 10 bps) |
-| **MezoRouteLeverage** (L1) | not deployed yet | [`0x14bEdE8de5Cc60342492934B207Ce99eAf986d88`](https://explorer.test.mezo.org/address/0x14bEdE8de5Cc60342492934B207Ce99eAf986d88) (caps 12 BTC and 1,000,000 MUSD, fee 10 bps on Leverage only) |
+| **MezoRouteLeverage** (L1) | [`0xA82059CEaAa50678e0295610106c46D0bd26F6C6`](https://explorer.mezo.org/address/0xA82059CEaAa50678e0295610106c46D0bd26F6C6) (caps 0.0125 BTC and 2,500 MUSD, fee 10 bps on Leverage only) | [`0x14bEdE8de5Cc60342492934B207Ce99eAf986d88`](https://explorer.test.mezo.org/address/0x14bEdE8de5Cc60342492934B207Ce99eAf986d88) (caps 12 BTC and 1,000,000 MUSD, fee 10 bps on Leverage only) |
 | MezoRouteExecutor (V1, legacy: its LP can still exit) | [`0x046449b1229C863e278f369869BA10e12bd80d9E`](https://explorer.mezo.org/address/0x046449b1229C863e278f369869BA10e12bd80d9E) (cap 1,000 MUSD, fee 10 bps) | [`0xB36B2E012003840951CFf00fA6b1E3237A110920`](https://explorer.test.mezo.org/address/0xB36B2E012003840951CFf00fA6b1E3237A110920) (cap 1,000,000 MUSD, fee 10 bps) |
 | MUSD | `0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186` | `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503` |
 | BTC (ERC-20 interface) | `0x7b7C000000000000000000000000000000000000` | `0x7b7C000000000000000000000000000000000000` |
@@ -104,7 +124,7 @@ Each invariant is mapped to its tests in [`contracts/SELF_AUDIT.md`](contracts/S
 | BorrowerOperationsSignatures | `0xB57ab578BF20b3e318f3EFAA587C51DBccE5df7a` | `0xD757e3646AF370b15f32EB557F0F8380Df7D639e` |
 | StabilityPool | `0x73245Eff485aB3AAc1158B3c4d8f4b23797B0e32` | `0x1CCA7E410eE41739792eA0A24e00349Dd247680e` |
 
-Every executor is verified on the Mezo explorer. Every address the app uses lives in [`frontend/src/lib/config/networks.ts`](frontend/src/lib/config/networks.ts).
+Every MezoRoute contract is source-verified on the Mezo explorer, on both networks. Every address the app uses lives in [`frontend/src/lib/config/networks.ts`](frontend/src/lib/config/networks.ts).
 
 ### Mainnet round trip through the UI (15 Oct 2026)
 
@@ -121,13 +141,13 @@ The LP round trip cost 0.0264 MUSD on 10 MUSD, pool swap fees and price impact i
 
 ## Business model
 
-A disclosed execution fee of **10 bps** on MUSD entering the LP route through the executor (`enter` and `borrowAndEnter`), hard-capped at 50 bps in the contract and fixed at deployment. The fee is shown in bps and MUSD before signing and emitted in the `Entered` event. Exits and Stability Pool actions are free. The mainnet executor charges it on real deposits today.
+A disclosed execution fee of **10 bps**, charged only when the user adds risk: on MUSD or BTC entering the LP route through the executor (`enter`, `borrowAndEnter`, `enterFromBtc`) and on Leverage (`leverage`, `openLeveraged`). Each contract fixes it at deployment and hard-caps it at 50 bps. The fee is shown before signing and emitted in the contract's event. Unwind, Close, exits, and Stability Pool actions are free. The mainnet contracts charge it on real transactions today.
 
 For Mezo, Borrow & Deploy mints new MUSD and deepens the MUSD/BTC pool, and the route comparison points idle MUSD at Mezo's own destinations.
 
 ## MUSD and MEZO
 
-MezoRoute integrates MUSD across three protocol surfaces: borrowing through `BorrowerOperationsSignatures`, the MUSD/BTC pool, and the Stability Pool. Wave 1 did not integrate MEZO: our 30 Sep 2026 research found gauges paying BTC and no gauge on the mainnet MUSD/BTC pool. That was out of date by 4 Nov 2026. The pool's gauge now pays MEZO to staked LP on both networks, so Wave 2 (G1, in progress) adds it:
+MezoRoute integrates MUSD across three protocol surfaces: borrowing through `BorrowerOperationsSignatures`, the MUSD/BTC pool, and the Stability Pool. Wave 1 did not integrate MEZO: our 30 Sep 2026 research found gauges paying BTC and no gauge on the mainnet MUSD/BTC pool. That was out of date by 4 Nov 2026. The pool's gauge now pays MEZO to staked LP on both networks, so Wave 2 (G1) added it:
 
 - **Stake in the same transaction.** The LP route has a "Stake to earn MEZO" switch (on by default when the gauge is live). `MezoRouteExecutorV2` deposits the new LP in the gauge for you inside the entry; MezoRoute never holds your LP or your MEZO.
 - **Positions** shows wallet and staked LP together, pending MEZO, and Claim, Stake, and Unstake. Exit unstakes first when it needs to, so exiting a staked position is **two transactions** (unstake, then exit; three when a Bitcoin wallet must also approve), and it resumes if you reload in between.
@@ -157,7 +177,7 @@ Requirements: Node.js 18.17+ (developed on Node 24), npm, and [Foundry](https://
 ```bash
 cd contracts
 forge build
-forge test        # 198 tests: unit, fuzz, invariant (V1 and V2)
+forge test        # 314 tests: unit, fuzz, invariant (V1, V2, and Leverage under both pool token orders)
 ```
 
 Tests deploy the real Tigris Pool, PoolFactory, and Router (commit `0a3b5e8`) locally with mock MUSD and BTC. Fork tests are not possible because Mezo's BTC token is a chain precompile; [`contracts/script/smoke-testnet.sh`](contracts/script/smoke-testnet.sh) exercises a deployed executor on Mezo testnet instead. Deployment steps are in [`contracts/README.md`](contracts/README.md).
@@ -169,7 +189,7 @@ cd frontend
 npm install
 cp .env.example .env.local   # set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID (free at cloud.reown.com)
 npm run dev                  # http://localhost:3000
-npm test                     # 1216 Vitest tests
+npm test                     # 1663 Vitest tests
 npm run build                # static export to out/, with lint and type check
 ```
 
@@ -180,7 +200,7 @@ Stack: Solidity 0.8.24 (London EVM), Foundry, OpenZeppelin 4.9.0; Next.js 14 (st
 ## Repository
 
 ```
-contracts/          MezoRouteExecutor, tests, deploy and smoke scripts, self-audit
+contracts/          MezoRouteExecutor (V1, V2), MezoRouteLeverage, tests, deploy and smoke scripts, self-audit
 frontend/           Next.js app (src/lib holds the pure maths: quotes, exposure, Trove, history)
 PRODUCT_SPEC.md     product and technical specification: scope, research, invariants
 docs/               build status, feature designs, and the Passport spike
@@ -188,9 +208,9 @@ docs/               build status, feature designs, and the Passport spike
 
 ## Roadmap
 
-1. **Wave 2 (by 15 Nov 2026):** gauge staking and entry from BTC (G1, in progress), then one-transaction BTC leverage and unwind on MUSD Troves using Tigris flash swaps, on testnet and capped mainnet.
-2. **After the hackathon:** more routes as separate executors, and opening a Trove in the same flow.
-3. **After the hackathon:** smart-account support for Borrow & Deploy, and an external audit before raising the cap.
+1. **Wave 2 (shipped):** gauge staking and entry from BTC (G1); one-transaction Unwind, Close, and Leverage on MUSD Troves using Tigris flash swaps (L1), on testnet and capped mainnet; a read-only planner and one design system across the app.
+2. **Wave 3: outside users.** Every mainnet transaction through MezoRoute's contracts so far comes from the team's own wallet. Next: a public stats page built from contract events, onboarding for Trove owners, a real mainnet Trove round trip, and a Bitcoin wallet through Mezo's mainnet relayer.
+3. **After the hackathon:** static analysis and an external audit before raising the caps, opening a Trove in the same flow, and smart-account support for Borrow & Deploy and the Trove actions.
 
 ## License
 
