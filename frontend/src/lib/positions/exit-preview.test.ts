@@ -64,7 +64,7 @@ describe("exitPreview", () => {
 
     it("adds the unstake's gas", () => {
       const withUnstake = exitPreview({ ...base, data: staked(0n, LIVE_EXIT_LIQUIDITY), intent, walletKind: "eoa" });
-      expect(withUnstake.gasUnits).toBe(520_000n + 155_000n);
+      expect(withUnstake.gasUnits).toBe(520_000n + 185_000n);
     });
 
     it("pins liquidityIn, and re-quotes without the unstake once the LP is in the wallet", () => {

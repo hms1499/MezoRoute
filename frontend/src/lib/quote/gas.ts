@@ -130,8 +130,12 @@ export function spGasUnits(input: { approve: boolean; smartAccount: boolean; act
  */
 /** `gauge.deposit`: estimate 154,522 (highest used 142,295). */
 export const GAUGE_DEPOSIT_GAS = 165_000n;
-/** `gauge.withdraw`: highest estimate 147,097 (an exit's unstake, 5 Nov 2026; highest used 137,316), plus 5%, rounded up to 5,000. Mainnet estimated 141,867 (6 Nov 2026). */
-export const GAUGE_WITHDRAW_GAS = 155_000n;
+/**
+ * `gauge.withdraw`: highest estimate 176,067 and highest used 166,286 (mainnet tx 0x0ce0…a657, 11 Nov 2026),
+ * plus 5%, rounded up to 5,000. Earlier: testnet estimate 147,097 / used 137,316 (5 Nov), mainnet estimate
+ * 141,867 (6 Nov); the old 155,000 sat below the 11 Nov use.
+ */
+export const GAUGE_WITHDRAW_GAS = 185_000n;
 /** `gauge.getReward`: mainnet estimate 85,049 (tx 0x093b…bd59, 6 Nov 2026), plus 5%, rounded up to 5,000; testnet estimated 67,949 (highest used 66,295). */
 export const GAUGE_CLAIM_GAS = 90_000n;
 
