@@ -3,9 +3,10 @@
 import { BadgeCheck, Lock, ShieldCheck, TriangleAlert, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { explorerAddressUrl, networks } from "@/lib/config/networks";
+import { contractLinks, mainnetCaps } from "@/lib/landing/caps";
 import { useInView } from "./hooks";
 
-const executor = networks.mainnet.executor;
+const mainnet = networks.mainnet;
 
 export function TrustRow() {
   const [ref, seen] = useInView<HTMLElement>();
@@ -19,23 +20,24 @@ export function TrustRow() {
       </h2>
       <ul className="mt-6 grid grid-cols-1 gap-6 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <Item icon={Lock} title="Non-custodial">
-          Funds never sit in MezoRoute between transactions.
+          Funds never rest in MezoRoute.
         </Item>
         <Item icon={BadgeCheck} title="Source-verified">
-          {executor ? (
-            <a href={explorerAddressUrl(networks.mainnet, executor.address)} target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-night-lp">
-              Executor on the Mezo explorer
-            </a>
-          ) : (
-            "Executor source on the Mezo explorer"
-          )}
-          , no admin keys.
+          {contractLinks(mainnet).map((contract, index) => (
+            <span key={contract.address}>
+              {index > 0 && " · "}
+              <a href={explorerAddressUrl(mainnet, contract.address)} target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-night-lp">
+                {contract.label.replace(" contract", "")}
+              </a>
+            </span>
+          ))}
+          . No admin keys.
         </Item>
-        <Item icon={ShieldCheck} title="Capped">
-          Max 1,000 MUSD per transaction on mainnet.
+        <Item icon={ShieldCheck} title="Capped on mainnet">
+          {mainnetCaps(mainnet)}.
         </Item>
         <Item icon={TriangleAlert} title="Unaudited" warn>
-          Hackathon software. Use small amounts.
+          Use small amounts. Trove actions have not yet run end to end on mainnet.
         </Item>
       </ul>
     </section>

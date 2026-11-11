@@ -33,9 +33,8 @@ export function Hero({ data, error }: { data: MainnetReferenceData | undefined; 
                 Know the BTC risk.
               </span>
             </h1>
-            <p className="landing-rise mt-5 max-w-md text-base leading-relaxed text-muted" style={delay(240)}>
-              Compare the MUSD/BTC pool with the Stability Pool on live Mezo data, preview the exact transaction, and exit
-              back to MUSD. Non-custodial.
+            <p className="landing-rise mt-5 max-w-md text-base leading-relaxed text-muted [text-wrap:balance]" style={delay(240)}>
+              Compare routes on live Mezo data, enter in one transaction, and unwind your Trove the same way.
             </p>
             {/* Below 640 px the two actions stack at full width. */}
             <div className="landing-rise mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center" style={delay(320)}>

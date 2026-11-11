@@ -1,10 +1,12 @@
 "use client";
 
-import { ConnectCta } from "@/components/home/ConnectCta";
+import { Calculator } from "lucide-react";
+import { ButtonLink } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
 import { useNetwork } from "@/lib/config/network-context";
 import { formatToken } from "@/lib/format";
+import { plannerHref } from "@/lib/landing/links";
 import type { LandingSimulation } from "@/lib/landing/simulate";
 import { simulatorNotes, simulatorRows, type SimCell } from "@/lib/landing/view";
 import { WAD } from "@/lib/math";
@@ -15,12 +17,13 @@ import { Settle } from "@/components/ui/Settle";
 
 const PRESETS = [100n, 500n, 1_000n];
 
-/** U2 hero: both routes for a typed amount on live Mezo mainnet data, no wallet needed. `Hero` owns the amount (U3). */
+/** U2 hero: both routes for a typed amount on live Mezo mainnet data, no wallet needed. `Landing` owns the amount (U16). */
 export function Simulator({
   text,
   onText,
   amount,
   amountError,
+  planAmount,
   sim,
   error,
   onHighlight,
@@ -30,6 +33,8 @@ export function Simulator({
   /** The typed amount, or null while the field is empty or invalid. */
   amount: bigint | null;
   amountError: string | null;
+  /** The amount the planner link carries: the typed one, or the last valid one while the field is invalid (U16). */
+  planAmount: bigint;
   /** The routes for the last valid amount; null until the mainnet figures load. */
   sim: LandingSimulation | null;
   error: Error | null;
@@ -112,7 +117,7 @@ export function Simulator({
             <tbody>
               {simulatorRows(sim).map((row) => (
                 <tr key={row.label} className="border-t border-night-line max-sm:grid max-sm:grid-cols-2">
-                  <th scope="row" className="py-3 pr-2 text-left font-normal text-night-muted max-sm:col-span-2 max-sm:pb-0">
+                  <th scope="row" className="py-3 pr-2 text-left font-normal text-night-muted max-sm:col-span-2 max-sm:pb-0 sm:whitespace-nowrap">
                     {row.label}
                   </th>
                   <td className={cx("py-3 pl-2 text-right break-words max-sm:pl-0 max-sm:text-left max-sm:pt-1", row.lpTone === "btc" ? "text-btc" : "text-night-ink")} {...column("lp")}>
@@ -151,17 +156,11 @@ export function Simulator({
         </div>
       )}
 
-      <ConnectCta
-        variant="nightOutline"
-        label={
-          <>
-            {/* One line at 360 px: the long label wrapped to two inside the panel. */}
-            <span className="sm:hidden">Connect to choose a route</span>
-            <span className="max-sm:hidden">Connect wallet to choose a route</span>
-          </>
-        }
-        className="mt-5 w-full"
-      />
+      {/* U16: the LP route plans without a wallet (U13), so the panel leads there instead of to Connect. */}
+      <ButtonLink href={plannerHref("lp", planAmount)} variant="nightOutline" className="mt-5 w-full">
+        <Calculator aria-hidden className="h-4 w-4" />
+        Plan this amount
+      </ButtonLink>
     </section>
   );
 }
