@@ -44,7 +44,8 @@ export function Overview({ rows, className, columns = 1 }: { rows: OverviewRow[]
               ) : (
                 row.value
               )}
-              {row.sub && <span className="block text-xs font-normal text-muted">{row.sub}</span>}
+              {/* A warning row's value sits after a 16 px icon and a 4 px gap: below sm its sub lines up with the value text. */}
+              {row.sub && <span className={cx("block text-xs font-normal text-muted", row.tone === "warning" && "pl-5 sm:pl-0")}>{row.sub}</span>}
             </dd>
           </div>
         ))}
