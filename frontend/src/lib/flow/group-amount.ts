@@ -11,6 +11,12 @@ export function groupAmount(text: string): string {
   return whole.replace(/\B(?=(\d{3})+$)/g, ",") + rest;
 }
 
+const GROUPED = /^\d{1,3}(,\d{3})+(\.\d*)?$/;
+
+/**
+ * Commas go only when the whole text is well-formed thousands grouping ("1,000", "12,345.67"). Anything else passes
+ * through, so a decimal comma ("0,5", typed on a comma-decimal keyboard) stays a field error and never becomes 5.
+ */
 export function stripGrouping(text: string): string {
-  return text.replace(/,/g, "");
+  return GROUPED.test(text) ? text.replace(/,/g, "") : text;
 }
