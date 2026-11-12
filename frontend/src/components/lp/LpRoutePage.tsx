@@ -17,7 +17,7 @@ import { LoadingCard } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
 import { useNetwork } from "@/lib/config/network-context";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
-import { entryWorth } from "@/lib/flow/entry-worth";
+import { entryGapRow, entryWorth, type EntryWorth } from "@/lib/flow/entry-worth";
 import { WAD } from "@/lib/math";
 import { stakeRowCopy } from "@/lib/gauge/copy";
 import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
@@ -49,10 +49,16 @@ import { PlannerComparison } from "./PlannerComparison";
 import { RisksCard } from "./RisksCard";
 import { StakeSwitch } from "./StakeToggle";
 import { troveChangeRows } from "./troveChange";
-import { btc, btcFine, musd } from "./units";
+import { btc, btcFine, musdShort } from "./units";
 
 /** Below one unit of the eight decimals shown, the reserve line would only say "<0.00000001 BTC". */
 const MIN_SHOWN_RESERVE = 10n ** 10n;
+
+/** U18 §1: the gap to what was put in leads Details (the card's gap line links here), then the Trove rows and the fee. */
+export function lpDetailsRows(worth: EntryWorth | null, rest: OverviewRow[]): OverviewRow[] {
+  const gap = worth && entryGapRow(worth);
+  return gap ? [gap, ...rest] : rest;
+}
 
 /**
  * Spec §9 screen 2a; U11 §6.2: one action card (amount, receive, stake, overview, Review), then Details.
@@ -112,7 +118,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
   const quote = preview.btcQuote ?? preview.quote;
   const minLpOut = (preview.btcMinimums ?? preview.minimums)?.minLpOut;
   const fromBtc = intent.asset === "btc";
-  const amount = (value: bigint) => (fromBtc ? btcFine(value) : musd(value));
+  const amount = (value: bigint) => (fromBtc ? btcFine(value) : musdShort(value));
   // This week's rate, only while the week pays: between weeks there is no rate to show.
   const { gauge } = data.snapshot;
   // The header's APR needs no amount (this week's rate on the staked value); the MEZO a week does.
@@ -134,7 +140,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
   });
   const overview: OverviewRow[] = hasQuote
     ? [
-        { label: "Deposited to the pool", value: musd(quote.musdAdded), sub: `+ ${fromBtc ? btcFine(quote.btcAdded) : btc(quote.btcAdded)}` },
+        { label: "Deposited to the pool", value: musdShort(quote.musdAdded), sub: `+ ${fromBtc ? btcFine(quote.btcAdded) : btc(quote.btcAdded)}` },
         ...(exposureChange === null ? [] : [lpExposureRow({ exposureChange, worth, fromBtc })]),
         { label: "MezoRoute fee", value: amount(quote.fee), sub: formatBps(data.snapshot.executorFeeBps) },
         priceImpactRow(quote),
@@ -151,12 +157,12 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
       ]
     : [];
   const context: OverviewRow[] = hasQuote
-    ? [
+    ? lpDetailsRows(worth, [
         ...(preview.borrow?.trove && preview.borrow.effect
           ? troveChangeRows({ trove: preview.borrow.trove, effect: preview.borrow.effect, price: dashboard.price, mcr: dashboard.protocol.mcr })
           : []),
         { label: "Network fee", value: preview.gasCost === null ? "—" : btc(preview.gasCost) },
-      ]
+      ])
     : [];
   // A shortfall offers Borrow & Deploy (same checks as F4's gate), the wallet's balance, or the Mezo app.
   const recoveries =
