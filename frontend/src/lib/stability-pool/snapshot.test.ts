@@ -26,7 +26,7 @@ const dashboardResults: SnapshotResults = [
 describe("spContracts", () => {
   it("reads the dashboard, the initial deposit, the MUSD allowance to the pool, and the block, on the selected chain", () => {
     const contracts = spContracts(networks.testnet, ACCOUNT);
-    expect(contracts).toHaveLength(16 + GAUGE_READS);
+    expect(contracts).toHaveLength(17 + GAUGE_READS);
     expect(contracts.every((call) => call.chainId === 31611)).toBe(true);
     expect(contracts[13]).toMatchObject({ address: networks.testnet.addresses.stabilityPool, functionName: "deposits", args: [ACCOUNT] });
     expect(contracts[14]).toMatchObject({
@@ -35,26 +35,29 @@ describe("spContracts", () => {
       args: [ACCOUNT, networks.testnet.addresses.stabilityPool],
     });
     expect(contracts[15]).toMatchObject({ functionName: "getBlockNumber" });
+    // U17: the block's time, so the planner's comparison knows whether the gauge's week pays.
+    expect(contracts[16]).toMatchObject({ functionName: "getCurrentBlockTimestamp" });
+    expect(contracts[SP_GAUGE_START - 1]).toMatchObject({ functionName: "getCurrentBlockTimestamp" });
   });
 
   it("reads the gauge last, so exposure can count staked LP", () => {
     const contracts = spContracts(networks.testnet, ACCOUNT);
-    expect(contracts[16]).toMatchObject({ address: networks.testnet.gauge!.voter, functionName: "isAlive" });
+    expect(contracts[17]).toMatchObject({ address: networks.testnet.gauge!.voter, functionName: "isAlive" });
     expect(contracts[contracts.length - 1]).toMatchObject({ address: networks.testnet.gauge!.address, functionName: "earned", args: [ACCOUNT] });
   });
 });
 
 describe("parseSpSnapshot", () => {
   it("splits the dashboard part from the Stability Pool tail", () => {
-    const results: SpResults = [...dashboardResults, 50n * ONE, 3n * ONE, 16_000_000n];
+    const results: SpResults = [...dashboardResults, 50n * ONE, 3n * ONE, 16_000_000n, 1_794_000_000n];
     const snapshot = parseSpSnapshot(networks.testnet, results);
     expect(snapshot.dashboard.sp).toEqual({ deposit: 40n * ONE, btcGain: 7n });
     expect(snapshot.dashboard.musd).toBe(500n * ONE);
-    expect(snapshot).toMatchObject({ initialDeposit: 50n * ONE, allowance: 3n * ONE, blockNumber: 16_000_000n });
+    expect(snapshot).toMatchObject({ initialDeposit: 50n * ONE, allowance: 3n * ONE, blockNumber: 16_000_000n, blockTimestamp: 1_794_000_000n });
   });
 
   it("reports a failed gauge read in its dashboard", () => {
-    const parsed = parseSpSnapshot(networks.testnet, [...dashboardResults, 50n * ONE, 3n * ONE, 16_000_000n], true);
+    const parsed = parseSpSnapshot(networks.testnet, [...dashboardResults, 50n * ONE, 3n * ONE, 16_000_000n, 1_794_000_000n], true);
     expect(parsed.dashboard.gaugeReadFailed).toBe(true);
     expect(parsed.dashboard.gauge).toBeNull();
     expect(parsed.blockNumber).toBe(16_000_000n);
@@ -65,7 +68,14 @@ describe("parseSpSnapshot", () => {
   });
 
   it("counts staked LP in the dashboard's lp.balance", () => {
-    const results: SpResults = [...dashboardResults, 50n * ONE, 3n * ONE, 16_000_000n, true, 1n, 2n, 9n * ONE, 6n * ONE, 0n];
+    const results: SpResults = [...dashboardResults, 50n * ONE, 3n * ONE, 16_000_000n, 1_794_000_000n, true, 1n, 2n, 9n * ONE, 6n * ONE, 0n];
     expect(parseSpSnapshot(networks.testnet, results).dashboard.lp.balance).toBe(6n * ONE);
+  });
+
+  it("hands over the gauge state it read, and null without one (U17)", () => {
+    const tail = [50n * ONE, 3n * ONE, 16_000_000n, 1_794_000_000n] as const;
+    const withGauge: SpResults = [...dashboardResults, ...tail, true, 1n, 2n, 9n * ONE, 6n * ONE, 0n];
+    expect(parseSpSnapshot(networks.testnet, withGauge).gauge).not.toBeNull();
+    expect(parseSpSnapshot(networks.testnet, [...dashboardResults, ...tail], true).gauge).toBeNull();
   });
 });

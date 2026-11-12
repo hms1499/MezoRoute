@@ -5,7 +5,7 @@ import type { SpData, SpSnapshot } from "./snapshot";
 
 /** No deposit yet, 500 MUSD in the wallet, no allowance. */
 export function spSnapshotWith(overrides: Partial<SpSnapshot> = {}): SpSnapshot {
-  return { dashboard: snapshotWith({ musd: 500n * ONE }), initialDeposit: 0n, allowance: 0n, blockNumber: 16_000_000n, ...overrides };
+  return { dashboard: snapshotWith({ musd: 500n * ONE }), initialDeposit: 0n, allowance: 0n, blockNumber: 16_000_000n, blockTimestamp: 1_794_000_000n, gauge: null, ...overrides };
 }
 
 /** Enough BTC for the 3,000,000-gas budget at 146 wei. */
