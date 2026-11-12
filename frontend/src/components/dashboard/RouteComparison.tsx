@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
 import { musd } from "@/components/lp/units";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -48,22 +48,28 @@ export function RouteComparison({
   heading = true,
   start = null,
   connected = true,
+  value = null,
+  onChange,
 }: {
   snapshot: DashboardSnapshot;
   heading?: boolean;
   start?: string | null;
   connected?: boolean;
+  /** U17 review: the field's value, held by the page so it survives this card's remount; null = never typed. */
+  value?: string | null;
+  onChange?: (text: string) => void;
 }) {
   const { network } = useNetwork();
   // Starts filled, so both routes show on arrival (U3 §5.2); an empty wallet gets a 1,000 MUSD example.
   const [initial] = useState(() => compareStart(start, snapshot.musd, network.entryCap));
-  const [text, setText] = useState(initial.text);
-  // U17 review: the page no longer remounts on connect, so a typed amount survives. While the field is untouched, a
-  // wallet that connects here still starts the comparison from its own balance (or the example, behind a 0 wallet).
-  const [touched, setTouched] = useState(false);
-  useEffect(() => {
-    if (connected && !touched) setText(compareStart(start, snapshot.musd, network.entryCap).text);
-  }, [connected, touched, start, snapshot.musd, network.entryCap]);
+  // U17 review: this card remounts whenever its snapshot changes (a wallet connects on /compare/), so the page holds
+  // what was typed. Null means nobody has typed here: the card then starts from the balance, or from the example.
+  const [own, setOwn] = useState(initial.text);
+  const text = value ?? own;
+  const setText = (next: string) => {
+    setOwn(next);
+    onChange?.(next);
+  };
   const showsExample = initial.example && text === initial.text;
   const [tab, setTab] = useState<RouteId>("lp");
   const { amount, error: amountError } = amountState(text);
@@ -133,10 +139,7 @@ export function RouteComparison({
   return (
     <Card id="compare" title={heading ? "Compare routes" : undefined} subtitle={heading ? "Where to put MUSD: both routes for the same amount." : undefined}>
       <div className={cx(heading && "mt-4", "max-w-md")}>
-        <TokenAmountInput id="compare-amount" label="Amount" amount={text} onAmount={(next) => {
-            setText(next);
-            setTouched(true);
-          }} token="musd" balance={connected ? snapshot.musd : null} balanceLabel="Wallet balance" max={connected ? snapshot.musd : null} />
+        <TokenAmountInput id="compare-amount" label="Amount" amount={text} onAmount={setText} token="musd" balance={connected ? snapshot.musd : null} balanceLabel="Wallet balance" max={connected ? snapshot.musd : null} />
         {amountError && (
           <p role="alert" className="mt-2 text-sm text-danger">
             {amountError}

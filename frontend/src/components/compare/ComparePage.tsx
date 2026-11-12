@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
@@ -26,8 +27,8 @@ export default function ComparePage() {
   const { address, status } = useAccount();
   // A remembered wallet reconnecting on load keeps the loading card, so the comparison starts from its balance.
   if (status === "reconnecting") return <LoadingCard label="Connecting wallet" lines={2} />;
-  // Not keyed by account (U17 review): an amount someone typed survives the connection; the comparison only fills
-  // itself from the wallet's balance while the field is untouched (RouteComparison).
+  // Not keyed by account (U17 review): this page stays mounted while the snapshot swaps to the connected account, so
+  // the amount someone typed before connecting is not thrown away (it is held here, below).
   return <Compare account={address} />;
 }
 
@@ -35,6 +36,9 @@ function Compare({ account }: { account: Address | undefined }) {
   const { network } = useNetwork();
   const { chainId } = useAccount();
   const start = useSearchParams().get("amount");
+  // U17 review: the comparison card remounts when the snapshot changes (a wallet connecting here), so the field's
+  // value lives on the page; null until somebody types, and the card starts from the balance or the example.
+  const [draft, setDraft] = useState<string | null>(null);
   const { data, error, refresh } = useDashboardSnapshot(account);
   const connected = account !== undefined;
   return (
@@ -43,7 +47,7 @@ function Compare({ account }: { account: Address | undefined }) {
       {connected && chainId !== undefined && chainId !== network.chainId && <WrongNetworkAlert />}
       {data ? (
         <Settle index={0} className="space-y-6">
-          <RouteComparison snapshot={data.snapshot} heading={false} start={start} connected={connected} />
+          <RouteComparison snapshot={data.snapshot} heading={false} start={start} connected={connected} value={draft} onChange={setDraft} />
           <MainnetReferenceCard />
         </Settle>
       ) : error ? (
