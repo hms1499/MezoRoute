@@ -9,7 +9,10 @@ import {
   gapRegions,
   labelText,
   moveAt,
+  clearLabels,
+  labelX,
   placeLabels,
+  type ChartLabel,
   readout,
   smoothPath,
   type Band,
@@ -133,9 +136,12 @@ function Plot({
 }) {
   const [active, setActive] = useState<number | null>(null);
   const g = chartGeometry({ series: plot.series, bands: plot.bands, width, height, scale: plot.scale });
-  const labels = placeLabels(chartLabels({ series: plot.series, width }), g.y, g.plot);
   const today = g.x(0);
   const todayOf = (id: SeriesId) => plot.series.find((s) => s.id === id)?.points.find((p) => p.move === 0)?.value ?? 0;
+  const labelOf = (label: ChartLabel) =>
+    plot.changeLabels ? labelText({ side: label.side, value: label.value, today: todayOf(label.id) }, plot.format) : plot.format(label.value);
+  // U17: a label never sits on the line it names (a rising line ran through its own low-end and Today labels).
+  const labels = clearLabels(placeLabels(chartLabels({ series: plot.series, width }), g.y, g.plot), { x: g.x, y: g.y, plot: g.plot, series: plot.series, text: labelOf });
   const solid = plot.series.filter((s) => !s.id.endsWith("-before") && s.id !== "baseline");
   const hasBefore = plot.series.some((s) => s.id.endsWith("-before"));
 
@@ -260,9 +266,9 @@ function Plot({
           {labels.map((label) => (
             <text
               key={`${label.id}-${label.side}`}
-              x={label.side === "left" ? g.plot.left + 2 : label.side === "right" ? g.plot.right - 2 : today + 4}
+              x={labelX(label, g.x, g.plot)}
               y={label.y}
-              textAnchor={label.side === "right" ? "end" : "start"}
+              textAnchor={label.anchor}
               fontSize={CHART_FONT_PX}
               fontFamily="var(--font-geist-mono)"
               style={{ fill: STROKE[label.id], stroke: halo }}
@@ -270,7 +276,7 @@ function Plot({
               strokeLinejoin="round"
               paintOrder="stroke"
             >
-              {plot.changeLabels ? labelText({ side: label.side, value: label.value, today: todayOf(label.id) }, plot.format) : plot.format(label.value)}
+              {labelOf(label)}
             </text>
           ))}
           {active !== null && (

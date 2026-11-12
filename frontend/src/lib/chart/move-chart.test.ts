@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { BAND_LABEL_MIN_HEIGHT, belowRuns, chartGeometry, chartLabels, gapRegions, labelText, moveAt, placeLabels, readout, smoothPath, type Series } from "./move-chart";
+import {
+  BAND_LABEL_MIN_HEIGHT,
+  belowRuns,
+  chartGeometry,
+  chartLabels,
+  clearLabels,
+  gapRegions,
+  labelBox,
+  labelHitsLine,
+  labelText,
+  moveAt,
+  placeLabels,
+  readout,
+  smoothPath,
+  type Series,
+} from "./move-chart";
 
 const MOVES = [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30];
 const lp: Series = { id: "lp", points: MOVES.map((move) => ({ move, value: 1000 * Math.sqrt(1 + move / 100) })) };
@@ -352,5 +367,70 @@ describe("readout against a baseline that is not today's value (U17)", () => {
     const today = { id: "baseline" as const, points: lp.points.map((p) => ({ move: p.move, value: 970.06 })) };
     expect(readout({ series: [today, lp], move: 0, format, unit: "MUSD" }).parts).toEqual([{ text: "970.06 MUSD", tone: "ink" }]);
     expect(readout({ series: [today, lp], move: -30, format, unit: "MUSD" }).parts[1]).toEqual({ text: "−158.45 (−16%)", tone: "negative" });
+  });
+});
+
+// U17 §7: on the planner's Details chart and the landing chart a value label sat on its own rising line ("811.61",
+// "970.06", "1,130"). A label's text box must stay clear of the line it names, inside the plot.
+describe("clearLabels", () => {
+  const format = (value: number) => value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  const rising = (today: number): Series => ({ id: "lp", points: MOVES.map((move) => ({ move, value: today * Math.sqrt(1 + move / 100) })) });
+  const flat = (id: "sp" | "baseline", value: number): Series => ({ id, points: MOVES.map((move) => ({ move, value })) });
+  const cases: [string, Series[]][] = [
+    ["a deposit preview against what was put in", [flat("baseline", 1000), rising(970.06)]],
+    ["the landing's LP beside the Stability Pool", [rising(991), flat("sp", 1000)]],
+  ];
+
+  function place(series: Series[], width: number, height: number) {
+    const g = chartGeometry({ series, width, height });
+    const placed = placeLabels(chartLabels({ series, width }), g.y, g.plot);
+    const px = (id: string) => series.find((s) => s.id === id)!.points.map((p) => ({ x: g.x(p.move), y: g.y(p.value) }));
+    return { g, placed, px, cleared: clearLabels(placed, { x: g.x, plot: g.plot, series, y: g.y, text: (label) => format(label.value) }) };
+  }
+
+  it("finds the bug it fixes: the default placement puts a label on its line", () => {
+    const { g, placed, px } = place(cases[0][1], 684, 120);
+    const hits = placed.filter((label) =>
+      labelHitsLine(labelBox({ ...label, anchor: label.side === "right" ? "end" : "start" }, g.x, g.plot, format(label.value)), px(label.id)),
+    );
+    expect(hits.length).toBeGreaterThan(0);
+  });
+
+  describe.each(cases)("%s", (_name, series) => {
+    it.each([
+      [360, 120],
+      [684, 120],
+      [684, 160],
+      [340, 150],
+    ])("keeps every label off its own line and inside the plot at %i × %i", (width, height) => {
+      const { g, cleared, px } = place(series, width, height);
+      expect(cleared.length).toBeGreaterThan(0);
+      for (const label of cleared) {
+        const box = labelBox(label, g.x, g.plot, format(label.value));
+        expect(labelHitsLine(box, px(label.id)), `${label.id} ${label.side} at ${width}×${height}`).toBe(false);
+        expect(box.top).toBeGreaterThanOrEqual(g.plot.top - 1);
+        expect(box.bottom).toBeLessThanOrEqual(g.plot.bottom + 1);
+        expect(box.left).toBeGreaterThanOrEqual(g.plot.left - 1);
+        expect(box.right).toBeLessThanOrEqual(g.plot.right + 1);
+      }
+    });
+  });
+
+  it("leaves a label that is already clear where it was", () => {
+    const series = [flat("sp", 1000)];
+    const { placed, cleared } = place(series, 684, 120);
+    expect(cleared.map((label) => label.y)).toEqual(placed.map((label) => label.y));
+    expect(cleared.map((label) => label.anchor)).toEqual(["start", "start", "end"]);
+  });
+});
+
+describe("labelHitsLine", () => {
+  const box = { left: 10, right: 50, top: 20, bottom: 30 };
+
+  it("sees a line through the box, and not one above, below, or beside it", () => {
+    expect(labelHitsLine(box, [{ x: 0, y: 40 }, { x: 60, y: 10 }])).toBe(true);
+    expect(labelHitsLine(box, [{ x: 0, y: 5 }, { x: 60, y: 12 }])).toBe(false);
+    expect(labelHitsLine(box, [{ x: 0, y: 45 }, { x: 60, y: 38 }])).toBe(false);
+    expect(labelHitsLine(box, [{ x: 60, y: 25 }, { x: 90, y: 25 }])).toBe(false);
   });
 });
