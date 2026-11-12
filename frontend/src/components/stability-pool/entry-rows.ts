@@ -1,7 +1,7 @@
 // U17 §5: the Stability Pool amount card's rows. Pure, so the anti-goal is tested here: without a wallet nothing is
 // shown as the visitor's (no deposit, no pending gain), and the card says what a BTC fall does to the deposit.
 
-import { btc, musd } from "@/components/lp/units";
+import { btc, musdShort } from "@/components/lp/units";
 import { formatToken } from "@/lib/format";
 import type { SpDepositPreview } from "@/lib/stability-pool/preview";
 
@@ -20,9 +20,9 @@ export function spEntryRows(input: {
   const { preview, musdIn } = input;
   const account: Row[] = input.connected
     ? [
-        ...(musdIn !== null && preview.depositAfter !== null ? [{ label: "Deposit after (estimated)", value: musd(preview.depositAfter) }] : []),
+        ...(musdIn !== null && preview.depositAfter !== null ? [{ label: "Deposit after (estimated)", value: musdShort(preview.depositAfter) }] : []),
         // The current deposit and pending gain show before an amount is typed (U1 deferred: they waited for one).
-        { label: "Your deposit now", value: musd(preview.depositNow) },
+        { label: "Your deposit now", value: musdShort(preview.depositNow) },
         { label: PENDING_GAIN_LABEL, value: btc(preview.gainPaid), sub: "Paid to your wallet with this deposit" },
       ]
     : [];

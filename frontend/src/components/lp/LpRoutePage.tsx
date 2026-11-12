@@ -286,7 +286,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
           onAmount: (next) => update({ ...intent, amount: next }),
           onToken: displayIntent.mode === "borrow" ? undefined : (token) => update({ ...intent, asset: token === "btc" ? "btc" : "musd", amount: "" }),
         }}
-        receive={quote && worth && minLpOut !== undefined ? lpReceive({ worth, liquidity: quote.liquidity, minLpOut, putInLabel: amount(fromBtc ? (intent.btcIn ?? 0n) : (intent.musdIn ?? 0n)) }) : null}
+        receive={quote && worth && minLpOut !== undefined ? lpReceive({ worth, liquidity: quote.liquidity, minLpOut }) : null}
         overview={overview}
         context={context}
         notices={

@@ -49,10 +49,16 @@ export function entryGap(worth: EntryWorth): { amount: string; percent: string }
   return { amount: formatToken(worth.gap, 18, 2, "up"), percent: `${formatToken(ratio * 100n, 18, 1, "up")}%` };
 }
 
-/** The planner's sentence under "LP worth"; `putInLabel` is the amount as the user typed it ("1,000 MUSD"). */
-export function entryGapLine(worth: EntryWorth, putInLabel: string): string | null {
+/** The planner's short note under "LP worth"; the cause lives in the gap row (Details, Confirm). */
+export function entryGapLine(worth: EntryWorth): string | null {
   const gap = entryGap(worth);
-  return gap && `≈ ${gap.amount} MUSD (${gap.percent}) below the ${putInLabel} you put in, at the BTC price: ${ENTRY_GAP_CAUSE}.`;
+  return gap && `≈ ${gap.amount} MUSD (${gap.percent}) below what you put in`;
+}
+
+/** The gap as an Overview row with its full cause; shared by the planner's Details and the LP Confirm. */
+export function entryGapRow(worth: EntryWorth): { label: string; value: string; sub: string; tone: "warning" } | null {
+  const gap = entryGap(worth);
+  return gap && { label: "Below what you put in", value: `≈ ${gap.amount} MUSD (${gap.percent})`, sub: `at the BTC price: ${ENTRY_GAP_CAUSE}`, tone: "warning" };
 }
 
 /**

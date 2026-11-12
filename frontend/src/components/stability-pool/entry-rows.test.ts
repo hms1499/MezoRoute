@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { btc, musd } from "@/components/lp/units";
+import { btc, musdShort } from "@/components/lp/units";
 import { spEntryRows } from "./entry-rows";
 import { SpEntryCard } from "./SpEntryCard";
 
@@ -35,8 +35,8 @@ describe("spEntryRows", () => {
       "MezoRoute fee",
       "Network fee (estimated)",
     ]);
-    expect(rows[0].value).toBe(musd(1040n * E));
-    expect(rows[1].value).toBe(musd(40n * E));
+    expect(rows[0].value).toBe(musdShort(1040n * E));
+    expect(rows[1].value).toBe(musdShort(40n * E));
     expect(rows[2]).toEqual({ label: "Pending BTC gain", value: btc(7n * 10n ** 12n), sub: "Paid to your wallet with this deposit" });
     expect(rows[4].value).toBe("None (direct protocol call)");
     expect(rows[5].value).toBe(btc(5n * 10n ** 11n));

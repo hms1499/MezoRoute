@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { lpValueAfterDrop } from "@/lib/exposure/exposure";
-import { entryGap, entryGapLine, entryWorth, priceImpactCost } from "./entry-worth";
+import { ENTRY_GAP_CAUSE, entryGap, entryGapLine, entryGapRow, entryWorth, priceImpactCost } from "./entry-worth";
 
 const E = 10n ** 18n;
 // A tenth of a pool that holds 1,000 MUSD and 1 BTC after the entry.
@@ -24,9 +24,8 @@ describe("entryGap", () => {
   const worth = entryWorth(quote, 900n * E, 200n * E);
 
   it("says the gap against what was put in", () => {
-    expect(entryGapLine(worth, "200 MUSD")).toBe(
-      "≈ 10 MUSD (5%) below the 200 MUSD you put in, at the BTC price: MezoRoute fee, the pool's swap fee, and the pool's BTC price.",
-    );
+    expect(entryGapLine(worth)).toBe("≈ 10 MUSD (5%) below what you put in");
+    expect(entryGapRow(worth)).toEqual({ label: "Below what you put in", value: "≈ 10 MUSD (5%)", sub: `at the BTC price: ${ENTRY_GAP_CAUSE}`, tone: "warning" });
   });
 
   it("starts at 1% of what was put in", () => {
@@ -46,7 +45,8 @@ describe("entryGap", () => {
     const above = entryWorth(quote, 900n * E, 180n * E);
     expect(above.gap).toBe(-10n * E);
     expect(entryGap(above)).toBeNull();
-    expect(entryGapLine(above, "180 MUSD")).toBeNull();
+    expect(entryGapLine(above)).toBeNull();
+    expect(entryGapRow(above)).toBeNull();
   });
 
   it("survives nothing put in", () => {
