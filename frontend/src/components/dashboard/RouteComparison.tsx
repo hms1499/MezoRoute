@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
 import { musd } from "@/components/lp/units";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -58,6 +58,12 @@ export function RouteComparison({
   // Starts filled, so both routes show on arrival (U3 §5.2); an empty wallet gets a 1,000 MUSD example.
   const [initial] = useState(() => compareStart(start, snapshot.musd, network.entryCap));
   const [text, setText] = useState(initial.text);
+  // U17 review: the page no longer remounts on connect, so a typed amount survives. While the field is untouched, a
+  // wallet that connects here still starts the comparison from its own balance (or the example, behind a 0 wallet).
+  const [touched, setTouched] = useState(false);
+  useEffect(() => {
+    if (connected && !touched) setText(compareStart(start, snapshot.musd, network.entryCap).text);
+  }, [connected, touched, start, snapshot.musd, network.entryCap]);
   const showsExample = initial.example && text === initial.text;
   const [tab, setTab] = useState<RouteId>("lp");
   const { amount, error: amountError } = amountState(text);
@@ -127,7 +133,10 @@ export function RouteComparison({
   return (
     <Card id="compare" title={heading ? "Compare routes" : undefined} subtitle={heading ? "Where to put MUSD: both routes for the same amount." : undefined}>
       <div className={cx(heading && "mt-4", "max-w-md")}>
-        <TokenAmountInput id="compare-amount" label="Amount" amount={text} onAmount={setText} token="musd" balance={connected ? snapshot.musd : null} balanceLabel="Wallet balance" max={connected ? snapshot.musd : null} />
+        <TokenAmountInput id="compare-amount" label="Amount" amount={text} onAmount={(next) => {
+            setText(next);
+            setTouched(true);
+          }} token="musd" balance={connected ? snapshot.musd : null} balanceLabel="Wallet balance" max={connected ? snapshot.musd : null} />
         {amountError && (
           <p role="alert" className="mt-2 text-sm text-danger">
             {amountError}

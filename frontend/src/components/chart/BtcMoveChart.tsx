@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import {
   BAND_LABEL_MIN_HEIGHT,
   belowRuns,
@@ -141,7 +141,20 @@ function Plot({
   const labelOf = (label: ChartLabel) =>
     plot.changeLabels ? labelText({ side: label.side, value: label.value, today: todayOf(label.id) }, plot.format) : plot.format(label.value);
   // U17: a label never sits on the line it names (a rising line ran through its own low-end and Today labels).
-  const labels = clearLabels(placeLabels(chartLabels({ series: plot.series, width }), g.y, g.plot), { x: g.x, y: g.y, plot: g.plot, series: plot.series, text: labelOf });
+  // Memoised on the plot and its box: a pointer-move readout re-renders, and re-placing every label each time is waste.
+  const labels = useMemo(() => {
+    const geo = chartGeometry({ series: plot.series, bands: plot.bands, width, height, scale: plot.scale });
+    return clearLabels(placeLabels(chartLabels({ series: plot.series, width }), geo.y, geo.plot), {
+      x: geo.x,
+      y: geo.y,
+      plot: geo.plot,
+      series: plot.series,
+      text: (label) => {
+        const today = plot.series.find((s) => s.id === label.id)?.points.find((p) => p.move === 0)?.value ?? 0;
+        return plot.changeLabels ? labelText({ side: label.side, value: label.value, today }, plot.format) : plot.format(label.value);
+      },
+    });
+  }, [plot, width, height]);
   const solid = plot.series.filter((s) => !s.id.endsWith("-before") && s.id !== "baseline");
   const hasBefore = plot.series.some((s) => s.id.endsWith("-before"));
 

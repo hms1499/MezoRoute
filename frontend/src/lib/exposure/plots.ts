@@ -107,7 +107,12 @@ const btc = (value: bigint) => `${formatToken(value)} BTC`;
  */
 export function exposureHeadline(input: { current: bigint; prior: bigint | null; scope: "account" | "deposit" }): { figure: string; caption: string } {
   if (input.scope === "deposit") {
-    return { figure: `+${btc(input.current - (input.prior ?? 0n))}`, caption: "This deposit only. Connect to include your Trove and positions." };
+    const added = input.current - (input.prior ?? 0n);
+    // A MUSD deposit adds no BTC: "+0 BTC" read as noise under a card that already says the exposure is none.
+    return {
+      figure: added === 0n ? "No BTC added" : `+${btc(added)}`,
+      caption: "This deposit only. Connect to include your Trove and positions.",
+    };
   }
   return { figure: input.prior === null ? btc(input.current) : `${btc(input.prior)} → ${btc(input.current)}`, caption: "Total BTC exposure" };
 }

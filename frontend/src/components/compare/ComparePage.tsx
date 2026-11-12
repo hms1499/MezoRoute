@@ -26,8 +26,9 @@ export default function ComparePage() {
   const { address, status } = useAccount();
   // A remembered wallet reconnecting on load keeps the loading card, so the comparison starts from its balance.
   if (status === "reconnecting") return <LoadingCard label="Connecting wallet" lines={2} />;
-  // Keyed by account: a wallet that connects here restarts the comparison from its own balance.
-  return <Compare key={address ?? "none"} account={address} />;
+  // Not keyed by account (U17 review): an amount someone typed survives the connection; the comparison only fills
+  // itself from the wallet's balance while the field is untouched (RouteComparison).
+  return <Compare account={address} />;
 }
 
 function Compare({ account }: { account: Address | undefined }) {

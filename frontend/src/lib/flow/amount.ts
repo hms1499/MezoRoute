@@ -50,7 +50,10 @@ export function amountFieldError(text: string, token: "musd" | "btc"): string | 
   return error === null ? null : token === "btc" ? BTC_AMOUNT_ERROR : error;
 }
 
-/** What the URL may carry: the text as typed, or nothing when it can never be an amount (a reload must not bring it back). */
+/**
+ * What the URL may carry: the text as typed (trimmed, so the query never holds `+7+`), or nothing when it can never be
+ * an amount (a reload must not bring it back). The field keeps the raw text, so typing a space is not undone.
+ */
 export function urlAmount(text: string): string {
-  return amountState(text).error === null ? text : "";
+  return amountState(text).error === null ? text.trim() : "";
 }

@@ -117,6 +117,8 @@ export type PlacedLabel = ChartLabel & { y: number; anchor: "start" | "end" };
 
 /** Geist Mono's advance is 0.6 em, so a label's width follows from its length. */
 const LABEL_ADVANCE = 0.6;
+/** The label's halo is a 3 px stroke, so the drawn text reaches 1.5 px past its glyphs on every side. */
+const LABEL_HALO = 1.5;
 /** How far a "Today" label stands off the today line, and an end label off the plot's edge. */
 const TODAY_GAP = 4;
 const EDGE_GAP = 2;
@@ -132,8 +134,14 @@ export function labelX(label: Pick<PlacedLabel, "side" | "anchor">, x: (move: nu
 export function labelBox(label: PlacedLabel, x: (move: number) => number, plot: { left: number; right: number }, text: string): LabelBox {
   const width = text.length * CHART_FONT_PX * LABEL_ADVANCE;
   const at = labelX(label, x, plot);
-  const left = label.anchor === "end" ? at - width : at;
-  return { left, right: left + width, top: label.y - CHART_FONT_PX * 0.8, bottom: label.y + 2 };
+  // The halo counts: it is part of what the eye sees, so a line clears the drawn text, not just its glyphs.
+  const left = (label.anchor === "end" ? at - width : at) - LABEL_HALO;
+  return {
+    left,
+    right: left + width + 2 * LABEL_HALO,
+    top: label.y - CHART_FONT_PX * 0.8 - LABEL_HALO,
+    bottom: label.y + 2 + LABEL_HALO,
+  };
 }
 
 /** True when the polyline runs through the box (with a 1 px margin, for the stroke). */

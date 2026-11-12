@@ -106,6 +106,13 @@ describe("exposureHeadline (U17)", () => {
     });
   });
 
+  it("says a MUSD deposit adds no BTC instead of \"+0 BTC\"", () => {
+    expect(exposureHeadline({ current: 2n * WAD, prior: 2n * WAD, scope: "deposit" })).toEqual({
+      figure: "No BTC added",
+      caption: "This deposit only. Connect to include your Trove and positions.",
+    });
+  });
+
   it("reads before → after for an account", () => {
     expect(exposureHeadline({ current: 2n * WAD, prior: WAD, scope: "account" })).toEqual({ figure: "1 BTC → 2 BTC", caption: "Total BTC exposure" });
   });

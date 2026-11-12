@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { formatUnits, type Address } from "viem";
-import { useAccount } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
 import { ExposurePanel } from "@/components/dashboard/ExposurePanel";
 import { ConnectCta } from "@/components/home/ConnectCta";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
@@ -20,6 +20,7 @@ import { LoadingCard } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
 import { balanceNoticeActions, BlockNotice } from "@/components/lp/BlockNotice";
 import { PlannerComparison } from "@/components/lp/PlannerComparison";
+import { mezoRouteExecutorAbi } from "@/lib/abi/mezoRouteExecutor";
 import { compareHref } from "@/lib/compare/default-amount";
 import { useNetwork } from "@/lib/config/network-context";
 import { effectiveStake, stakeAvailability } from "@/lib/gauge/availability";
@@ -56,6 +57,16 @@ function SpRoute({ account }: { account: Address | undefined }) {
   const connected = account !== undefined;
   const { data, error, refresh } = useSpSnapshot(account);
   const mezoPrice = useMezoPrice(network, data?.snapshot.blockNumber);
+  // U17 review: the LP side's quote is made with the executor's own fee, as on the LP planner (which reads it in its
+  // snapshot), so both pages quote from the chain; the pinned value only fills the gap while the read is in flight.
+  const { data: chainExecutorFee } = useReadContract({
+    chainId: network.chainId,
+    address: network.executor?.address,
+    abi: mezoRouteExecutorAbi,
+    functionName: "feeBps",
+    query: { enabled: network.executor !== null },
+  });
+  const executorFeeBps = chainExecutorFee ?? network.executor?.feeBps ?? 0n;
 
   if (!data) {
     return error ? (
@@ -111,7 +122,7 @@ function SpRoute({ account }: { account: Address | undefined }) {
   const availability = stakeAvailability(snapshot.gauge, snapshot.blockTimestamp);
   const lpFigures =
     comparison.kind === "rows"
-      ? plannerLpFigures({ pool, price: dashboard.price, amountMusd: comparison.amountMusd, executorFeeBps: network.executor?.feeBps ?? 0n })
+      ? plannerLpFigures({ pool, price: dashboard.price, amountMusd: comparison.amountMusd, executorFeeBps })
       : null;
   const facts = spSignFacts(network, snapshot.blockNumber);
 
@@ -168,7 +179,17 @@ function SpRoute({ account }: { account: Address | undefined }) {
         details={
           <>
             <p className="text-sm text-muted">Your MUSD repays liquidated debt; in return you receive the liquidated BTC collateral.</p>
-            {preview.after && <ExposurePanel snapshot={preview.after} before={dashboard} title="BTC exposure after this deposit" scope={connected ? "account" : "deposit"} />}
+            {preview.after && (
+              <ExposurePanel
+                snapshot={preview.after}
+                before={dashboard}
+                title="BTC exposure after this deposit"
+                // U17 review: "Kept in MUSD" is the value before plus the amount put in, as on the LP planner (equal
+                // for a MUSD deposit today, and it stays right if the pool ever charges one).
+                putIn={musdIn ?? undefined}
+                scope={connected ? "account" : "deposit"}
+              />
+            )}
             <SpRisksCard />
           </>
         }

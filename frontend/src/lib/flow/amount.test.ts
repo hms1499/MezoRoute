@@ -54,7 +54,8 @@ describe("amountFieldError and urlAmount", () => {
 
   it.each(["", "0", "0.", ".0", "12.5", " 7 "])("accepts %j", (text) => {
     expect(amountFieldError(text, "musd")).toBeNull();
-    expect(urlAmount(text)).toBe(text);
+    // U17 review: the URL carries the amount trimmed (` 7 ` would otherwise travel as `+7+`).
+    expect(urlAmount(text)).toBe(text.trim());
   });
 
   it("names BTC", () => {
