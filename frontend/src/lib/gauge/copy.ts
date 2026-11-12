@@ -22,7 +22,7 @@ export const GAUGE_NOT_FUNDED = "This gauge gets no new MEZO, so any rewards end
 export function gaugeRateLine(availability: StakeAvailability, mezoPerWeek: bigint | null): string {
   if (availability === "unavailable") return "No new MEZO: not being funded";
   if (availability === "between-weeks") return "Not set for the new week yet";
-  return mezoPerWeek === null ? "—" : `≈ ${formatToken(mezoPerWeek, 18, 2)} MEZO a week`;
+  return mezoPerWeek === null ? "—" : `≈ ${formatToken(mezoPerWeek, 18, 4)} MEZO a week`;
 }
 
 /** The lines under the stake switch. Rates are always "this week's"; swap fees to veBTC voters is always said. */
