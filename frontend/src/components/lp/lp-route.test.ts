@@ -116,6 +116,13 @@ describe("LpEntryCard", () => {
     expect(out.slice(0, detailsAt).match(/<dt/g)).toHaveLength(4);
   });
 
+  it("says the entry gap under what the user receives, as a warning (U17)", () => {
+    const note = "≈ 29.94 MUSD (3%) below the 1,000 MUSD you put in, at the BTC price.";
+    const out = renderToStaticMarkup(createElement(LpEntryCard, { ...props, receive: { value: "LP worth ≈ 970.06 MUSD", minimum: "≈ 1.78 LP · at least 1.76 LP", note } }));
+    expect(out).toMatch(new RegExp(`text-warning-ink[^>]*>${note.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+    expect(renderToStaticMarkup(createElement(LpEntryCard, props))).not.toContain("text-warning-ink");
+  });
+
   it("renders no empty overview box in Details", () => {
     const out = renderToStaticMarkup(createElement(LpEntryCard, { ...props, context: [] }));
     expect(out.match(/<dl/g)).toHaveLength(1);

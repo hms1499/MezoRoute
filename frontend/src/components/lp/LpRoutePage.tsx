@@ -17,6 +17,8 @@ import { LoadingCard } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
 import { useNetwork } from "@/lib/config/network-context";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
+import { entryWorth } from "@/lib/flow/entry-worth";
+import { WAD } from "@/lib/math";
 import { stakeRowCopy } from "@/lib/gauge/copy";
 import { emissionsApr, mezoPerWeek } from "@/lib/gauge/maths";
 import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
@@ -25,7 +27,6 @@ import { lpAmountField, lpHeaderFigure, lpRiskLine } from "@/lib/flow/lp-entry";
 import { splitPrimary } from "@/lib/flow/notice-action";
 import { plannerView } from "@/lib/flow/planner";
 import { isFieldBlock, lpFieldError } from "@/lib/flow/field-error";
-import { PRICE_IMPACT_WARN } from "@/lib/routes/musd-btc-lp/gate";
 import { lpSignFacts } from "@/lib/flow/sign-facts";
 import { BTC_COMPARE_MESSAGE, plannerAmount, plannerComparisonRows } from "@/lib/flow/planner-comparison";
 import { btcRecoveries } from "@/lib/routes/musd-btc-lp/asset";
@@ -38,6 +39,7 @@ import { borrowLimit, isRecoveryMode } from "@/lib/trove/borrow";
 import { walletCapabilities } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { balanceNoticeActions, BlockNotice } from "./BlockNotice";
+import { lpExposureRow, lpReceive, priceImpactRow } from "./entry-rows";
 import { EntryPreviewCard } from "./EntryPreviewCard";
 import { LpEntryCard } from "./LpEntryCard";
 import { ModeToggle } from "./ModeToggle";
@@ -46,7 +48,7 @@ import { PlannerComparison } from "./PlannerComparison";
 import { RisksCard } from "./RisksCard";
 import { StakeSwitch } from "./StakeToggle";
 import { troveChangeRows } from "./troveChange";
-import { btc, btcFine, lp, musd } from "./units";
+import { btc, btcFine, musd } from "./units";
 
 /** Below one unit of the eight decimals shown, the reserve line would only say "<0.00000001 BTC". */
 const MIN_SHOWN_RESERVE = 10n ** 10n;
@@ -131,8 +133,12 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
     : null;
   const { dashboard } = data.snapshot;
   const exposureChange = preview.after ? exposure(preview.after).totalBtc - exposure(dashboard).totalBtc : null;
-  // U12: four rows decide the entry; BTC exposure, the Trove change, and the network fee sit in Details.
+  // U17 §1: the BTC this entry adds and what a 30% fall does to it are decision rows again (U12 had them in Details);
+  // the Trove change and the network fee stay in Details.
   const hasQuote = quote !== null && minLpOut !== undefined;
+  // What went in, in MUSD: a BTC entry's amount at the oracle price.
+  const putIn = fromBtc ? ((intent.btcIn ?? 0n) * dashboard.price) / WAD : (intent.musdIn ?? 0n);
+  const worth = quote ? entryWorth(quote, dashboard.price, putIn) : null;
   const stakeRow = stakeRowCopy({
     availability: preview.stake.availability,
     on: preview.stake.on,
@@ -143,13 +149,9 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
   const overview: OverviewRow[] = hasQuote
     ? [
         { label: "Deposited to the pool", value: musd(quote.musdAdded), sub: `+ ${fromBtc ? btcFine(quote.btcAdded) : btc(quote.btcAdded)}` },
+        ...(exposureChange === null ? [] : [lpExposureRow({ exposureChange, worth, fromBtc })]),
         { label: "MezoRoute fee", value: amount(quote.fee), sub: formatBps(data.snapshot.executorFeeBps) },
-        {
-          label: "Price impact",
-          value: formatPercent(quote.priceImpact, 2),
-          sub: "includes the pool's swap fee",
-          tone: quote.priceImpact >= PRICE_IMPACT_WARN ? "warning" : undefined,
-        },
+        priceImpactRow(quote),
         // U14 B2: the Staking row is the stake control (its switch on the value side), not a block of its own.
         ...(stakeRow === null
           ? []
@@ -164,16 +166,6 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
     : [];
   const context: OverviewRow[] = hasQuote
     ? [
-        ...(exposureChange === null
-          ? []
-          : [
-              {
-                label: "BTC exposure",
-                value: `${exposureChange < 0n ? "−" : "+"}${btc(exposureChange < 0n ? -exposureChange : exposureChange)}`,
-                sub: fromBtc ? "pool share only; the BTC you deposit leaves your wallet" : undefined,
-                tone: "btc" as const,
-              },
-            ]),
         ...(preview.borrow?.trove && preview.borrow.effect
           ? troveChangeRows({ trove: preview.borrow.trove, effect: preview.borrow.effect, price: dashboard.price, mcr: dashboard.protocol.mcr })
           : []),
@@ -295,7 +287,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
           onAmount: (next) => update({ ...intent, amount: next }),
           onToken: displayIntent.mode === "borrow" ? undefined : (token) => update({ ...intent, asset: token === "btc" ? "btc" : "musd", amount: "" }),
         }}
-        receive={quote && minLpOut !== undefined ? { value: `≈ ${lp(quote.liquidity)}`, minimum: `At least ${lp(minLpOut)}` } : null}
+        receive={quote && worth && minLpOut !== undefined ? lpReceive({ worth, liquidity: quote.liquidity, minLpOut, putInLabel: amount(fromBtc ? (intent.btcIn ?? 0n) : (intent.musdIn ?? 0n)) }) : null}
         overview={overview}
         context={context}
         notices={
