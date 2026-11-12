@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/Button";
 import { Term } from "@/components/ui/Term";
 import { formatBps, formatPercent } from "@/lib/format";
 import { GAUGE_READ_FAILED_ENTRY } from "@/lib/gauge/copy";
-import { entryValue } from "@/lib/quote/entry";
+import { ENTRY_GAP_CAUSE, entryGap, entryWorth, type EntryWorth } from "@/lib/flow/entry-worth";
+import { WAD } from "@/lib/math";
 import { QUOTE_TTL_MS } from "@/lib/routes/musd-btc-lp/gate";
 import type { EntryPreview } from "@/lib/routes/musd-btc-lp/preview";
 import type { LpRouteData } from "@/lib/routes/musd-btc-lp/snapshot";
@@ -39,6 +40,17 @@ export function confirmOverview({ preview, data, slippageBps }: { preview: Entry
       sub: "10 minutes after this quote's block",
     },
   ];
+  // U17: the LP is valued at the oracle price, as on the planner, and a gap of 1% or more to what was put in is said.
+  const { price } = data.snapshot.dashboard;
+  const received = (worth: EntryWorth, liquidity: bigint, minLpOut: bigint): OverviewRow[] => {
+    const gap = entryGap(worth);
+    return [
+      { group: "You receive", label: "LP received", value: lp(liquidity), sub: `≈ ${musd(worth.value)} at the BTC price · at least ${lp(minLpOut)}` },
+      ...(gap
+        ? [{ group: "You receive", label: "Below what you put in", value: `≈ ${gap.amount} MUSD (${gap.percent})`, sub: `at the BTC price: ${ENTRY_GAP_CAUSE}`, tone: "warning" as const }]
+        : []),
+    ];
+  };
   if (btcQuote && btcMinimums) {
     return [
       { group: "You pay", label: "You deposit", value: btcFine(btcQuote.btcIn) },
@@ -60,12 +72,7 @@ export function confirmOverview({ preview, data, slippageBps }: { preview: Entry
         ),
         sub: `at least ${musd(btcMinimums.minMusdAdded)} + ${btcFine(btcMinimums.minBtcAdded)}`,
       },
-      {
-        group: "You receive",
-        label: "LP received",
-        value: lp(btcQuote.liquidity),
-        sub: `≈ ${musd(entryValue(data.snapshot.pool, btcQuote))} at the pool price · at least ${lp(btcMinimums.minLpOut)}`,
-      },
+      ...received(entryWorth(btcQuote, price, (btcQuote.btcIn * price) / WAD), btcQuote.liquidity, btcMinimums.minLpOut),
       ...tail,
     ];
   }
@@ -92,12 +99,7 @@ export function confirmOverview({ preview, data, slippageBps }: { preview: Entry
       ),
       sub: `at least ${musd(minimums.minMusdAdded)} + ${btc(minimums.minBtcAdded)}`,
     },
-    {
-      group: "You receive",
-      label: "LP received",
-      value: lp(quote.liquidity),
-      sub: `≈ ${musd(entryValue(data.snapshot.pool, quote))} at the pool price · at least ${lp(minimums.minLpOut)}`,
-    },
+    ...received(entryWorth(quote, price, quote.musdIn), quote.liquidity, minimums.minLpOut),
     ...(preview.borrow?.effect
       ? [
           {

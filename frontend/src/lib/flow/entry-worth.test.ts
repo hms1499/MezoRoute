@@ -34,6 +34,12 @@ describe("entryGap", () => {
     expect(entryGap({ ...worth, putIn: (19189n * E) / 100n, gap: (189n * E) / 100n })).toBeNull();
   });
 
+  it("rounds a cost up, never down", () => {
+    // 35 below 225 put in is 15.56%: "15%" would understate it.
+    expect(entryGap({ ...worth, putIn: 225n * E, gap: 35n * E })).toEqual({ amount: "35", percent: "16%" });
+    expect(entryGap({ ...worth, putIn: 1000n * E, gap: (29_941n * E) / 1000n })).toEqual({ amount: "29.95", percent: "3%" });
+  });
+
   it("is never a gain", () => {
     const above = entryWorth(quote, 900n * E, 180n * E);
     expect(above.gap).toBe(-10n * E);
