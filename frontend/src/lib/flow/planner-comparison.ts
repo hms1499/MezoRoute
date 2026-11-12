@@ -63,6 +63,23 @@ export function lpWeekRate(input: {
 }
 
 /**
+ * U18 §4: the LP side for the amount the comparison compares: its figures, then this week's rate for that same LP.
+ * Both planners use it, so an empty field's 1,000 MUSD example gets a MEZO rate instead of "unavailable".
+ */
+export function plannerLpSide(input: {
+  pool: PoolState;
+  price: bigint;
+  amountMusd: bigint;
+  executorFeeBps: bigint;
+  gauge: Pick<GaugeState, "rewardRate" | "totalStaked"> | null;
+  availability: StakeAvailability;
+  mezoPrice: bigint | null;
+}): { lp: PlannerLp | null; apr: bigint | null; weekly: bigint | null } {
+  const lp = plannerLpFigures(input);
+  return { lp, ...lpWeekRate({ gauge: input.gauge, availability: input.availability, mezoPrice: input.mezoPrice, liquidity: lp?.liquidity ?? null, pool: input.pool }) };
+}
+
+/**
  * Both routes as rows, for one block: what each gives, this week's rate, the BTC it adds, what a 30% BTC fall leaves,
  * and how it exits. `stake.on` is the applied wish (`effectiveStake`), so "You get" always agrees with the card's
  * Staking row: staked LP earns MEZO and its swap fees go to veBTC voters, whether or not the week's rate is set.

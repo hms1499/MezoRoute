@@ -12,7 +12,7 @@ import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { amountFieldError, urlAmount } from "@/lib/flow/amount";
 import { isFieldBlock, spFieldError } from "@/lib/flow/field-error";
-import { lpWeekRate, plannerAmount, plannerComparisonRows, plannerLpFigures } from "@/lib/flow/planner-comparison";
+import { plannerAmount, plannerComparisonRows, plannerLpSide } from "@/lib/flow/planner-comparison";
 import { spSignFacts, trustLine } from "@/lib/flow/sign-facts";
 import type { OverviewRow } from "@/components/flow/Overview";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -120,9 +120,9 @@ function SpRoute({ account }: { account: Address | undefined }) {
   const comparison = plannerAmount({ text: amount, musdIn, cap: network.entryCap });
   const pool = { reserveMusd: dashboard.lp.reserveMusd, reserveBtc: dashboard.lp.reserveBtc, totalSupply: dashboard.lp.totalSupply, feeBps: dashboard.poolFeeBps };
   const availability = stakeAvailability(snapshot.gauge, snapshot.blockTimestamp);
-  const lpFigures =
+  const lpSide =
     comparison.kind === "rows"
-      ? plannerLpFigures({ pool, price: dashboard.price, amountMusd: comparison.amountMusd, executorFeeBps })
+      ? plannerLpSide({ pool, price: dashboard.price, amountMusd: comparison.amountMusd, executorFeeBps, gauge: snapshot.gauge, availability, mezoPrice })
       : null;
   const facts = spSignFacts(network, snapshot.blockNumber);
 
@@ -141,9 +141,10 @@ function SpRoute({ account }: { account: Address | undefined }) {
                       amountMusd: comparison.amountMusd,
                       // The LP planner stakes by default; the comparison shows what "Choose MUSD/BTC LP" leads to.
                       stake: { availability, on: effectiveStake(true, availability) },
-                      ...lpWeekRate({ gauge: snapshot.gauge, availability, mezoPrice, liquidity: lpFigures?.liquidity ?? null, pool }),
+                      apr: lpSide?.apr ?? null,
+                      weekly: lpSide?.weekly ?? null,
                       poolFeeBps: dashboard.poolFeeBps,
-                      lp: lpFigures,
+                      lp: lpSide?.lp ?? null,
                     }),
                   }
                 : comparison

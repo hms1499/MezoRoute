@@ -28,7 +28,7 @@ import { splitPrimary } from "@/lib/flow/notice-action";
 import { plannerAmountBlock, plannerView } from "@/lib/flow/planner";
 import { isFieldBlock, lpFieldError } from "@/lib/flow/field-error";
 import { lpSignFacts, trustLine } from "@/lib/flow/sign-facts";
-import { BTC_COMPARE_MESSAGE, lpWeekRate, plannerAmount, plannerComparisonRows, plannerLpFigures } from "@/lib/flow/planner-comparison";
+import { BTC_COMPARE_MESSAGE, lpWeekRate, plannerAmount, plannerComparisonRows, plannerLpSide } from "@/lib/flow/planner-comparison";
 import { compareHref } from "@/lib/compare/default-amount";
 import { btcRecoveries } from "@/lib/routes/musd-btc-lp/asset";
 import { entryQuery, parseEntryIntent, type EntryIntent } from "@/lib/routes/musd-btc-lp/intent";
@@ -224,6 +224,20 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
 
   const signFacts = lpSignFacts(network, { feeBps: data.snapshot.executorFeeBps, capMusd: data.snapshot.maxMusdIn, blockNumber: data.snapshot.blockNumber });
 
+  // U18 §4: the comparison rates the amount it compares (the card's quote for a typed amount, the example otherwise).
+  const comparedLp =
+    comparison.kind === "rows"
+      ? plannerLpSide({
+          pool: data.snapshot.pool,
+          price: dashboard.price,
+          amountMusd: comparison.amountMusd,
+          executorFeeBps: data.snapshot.executorFeeBps,
+          gauge,
+          availability: preview.stake.availability,
+          mezoPrice,
+        })
+      : { lp: null, apr: null, weekly: null };
+
   return (
     <FlowColumn
       header={<PageHeader
@@ -245,11 +259,8 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
                       rows: plannerComparisonRows({
                         amountMusd: comparison.amountMusd,
                         stake: preview.stake,
-                        apr,
-                        weekly,
+                        ...comparedLp,
                         poolFeeBps: dashboard.poolFeeBps,
-                        // The same pure quote the card shows for a typed amount; the example amount has no card quote.
-                        lp: plannerLpFigures({ pool: data.snapshot.pool, price: dashboard.price, amountMusd: comparison.amountMusd, executorFeeBps: data.snapshot.executorFeeBps }),
                       }),
                     }
                   : comparison

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { compareHref } from "@/lib/compare/default-amount";
 import { quoteEntry } from "@/lib/quote/entry";
 import { entryWorth } from "./entry-worth";
-import { lpWeekRate, PLANNER_COMPARE_NOTE, plannerAmount, plannerComparisonRows, plannerLpFigures } from "./planner-comparison";
+import { lpWeekRate, PLANNER_COMPARE_NOTE, plannerAmount, plannerComparisonRows, plannerLpFigures, plannerLpSide } from "./planner-comparison";
 
 const E18 = 10n ** 18n;
 const figures = { liquidity: E18, btcAdded: 6362n * 10n ** 12n, valueAfterDrop: 81161n * 10n ** 16n };
@@ -135,5 +135,24 @@ describe("plannerAmount", () => {
         message: "Enter a valid amount to compare.",
       });
     }
+  });
+});
+
+describe("plannerLpSide", () => {
+  const pool = { reserveMusd: 1_000_000n * E18, reserveBtc: 13n * E18, totalSupply: 3000n * E18, feeBps: 4n };
+  const gauge = { rewardRate: E18, totalStaked: 100n * E18 };
+
+  it("rates the 1,000 MUSD example with an open gauge and no MEZO price", () => {
+    const side = plannerLpSide({ pool, price: 74_000n * E18, amountMusd: 1000n * E18, executorFeeBps: 10n, gauge, availability: "open", mezoPrice: null });
+    expect(side.weekly).not.toBeNull();
+    expect(side.weekly!).toBeGreaterThan(0n);
+    const rows = plannerComparisonRows({ ...base, apr: side.apr, weekly: side.weekly, lp: side.lp });
+    expect(rows.lp[1].value).toMatch(/^≈ [\d,.]+ MEZO a week$/);
+  });
+
+  it("uses the card's liquidity for a typed amount (parity)", () => {
+    const quote = quoteEntry(pool, 250n * E18, 10n)!;
+    const side = plannerLpSide({ pool, price: 74_000n * E18, amountMusd: 250n * E18, executorFeeBps: 10n, gauge, availability: "open", mezoPrice: null });
+    expect(side.lp?.liquidity).toBe(quote.liquidity);
   });
 });
