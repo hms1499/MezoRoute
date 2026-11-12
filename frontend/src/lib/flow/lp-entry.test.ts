@@ -8,32 +8,29 @@ import { tokenAmountMax } from "./amount";
 const E18 = 10n ** 18n;
 
 describe("lpHeaderFigure", () => {
-  const base = { stakeOn: true, availability: "open" as const, apr: 41n * 10n ** 16n, weekly: null, poolFeeBps: 30n };
+  const base = { stakeOn: true, availability: "open" as const, apr: 412n * 10n ** 15n, poolFeeBps: 30n };
 
   it("shows this week's APR while staking is on and the APR is known", () => {
-    const figure = lpHeaderFigure(base);
-    expect(`${figure.label} ${figure.value}`).toContain("this week");
-    expect(figure.value).toContain("41% APR");
+    expect(lpHeaderFigure(base)).toEqual({ label: "At this week's rate", value: "≈ 41.2% APR" });
   });
 
-  it("shows this week's MEZO amount without a MEZO price", () => {
-    const figure = lpHeaderFigure({ ...base, apr: null, weekly: 14n * E18 });
-    expect(`${figure.label} ${figure.value}`).toContain("this week");
-    expect(figure.value).toContain("14 MEZO a week");
+  it("names MEZO without an amount when staked and the APR is unknown", () => {
+    const figure = lpHeaderFigure({ ...base, apr: null });
+    expect(figure).toEqual({ label: "Staked LP earns", value: "MEZO" });
+    expect(`${figure.label} ${figure.value}`).not.toContain("$");
   });
 
-  it("falls back to the pool's swap fee when staking is off, between weeks, or without a rate", () => {
+  it("falls back to the pool's swap fee when staking is off, between weeks, or unavailable", () => {
     for (const input of [
       { ...base, stakeOn: false },
       { ...base, availability: "between-weeks" as const },
       { ...base, availability: "unavailable" as const },
-      { ...base, apr: null, weekly: null },
     ]) {
-      expect(lpHeaderFigure(input).value).toBe("0.3% swap fee");
+      expect(lpHeaderFigure(input)).toEqual({ label: "Pool", value: "0.3% swap fee" });
     }
   });
 
-  it("never says $ or earn", () => {
+  it("never says $ or earn for the APR and Pool cases", () => {
     for (const figure of [lpHeaderFigure(base), lpHeaderFigure({ ...base, stakeOn: false })]) {
       expect(`${figure.label} ${figure.value}`).not.toMatch(/\$|earn/i);
     }

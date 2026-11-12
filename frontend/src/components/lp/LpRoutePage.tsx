@@ -214,7 +214,6 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
     stakeOn: preview.stake.on,
     availability: preview.stake.availability,
     apr,
-    weekly,
     poolFeeBps: dashboard.poolFeeBps,
   });
   // The aside compares the same amount on both routes, from this snapshot; a BTC entry can only compare in MUSD.

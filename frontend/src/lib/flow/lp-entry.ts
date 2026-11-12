@@ -13,18 +13,18 @@ const THIS_WEEK = "At this week's rate";
 
 /**
  * The card header's one figure: this week's APR while staking is on and the APR is known (mainnet, with a MEZO price),
- * this week's MEZO for the typed amount without a price (testnet), and the pool's swap fee otherwise.
+ * the word MEZO without an amount while staked and no price is known (testnet; the amount depends on the field, the
+ * header does not), and the pool's swap fee otherwise.
  */
 export function lpHeaderFigure(input: {
   stakeOn: boolean;
   availability: StakeAvailability;
   apr: bigint | null;
-  weekly: bigint | null;
   poolFeeBps: bigint;
 }): { label: string; value: string } {
   const paying = input.stakeOn && input.availability === "open";
   if (paying && input.apr !== null) return { label: THIS_WEEK, value: `≈ ${formatPercent(input.apr, 1)} APR` };
-  if (paying && input.weekly !== null && input.weekly > 0n) return { label: THIS_WEEK, value: `≈ ${formatToken(input.weekly, 18, 2)} MEZO a week` };
+  if (paying) return { label: "Staked LP earns", value: "MEZO" };
   return { label: "Pool", value: `${formatBps(input.poolFeeBps)} swap fee` };
 }
 
