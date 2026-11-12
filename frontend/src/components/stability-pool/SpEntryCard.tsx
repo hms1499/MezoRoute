@@ -17,12 +17,16 @@ export function SpEntryCard({
   overview,
   notices,
   review,
+  action,
   details,
 }: {
-  field: { amount: string; onAmount: (amount: string) => void; balance: bigint; error?: string | null };
+  /** `balance: null` before a wallet connects (U17): the field asks to connect and offers no Max. */
+  field: { amount: string; onAmount: (amount: string) => void; balance: bigint | null; error?: string | null };
   overview: OverviewRow[];
   notices: ReactNode;
   review: { href: string; disabled: boolean };
+  /** U17: the page's own control in place of Review (Connect to review, before a wallet connects). */
+  action?: ReactNode;
   details: ReactNode;
 }) {
   return (
@@ -41,9 +45,11 @@ export function SpEntryCard({
           </>
         }
         action={
-          <ButtonLink href={review.href} disabled={review.disabled} className="w-full" arrow>
-            Review
-          </ButtonLink>
+          action ?? (
+            <ButtonLink href={review.href} disabled={review.disabled} className="w-full" arrow>
+              Review
+            </ButtonLink>
+          )
         }
       >
         <TokenAmountInput
