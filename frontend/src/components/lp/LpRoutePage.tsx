@@ -24,7 +24,7 @@ import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
 import { exposure } from "@/lib/exposure/exposure";
 import { lpAmountField, lpHeaderFigure, lpRiskLine } from "@/lib/flow/lp-entry";
 import { splitPrimary } from "@/lib/flow/notice-action";
-import { plannerView } from "@/lib/flow/planner";
+import { plannerAmountBlock, plannerView } from "@/lib/flow/planner";
 import { isFieldBlock, lpFieldError } from "@/lib/flow/field-error";
 import { lpSignFacts } from "@/lib/flow/sign-facts";
 import { BTC_COMPARE_MESSAGE, lpWeekRate, plannerAmount, plannerComparisonRows, plannerLpFigures } from "@/lib/flow/planner-comparison";
@@ -104,7 +104,8 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
     now: data.fetchedAt,
   });
   // U13: the wallet's verdicts and the network warning appear only once there is a wallet to blame them on.
-  const view = plannerView({ connected, block: preview.block, walletChainId: chainId, chainId: network.chainId });
+  // U17: before that, only what the amount itself causes (above the cap, too small, price impact above 5%).
+  const view = plannerView({ connected, block: preview.block, amountBlock: plannerAmountBlock(preview.gateInput), walletChainId: chainId, chainId: network.chainId });
 
   // The entry's quote and its minimum LP, whichever token it brings.
   const quote = preview.btcQuote ?? preview.quote;

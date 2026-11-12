@@ -17,7 +17,7 @@ import { borrowEffect, borrowLimit, isRecoveryMode, type BorrowEffect } from "@/
 import { walletCapabilities, type WalletKind } from "@/lib/wallet/capabilities";
 import { afterBorrowEntry, afterBtcEntry, afterEntry } from "./after-entry";
 import { btcGasReserve, spendableCap } from "./asset";
-import { entryBlock, type EntryBlock } from "./gate";
+import { entryBlock, type EntryBlock, type EntryGateInput } from "./gate";
 import type { EntryIntent } from "./intent";
 import { DEADLINE_SECONDS } from "./params";
 import type { LpRouteData } from "./snapshot";
@@ -57,6 +57,8 @@ export type EntryPreview = {
   /** Whether the gauge can take the LP, and whether this entry will stake it (the URL wish, applied). */
   stake: { availability: StakeAvailability; on: boolean };
   block: EntryBlock | null;
+  /** What `block` was decided from; the wallet-less planner asks the gate again about the amount alone (U17). */
+  gateInput: EntryGateInput;
 };
 
 /** Everything both LP pages show and gate on, computed from one snapshot. */
@@ -125,6 +127,25 @@ export function entryPreview(input: {
       : borrow
         ? borrow.effect && afterBorrowEntry(dashboard, quote, borrow.effect)
         : afterEntry(dashboard, quote);
+  const gateInput: EntryGateInput = {
+    network,
+    walletChainId: input.walletChainId,
+    chainFeeBps: snapshot.executorFeeBps,
+    musdIn: intent.musdIn,
+    walletMusd: dashboard.musd,
+    maxMusdIn: snapshot.maxMusdIn,
+    quote: fromBtc ? btcQuote : quote,
+    btc: btc && { btcIn: intent.btcIn, walletBtc: btc.walletBtc, maxBtcIn: btc.cap, gasReserve: btc.gasReserve },
+    lacksGas: lacksGas(data.gasBalance, data.gasPrice),
+    quoteAgeMs: input.now - data.fetchedAt,
+    borrow: borrow && {
+      canSign: walletCapabilities(walletKind).borrowAndDeploy,
+      hasTrove: borrow.trove !== null,
+      recoveryMode: borrow.recoveryMode,
+      limit: borrow.limit,
+      newCr: borrow.effect?.newCr ?? null,
+    },
+  };
   return {
     quote: fromBtc ? null : quote,
     minimums: !fromBtc && quote ? entryMinimums(quote, intent.slippageBps) : null,
@@ -138,24 +159,7 @@ export function entryPreview(input: {
     after,
     borrow,
     stake,
-    block: entryBlock({
-      network,
-      walletChainId: input.walletChainId,
-      chainFeeBps: snapshot.executorFeeBps,
-      musdIn: intent.musdIn,
-      walletMusd: dashboard.musd,
-      maxMusdIn: snapshot.maxMusdIn,
-      quote: fromBtc ? btcQuote : quote,
-      btc: btc && { btcIn: intent.btcIn, walletBtc: btc.walletBtc, maxBtcIn: btc.cap, gasReserve: btc.gasReserve },
-      lacksGas: lacksGas(data.gasBalance, data.gasPrice),
-      quoteAgeMs: input.now - data.fetchedAt,
-      borrow: borrow && {
-        canSign: walletCapabilities(walletKind).borrowAndDeploy,
-        hasTrove: borrow.trove !== null,
-        recoveryMode: borrow.recoveryMode,
-        limit: borrow.limit,
-        newCr: borrow.effect?.newCr ?? null,
-      },
-    }),
+    block: entryBlock(gateInput),
+    gateInput,
   };
 }
