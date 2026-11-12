@@ -22,6 +22,7 @@ import { WAD } from "@/lib/math";
 import { stakeRowCopy } from "@/lib/gauge/copy";
 import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
 import { exposure } from "@/lib/exposure/exposure";
+import { amountFieldError, urlAmount } from "@/lib/flow/amount";
 import { lpAmountField, lpHeaderFigure, lpRiskLine } from "@/lib/flow/lp-entry";
 import { splitPrimary } from "@/lib/flow/notice-action";
 import { plannerAmountBlock, plannerView } from "@/lib/flow/planner";
@@ -78,9 +79,9 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
   const mezoPrice = useMezoPrice(network, data?.snapshot.blockNumber);
 
   function update(next: Pick<EntryIntent, "amount" | "slippageBps" | "mode" | "stake" | "asset">) {
-    const query = entryQuery(next);
-    setIntent(parseEntryIntent(new URLSearchParams(query)));
-    window.history.replaceState(null, "", query);
+    setIntent(parseEntryIntent(new URLSearchParams(entryQuery(next))));
+    // U17: the field keeps what was typed; the URL never carries text that cannot be an amount.
+    window.history.replaceState(null, "", entryQuery({ ...next, amount: urlAmount(next.amount) }));
   }
 
   if (!data) {
@@ -279,7 +280,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
         onSlippage={(slippageBps) => update({ ...intent, slippageBps })}
         field={{
           ...field,
-          error: lpFieldError(view.block),
+          error: amountFieldError(intent.amount, intent.asset) ?? lpFieldError(view.block),
           amount: intent.amount,
           note,
           onAmount: (next) => update({ ...intent, amount: next }),

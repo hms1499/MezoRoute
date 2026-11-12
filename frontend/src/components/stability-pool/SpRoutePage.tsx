@@ -10,6 +10,7 @@ import { RequireWallet } from "@/components/home/RequireWallet";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
+import { amountFieldError, urlAmount } from "@/lib/flow/amount";
 import { isFieldBlock, spFieldError } from "@/lib/flow/field-error";
 import { spSignFacts } from "@/lib/flow/sign-facts";
 import type { OverviewRow } from "@/components/flow/Overview";
@@ -70,7 +71,8 @@ function SpRoute({ account }: { account: Address }) {
 
   const onAmount = (next: string) => {
     setAmount(next);
-    window.history.replaceState(null, "", spDepositQuery(next) || window.location.pathname);
+    // U17: the URL never carries text that cannot be an amount.
+    window.history.replaceState(null, "", spDepositQuery(urlAmount(next)) || window.location.pathname);
   };
 
   const musdIn = parseMusdAmount(amount);
@@ -124,7 +126,7 @@ function SpRoute({ account }: { account: Address }) {
     >
       {chainId !== network.chainId && <WrongNetworkAlert />}
       <SpEntryCard
-        field={{ amount, onAmount, balance: dashboard.musd, error: spFieldError(preview.block) }}
+        field={{ amount, onAmount, balance: dashboard.musd, error: amountFieldError(amount, "musd") ?? spFieldError(preview.block) }}
         overview={rows}
         notices={<BlockNotice block={preview.block && isFieldBlock(preview.block.reason) ? { outcome: null } : preview.block} actions={recoveries} />}
         review={{ href: `/route/stability-pool/confirm/${spDepositQuery(amount)}`, disabled: preview.block !== null }}
