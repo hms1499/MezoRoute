@@ -408,6 +408,8 @@ describe("clearLabels", () => {
       for (const label of cleared) {
         const box = labelBox(label, g.x, g.plot, format(label.value));
         expect(labelHitsLine(box, px(label.id)), `${label.id} ${label.side} at ${width}×${height}`).toBe(false);
+        // Nor on any other line drawn in the plot (the dashed Kept in MUSD line ran through "968").
+        for (const other of series) expect(labelHitsLine(box, px(other.id)), `${label.id} ${label.side} on ${other.id} at ${width}×${height}`).toBe(false);
         expect(box.top).toBeGreaterThanOrEqual(g.plot.top - 1);
         expect(box.bottom).toBeLessThanOrEqual(g.plot.bottom + 1);
         expect(box.left).toBeGreaterThanOrEqual(g.plot.left - 1);

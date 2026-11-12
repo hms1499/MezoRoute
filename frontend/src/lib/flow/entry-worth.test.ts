@@ -35,8 +35,10 @@ describe("entryGap", () => {
   });
 
   it("rounds a cost up, never down", () => {
-    // 35 below 225 put in is 15.56%: "15%" would understate it.
-    expect(entryGap({ ...worth, putIn: 225n * E, gap: 35n * E })).toEqual({ amount: "35", percent: "16%" });
+    // 35 below 225 put in is 15.56%: "15.5%" would understate it.
+    expect(entryGap({ ...worth, putIn: 225n * E, gap: 35n * E })).toEqual({ amount: "35", percent: "15.6%" });
+    // One decimal: a whole-percent ceiling called 1.16% "2%".
+    expect(entryGap({ ...worth, putIn: 1000n * E, gap: (1164n * E) / 100n })).toEqual({ amount: "11.64", percent: "1.2%" });
     expect(entryGap({ ...worth, putIn: 1000n * E, gap: (29_941n * E) / 1000n })).toEqual({ amount: "29.95", percent: "3%" });
   });
 

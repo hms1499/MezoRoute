@@ -17,7 +17,8 @@ export function lpFee(executorFeeBps: bigint | null, compared: ComparedRoutes | 
 }
 
 /** Rows that need an amount; none until one is entered. */
-export function lpAmountRows(compared: ComparedRoutes | null): Row[] {
+/** `connected: false` (U17, /compare/ without a wallet): the exposure is what the deposit adds, never "0 BTC → …" for a visitor whose exposure is unknown. */
+export function lpAmountRows(compared: ComparedRoutes | null, connected = true): Row[] {
   if (compared === null) return [];
   const dropLabel = `If BTC drops ${STRESS_DROP}%`;
   const { lp } = compared;
@@ -34,17 +35,17 @@ export function lpAmountRows(compared: ComparedRoutes | null): Row[] {
       value: `≈ ${musd(lp.positionValue)}`,
       sub: `≈ half becomes BTC · price impact ${formatPercent(lp.priceImpact, 2)}`,
     },
-    { label: "BTC exposure", value: `${btc(lp.btcBefore)} → ${btc(lp.btcAfter)}` },
+    { label: "BTC exposure", value: connected ? `${btc(lp.btcBefore)} → ${btc(lp.btcAfter)}` : `+${btc(lp.btcAfter - lp.btcBefore)}` },
     { label: dropLabel, value: `≈ ${musd(lp.valueAfterDrop)}` },
   ];
 }
 
-export function spAmountRows(compared: ComparedRoutes | null): Row[] {
+export function spAmountRows(compared: ComparedRoutes | null, connected = true): Row[] {
   if (compared === null) return [];
   const { sp } = compared;
   return [
     { label: "Position after", value: musd(sp.positionValue), sub: "Stays in MUSD until liquidations" },
-    { label: "BTC exposure", value: `${btc(sp.btcBefore)} → ${btc(sp.btcAfter)}` },
+    { label: "BTC exposure", value: connected ? `${btc(sp.btcBefore)} → ${btc(sp.btcAfter)}` : "None until a liquidation" },
     { label: `If BTC drops ${STRESS_DROP}%`, value: musd(sp.valueAfterDrop), sub: "New liquidations not modelled" },
   ];
 }

@@ -40,13 +40,13 @@ export const ENTRY_GAP_CAUSE = "MezoRoute fee, the pool's swap fee, and the pool
 /**
  * The gap as figures, from 1% of what was put in (the price-impact warning's threshold). Null below it, when the
  * position is worth at least what went in (a gap is never shown as a gain), or when nothing was put in. Both figures
- * round up: this is a cost, and truncating would understate it (15.56% is "16%", not "15%").
+ * round up: this is a cost, and truncating would understate it (15.56% is "15.6%", not "15.5%").
  */
 export function entryGap(worth: EntryWorth): { amount: string; percent: string } | null {
   if (worth.putIn <= 0n || worth.gap <= 0n) return null;
   const ratio = (worth.gap * WAD) / worth.putIn;
   if (ratio < PRICE_IMPACT_WARN) return null;
-  return { amount: formatToken(worth.gap, 18, 2, "up"), percent: `${formatToken(ratio * 100n, 18, 0, "up")}%` };
+  return { amount: formatToken(worth.gap, 18, 2, "up"), percent: `${formatToken(ratio * 100n, 18, 1, "up")}%` };
 }
 
 /** The planner's sentence under "LP worth"; `putInLabel` is the amount as the user typed it ("1,000 MUSD"). */

@@ -48,8 +48,8 @@ describe("confirmOverview (U17)", () => {
       data,
       slippageBps: 100n,
     });
-    // 0.25 BTC at 900 = 225 MUSD put in; worth 190: 35 below, 16%.
-    expect(all.find((row) => row.label === "Below what you put in")?.value).toBe("≈ 35 MUSD (16%)");
+    // 0.25 BTC at 900 = 225 MUSD put in; worth 190: 35 below, 15.56%.
+    expect(all.find((row) => row.label === "Below what you put in")?.value).toBe("≈ 35 MUSD (15.6%)");
     expect(JSON.stringify(all)).not.toContain("at the pool price");
   });
 });

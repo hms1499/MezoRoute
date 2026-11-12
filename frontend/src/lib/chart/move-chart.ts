@@ -154,7 +154,7 @@ export function labelHitsLine(box: LabelBox, points: { x: number; y: number }[])
 }
 
 /**
- * U17 §7: move a label off the line it names. `placeLabels` picks a side by value alone, and a rising line then ran
+ * U17 §7: move a label off the lines of its plot, the one it names above all. `placeLabels` picks a side by value alone, and a rising line then ran
  * through the text of its own low end and "Today" labels. For each label that sits on its series' line, the first
  * position that clears it wins: the other side of the today line, the other side of the point, then small steps
  * away. A label that is already clear, or that nothing clears, stays where `placeLabels` put it.
@@ -175,7 +175,8 @@ export function clearLabels(
   const taken: LabelBox[] = [];
   const overlaps = (a: LabelBox, b: LabelBox) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
   return labels.map((label) => {
-    const line = (input.series.find((s) => s.id === label.id)?.points ?? []).map((p) => ({ x: x(p.move), y: y(p.value) }));
+    // Its own line first of all, and every other line drawn in the plot (the dashed baseline ran through a label).
+    const lines = input.series.map((s) => s.points.map((p) => ({ x: x(p.move), y: y(p.value) })));
     const text = input.text(label);
     const anchor: PlacedLabel["anchor"] = label.side === "right" ? "end" : "start";
     const other: PlacedLabel["anchor"] = anchor === "end" ? "start" : "end";
@@ -186,7 +187,7 @@ export function clearLabels(
     for (let step = 2; step <= 40; step += 2) ys.push(label.y - step, label.y + step);
     const fits = (candidate: PlacedLabel) => {
       const box = labelBox(candidate, x, plot, text);
-      return candidate.y >= minY && candidate.y <= maxY && !labelHitsLine(box, line) && !taken.some((t) => overlaps(box, t));
+      return candidate.y >= minY && candidate.y <= maxY && !lines.some((line) => labelHitsLine(box, line)) && !taken.some((t) => overlaps(box, t));
     };
     let chosen: PlacedLabel = { ...label, anchor };
     search: for (const at of ys) {

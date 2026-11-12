@@ -85,3 +85,24 @@ describe("signed sub-lines (U11 §5.5)", () => {
     expect(subToneClass(undefined)).toBe("text-muted");
   });
 });
+
+// U17 §6: /compare/ without a wallet read the zero address; "0 BTC → …" would present that as the visitor's exposure.
+describe("amount rows without a wallet", () => {
+  const compared = {
+    amount: 250n * 10n ** 18n,
+    overBalance: true,
+    lp: { status: "ok", fee: 0n, priceImpact: 0n, positionValue: 249n * 10n ** 18n, btcBefore: 0n, btcAfter: 159n * 10n ** 13n, valueAfterDrop: 208n * 10n ** 18n, gauge: null },
+    sp: { positionValue: 250n * 10n ** 18n, btcBefore: 0n, btcAfter: 0n, valueAfterDrop: 250n * 10n ** 18n },
+  } as never;
+  const exposure = (rows: { label: unknown; value: unknown }[]) => rows.find((row) => row.label === "BTC exposure")?.value;
+
+  it("shows what the deposit adds, never a before of zero", () => {
+    expect(exposure(lpAmountRows(compared, false))).toBe("+0.00159 BTC");
+    expect(exposure(spAmountRows(compared, false))).toBe("None until a liquidation");
+  });
+
+  it("keeps before → after for a connected wallet", () => {
+    expect(exposure(lpAmountRows(compared))).toBe("0 BTC → 0.00159 BTC");
+    expect(exposure(spAmountRows(compared, true))).toBe("0 BTC → 0 BTC");
+  });
+});
