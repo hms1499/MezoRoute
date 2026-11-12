@@ -1,6 +1,5 @@
 import { STRESS_DROP } from "@/lib/compare/comparison";
-import { signedChange } from "@/lib/compare/view";
-import type { NetworkId } from "@/lib/config/networks";
+import { amountState, signedChange } from "@/lib/compare/view";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import { WAD } from "@/lib/math";
 import type { MainnetReferenceData } from "@/lib/reference/load";
@@ -76,9 +75,31 @@ export function simulatorRows(sim: LandingSimulation): SimRow[] {
 export const SIMULATOR_FOOTNOTE =
   "Past 30 days on Mezo mainnet, not a forecast. Estimates in MUSD. Max 1,000 MUSD per transaction on mainnet.";
 
-export function simulatorNotes(sim: LandingSimulation, networkId: NetworkId): string[] {
+export function simulatorNotes(sim: LandingSimulation): string[] {
   const notes = [SIMULATOR_FOOTNOTE];
   if (sim.overCap) notes.push("Above the mainnet limit of 1,000 MUSD per transaction.");
-  if (networkId === "testnet") notes.push("You're on Testnet: these figures are Mezo mainnet; your transactions will use test tokens.");
   return notes;
+}
+
+/** U17 §7: said under the simulator's heading on testnet, where it is read before the figures, not after them. */
+export const SIMULATOR_TESTNET_NOTE = "You're on Testnet: these figures are Mezo mainnet; your transactions will use test tokens.";
+
+/** The landing's default and example amount (the mainnet entry cap). */
+export const LANDING_EXAMPLE = 1_000n * WAD;
+
+/**
+ * The simulator's field: the typed text, its parsed amount (null while empty, zero, or invalid), and the amount the
+ * figures show. U17 §4: with nothing valid typed the figures are the labelled 1,000 MUSD example, never the previous
+ * amount, which read as the result for a field that no longer held it.
+ */
+export type AmountState = { text: string; amount: bigint | null; error: string | null; shown: bigint; example: boolean };
+
+export function landingAmount(text: string): AmountState {
+  const { amount, error } = amountState(text);
+  return { text, amount, error, shown: amount ?? LANDING_EXAMPLE, example: amount === null };
+}
+
+/** The table's caption: which amount the figures are for. */
+export function simulatorCaption(amount: bigint, example: boolean): string {
+  return `Both routes for ${formatToken(amount, 18, 2)} MUSD${example ? " (example)" : ", estimated"}`;
 }

@@ -15,4 +15,9 @@ describe("plannerHref (U16)", () => {
   it("sends the Stability Pool to its own route page", () => {
     expect(plannerHref("sp", 500n * WAD)).toBe("/route/stability-pool/?amount=500");
   });
+
+  it("plans without an amount (U17: the simulator's example state)", () => {
+    expect(plannerHref("lp", null)).toBe("/route/lp/");
+    expect(plannerHref("sp", null)).toBe("/route/stability-pool/");
+  });
 });

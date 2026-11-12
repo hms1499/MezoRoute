@@ -17,7 +17,7 @@ const EXECUTOR_FEE_BPS = networks.mainnet.executor?.feeBps ?? 0n;
 export function SimulatorSection({
   data,
   error,
-  amountState: { text, amount, error: amountError, shown },
+  amountState: { text, amount, error: amountError, shown, example },
   onText,
   highlight,
   onHighlight,
@@ -35,7 +35,7 @@ export function SimulatorSection({
     <section id="simulator" aria-label="Try an amount" className="grid grid-cols-1 pb-16 pt-10 items-start gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
       <HeroChart sim={sim} highlight={highlight} className="order-2 lg:order-1" />
       <div className="order-1 lg:order-2">
-        <Simulator text={text} onText={onText} amount={amount} amountError={amountError} planAmount={shown} sim={sim} error={error} onHighlight={onHighlight} />
+        <Simulator text={text} onText={onText} amount={amount} amountError={amountError} example={example} sim={sim} error={error} onHighlight={onHighlight} />
       </div>
     </section>
   );
