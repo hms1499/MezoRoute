@@ -328,3 +328,29 @@ describe("placeLabels near the edges", () => {
     expect(placed[0].y).toBe(y(4) - 6);
   });
 });
+
+describe("readout against a baseline that is not today's value (U17)", () => {
+  const lp = { id: "lp" as const, points: [{ move: -30, value: 811.61 }, { move: 0, value: 970.06 }, { move: 30, value: 1106.04 }] };
+  const putIn = { id: "baseline" as const, points: lp.points.map((p) => ({ move: p.move, value: 1000 })) };
+  const format = (value: number) => value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+
+  it("measures a fall from what was put in", () => {
+    expect(readout({ series: [putIn, lp], move: -30, format, unit: "MUSD" }).parts).toEqual([
+      { text: "811.61 MUSD", tone: "ink" },
+      { text: "−188.39 (−19%)", tone: "negative" },
+    ]);
+  });
+
+  it("says the gap already there today", () => {
+    expect(readout({ series: [putIn, lp], move: 0, format, unit: "MUSD" }).parts).toEqual([
+      { text: "970.06 MUSD", tone: "ink" },
+      { text: "−29.94 (−3%)", tone: "negative" },
+    ]);
+  });
+
+  it("keeps measuring from today when the baseline is today's value", () => {
+    const today = { id: "baseline" as const, points: lp.points.map((p) => ({ move: p.move, value: 970.06 })) };
+    expect(readout({ series: [today, lp], move: 0, format, unit: "MUSD" }).parts).toEqual([{ text: "970.06 MUSD", tone: "ink" }]);
+    expect(readout({ series: [today, lp], move: -30, format, unit: "MUSD" }).parts[1]).toEqual({ text: "−158.45 (−16%)", tone: "negative" });
+  });
+});

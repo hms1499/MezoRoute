@@ -3,7 +3,7 @@ import { atRiskTrove, deployerTrove, lpShare, snapshotWith, spPosition } from "@
 import { WAD } from "@/lib/math";
 import { exposure } from "./exposure";
 import { mcrCrossing } from "./moves";
-import { baselineFor, breakdownSources, chartPlots, crossingLabel, valueSeries } from "./plots";
+import { baselineFor, breakdownSources, chartPlots, crossingLabel, exposureHeadline, valueSeries } from "./plots";
 
 const troveOnly = snapshotWith({ trove: deployerTrove });
 const withLp = snapshotWith({ trove: deployerTrove, lp: lpShare });
@@ -83,5 +83,34 @@ describe("baselineFor", () => {
   it("follows the After line on a preview, so its gap is shaded too (the faint before line is not counted)", () => {
     const before = valueSeries({ lpValue: 40n * WAD, spDeposit: 0n, spBtcGain: 0n, price: WAD }, "before")!;
     expect(new Set(baselineFor([...lp, ...before])?.points.map((p) => p.value))).toEqual(new Set([100]));
+  });
+});
+
+describe("baselineFor at a given value (U17)", () => {
+  const lp = [{ id: "lp" as const, points: [{ move: -30, value: 811 }, { move: 0, value: 970 }, { move: 30, value: 1106 }] }];
+
+  it("draws the line where the caller says: what was put in, not today's value", () => {
+    expect(baselineFor(lp, 1000)?.points).toEqual([{ move: -30, value: 1000 }, { move: 0, value: 1000 }, { move: 30, value: 1000 }]);
+  });
+
+  it("keeps today's value without one", () => {
+    expect(baselineFor(lp)?.points.map((p) => p.value)).toEqual([970, 970, 970]);
+  });
+});
+
+describe("exposureHeadline (U17)", () => {
+  it("shows only the deposit's own BTC without a wallet", () => {
+    expect(exposureHeadline({ current: 6362n * 10n ** 12n, prior: 0n, scope: "deposit" })).toEqual({
+      figure: "+0.006362 BTC",
+      caption: "This deposit only. Connect to include your Trove and positions.",
+    });
+  });
+
+  it("reads before → after for an account", () => {
+    expect(exposureHeadline({ current: 2n * WAD, prior: WAD, scope: "account" })).toEqual({ figure: "1 BTC → 2 BTC", caption: "Total BTC exposure" });
+  });
+
+  it("is the total alone without a preview", () => {
+    expect(exposureHeadline({ current: 2n * WAD, prior: null, scope: "account" })).toEqual({ figure: "2 BTC", caption: "Total BTC exposure" });
   });
 });

@@ -303,7 +303,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
         details={
           <>
             {quote && <EntryPreviewCard quote={quote} feeBps={data.snapshot.executorFeeBps} borrowFee={preview.borrow?.effect?.fee} stake={preview.stake.on} />}
-            {preview.after && <ExposurePanel snapshot={preview.after} before={dashboard} title="BTC exposure after this deposit" fromBtc={fromBtc} />}
+            {preview.after && <ExposurePanel snapshot={preview.after} before={dashboard} title="BTC exposure after this deposit" fromBtc={fromBtc} putIn={putIn} scope={connected ? "account" : "deposit"} />}
             <RisksCard borrow={displayIntent.mode === "borrow"} fromBtc={fromBtc} />
           </>
         }

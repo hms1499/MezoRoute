@@ -254,10 +254,14 @@ export function readout(input: { series: Series[]; move: number; format: (value:
   const main = solid[0];
   const value = at(main);
   const parts: Readout["parts"] = [{ text: withUnit(format(value)), tone: "ink" }];
-  if (move !== 0) {
-    const today = main.points.find((p) => p.move === 0)?.value ?? 0;
-    const change = value - today;
-    const pct = today === 0 ? 0 : Math.round((change / today) * 100);
+  // U17: with a baseline the change is measured from it (a deposit preview's baseline is what was put in, so the
+  // gap that is already there today is said too); without one, from today's value.
+  const baseline = series.find((s) => s.id === "baseline");
+  const today = main.points.find((p) => p.move === 0)?.value ?? 0;
+  const from = baseline ? at(baseline) : today;
+  if (move !== 0 || from !== value) {
+    const change = value - from;
+    const pct = from === 0 ? 0 : Math.round((change / from) * 100);
     const sign = change > 0 ? "+" : change < 0 ? "−" : "";
     const pctText = pct > 0 ? `+${pct}%` : pct < 0 ? `−${Math.abs(pct)}%` : "0%";
     parts.push({ text: `${sign}${format(Math.abs(change))} (${pctText})`, tone: change > 0 ? "positive" : change < 0 ? "negative" : "muted" });
