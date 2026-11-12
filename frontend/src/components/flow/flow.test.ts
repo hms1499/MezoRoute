@@ -25,6 +25,11 @@ describe("TokenAmountInput", () => {
     expect(render({ tokens: ["musd", "btc"], onToken: () => undefined })).toContain('aria-haspopup="menu"');
   });
 
+  it("shows a typed amount grouped while the field is not focused (U18)", () => {
+    expect(render({ amount: "1000" })).toContain('value="1,000"');
+    expect(render({ amount: "1.2.3" })).toContain('value="1.2.3"');
+  });
+
   it("shows a static chip for one token", () => {
     expect(render({})).not.toContain("aria-haspopup");
   });

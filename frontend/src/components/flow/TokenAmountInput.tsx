@@ -4,6 +4,7 @@ import { Check, ChevronDown, CircleAlert } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { formatToken } from "@/lib/format";
 import { FLOW_TOKEN_DIGITS, FLOW_TOKEN_UNIT, maxFillAmount, type FlowToken } from "@/lib/flow/amount";
+import { groupAmount, stripGrouping } from "@/lib/flow/group-amount";
 import { cx } from "@/lib/ui/cx";
 import { menuKeys, triggerKey } from "@/lib/ui/menu";
 import { MaxButton } from "@/components/ui/MaxButton";
@@ -151,6 +152,8 @@ export function TokenAmountInput({
   error?: ReactNode;
   percent?: PercentMode;
 }) {
+  // U18: focused text is shown raw (the caret stays where the browser put it); unfocused well-formed digits are grouped.
+  const [focused, setFocused] = useState(false);
   const unit = FLOW_TOKEN_UNIT[token];
   const helpId = `${id}-help`;
   const noteId = `${id}-note`;
@@ -187,10 +190,12 @@ export function TokenAmountInput({
               inputMode="decimal"
               autoComplete="off"
               placeholder="0.0"
-              value={amount}
+              value={focused ? amount : groupAmount(amount)}
               aria-describedby={describedBy}
               aria-invalid={error ? true : undefined}
-              onChange={(event) => onAmount?.(event.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onChange={(event) => onAmount?.(stripGrouping(event.target.value))}
               className="min-w-0 flex-1 bg-transparent text-title font-semibold outline-none placeholder:text-muted/60"
             />
           )}
