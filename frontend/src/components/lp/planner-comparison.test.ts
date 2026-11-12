@@ -4,14 +4,23 @@ import { describe, expect, it } from "vitest";
 import { plannerComparisonRows } from "@/lib/flow/planner-comparison";
 import { PlannerComparison } from "./PlannerComparison";
 
-const rows = plannerComparisonRows({ stake: { on: true, availability: "open" }, apr: 41n * 10n ** 16n, weekly: 3n * 10n ** 18n, poolFeeBps: 30n });
+const rows = plannerComparisonRows({
+  amountMusd: 1_000n * 10n ** 18n,
+  stake: { on: true, availability: "open" },
+  apr: 41n * 10n ** 16n,
+  weekly: 3n * 10n ** 18n,
+  poolFeeBps: 30n,
+  lp: { liquidity: 10n ** 18n, btcAdded: 6362n * 10n ** 12n, valueAfterDrop: 81161n * 10n ** 16n },
+});
 const render = (props: Record<string, unknown> = {}) =>
   renderToStaticMarkup(
     createElement(PlannerComparison, {
       amountMusd: 1_000n * 10n ** 18n,
       example: false,
       state: { kind: "rows", rows },
-      spHref: "/route/stability-pool/?amount=1000",
+      other: "sp",
+      otherHref: "/route/stability-pool/?amount=1000",
+      historyHref: "/compare/?amount=1000",
       ...props,
     }),
   );
@@ -37,7 +46,7 @@ describe("PlannerComparison", () => {
   });
 
   it("drops the link in the message state", () => {
-    const out = render({ state: { kind: "message", message: "Enter a valid amount to compare." }, spHref: null });
+    const out = render({ state: { kind: "message", message: "Enter a valid amount to compare." }, otherHref: null });
     expect(out).toContain("Enter a valid amount to compare.");
     expect(out).not.toContain("stability-pool?");
     expect(out).not.toContain("You get");
@@ -48,5 +57,20 @@ describe("PlannerComparison", () => {
     // The rows render label and value in separate cells, so split from the SP value, not a joined sentence.
     const sp = out.slice(out.indexOf("BTC from liquidations"));
     expect(sp).toContain("Variable · paid in bursts");
+  });
+
+  it("links the 30-day results for the same amount (U17)", () => {
+    const out = render();
+    expect(out).toMatch(/href="\/compare\?amount=1000"[^>]*>30-day results for both routes/);
+  });
+
+  it("mirrors itself on the Stability Pool planner (U17)", () => {
+    const out = render({ other: "lp", otherHref: "/route/lp/?amount=1000" });
+    expect(out).toContain("Compare with the MUSD/BTC LP");
+    expect(out).toContain("Choose MUSD/BTC LP");
+    expect(out).toContain('href="/route/lp?amount=1000"');
+    // The page's own route comes first.
+    expect(out.indexOf("BTC from liquidations")).toBeLessThan(out.indexOf("swap fees go to veBTC voters"));
+    expect(render().indexOf("swap fees go to veBTC voters")).toBeLessThan(render().indexOf("BTC from liquidations"));
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import {
   BAND_LABEL_MIN_HEIGHT,
   belowRuns,
@@ -9,7 +9,10 @@ import {
   gapRegions,
   labelText,
   moveAt,
+  clearLabels,
+  labelX,
   placeLabels,
+  type ChartLabel,
   readout,
   smoothPath,
   type Band,
@@ -133,9 +136,25 @@ function Plot({
 }) {
   const [active, setActive] = useState<number | null>(null);
   const g = chartGeometry({ series: plot.series, bands: plot.bands, width, height, scale: plot.scale });
-  const labels = placeLabels(chartLabels({ series: plot.series, width }), g.y, g.plot);
   const today = g.x(0);
   const todayOf = (id: SeriesId) => plot.series.find((s) => s.id === id)?.points.find((p) => p.move === 0)?.value ?? 0;
+  const labelOf = (label: ChartLabel) =>
+    plot.changeLabels ? labelText({ side: label.side, value: label.value, today: todayOf(label.id) }, plot.format) : plot.format(label.value);
+  // U17: a label never sits on the line it names (a rising line ran through its own low-end and Today labels).
+  // Memoised on the plot and its box: a pointer-move readout re-renders, and re-placing every label each time is waste.
+  const labels = useMemo(() => {
+    const geo = chartGeometry({ series: plot.series, bands: plot.bands, width, height, scale: plot.scale });
+    return clearLabels(placeLabels(chartLabels({ series: plot.series, width }), geo.y, geo.plot), {
+      x: geo.x,
+      y: geo.y,
+      plot: geo.plot,
+      series: plot.series,
+      text: (label) => {
+        const today = plot.series.find((s) => s.id === label.id)?.points.find((p) => p.move === 0)?.value ?? 0;
+        return plot.changeLabels ? labelText({ side: label.side, value: label.value, today }, plot.format) : plot.format(label.value);
+      },
+    });
+  }, [plot, width, height]);
   const solid = plot.series.filter((s) => !s.id.endsWith("-before") && s.id !== "baseline");
   const hasBefore = plot.series.some((s) => s.id.endsWith("-before"));
 
@@ -260,9 +279,9 @@ function Plot({
           {labels.map((label) => (
             <text
               key={`${label.id}-${label.side}`}
-              x={label.side === "left" ? g.plot.left + 2 : label.side === "right" ? g.plot.right - 2 : today + 4}
+              x={labelX(label, g.x, g.plot)}
               y={label.y}
-              textAnchor={label.side === "right" ? "end" : "start"}
+              textAnchor={label.anchor}
               fontSize={CHART_FONT_PX}
               fontFamily="var(--font-geist-mono)"
               style={{ fill: STROKE[label.id], stroke: halo }}
@@ -270,7 +289,7 @@ function Plot({
               strokeLinejoin="round"
               paintOrder="stroke"
             >
-              {plot.changeLabels ? labelText({ side: label.side, value: label.value, today: todayOf(label.id) }, plot.format) : plot.format(label.value)}
+              {labelOf(label)}
             </text>
           ))}
           {active !== null && (

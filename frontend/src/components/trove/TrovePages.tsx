@@ -15,7 +15,9 @@ import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { Overview } from "@/components/flow/Overview";
 import { SlippagePopover } from "@/components/flow/SlippagePopover";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
+import { ConnectPage } from "@/components/home/ConnectPage";
 import { RequireWallet } from "@/components/home/RequireWallet";
+import { TROVE_CONNECT } from "@/lib/leverage/connect-copy";
 import { WrongNetworkAlert } from "@/components/home/WrongNetworkAlert";
 import { LoadError } from "@/components/LoadError";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -102,7 +104,14 @@ function Loading({ error, retry, label }: { error: Error | null; retry: () => vo
 // ---------------------------------------------------------------------------------- amount page
 
 export function TroveAmountPage({ action }: { action: TroveAction }) {
-  return <RequireWallet flow>{(account) => <AmountFlow action={action} account={account} />}</RequireWallet>;
+  return (
+    // U17 §7: opened without a wallet, the page keeps its own heading and step and says what the action does.
+    <RequireWallet flow
+      fallback={<ConnectPage back={{ href: "/", label: "Dashboard" }} step={1} title={TITLES[action].amount} cardTitle={TITLES[action].card} cardNote={TROVE_CONNECT[action]} />}
+    >
+      {(account) => <AmountFlow action={action} account={account} />}
+    </RequireWallet>
+  );
 }
 
 function AmountFlow({ action, account }: { action: TroveAction; account: Address }) {

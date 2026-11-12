@@ -112,6 +112,106 @@ export function placeLabels(labels: ChartLabel[], y: (value: number) => number, 
   });
 }
 
+export type LabelBox = { left: number; right: number; top: number; bottom: number };
+export type PlacedLabel = ChartLabel & { y: number; anchor: "start" | "end" };
+
+/** Geist Mono's advance is 0.6 em, so a label's width follows from its length. */
+const LABEL_ADVANCE = 0.6;
+/** The label's halo is a 3 px stroke, so the drawn text reaches 1.5 px past its glyphs on every side. */
+const LABEL_HALO = 1.5;
+/** How far a "Today" label stands off the today line, and an end label off the plot's edge. */
+const TODAY_GAP = 4;
+const EDGE_GAP = 2;
+
+/** Where a label's text starts (anchor start) or ends (anchor end). */
+export function labelX(label: Pick<PlacedLabel, "side" | "anchor">, x: (move: number) => number, plot: { left: number; right: number }): number {
+  if (label.side === "left") return plot.left + EDGE_GAP;
+  if (label.side === "right") return plot.right - EDGE_GAP;
+  return label.anchor === "end" ? x(0) - TODAY_GAP : x(0) + TODAY_GAP;
+}
+
+/** The text box of a placed label: `y` is the text's baseline, so the box rises a cap height above it. */
+export function labelBox(label: PlacedLabel, x: (move: number) => number, plot: { left: number; right: number }, text: string): LabelBox {
+  const width = text.length * CHART_FONT_PX * LABEL_ADVANCE;
+  const at = labelX(label, x, plot);
+  // The halo counts: it is part of what the eye sees, so a line clears the drawn text, not just its glyphs.
+  const left = (label.anchor === "end" ? at - width : at) - LABEL_HALO;
+  return {
+    left,
+    right: left + width + 2 * LABEL_HALO,
+    top: label.y - CHART_FONT_PX * 0.8 - LABEL_HALO,
+    bottom: label.y + 2 + LABEL_HALO,
+  };
+}
+
+/** True when the polyline runs through the box (with a 1 px margin, for the stroke). */
+export function labelHitsLine(box: LabelBox, points: { x: number; y: number }[]): boolean {
+  const m = 1;
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    const from = Math.max(Math.min(a.x, b.x), box.left - m);
+    const to = Math.min(Math.max(a.x, b.x), box.right + m);
+    if (from > to) continue;
+    const at = (px: number) => (b.x === a.x ? a.y : a.y + ((px - a.x) / (b.x - a.x)) * (b.y - a.y));
+    const lo = Math.min(at(from), at(to));
+    const hi = Math.max(at(from), at(to));
+    if (hi >= box.top - m && lo <= box.bottom + m) return true;
+  }
+  return false;
+}
+
+/**
+ * U17 §7: move a label off the lines of its plot, the one it names above all. `placeLabels` picks a side by value alone, and a rising line then ran
+ * through the text of its own low end and "Today" labels. For each label that sits on its series' line, the first
+ * position that clears it wins: the other side of the today line, the other side of the point, then small steps
+ * away. A label that is already clear, or that nothing clears, stays where `placeLabels` put it.
+ */
+export function clearLabels(
+  labels: (ChartLabel & { y: number })[],
+  input: {
+    x: (move: number) => number;
+    y: (value: number) => number;
+    plot: { top: number; bottom: number; left: number; right: number };
+    series: Series[];
+    text: (label: ChartLabel) => string;
+  },
+): PlacedLabel[] {
+  const { x, y, plot } = input;
+  const minY = plot.top + CHART_FONT_PX * 0.8;
+  const maxY = plot.bottom - 3;
+  const taken: LabelBox[] = [];
+  const overlaps = (a: LabelBox, b: LabelBox) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  return labels.map((label) => {
+    // Its own line first of all, and every other line drawn in the plot (the dashed baseline ran through a label).
+    const lines = input.series.map((s) => s.points.map((p) => ({ x: x(p.move), y: y(p.value) })));
+    const text = input.text(label);
+    const anchor: PlacedLabel["anchor"] = label.side === "right" ? "end" : "start";
+    const other: PlacedLabel["anchor"] = anchor === "end" ? "start" : "end";
+    const point = y(label.value);
+    const mirrored = point + (point - label.y) + CHART_FONT_PX * 0.6; // the same gap on the point's other side
+    const anchors = label.side === "today" ? [anchor, other] : [anchor];
+    const ys = [label.y, mirrored];
+    for (let step = 2; step <= 40; step += 2) ys.push(label.y - step, label.y + step);
+    const fits = (candidate: PlacedLabel) => {
+      const box = labelBox(candidate, x, plot, text);
+      return candidate.y >= minY && candidate.y <= maxY && !lines.some((line) => labelHitsLine(box, line)) && !taken.some((t) => overlaps(box, t));
+    };
+    let chosen: PlacedLabel = { ...label, anchor };
+    search: for (const at of ys) {
+      for (const a of anchors) {
+        const candidate = { ...label, y: at, anchor: a };
+        if (fits(candidate)) {
+          chosen = candidate;
+          break search;
+        }
+      }
+    }
+    taken.push(labelBox(chosen, x, plot, text));
+    return chosen;
+  });
+}
+
 /**
  * U15: an end label with its change from today ("1.89 (−16%)"), so the −30% and +30% ends say what the move does.
  * Today's label, and any label when today is zero, stays the plain value.
@@ -254,10 +354,14 @@ export function readout(input: { series: Series[]; move: number; format: (value:
   const main = solid[0];
   const value = at(main);
   const parts: Readout["parts"] = [{ text: withUnit(format(value)), tone: "ink" }];
-  if (move !== 0) {
-    const today = main.points.find((p) => p.move === 0)?.value ?? 0;
-    const change = value - today;
-    const pct = today === 0 ? 0 : Math.round((change / today) * 100);
+  // U17: with a baseline the change is measured from it (a deposit preview's baseline is what was put in, so the
+  // gap that is already there today is said too); without one, from today's value.
+  const baseline = series.find((s) => s.id === "baseline");
+  const today = main.points.find((p) => p.move === 0)?.value ?? 0;
+  const from = baseline ? at(baseline) : today;
+  if (move !== 0 || from !== value) {
+    const change = value - from;
+    const pct = from === 0 ? 0 : Math.round((change / from) * 100);
     const sign = change > 0 ? "+" : change < 0 ? "−" : "";
     const pctText = pct > 0 ? `+${pct}%` : pct < 0 ? `−${Math.abs(pct)}%` : "0%";
     parts.push({ text: `${sign}${format(Math.abs(change))} (${pctText})`, tone: change > 0 ? "positive" : change < 0 ? "negative" : "muted" });

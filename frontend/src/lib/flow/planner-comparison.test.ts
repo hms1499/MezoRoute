@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { PLANNER_COMPARE_NOTE, plannerAmount, plannerComparisonRows } from "./planner-comparison";
+import { compareHref } from "@/lib/compare/default-amount";
+import { quoteEntry } from "@/lib/quote/entry";
+import { entryWorth } from "./entry-worth";
+import { lpWeekRate, PLANNER_COMPARE_NOTE, plannerAmount, plannerComparisonRows, plannerLpFigures } from "./planner-comparison";
 
 const E18 = 10n ** 18n;
-const base = { stake: { on: true, availability: "open" as const }, apr: 41n * 10n ** 16n, weekly: 3n * E18, poolFeeBps: 30n };
+const figures = { liquidity: E18, btcAdded: 6362n * 10n ** 12n, valueAfterDrop: 81161n * 10n ** 16n };
+const base = { amountMusd: 1000n * E18, stake: { on: true, availability: "open" as const }, apr: 41n * 10n ** 16n, weekly: 3n * E18, poolFeeBps: 30n, lp: figures };
 const lp = (input: Parameters<typeof plannerComparisonRows>[0]) =>
   plannerComparisonRows(input)
     .lp.map((row) => `${row.label} ${row.value}`)
@@ -17,26 +21,91 @@ describe("plannerComparisonRows", () => {
     expect(lp({ ...base, stake: { on: false, availability: "unavailable" } })).toContain("Pool fee 0.3%");
   });
 
-  it("says what each route gives and holds", () => {
-    const { lp: lpRows, sp } = plannerComparisonRows(base);
-    expect(lpRows.map((row) => row.value)).toEqual(["Swap fees + MEZO", "≈ 41% APR", "MUSD/BTC LP"]);
-    expect(lpRows[2].sub).toContain("About half your MUSD becomes BTC");
-    expect(sp.map((row) => `${row.label} ${row.value}`)).toEqual([
-      "You get BTC from liquidations",
-      "This week Variable · paid in bursts",
-      "Held MUSD until a liquidation",
+  it("says who gets the swap fees, following the Staking switch (U17)", () => {
+    expect(plannerComparisonRows(base).lp[0]).toEqual({ label: "You get", value: "MEZO", sub: "swap fees go to veBTC voters" });
+    // Staked between weeks is still staked: the fees still go to the voters.
+    expect(plannerComparisonRows({ ...base, stake: { on: true, availability: "between-weeks" } }).lp.slice(0, 2)).toEqual([
+      { label: "You get", value: "MEZO", sub: "swap fees go to veBTC voters" },
+      { label: "This week", value: "New week's rate not set yet" },
+    ]);
+    expect(plannerComparisonRows({ ...base, stake: { on: false, availability: "open" }, poolFeeBps: 4n }).lp.slice(0, 2)).toEqual([
+      { label: "You get", value: "Swap fees" },
+      { label: "This week", value: "Pool fee 0.04%" },
+    ]);
+  });
+
+  it("puts risk and exit on both routes (U17)", () => {
+    const rows = plannerComparisonRows({ ...base, stake: { on: false, availability: "open" } });
+    expect(rows.lp.slice(2)).toEqual([
+      { label: "BTC exposure", value: "+0.006362 BTC" },
+      { label: "If BTC −30%", value: "≈ 811.61 MUSD" },
+      { label: "Exit", value: "Any time, at the pool price" },
+    ]);
+    expect(rows.sp).toEqual([
+      { label: "You get", value: "BTC from liquidations" },
+      { label: "This week", value: "Variable · paid in bursts" },
+      { label: "BTC exposure", value: "None until a liquidation" },
+      { label: "If BTC −30%", value: "1,000 MUSD", sub: "new liquidations not modelled" },
+      { label: "Exit", value: "Paused while any Trove is below MCR" },
     ]);
   });
 
   it("never annualises or percentages the Stability Pool", () => {
     const { sp } = plannerComparisonRows({ ...base, stake: { on: false, availability: "unavailable" } });
-    expect(sp.some((row) => `${row.label} ${row.value} ${row.sub ?? ""}`.includes("%"))).toBe(false);
+    // "−30%" is the row's question, not a return: no value or note carries a percentage.
+    expect(sp.some((row) => `${row.value} ${row.sub ?? ""}`.includes("%"))).toBe(false);
     expect(sp.some((row) => /apr|earn/i.test(`${row.value} ${row.sub ?? ""}`))).toBe(false);
-    expect(PLANNER_COMPARE_NOTE).toBe("No annualised rate. Withdrawals pause while any Trove is below MCR.");
+    expect(PLANNER_COMPARE_NOTE).toBe("No annualised rate for the Stability Pool.");
   });
 
-  it("says Swap fees without a rate when staking is off", () => {
-    expect(plannerComparisonRows({ ...base, stake: { on: false, availability: "unavailable" } }).lp[0].value).toBe("Swap fees");
+  it("survives a pool that cannot quote", () => {
+    const rows = plannerComparisonRows({ ...base, lp: null, stake: { on: false, availability: "open" } });
+    expect(rows.lp[2]).toEqual({ label: "BTC exposure", value: "Pool quote unavailable" });
+    expect(rows.lp[3]).toEqual({ label: "If BTC −30%", value: "Pool quote unavailable" });
+  });
+});
+
+describe("plannerLpFigures", () => {
+  const pool = { reserveMusd: 1_000_000n * E18, reserveBtc: 13n * E18, totalSupply: 3000n * E18, feeBps: 4n };
+
+  it("is null for a pool that cannot quote", () => {
+    const empty = { reserveMusd: 0n, reserveBtc: 0n, totalSupply: 0n, feeBps: 4n };
+    expect(plannerLpFigures({ pool: empty, price: 900n * E18, amountMusd: E18, executorFeeBps: 10n })).toBeNull();
+  });
+
+  it("gives both pages the same figures as the LP page's own quote (parity)", () => {
+    const quote = quoteEntry(pool, 1000n * E18, 10n)!;
+    const worth = entryWorth(quote, 74_000n * E18, 1000n * E18);
+    expect(plannerLpFigures({ pool, price: 74_000n * E18, amountMusd: 1000n * E18, executorFeeBps: 10n })).toEqual({
+      liquidity: quote.liquidity,
+      btcAdded: worth.btcShare,
+      valueAfterDrop: worth.valueAfterDrop,
+    });
+  });
+});
+
+describe("lpWeekRate", () => {
+  const pool = { reserveMusd: 1_000_000n * E18, reserveBtc: 13n * E18, totalSupply: 3000n * E18, feeBps: 4n };
+  const gauge = { rewardRate: E18, totalStaked: 100n * E18 } as never;
+
+  it("has no rate unless the week pays", () => {
+    expect(lpWeekRate({ gauge, availability: "between-weeks", mezoPrice: E18, liquidity: E18, pool })).toEqual({ apr: null, weekly: null });
+    expect(lpWeekRate({ gauge: null, availability: "open", mezoPrice: E18, liquidity: E18, pool })).toEqual({ apr: null, weekly: null });
+  });
+
+  it("gives the APR without an amount, and MEZO a week with one", () => {
+    const open = lpWeekRate({ gauge, availability: "open", mezoPrice: E18, liquidity: null, pool });
+    expect(open.weekly).toBeNull();
+    expect(open.apr).not.toBeNull();
+    // 1 MEZO a second shared between 100 staked LP and this 1 LP.
+    expect(lpWeekRate({ gauge, availability: "open", mezoPrice: null, liquidity: E18, pool })).toEqual({ apr: null, weekly: (604_800n * E18) / 101n });
+  });
+});
+
+describe("compareHref", () => {
+  it("carries the amount to the 30-day page", () => {
+    expect(compareHref("250.5")).toBe("/compare/?amount=250.5");
+    expect(compareHref("")).toBe("/compare/");
   });
 });
 

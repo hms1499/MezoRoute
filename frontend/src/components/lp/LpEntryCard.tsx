@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ActionCard } from "@/components/flow/ActionCard";
+import { TrustLine } from "@/components/flow/BeforeYouSign";
 import { Details } from "@/components/flow/Details";
 import { Overview, type OverviewRow } from "@/components/flow/Overview";
 import { ReceiveRow } from "@/components/flow/ReceiveRow";
@@ -26,13 +27,14 @@ export function LpEntryCard({
   action,
   context,
   details,
+  trust,
 }: {
   header: { label: string; value: string };
   tabs: ReactNode;
   slippageBps: SlippageBps;
   onSlippage: (bps: SlippageBps) => void;
   field: LpAmountField & { amount: string; onAmount: (amount: string) => void; onToken?: (token: Token) => void; note?: ReactNode; error?: string | null };
-  receive: { value: string; minimum: string } | null;
+  receive: { value: string; minimum: string; note?: string | null } | null;
   overview: OverviewRow[];
   /** Block reasons with their recoveries, the 2% warning, and the gauge notices: above the action. */
   notices: ReactNode;
@@ -45,6 +47,8 @@ export function LpEntryCard({
   /** Context rows (exposure, Trove change, network fee) shown in Details, not before the action. */
   context?: OverviewRow[];
   details: ReactNode;
+  /** U17: one line pointing at Before you sign, shown below lg only. */
+  trust?: string | null;
 }) {
   return (
     <>
@@ -97,10 +101,11 @@ export function LpEntryCard({
           error={field.error ?? undefined}
         />
         {receive && (
-          <ReceiveRow value={receive.value} minimum={receive.minimum} icon={<PairIcon tokens={["musd", "btc"]} size={20} />} />
+          <ReceiveRow value={receive.value} minimum={receive.minimum} note={receive.note} icon={<PairIcon tokens={["musd", "btc"]} size={20} />} />
         )}
         {overview.length > 0 && <Overview rows={overview} />}
         {notices}
+        <TrustLine text={trust} />
       </ActionCard>
       <Details>
         {context && context.length > 0 && <Overview rows={context} />}

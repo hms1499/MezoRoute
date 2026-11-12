@@ -2,6 +2,7 @@
 
 import { formatUnits } from "viem";
 import type { Token } from "@/components/ui/TokenIcon";
+import { amountState } from "@/lib/compare/view";
 
 /** What an amount field holds: a token, or the pool's LP (the exit). */
 export type FlowToken = Token | "lp";
@@ -36,4 +37,23 @@ export type TokenAmountMax = { max: bigint } | { blocked: "gas-price-unknown" };
 export function tokenAmountMax(balance: bigint, reserve: bigint | null): TokenAmountMax {
   if (reserve === null) return { blocked: "gas-price-unknown" };
   return { max: balance > reserve ? balance - reserve : 0n };
+}
+
+const BTC_AMOUNT_ERROR = "Enter a BTC amount like 0.01 (up to 18 decimals).";
+
+/**
+ * U17 §4: a message for text that can never be an amount ("abc", "-5", "1,000", nineteen decimals). Null for an
+ * amount, an empty field, or a zero in any spelling: those are "no amount yet", which the page shows without an error.
+ */
+export function amountFieldError(text: string, token: "musd" | "btc"): string | null {
+  const { error } = amountState(text);
+  return error === null ? null : token === "btc" ? BTC_AMOUNT_ERROR : error;
+}
+
+/**
+ * What the URL may carry: the text as typed (trimmed, so the query never holds `+7+`), or nothing when it can never be
+ * an amount (a reload must not bring it back). The field keeps the raw text, so typing a space is not undone.
+ */
+export function urlAmount(text: string): string {
+  return amountState(text).error === null ? text.trim() : "";
 }

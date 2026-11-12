@@ -1,52 +1,106 @@
-// U13 §Comparison card: the LP planner's aside compares the two routes for the typed amount. Pure, so the card stays a
-// composition and the copy rules are tested here: the Stability Pool never gets an APR, a percentage, or a projection,
-// and the LP side only ever quotes this week's rate (no promise about next week).
+// U13 §Comparison card, U17 §2: both planners' aside compares the two routes for the typed amount. Pure, so the card
+// stays a composition and the copy rules are tested here: the Stability Pool never gets an APR, a percentage return,
+// or a projection, and the LP side only ever quotes this week's rate (no promise about next week).
 
 import { defaultCompareAmount } from "@/lib/compare/default-amount";
 import type { StakeAvailability } from "@/lib/gauge/availability";
+import { emissionsApr, mezoPerWeek } from "@/lib/gauge/maths";
+import type { GaugeState } from "@/lib/gauge/state";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
+import { quoteEntry, type PoolState } from "@/lib/quote/entry";
+import { entryWorth } from "./entry-worth";
 
 export type PlannerCompareRow = { label: string; value: string; sub?: string };
 export type PlannerCompare = { lp: PlannerCompareRow[]; sp: PlannerCompareRow[] };
 
-/** The comparison's footer: the same claim as F6's, never a second wording. */
-export const PLANNER_COMPARE_NOTE = "No annualised rate. Withdrawals pause while any Trove is below MCR.";
+/** The comparison's footer. The exit pause is its own row now (U17). */
+export const PLANNER_COMPARE_NOTE = "No annualised rate for the Stability Pool.";
 
 /** A BTC entry cannot be compared with a MUSD-only pool (U13). */
 export const BTC_COMPARE_MESSAGE = "The Stability Pool takes MUSD; switch the deposit to MUSD to compare.";
 
 const INVALID_AMOUNT = "Enter a valid amount to compare.";
+const NO_QUOTE = "Pool quote unavailable";
+
+/** The LP side's figures for one amount: the LP it mints, the BTC in that share, and its value after a 30% fall. */
+export type PlannerLp = { liquidity: bigint; btcAdded: bigint; valueAfterDrop: bigint };
 
 /**
- * Both routes as rows, for one block. `apr` and `weekly` are the page's own header figures, so the aside can never
- * disagree with the card; `poolFeeBps` is the chain's swap fee. No new maths lives here.
+ * U17 §2: the LP side for `amountMusd`, from the pool state alone, valued at the oracle price like the card. Both
+ * planners call this with the same pool, so the same amount at the same block reads the same on both. Null when the
+ * pool cannot quote (no reserves or supply).
+ */
+export function plannerLpFigures(input: { pool: PoolState; price: bigint; amountMusd: bigint; executorFeeBps: bigint }): PlannerLp | null {
+  const quote = quoteEntry(input.pool, input.amountMusd, input.executorFeeBps);
+  if (!quote) return null;
+  const worth = entryWorth(quote, input.price, input.amountMusd);
+  return { liquidity: quote.liquidity, btcAdded: worth.btcShare, valueAfterDrop: worth.valueAfterDrop };
+}
+
+/**
+ * This week's rate for `liquidity` LP in the gauge. Both are null unless the week pays; the APR needs no amount (it is
+ * the rate on the staked value) but does need a MEZO price, and the MEZO a week needs the amount.
+ */
+export function lpWeekRate(input: {
+  gauge: Pick<GaugeState, "rewardRate" | "totalStaked"> | null;
+  availability: StakeAvailability;
+  mezoPrice: bigint | null;
+  liquidity: bigint | null;
+  pool: PoolState;
+}): { apr: bigint | null; weekly: bigint | null } {
+  const { gauge, pool } = input;
+  if (input.availability !== "open" || gauge === null) return { apr: null, weekly: null };
+  return {
+    weekly: input.liquidity === null ? null : mezoPerWeek(gauge.rewardRate, input.liquidity, gauge.totalStaked),
+    apr: emissionsApr({
+      rewardRate: gauge.rewardRate,
+      mezoPrice: input.mezoPrice,
+      userLp: input.liquidity ?? 0n,
+      totalStaked: gauge.totalStaked,
+      pool: { reserveMusd: pool.reserveMusd, reserveBtc: pool.reserveBtc, balanceMusd: pool.reserveMusd, balanceBtc: pool.reserveBtc, totalSupply: pool.totalSupply },
+    }),
+  };
+}
+
+/**
+ * Both routes as rows, for one block: what each gives, this week's rate, the BTC it adds, what a 30% BTC fall leaves,
+ * and how it exits. `stake.on` is the applied wish (`effectiveStake`), so "You get" always agrees with the card's
+ * Staking row: staked LP earns MEZO and its swap fees go to veBTC voters, whether or not the week's rate is set.
  */
 export function plannerComparisonRows(input: {
+  amountMusd: bigint;
   stake: { on: boolean; availability: StakeAvailability };
   apr: bigint | null;
   weekly: bigint | null;
   poolFeeBps: bigint;
+  lp: PlannerLp | null;
 }): PlannerCompare {
-  const paying = input.stake.on && input.stake.availability === "open";
+  const { stake } = input;
+  const paying = stake.on && stake.availability === "open";
   const week =
     paying && input.apr !== null
       ? `≈ ${formatPercent(input.apr, 1)} APR`
       : paying && input.weekly !== null && input.weekly > 0n
         ? `≈ ${formatToken(input.weekly, 18, 2)} MEZO a week`
-        : input.stake.availability === "between-weeks"
-          ? "New week's rate not set yet"
+        : stake.on
+          ? stake.availability === "between-weeks"
+            ? "New week's rate not set yet"
+            : "This week's rate unavailable"
           : `Pool fee ${formatBps(input.poolFeeBps)}`;
   return {
     lp: [
-      { label: "You get", value: paying ? "Swap fees + MEZO" : "Swap fees" },
+      stake.on ? { label: "You get", value: "MEZO", sub: "swap fees go to veBTC voters" } : { label: "You get", value: "Swap fees" },
       { label: "This week", value: week },
-      { label: "Held", value: "MUSD/BTC LP", sub: "About half your MUSD becomes BTC" },
+      { label: "BTC exposure", value: input.lp ? `+${formatToken(input.lp.btcAdded)} BTC` : NO_QUOTE },
+      { label: "If BTC −30%", value: input.lp ? `≈ ${formatToken(input.lp.valueAfterDrop, 18, 2)} MUSD` : NO_QUOTE },
+      { label: "Exit", value: "Any time, at the pool price" },
     ],
-    // Constants: the only dynamic Stability Pool fact is the amount, which lives in the card's badge and link.
     sp: [
       { label: "You get", value: "BTC from liquidations" },
       { label: "This week", value: "Variable · paid in bursts" },
-      { label: "Held", value: "MUSD until a liquidation" },
+      { label: "BTC exposure", value: "None until a liquidation" },
+      { label: "If BTC −30%", value: `${formatToken(input.amountMusd, 18, 2)} MUSD`, sub: "new liquidations not modelled" },
+      { label: "Exit", value: "Paused while any Trove is below MCR" },
     ],
   };
 }

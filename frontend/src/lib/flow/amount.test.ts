@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_FILL_DIGITS, maxFillAmount, tokenAmountMax, type FlowToken } from "./amount";
+import { amountFieldError, MAX_FILL_DIGITS, maxFillAmount, tokenAmountMax, urlAmount, type FlowToken } from "./amount";
 
 // U11 Review Focus 2: Max fills the balance less the gas reserve, and blocks while the gas price is unknown.
 
@@ -42,5 +42,24 @@ describe("maxFillAmount", () => {
       const fraction = maxFillAmount(10n ** 18n - 1n, token).split(".")[1] ?? "";
       expect(fraction.length).toBeLessThanOrEqual(MAX_FILL_DIGITS[token]);
     }
+  });
+});
+
+// U17 §4: text that can never be an amount is said at the field and kept out of the URL.
+describe("amountFieldError and urlAmount", () => {
+  it.each(["abc-5", "-5", "1e5", "1,000", "1.2.3", `${"9".repeat(40)}.1234567890123456789`])("rejects %s", (text) => {
+    expect(amountFieldError(text, "musd")).toBe("Enter an MUSD amount like 20 or 20.5 (up to 18 decimals).");
+    expect(urlAmount(text)).toBe("");
+  });
+
+  it.each(["", "0", "0.", ".0", "12.5", " 7 "])("accepts %j", (text) => {
+    expect(amountFieldError(text, "musd")).toBeNull();
+    // U17 review: the URL carries the amount trimmed (` 7 ` would otherwise travel as `+7+`).
+    expect(urlAmount(text)).toBe(text.trim());
+  });
+
+  it("names BTC", () => {
+    expect(amountFieldError("x", "btc")).toBe("Enter a BTC amount like 0.01 (up to 18 decimals).");
+    expect(amountFieldError("0.01", "btc")).toBeNull();
   });
 });

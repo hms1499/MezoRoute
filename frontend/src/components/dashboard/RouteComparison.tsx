@@ -11,7 +11,7 @@ import { Segmented } from "@/components/ui/Segmented";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
 import { compareRoutes } from "@/lib/compare/comparison";
-import { defaultCompareAmount } from "@/lib/compare/default-amount";
+import { compareStart, showsOverBalance } from "@/lib/compare/default-amount";
 import { backtestRoutes, type RouteBacktests } from "@/lib/compare/history";
 import { useRouteHistory } from "@/lib/compare/useRouteHistory";
 import { amountState, lpHistoryLine, REFERENCE_AMOUNT, signedChange, spHistoryLine, windowDate, windowDays } from "@/lib/compare/view";
@@ -38,11 +38,38 @@ type Route = { id: RouteId; title: string; term?: TermId; tagline: string; rows:
 
 /** Flow B / FR-19: both routes for the typed amount, aligned row by row, with what each paid over the last 30 days. */
 /** `heading={false}` (U15): on /compare/ the page's h1 and subtitle name the comparison, so the card has no title. */
-export function RouteComparison({ snapshot, heading = true }: { snapshot: DashboardSnapshot; heading?: boolean }) {
+/**
+ * U17 §6: `start` is the raw `?amount=` of /compare/ (a valid one is the starting amount); `connected={false}` is the
+ * page before a wallet connects, when the snapshot was read for the zero address: no balance, no Max, and no note
+ * about what the wallet holds.
+ */
+export function RouteComparison({
+  snapshot,
+  heading = true,
+  start = null,
+  connected = true,
+  value = null,
+  onChange,
+}: {
+  snapshot: DashboardSnapshot;
+  heading?: boolean;
+  start?: string | null;
+  connected?: boolean;
+  /** U17 review: the field's value, held by the page so it survives this card's remount; null = never typed. */
+  value?: string | null;
+  onChange?: (text: string) => void;
+}) {
   const { network } = useNetwork();
   // Starts filled, so both routes show on arrival (U3 §5.2); an empty wallet gets a 1,000 MUSD example.
-  const [initial] = useState(() => defaultCompareAmount(snapshot.musd, network.entryCap));
-  const [text, setText] = useState(initial.text);
+  const [initial] = useState(() => compareStart(start, snapshot.musd, network.entryCap));
+  // U17 review: this card remounts whenever its snapshot changes (a wallet connects on /compare/), so the page holds
+  // what was typed. Null means nobody has typed here: the card then starts from the balance, or from the example.
+  const [own, setOwn] = useState(initial.text);
+  const text = value ?? own;
+  const setText = (next: string) => {
+    setOwn(next);
+    onChange?.(next);
+  };
   const showsExample = initial.example && text === initial.text;
   const [tab, setTab] = useState<RouteId>("lp");
   const { amount, error: amountError } = amountState(text);
@@ -84,7 +111,7 @@ export function RouteComparison({ snapshot, heading = true }: { snapshot: Dashbo
         historyRow((b) => (b.lp ? lpHistoryLine(b.lp) : "Unavailable"), "Swap fees only; MEZO is not backtested"),
         backtestRow((b) => b.lp?.valueNow ?? null),
         { label: "MezoRoute fee", value: lpFee(executorFeeBps, compared) },
-        ...lpAmountRows(compared),
+        ...lpAmountRows(compared, connected),
       ],
       risks: LP_RISKS,
       href: `/route/lp/${entryQuery({ amount: typed, slippageBps: DEFAULT_SLIPPAGE })}`,
@@ -100,7 +127,7 @@ export function RouteComparison({ snapshot, heading = true }: { snapshot: Dashbo
         historyRow((b) => spHistoryLine(b.sp)),
         backtestRow((b) => b.sp.valueNow),
         { label: "MezoRoute fee", value: "None (direct to the pool)" },
-        ...spAmountRows(compared),
+        ...spAmountRows(compared, connected),
       ],
       risks: SP_RISKS,
       href: `/route/stability-pool/${spDepositQuery(typed)}`,
@@ -112,14 +139,14 @@ export function RouteComparison({ snapshot, heading = true }: { snapshot: Dashbo
   return (
     <Card id="compare" title={heading ? "Compare routes" : undefined} subtitle={heading ? "Where to put MUSD: both routes for the same amount." : undefined}>
       <div className={cx(heading && "mt-4", "max-w-md")}>
-        <TokenAmountInput id="compare-amount" label="Amount" amount={text} onAmount={setText} token="musd" balance={snapshot.musd} balanceLabel="Wallet balance" max={snapshot.musd} />
+        <TokenAmountInput id="compare-amount" label="Amount" amount={text} onAmount={setText} token="musd" balance={connected ? snapshot.musd : null} balanceLabel="Wallet balance" max={connected ? snapshot.musd : null} />
         {amountError && (
           <p role="alert" className="mt-2 text-sm text-danger">
             {amountError}
           </p>
         )}
         {showsExample && <p className="mt-1 text-sm text-muted">Example amount.</p>}
-        {compared?.overBalance && !showsExample && (
+        {showsOverBalance({ connected, overBalance: compared?.overBalance ?? false, example: showsExample }) && (
           <p className="mt-2 text-sm text-muted">More than your wallet holds; the route page will ask for a smaller amount.</p>
         )}
       </div>

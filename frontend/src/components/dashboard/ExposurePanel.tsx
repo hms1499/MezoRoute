@@ -7,7 +7,7 @@ import { Notice } from "@/components/ui/Notice";
 import { Stat } from "@/components/ui/Stat";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { drawdownScenarios, exposure, showsDoubleExposure, type Exposure, type Scenario } from "@/lib/exposure/exposure";
-import { baselineFor, breakdownSources, chartPlots, crossingLabel, type CrPlot } from "@/lib/exposure/plots";
+import { baselineFor, breakdownSources, chartPlots, crossingLabel, exposureHeadline, type CrPlot } from "@/lib/exposure/plots";
 import { formatPercent, formatToken } from "@/lib/format";
 import { GAUGE_READ_FAILED_EXPOSURE } from "@/lib/gauge/copy";
 import { collateralRatio } from "@/lib/trove/health";
@@ -41,12 +41,18 @@ export function ExposurePanel({
   title = "BTC exposure",
   fromBtc = false,
   variant = "preview",
+  putIn,
+  scope = "account",
 }: {
   snapshot: DashboardSnapshot;
   before?: DashboardSnapshot;
   title?: string;
   fromBtc?: boolean;
   variant?: "preview" | "dashboard";
+  /** U17: MUSD the previewed deposit puts in; the Kept in MUSD line is drawn at the value before plus this. */
+  putIn?: bigint;
+  /** U17: `"deposit"` is a preview with no wallet: the headline is this deposit's BTC, not the visitor's total. */
+  scope?: "account" | "deposit";
 }) {
   const onDashboard = variant === "dashboard";
   const heading = onDashboard ? "If BTC moves" : title;
@@ -80,7 +86,7 @@ export function ExposurePanel({
   if (plots.value) {
     // U15: a Kept in MUSD line to read one line by (the After line on previews); on the Dashboard the plot is also to
     // scale (±30% of today's value).
-    const baseline = baselineFor(plots.value);
+    const baseline = baselineFor(plots.value, putIn !== undefined && prior ? Number(prior.lpValue + prior.spValue + putIn) / 1e18 : undefined);
     // Scaled around the largest line's value today, so a small second line never shrinks the frame.
     const around = Math.max(...plots.value.map((s) => s.points.find((p) => p.move === 0)?.value ?? 0));
     chart.push({
@@ -94,6 +100,7 @@ export function ExposurePanel({
   if (plots.cr) chart.push(crPlot(plots.cr, mcr));
 
   const nowCr = snapshot.trove ? collateralRatio(snapshot.trove, snapshot.price) : null;
+  const headline = exposureHeadline({ current: current.totalBtc, prior: prior?.totalBtc ?? null, scope });
   const rows = [
     { label: "Now", price: snapshot.price, cr: nowCr, liquidatable: nowCr !== null && nowCr < mcr, lpValue: current.lpValue, spValue: current.spValue },
     ...scenarios.map((s) => ({
@@ -109,8 +116,8 @@ export function ExposurePanel({
     <Card id="exposure" level={level} title={heading} aside={<span className="text-xs text-muted">BTC price {price(snapshot.price)} MUSD</span>}>
       {!onDashboard && (
         <>
-          <p className="figure mt-3 text-btc [overflow-wrap:anywhere]">{change((e) => e.totalBtc)}</p>
-          <p className="text-xs text-muted">Total BTC exposure</p>
+          <p className="figure mt-3 text-btc [overflow-wrap:anywhere]">{headline.figure}</p>
+          <p className="text-xs text-muted">{headline.caption}</p>
         </>
       )}
       {showBreakdown && (

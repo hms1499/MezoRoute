@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { formatToken } from "@/lib/format";
 import { simulateRoutes } from "./simulate";
 import { history, ONE, reference } from "./test-fixtures";
-import { compactMusd, liveStrip, SIMULATOR_FOOTNOTE, simulatorNotes, simulatorRows } from "./view";
+import { compactMusd, landingAmount, liveStrip, SIMULATOR_FOOTNOTE, SIMULATOR_TESTNET_NOTE, simulatorCaption, simulatorNotes, simulatorRows } from "./view";
 
 const lpBacktest = { liquidity: 0n, feesMusd: 0n, feesBtc: 0n, feesValue: 0n, valueNow: 0n, feeReturn: 1_300_000_000_000_000n, feeRate: 16_000_000_000_000_000n };
 const spBacktest = { depositNow: 0n, btcGain: 0n, valueNow: 0n, gainReturn: 0n, lossReturn: 0n, liquidated: false };
@@ -94,12 +94,41 @@ describe("simulatorNotes", () => {
   const at = (amount: bigint) => simulateRoutes({ reference, history: null, amount, executorFeeBps: 10n });
 
   it("always says the figures are past mainnet data, not a forecast", () => {
-    expect(simulatorNotes(at(100n * ONE), "mainnet")).toEqual([SIMULATOR_FOOTNOTE]);
+    expect(simulatorNotes(at(100n * ONE))).toEqual([SIMULATOR_FOOTNOTE]);
   });
 
-  it("adds the cap note above 1,000 MUSD and the testnet note on testnet", () => {
-    const notes = simulatorNotes(at(10_000n * ONE), "testnet");
-    expect(notes).toContain("Above the mainnet limit of 1,000 MUSD per transaction.");
-    expect(notes).toContain("You're on Testnet: these figures are Mezo mainnet; your transactions will use test tokens.");
+  it("adds the cap note above 1,000 MUSD", () => {
+    expect(simulatorNotes(at(10_000n * ONE))).toContain("Above the mainnet limit of 1,000 MUSD per transaction.");
+  });
+
+  // U17 §7: the testnet sentence sits under the card's heading, not at the bottom of the footnotes.
+  it("leaves the testnet sentence to the heading", () => {
+    expect(SIMULATOR_TESTNET_NOTE).toBe("You're on Testnet: these figures are Mezo mainnet; your transactions will use test tokens.");
+    expect(simulatorNotes(at(10_000n * ONE))).not.toContain(SIMULATOR_TESTNET_NOTE);
+  });
+});
+
+// U17 §4: an empty, zero, or unparsable field shows the labelled 1,000 MUSD example, never the previous amount.
+describe("landingAmount", () => {
+  it("shows the typed amount", () => {
+    expect(landingAmount("250")).toEqual({ text: "250", amount: 250n * ONE, error: null, shown: 250n * ONE, example: false });
+  });
+
+  it.each(["", "0", "0."])("falls back to the example for %j without an error", (text) => {
+    expect(landingAmount(text)).toEqual({ text, amount: null, error: null, shown: 1_000n * ONE, example: true });
+  });
+
+  it("falls back to the example for text that is not an amount, with the error", () => {
+    const state = landingAmount("abc");
+    expect(state.shown).toBe(1_000n * ONE);
+    expect(state.example).toBe(true);
+    expect(state.error).toContain("Enter an MUSD amount");
+  });
+});
+
+describe("simulatorCaption", () => {
+  it("labels the example", () => {
+    expect(simulatorCaption(1_000n * ONE, true)).toBe("Both routes for 1,000 MUSD (example)");
+    expect(simulatorCaption(250n * ONE, false)).toBe("Both routes for 250 MUSD, estimated");
   });
 });

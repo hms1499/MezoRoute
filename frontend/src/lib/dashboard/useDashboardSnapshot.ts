@@ -1,6 +1,6 @@
 "use client";
 
-import type { Address } from "viem";
+import { zeroAddress, type Address } from "viem";
 import { useBalance, useGasPrice } from "wagmi";
 import { useNetwork } from "@/lib/config/network-context";
 import { useSnapshotReads } from "@/lib/gauge/snapshot-reads";
@@ -16,29 +16,33 @@ export type DashboardData = { snapshot: DashboardSnapshot; gasBalance: bigint; g
  * loosens the gas check; a snapshot or balance failure is an error, except a failed gauge read, which only
  * sets `gaugeReadFailed`. F3/F5 refresh after each
  * confirmed transaction (FR-02).
+ *
+ * U17: with no account (`/compare/` before a wallet connects) the account-scoped calls use the zero address, which
+ * the chain answers with zeroes (as `useLpRouteSnapshot` does); the gas-balance query is disabled and reports `0n`.
  */
-export function useDashboardSnapshot(account: Address): {
+export function useDashboardSnapshot(account: Address | undefined): {
   data: DashboardData | undefined;
   error: Error | null;
   refresh: () => void;
 } {
   const { network } = useNetwork();
+  const connected = account !== undefined;
   const reads = useSnapshotReads({
     network,
-    contracts: dashboardContracts(network, account),
+    contracts: dashboardContracts(network, account ?? zeroAddress),
     gaugeStart: DASHBOARD_GAUGE_START,
     refetchInterval: REFRESH_MS,
   });
-  const gas = useBalance({ address: account, chainId: network.chainId, query: { refetchInterval: REFRESH_MS } });
+  const gas = useBalance({ address: account, chainId: network.chainId, query: { enabled: connected, refetchInterval: REFRESH_MS } });
   const gasPrice = useGasPrice({ chainId: network.chainId, query: { refetchInterval: REFRESH_MS } });
 
   const data =
-    reads.data && gas.data
-      ? { snapshot: parseDashboard(network, reads.data.results, reads.data.gaugeReadFailed), gasBalance: gas.data.value, gasPrice: gasPrice.data }
+    reads.data && (gas.data || !connected)
+      ? { snapshot: parseDashboard(network, reads.data.results, reads.data.gaugeReadFailed), gasBalance: gas.data?.value ?? 0n, gasPrice: gasPrice.data }
       : undefined;
   return {
     data,
-    error: reads.error ?? gas.error ?? null,
+    error: reads.error ?? (connected ? gas.error : null) ?? null,
     refresh: () => {
       void reads.refetch();
       void gas.refetch();

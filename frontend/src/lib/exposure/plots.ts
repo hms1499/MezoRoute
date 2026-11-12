@@ -87,13 +87,32 @@ function valueInput(snapshot: DashboardSnapshot) {
 
 /**
  * U15: the dashed "Kept in MUSD" line, flat at today's value, so the gap shows what a BTC move does to the position.
+ * U17: `at` puts it elsewhere: a deposit preview draws it at what was put in, so the entry's own cost shows too.
  * Only for one solid line (a preview's faint before line does not count): two lines (LP and Stability Pool) already
  * compare each other.
  */
-export function baselineFor(series: Series[]): Series | null {
+export function baselineFor(series: Series[], at?: number): Series | null {
   const solid = series.filter((s) => !s.id.endsWith("-before"));
   if (solid.length !== 1) return null;
-  const today = solid[0].points.find((p) => p.move === 0)?.value;
-  if (today === undefined) return null;
-  return { id: "baseline", points: solid[0].points.map((p) => ({ move: p.move, value: today })) };
+  const level = at ?? solid[0].points.find((p) => p.move === 0)?.value;
+  if (level === undefined) return null;
+  return { id: "baseline", points: solid[0].points.map((p) => ({ move: p.move, value: level })) };
+}
+
+const btc = (value: bigint) => `${formatToken(value)} BTC`;
+
+/**
+ * U17: the exposure panel's headline. A preview with no wallet (`scope: "deposit"`) knows nothing of the visitor's
+ * Trove or positions, so it shows what this deposit adds and says so, never "0 BTC →" as if that were their total.
+ */
+export function exposureHeadline(input: { current: bigint; prior: bigint | null; scope: "account" | "deposit" }): { figure: string; caption: string } {
+  if (input.scope === "deposit") {
+    const added = input.current - (input.prior ?? 0n);
+    // A MUSD deposit adds no BTC: "+0 BTC" read as noise under a card that already says the exposure is none.
+    return {
+      figure: added === 0n ? "No BTC added" : `+${btc(added)}`,
+      caption: "This deposit only. Connect to include your Trove and positions.",
+    };
+  }
+  return { figure: input.prior === null ? btc(input.current) : `${btc(input.prior)} → ${btc(input.current)}`, caption: "Total BTC exposure" };
 }

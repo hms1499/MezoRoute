@@ -1,6 +1,7 @@
 "use client";
 
 import { Calculator } from "lucide-react";
+import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
@@ -8,7 +9,8 @@ import { useNetwork } from "@/lib/config/network-context";
 import { formatToken } from "@/lib/format";
 import { plannerHref } from "@/lib/landing/links";
 import type { LandingSimulation } from "@/lib/landing/simulate";
-import { simulatorNotes, simulatorRows, type SimCell } from "@/lib/landing/view";
+import { SIMULATOR_TESTNET_NOTE, simulatorCaption, simulatorNotes, simulatorRows, type SimCell } from "@/lib/landing/view";
+import { compareHref } from "@/lib/compare/default-amount";
 import { WAD } from "@/lib/math";
 import { cx } from "@/lib/ui/cx";
 import { useCountUp } from "./hooks";
@@ -23,7 +25,7 @@ export function Simulator({
   onText,
   amount,
   amountError,
-  planAmount,
+  example,
   sim,
   error,
   onHighlight,
@@ -33,9 +35,9 @@ export function Simulator({
   /** The typed amount, or null while the field is empty or invalid. */
   amount: bigint | null;
   amountError: string | null;
-  /** The amount the planner link carries: the typed one, or the last valid one while the field is invalid (U16). */
-  planAmount: bigint;
-  /** The routes for the last valid amount; null until the mainnet figures load. */
+  /** U17: nothing valid is typed, so the figures are the labelled 1,000 MUSD example. */
+  example: boolean;
+  /** The routes for the typed amount, or for the example; null until the mainnet figures load. */
   sim: LandingSimulation | null;
   error: Error | null;
   onHighlight: (highlight: Highlight) => void;
@@ -54,6 +56,8 @@ export function Simulator({
           Mezo mainnet
         </span>
       </div>
+
+      {network.id === "testnet" && <p className="mt-2 text-sm leading-relaxed text-night-muted">{SIMULATOR_TESTNET_NOTE}</p>}
 
       <label htmlFor="simulator-amount" className="sr-only">
         Amount in MUSD
@@ -98,8 +102,9 @@ export function Simulator({
 
       {sim ? (
         <Settle>
-          <table className={cx("mt-4 w-full text-sm", amount === null && "opacity-80")}>
-            <caption className="sr-only">Both routes for {formatToken(sim.amount, 18, 2)} MUSD, estimated</caption>
+          {example && <p className="mt-4 text-sm text-night-muted">Showing {formatToken(sim.amount, 18, 2)} MUSD as an example.</p>}
+          <table className={cx("w-full text-sm", example ? "mt-2" : "mt-4")}>
+            <caption className="sr-only">{simulatorCaption(sim.amount, example)}</caption>
             {/* Below 640 px each row stacks: its label on top, the two routes side by side underneath. */}
             <thead>
               <tr className="max-sm:grid max-sm:grid-cols-2">
@@ -131,7 +136,7 @@ export function Simulator({
             </tbody>
           </table>
           <ul id="simulator-notes" className="mt-3 space-y-1 text-sm leading-relaxed text-night-muted">
-            {simulatorNotes(sim, network.id).map((note) => (
+            {simulatorNotes(sim).map((note) => (
               <li key={note}>{note}</li>
             ))}
           </ul>
@@ -156,11 +161,17 @@ export function Simulator({
         </div>
       )}
 
-      {/* U16: the LP route plans without a wallet (U13), so the panel leads there instead of to Connect. */}
-      <ButtonLink href={plannerHref("lp", planAmount)} variant="nightOutline" className="mt-5 w-full">
+      {/* U16: the LP route plans without a wallet (U13), so the panel leads there instead of to Connect. U17: the
+          example state carries no amount, and the 30-day results are one link away. */}
+      <ButtonLink href={plannerHref("lp", amount)} variant="nightOutline" className="mt-5 w-full">
         <Calculator aria-hidden className="h-4 w-4" />
         Plan this amount
       </ButtonLink>
+      <p className="mt-3 text-center text-sm">
+        <Link href={compareHref(example ? "" : text.trim())} className="font-medium text-accent underline underline-offset-2 hover:text-accent-hover">
+          30-day results for both routes
+        </Link>
+      </p>
     </section>
   );
 }
