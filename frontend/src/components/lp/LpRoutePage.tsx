@@ -20,7 +20,6 @@ import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import { entryWorth } from "@/lib/flow/entry-worth";
 import { WAD } from "@/lib/math";
 import { stakeRowCopy } from "@/lib/gauge/copy";
-import { emissionsApr, mezoPerWeek } from "@/lib/gauge/maths";
 import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
 import { exposure } from "@/lib/exposure/exposure";
 import { lpAmountField, lpHeaderFigure, lpRiskLine } from "@/lib/flow/lp-entry";
@@ -28,7 +27,8 @@ import { splitPrimary } from "@/lib/flow/notice-action";
 import { plannerView } from "@/lib/flow/planner";
 import { isFieldBlock, lpFieldError } from "@/lib/flow/field-error";
 import { lpSignFacts } from "@/lib/flow/sign-facts";
-import { BTC_COMPARE_MESSAGE, plannerAmount, plannerComparisonRows } from "@/lib/flow/planner-comparison";
+import { BTC_COMPARE_MESSAGE, lpWeekRate, plannerAmount, plannerComparisonRows, plannerLpFigures } from "@/lib/flow/planner-comparison";
+import { compareHref } from "@/lib/compare/default-amount";
 import { btcRecoveries } from "@/lib/routes/musd-btc-lp/asset";
 import { entryQuery, parseEntryIntent, type EntryIntent } from "@/lib/routes/musd-btc-lp/intent";
 import { entryPreview } from "@/lib/routes/musd-btc-lp/preview";
@@ -114,23 +114,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
   // This week's rate, only while the week pays: between weeks there is no rate to show.
   const { gauge } = data.snapshot;
   // The header's APR needs no amount (this week's rate on the staked value); the MEZO a week does.
-  const open = preview.stake.availability === "open" && gauge !== null;
-  const weekly = open && quote !== null ? mezoPerWeek(gauge.rewardRate, quote.liquidity, gauge.totalStaked) : null;
-  const apr = open
-    ? emissionsApr({
-        rewardRate: gauge.rewardRate,
-        mezoPrice,
-        userLp: quote?.liquidity ?? 0n,
-        totalStaked: gauge.totalStaked,
-        pool: {
-          reserveMusd: data.snapshot.pool.reserveMusd,
-          reserveBtc: data.snapshot.pool.reserveBtc,
-          balanceMusd: data.snapshot.pool.reserveMusd,
-          balanceBtc: data.snapshot.pool.reserveBtc,
-          totalSupply: data.snapshot.pool.totalSupply,
-        },
-      })
-    : null;
+  const { apr, weekly } = lpWeekRate({ gauge, availability: preview.stake.availability, mezoPrice, liquidity: quote?.liquidity ?? null, pool: data.snapshot.pool });
   const { dashboard } = data.snapshot;
   const exposureChange = preview.after ? exposure(preview.after).totalBtc - exposure(dashboard).totalBtc : null;
   // U17 §1: the BTC this entry adds and what a 30% fall does to it are decision rows again (U12 had them in Details);
@@ -253,10 +237,23 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
               example={comparison.kind === "rows" && comparison.example}
               state={
                 comparison.kind === "rows"
-                  ? { kind: "rows", rows: plannerComparisonRows({ stake: preview.stake, apr, weekly, poolFeeBps: dashboard.poolFeeBps }) }
+                  ? {
+                      kind: "rows",
+                      rows: plannerComparisonRows({
+                        amountMusd: comparison.amountMusd,
+                        stake: preview.stake,
+                        apr,
+                        weekly,
+                        poolFeeBps: dashboard.poolFeeBps,
+                        // The same pure quote the card shows for a typed amount; the example amount has no card quote.
+                        lp: plannerLpFigures({ pool: data.snapshot.pool, price: dashboard.price, amountMusd: comparison.amountMusd, executorFeeBps: data.snapshot.executorFeeBps }),
+                      }),
+                    }
                   : comparison
               }
-              spHref={comparison.kind === "rows" ? `/route/stability-pool/${spDepositQuery(comparison.amountText)}` : null}
+              other="sp"
+              otherHref={comparison.kind === "rows" ? `/route/stability-pool/${spDepositQuery(comparison.amountText)}` : null}
+              historyHref={compareHref(comparison.kind === "rows" && !comparison.example ? comparison.amountText : "")}
             />
           )}
           <BeforeYouSign

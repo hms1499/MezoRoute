@@ -12,3 +12,8 @@ export function defaultCompareAmount(walletMusd: bigint, cap: bigint): { text: s
   const whole = (walletMusd < cap ? walletMusd : cap) / WAD;
   return { text: whole.toString(), example: false };
 }
+
+/** The 30-day comparison page for an amount as typed; the bare page without one. */
+export function compareHref(amountText: string): string {
+  return amountText ? `/compare/?amount=${encodeURIComponent(amountText)}` : "/compare/";
+}
