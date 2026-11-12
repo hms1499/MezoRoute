@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { ActionCard } from "./ActionCard";
 import { Details } from "./Details";
 import { FlowColumn, FlowState } from "./FlowColumn";
+import { Overview } from "./Overview";
+import { ReceiveRow } from "./ReceiveRow";
 import { SlippagePopover } from "./SlippagePopover";
 
 // U11 §6.1-6.2: the flow's one card, its disclosure, the slippage popover, and the centred column.
@@ -93,5 +95,33 @@ describe("SlippagePopover placement", () => {
   it("keeps its root right-aligned when the settings row wraps", () => {
     const out = renderToStaticMarkup(createElement(SlippagePopover, { slippageBps: 100n, onChange: () => undefined }));
     expect(out).toMatch(/^<div class="[^"]*\bml-auto\b/);
+  });
+});
+
+describe("warning icons (U18)", () => {
+  const ICON = /<svg[^>]*lucide-circle-alert[^>]*>/g;
+  it("Overview puts one aria-hidden alert icon on the warning row only", () => {
+    const out = renderToStaticMarkup(
+      createElement(Overview, {
+        rows: [
+          { label: "Price impact", value: "2%", tone: "warning" },
+          { label: "BTC", value: "1", tone: "btc" },
+        ],
+      }),
+    );
+    const icons = out.match(ICON) ?? [];
+    expect(icons).toHaveLength(1);
+    expect(icons[0]).toContain('aria-hidden="true"');
+    expect(icons[0]).toContain("h-4 w-4");
+    expect(out.indexOf("<svg")).toBeLessThan(out.indexOf("2%"));
+  });
+
+  it("ReceiveRow puts the icon before the note, then a separator and the action", () => {
+    const out = renderToStaticMarkup(
+      createElement(ReceiveRow, { value: "1 LP", icon: null, note: "below", noteAction: createElement("a", { href: "#x" }, "Why") }),
+    );
+    expect(out.indexOf("lucide-circle-alert")).toBeGreaterThan(-1);
+    expect(out.indexOf("lucide-circle-alert")).toBeLessThan(out.indexOf("below"));
+    expect(out).toMatch(/below.* · .*<a href="#x">Why<\/a>/);
   });
 });

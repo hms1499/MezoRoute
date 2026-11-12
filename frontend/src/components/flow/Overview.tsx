@@ -1,3 +1,4 @@
+import { CircleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { cx } from "@/lib/ui/cx";
 
@@ -35,7 +36,14 @@ export function Overview({ rows, className, columns = 1 }: { rows: OverviewRow[]
             <dt className="shrink-0 text-sm font-medium text-muted">{row.label}</dt>
             {/* No `text-wrap: balance` here: it split "123.6015" from "MUSD" to even out the lines. */}
             <dd className={cx("min-w-0 text-left text-sm font-medium sm:text-right", row.tone ? TONE[row.tone] : "text-ink")}>
-              {row.value}
+              {row.tone === "warning" ? (
+                <span className="inline-flex items-start gap-1 sm:justify-end">
+                  <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{row.value}</span>
+                </span>
+              ) : (
+                row.value
+              )}
               {row.sub && <span className="block text-xs font-normal text-muted">{row.sub}</span>}
             </dd>
           </div>

@@ -1,3 +1,4 @@
+import { CircleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
 // U11 §6.1: what the user gets, in a well box: the label, an xl figure, its token or pair icon, and the minimum.
@@ -8,12 +9,15 @@ export function ReceiveRow({
   value,
   minimum,
   note,
+  noteAction,
   icon,
 }: {
   label?: ReactNode;
   value: ReactNode;
   minimum?: ReactNode;
   note?: ReactNode;
+  /** U18: a link after the note (` · Why`). */
+  noteAction?: ReactNode;
   icon: ReactNode;
 }) {
   return (
@@ -22,7 +26,15 @@ export function ReceiveRow({
         <p className="text-xs text-muted">{label}</p>
         <p className="mt-1 break-words text-xl font-medium">{value}</p>
         {minimum && <p className="mt-0.5 text-sm text-muted">{minimum}</p>}
-        {note && <p className="mt-1 text-sm text-warning-ink">{note}</p>}
+        {note && (
+          <p className="mt-1 flex items-start gap-1 text-sm text-warning-ink">
+            <CircleAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {note}
+              {noteAction && <> · {noteAction}</>}
+            </span>
+          </p>
+        )}
       </div>
       {icon}
     </div>

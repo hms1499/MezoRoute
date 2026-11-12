@@ -101,7 +101,19 @@ export function LpEntryCard({
           error={field.error ?? undefined}
         />
         {receive && (
-          <ReceiveRow value={receive.value} minimum={receive.minimum} note={receive.note} icon={<PairIcon tokens={["musd", "btc"]} size={20} />} />
+          <ReceiveRow
+            value={receive.value}
+            minimum={receive.minimum}
+            note={receive.note}
+            noteAction={
+              receive.note ? (
+                <a href="#details" className="font-medium text-accent underline underline-offset-2 hover:text-accent-hover">
+                  Why
+                </a>
+              ) : undefined
+            }
+            icon={<PairIcon tokens={["musd", "btc"]} size={20} />}
+          />
         )}
         {overview.length > 0 && <Overview rows={overview} />}
         {notices}

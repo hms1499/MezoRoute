@@ -119,7 +119,10 @@ describe("LpEntryCard", () => {
   it("says the entry gap under what the user receives, as a warning (U17)", () => {
     const note = "≈ 29.94 MUSD (3%) below the 1,000 MUSD you put in, at the BTC price.";
     const out = renderToStaticMarkup(createElement(LpEntryCard, { ...props, receive: { value: "LP worth ≈ 970.06 MUSD", minimum: "≈ 1.78 LP · at least 1.76 LP", note } }));
-    expect(out).toMatch(new RegExp(`text-warning-ink[^>]*>${note.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+    expect(out).toMatch(new RegExp(`text-warning-ink[^>]*>(<svg.*?</svg>)?<span>${note.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+    expect(out).toContain('href="#details"');
+    expect(out).toContain(">Why</a>");
+    expect(renderToStaticMarkup(createElement(LpEntryCard, props))).not.toContain(">Why</a>");
     expect(renderToStaticMarkup(createElement(LpEntryCard, props))).not.toContain("text-warning-ink");
   });
 

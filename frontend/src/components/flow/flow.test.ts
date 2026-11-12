@@ -167,7 +167,7 @@ describe("Overview columns", () => {
 describe("Overview warning tone", () => {
   it("renders a warning value in the warning ink", () => {
     const out = renderToStaticMarkup(createElement(Overview, { rows: [{ label: "Price impact", value: "2%", tone: "warning" }] }));
-    expect(out).toMatch(/<dd class="[^"]*\btext-warning-ink\b[^"]*">2%/);
+    expect(out).toMatch(/<dd class="[^"]*\btext-warning-ink\b[^"]*"><span[^>]*><svg.*?<\/svg><span>2%/);
   });
 });
 
