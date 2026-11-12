@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/Card";
 import { formatBps } from "@/lib/format";
 import type { BtcEntryQuote, EntryQuote } from "@/lib/quote/entry";
-import { btc, btcFine, musd } from "./units";
+import { btc, btcFine, musdShort } from "./units";
 
 /** "What happens" (Flow C step 1); the numbers sit in the summary panel. */
 export function EntryPreviewCard({
@@ -17,16 +17,16 @@ export function EntryPreviewCard({
 }) {
   const steps = [
     ...(borrowFee !== undefined && "musdIn" in quote
-      ? [`MezoRoute borrows ${musd(quote.musdIn)} from your Trove; the ${musd(borrowFee)} borrowing fee is added to your debt.`]
+      ? [`MezoRoute borrows ${musdShort(quote.musdIn)} from your Trove; the ${musdShort(borrowFee)} borrowing fee is added to your debt.`]
       : []),
     ...("btcIn" in quote
       ? [
           `MezoRoute takes its ${formatBps(feeBps)} fee: ${btcFine(quote.fee)}.`,
-          `${btcFine(quote.btcToSwap)} is swapped to about ${musd(quote.musdFromSwap)} in the MUSD/BTC pool.`,
+          `${btcFine(quote.btcToSwap)} is swapped to about ${musdShort(quote.musdFromSwap)} in the MUSD/BTC pool.`,
         ]
       : [
-          `MezoRoute takes its ${formatBps(feeBps)} fee: ${musd(quote.fee)}.`,
-          `${musd(quote.musdToSwap)} is swapped to about ${btc(quote.btcFromSwap)} in the MUSD/BTC pool.`,
+          `MezoRoute takes its ${formatBps(feeBps)} fee: ${musdShort(quote.fee)}.`,
+          `${musdShort(quote.musdToSwap)} is swapped to about ${btc(quote.btcFromSwap)} in the MUSD/BTC pool.`,
         ]),
     "Both are added to the pool and you receive LP tokens. Anything left over returns to your wallet in the same transaction.",
     ...(stake ? ["The LP tokens are staked in the pool's gauge for you, in the same transaction."] : []),

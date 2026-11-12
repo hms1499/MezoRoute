@@ -154,7 +154,7 @@ function SpRoute({ account }: { account: Address | undefined }) {
             historyHref={compareHref(comparison.kind === "rows" && !comparison.example ? comparison.amountText : "")}
           />
           {/* Without a wallet there is no deposit to show: only what signing gives up. */}
-          {connected ? <SpDepositAside sp={dashboard.sp} facts={facts} /> : <BeforeYouSign facts={facts} />}
+          {connected ? <SpDepositAside sp={dashboard.sp} facts={facts} musdDecimals={2} /> : <BeforeYouSign facts={facts} />}
         </>
       }
       header={

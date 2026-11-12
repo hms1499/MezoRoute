@@ -5,7 +5,7 @@ import { formatPercent } from "@/lib/format";
 import type { BorrowEffect } from "@/lib/trove/borrow";
 import { CR_SAFETY_FLOOR } from "@/lib/trove/constants";
 import { collateralRatio } from "@/lib/trove/health";
-import { musd } from "./units";
+import { musdShort } from "./units";
 
 /** The Trove before → after the borrow (Flow D step 2), as rows of the action card's overview (U11 §6.1). */
 export function troveChangeRows({ trove, effect, price, mcr }: { trove: Trove; effect: BorrowEffect; price: bigint; mcr: bigint }): OverviewRow[] {
@@ -18,8 +18,8 @@ export function troveChangeRows({ trove, effect, price, mcr }: { trove: Trove; e
           <Term id="trove">Trove</Term> debt
         </>
       ),
-      value: `${musd(trove.debt)} → ${musd(effect.newDebt)}`,
-      sub: `includes the ${musd(effect.fee)} borrowing fee`,
+      value: `${musdShort(trove.debt)} → ${musdShort(effect.newDebt)}`,
+      sub: `includes the ${musdShort(effect.fee)} borrowing fee`,
     },
     {
       label: <Term id="collateralRatio">Collateral ratio</Term>,

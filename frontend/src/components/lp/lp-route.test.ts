@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { LpEntryCard } from "./LpEntryCard";
 import { entryWorth } from "@/lib/flow/entry-worth";
 import { lpDetailsRows } from "./LpRoutePage";
+import { troveChangeRows } from "./troveChange";
+import { EntryPreviewCard } from "./EntryPreviewCard";
 
 // U11 §6.2: the LP amount page is one action card with Review as its only primary, and Details below it.
 
@@ -155,5 +157,26 @@ describe("lpDetailsRows (U18 §1)", () => {
   it("adds nothing without a gap or a worth", () => {
     expect(lpDetailsRows(entryWorth(quote, 900n * E, 180n * E), rest)).toEqual(rest);
     expect(lpDetailsRows(null, rest)).toEqual(rest);
+  });
+});
+
+describe("planner precision (U18): MUSD at 2 dp in Details", () => {
+  const E = 10n ** 18n;
+  it("troveChangeRows reads MUSD to 2 dp", () => {
+    const rows = troveChangeRows({
+      trove: { debt: 1234_567_800_000_000_000_000n, collateral: E } as never,
+      effect: { newDebt: 1334_567_800_000_000_000_000n, fee: 1_234_500_000_000_000_000n, newCr: null } as never,
+      price: 1000n * E,
+      mcr: 11n * E / 10n,
+    });
+    expect(rows[0].value).toBe("1,234.56 MUSD → 1,334.56 MUSD");
+    expect(rows[0].sub).toBe("includes the 1.23 MUSD borrowing fee");
+  });
+
+  it("EntryPreviewCard reads MUSD to 2 dp", () => {
+    const quote = { fee: 1_234_500_000_000_000_000n, musdToSwap: 500_126_000_000_000_000_000n, btcFromSwap: E / 100n } as never;
+    const out = renderToStaticMarkup(createElement(EntryPreviewCard, { quote, feeBps: 10n, borrowFee: 1_234_500_000_000_000_000n }));
+    expect(out).toContain("fee: 1.23 MUSD");
+    expect(out).toContain("500.12 MUSD is swapped");
   });
 });

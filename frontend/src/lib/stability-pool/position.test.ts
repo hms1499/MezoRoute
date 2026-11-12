@@ -44,6 +44,12 @@ describe("spDepositRows", () => {
     ]);
   });
 
+  it("takes a precision for the planner (2 dp), 4 dp by default", () => {
+    const deposit = 10n * ONE + 123456789012345678n / 10n; // 10.0123...
+    expect(spDepositRows({ deposit, btcGain: 0n }, 2)?.[0].value).toBe("10.01 MUSD");
+    expect(spDepositRows({ deposit, btcGain: 0n })?.[0].value).toBe("10.0123 MUSD");
+  });
+
   it("still shows a gain left after a full withdrawal", () => {
     expect(spDepositRows({ deposit: 0n, btcGain: 1n })?.map((r) => r.label)).toEqual(["Deposit", "BTC gain"]);
   });

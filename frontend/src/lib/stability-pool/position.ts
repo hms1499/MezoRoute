@@ -33,11 +33,11 @@ export function spView(snapshot: SpSnapshot, basis: SpCostBasis | null): SpView 
   };
 }
 
-/** The Stability Pool aside's rows (U14): the deposit and its BTC gain, or null when there is neither. */
-export function spDepositRows(sp: { deposit: bigint; btcGain: bigint }): OverviewRow[] | null {
+/** The Stability Pool aside's rows (U14): the deposit and its BTC gain, or null when there is neither. The planner passes 2 dp (U18). */
+export function spDepositRows(sp: { deposit: bigint; btcGain: bigint }, musdDecimals = 4): OverviewRow[] | null {
   if (sp.deposit === 0n && sp.btcGain === 0n) return null;
   return [
-    { label: "Deposit", value: `${formatToken(sp.deposit, 18, 4)} MUSD` },
+    { label: "Deposit", value: `${formatToken(sp.deposit, 18, musdDecimals)} MUSD` },
     { label: "BTC gain", value: `${formatToken(sp.btcGain, 18, 8)} BTC` },
   ];
 }
