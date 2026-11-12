@@ -6,7 +6,7 @@ import type { WalletKind } from "@/lib/wallet/capabilities";
 
 const BORROW_LABEL = "Borrow & Deploy";
 /** U13: no wallet, no Trove to read, so borrowing waits for the connection. */
-const CONNECT_TO_BORROW = "Connect a wallet to borrow against your Trove.";
+const CONNECT_TO_BORROW = "Borrow & Deploy needs a connected wallet with a Trove.";
 
 /** The tab is a radio button, so the term's definition sits on the note under it (U8); every note starts with the label. */
 function withTerm(note: string) {
