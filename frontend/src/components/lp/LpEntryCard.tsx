@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ActionCard } from "@/components/flow/ActionCard";
+import { TrustLine } from "@/components/flow/BeforeYouSign";
 import { Details } from "@/components/flow/Details";
 import { Overview, type OverviewRow } from "@/components/flow/Overview";
 import { ReceiveRow } from "@/components/flow/ReceiveRow";
@@ -26,6 +27,7 @@ export function LpEntryCard({
   action,
   context,
   details,
+  trust,
 }: {
   header: { label: string; value: string };
   tabs: ReactNode;
@@ -45,6 +47,8 @@ export function LpEntryCard({
   /** Context rows (exposure, Trove change, network fee) shown in Details, not before the action. */
   context?: OverviewRow[];
   details: ReactNode;
+  /** U17: one line pointing at Before you sign, shown below lg only. */
+  trust?: string | null;
 }) {
   return (
     <>
@@ -101,6 +105,7 @@ export function LpEntryCard({
         )}
         {overview.length > 0 && <Overview rows={overview} />}
         {notices}
+        <TrustLine text={trust} />
       </ActionCard>
       <Details>
         {context && context.length > 0 && <Overview rows={context} />}

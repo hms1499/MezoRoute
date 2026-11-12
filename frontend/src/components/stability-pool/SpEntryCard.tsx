@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ActionCard } from "@/components/flow/ActionCard";
+import { TrustLine } from "@/components/flow/BeforeYouSign";
 import { Details } from "@/components/flow/Details";
 import { Overview, type OverviewRow } from "@/components/flow/Overview";
 import { TokenAmountInput } from "@/components/flow/TokenAmountInput";
@@ -19,6 +20,7 @@ export function SpEntryCard({
   review,
   action,
   details,
+  trust,
 }: {
   /** `balance: null` before a wallet connects (U17): the field asks to connect and offers no Max. */
   field: { amount: string; onAmount: (amount: string) => void; balance: bigint | null; error?: string | null };
@@ -28,6 +30,8 @@ export function SpEntryCard({
   /** U17: the page's own control in place of Review (Connect to review, before a wallet connects). */
   action?: ReactNode;
   details: ReactNode;
+  /** U17: one line pointing at Before you sign, shown below lg only. */
+  trust?: string | null;
 }) {
   return (
     <>
@@ -64,6 +68,7 @@ export function SpEntryCard({
         />
         {overview.length > 0 && <Overview rows={overview} />}
         {notices}
+        <TrustLine text={trust} />
       </ActionCard>
       <Details>{details}</Details>
     </>

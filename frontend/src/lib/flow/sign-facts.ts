@@ -73,3 +73,15 @@ export function troveSignFacts(
     reads(input.blockNumber),
   ];
 }
+
+/**
+ * U17 §7: the amount card's one-line pointer at these facts below `lg`, where the aside sits far under the primary:
+ * the route's own Audit fact, then its entry cap when it has one. It follows the list, so the Stability Pool (a direct
+ * call to Mezo's contract) is never called unaudited MezoRoute software.
+ */
+export function trustLine(facts: SignFact[] | null): string | null {
+  const audit = facts?.find((fact) => fact.label === "Audit");
+  if (!audit) return null;
+  const cap = facts?.find((fact) => fact.label === "Entry cap");
+  return cap ? `${audit.value} · cap ${cap.value}` : audit.value;
+}

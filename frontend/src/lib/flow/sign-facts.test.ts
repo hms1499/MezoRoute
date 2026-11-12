@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { REPOSITORY } from "@/lib/config/links";
 import { explorerAddressUrl, networks } from "@/lib/config/networks";
-import { lpSignFacts, spSignFacts, troveSignFacts } from "./sign-facts";
+import { lpSignFacts, spSignFacts, troveSignFacts, trustLine } from "./sign-facts";
 
 // U14 §A: the facts a person gives up the moment they sign, one helper per route kind. Each ends with Audit and Reads.
 
@@ -83,5 +83,21 @@ describe("troveSignFacts for Repay from wallet", () => {
     expect(facts?.[1].value).toBe("None");
     expect(facts?.[2].value).toBe("None: a direct call from any wallet");
     expect(facts?.[3].value).toBe("Mezo's contract; MezoRoute adds none");
+  });
+});
+
+// U17 §7: below lg "Before you sign" sits far under the primary, so the card carries one line pointing at it.
+describe("trustLine", () => {
+  it("is the route's own Audit fact, then its entry cap", () => {
+    expect(trustLine(lpSignFacts(networks.mainnet, { feeBps: 10n, capMusd: 1_000n * 10n ** 18n, blockNumber: 1n }))).toBe("Unaudited software · cap 1,000 MUSD");
+  });
+
+  it("does not call Mezo's own pool unaudited MezoRoute software, and has no cap to state", () => {
+    expect(trustLine(spSignFacts(networks.mainnet, 1n))).toBe("Mezo's contract; MezoRoute adds none");
+  });
+
+  it("is absent without facts", () => {
+    expect(trustLine(null)).toBeNull();
+    expect(trustLine([])).toBeNull();
   });
 });

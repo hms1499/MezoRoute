@@ -13,7 +13,7 @@ import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { amountFieldError, urlAmount } from "@/lib/flow/amount";
 import { isFieldBlock, spFieldError } from "@/lib/flow/field-error";
 import { lpWeekRate, plannerAmount, plannerComparisonRows, plannerLpFigures } from "@/lib/flow/planner-comparison";
-import { spSignFacts } from "@/lib/flow/sign-facts";
+import { spSignFacts, trustLine } from "@/lib/flow/sign-facts";
 import type { OverviewRow } from "@/components/flow/Overview";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingCard } from "@/components/ui/Skeleton";
@@ -164,6 +164,7 @@ function SpRoute({ account }: { account: Address | undefined }) {
         notices={<BlockNotice block={block && isFieldBlock(block.reason) ? { outcome: null } : block} actions={recoveries} />}
         review={{ href: `/route/stability-pool/confirm/${spDepositQuery(amount)}`, disabled: block !== null }}
         action={connected ? undefined : <ConnectCta label="Connect to review" variant="primary" className="w-full" arrow />}
+        trust={trustLine(facts)}
         details={
           <>
             <p className="text-sm text-muted">Your MUSD repays liquidated debt; in return you receive the liquidated BTC collateral.</p>

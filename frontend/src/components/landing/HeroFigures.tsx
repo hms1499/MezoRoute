@@ -25,7 +25,9 @@ export function HeroFigures({ live }: { live: LiveStrip }) {
     );
   }
   return (
-    <dl className="grid grid-cols-1 gap-6 sm:flex sm:gap-12">
+    // U17 §7: the figures do not shrink below their text (a nowrap figure in a min-w-0 flex item ran 26 px past its
+    // box into the route motif at 1440 px); the row wraps instead.
+    <dl className="grid grid-cols-1 gap-6 sm:flex sm:flex-wrap sm:gap-x-12">
       <Figure index={0} label="MUSD/BTC pool" sub={live.lpFees ? `${live.lpFees.value} LP fees, last 30 days · ${live.lpFees.sub}` : undefined}>
         <CountFromZero value={live.poolValue} format={(v) => `${formatToken(v, 18, 0)} MUSD`} />
       </Figure>
@@ -38,7 +40,7 @@ export function HeroFigures({ live }: { live: LiveStrip }) {
 
 function Figure({ index, label, sub, children }: { index: number; label: string; sub?: string; children: ReactNode }) {
   return (
-    <Settle index={index} className="min-w-0">
+    <Settle index={index} className="min-w-0 sm:shrink-0">
       <dt className="eyebrow">{label}</dt>
       <dd className="figure mt-1 whitespace-nowrap text-ink">{children}</dd>
       {sub && <dd className="mt-1 text-xs text-muted">{sub}</dd>}

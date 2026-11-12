@@ -80,4 +80,11 @@ describe("SpEntryCard without a wallet (U17)", () => {
     expect(out).not.toContain(">Review<");
     expect(card({})).toContain("Review");
   });
+
+  it("points at Before you sign above the primary, below lg only", () => {
+    const out = card({ trust: "Mezo's contract; MezoRoute adds none" });
+    expect(out).toMatch(/lg:hidden[^>]*>Mezo(&#x27;|')s contract; MezoRoute adds none/);
+    expect(out).toContain('href="#before-you-sign"');
+    expect(card({})).not.toContain("#before-you-sign");
+  });
 });

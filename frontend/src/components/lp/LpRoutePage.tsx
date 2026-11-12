@@ -27,7 +27,7 @@ import { lpAmountField, lpHeaderFigure, lpRiskLine } from "@/lib/flow/lp-entry";
 import { splitPrimary } from "@/lib/flow/notice-action";
 import { plannerAmountBlock, plannerView } from "@/lib/flow/planner";
 import { isFieldBlock, lpFieldError } from "@/lib/flow/field-error";
-import { lpSignFacts } from "@/lib/flow/sign-facts";
+import { lpSignFacts, trustLine } from "@/lib/flow/sign-facts";
 import { BTC_COMPARE_MESSAGE, lpWeekRate, plannerAmount, plannerComparisonRows, plannerLpFigures } from "@/lib/flow/planner-comparison";
 import { compareHref } from "@/lib/compare/default-amount";
 import { btcRecoveries } from "@/lib/routes/musd-btc-lp/asset";
@@ -223,6 +223,8 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
       ? ({ kind: "message", message: BTC_COMPARE_MESSAGE } as const)
       : plannerAmount({ text: intent.amount, musdIn: intent.musdIn, cap: network.entryCap });
 
+  const signFacts = lpSignFacts(network, { feeBps: data.snapshot.executorFeeBps, capMusd: data.snapshot.maxMusdIn, blockNumber: data.snapshot.blockNumber });
+
   return (
     <FlowColumn
       header={<PageHeader
@@ -258,9 +260,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
               historyHref={compareHref(comparison.kind === "rows" && !comparison.example ? comparison.amountText : "")}
             />
           )}
-          <BeforeYouSign
-            facts={lpSignFacts(network, { feeBps: data.snapshot.executorFeeBps, capMusd: data.snapshot.maxMusdIn, blockNumber: data.snapshot.blockNumber })}
-          />
+          <BeforeYouSign facts={signFacts} />
         </>
       }
     >
@@ -299,6 +299,7 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
         }
         risk={lpRiskLine({ borrow: displayIntent.mode === "borrow", fromBtc })}
         action={primaryAction}
+        trust={trustLine(signFacts)}
         details={
           <>
             {quote && <EntryPreviewCard quote={quote} feeBps={data.snapshot.executorFeeBps} borrowFee={preview.borrow?.effect?.fee} stake={preview.stake.on} />}
