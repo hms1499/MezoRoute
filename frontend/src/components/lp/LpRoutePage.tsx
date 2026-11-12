@@ -17,7 +17,7 @@ import { LoadingCard } from "@/components/ui/Skeleton";
 import { Term } from "@/components/ui/Term";
 import { useNetwork } from "@/lib/config/network-context";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
-import { entryGapRow, entryWorth, type EntryWorth } from "@/lib/flow/entry-worth";
+import { entryWorth } from "@/lib/flow/entry-worth";
 import { WAD } from "@/lib/math";
 import { stakeRowCopy } from "@/lib/gauge/copy";
 import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
@@ -40,7 +40,7 @@ import { borrowLimit, isRecoveryMode } from "@/lib/trove/borrow";
 import { walletCapabilities } from "@/lib/wallet/capabilities";
 import { useWalletKind } from "@/lib/wallet/useWalletKind";
 import { balanceNoticeActions, BlockNotice } from "./BlockNotice";
-import { lpExposureRow, lpReceive, priceImpactRow } from "./entry-rows";
+import { lpDetailsRows, lpExposureRow, lpReceive, priceImpactRow } from "./entry-rows";
 import { EntryPreviewCard } from "./EntryPreviewCard";
 import { LpEntryCard } from "./LpEntryCard";
 import { ModeToggle } from "./ModeToggle";
@@ -53,12 +53,6 @@ import { btc, btcFine, musdShort } from "./units";
 
 /** Below one unit of the eight decimals shown, the reserve line would only say "<0.00000001 BTC". */
 const MIN_SHOWN_RESERVE = 10n ** 10n;
-
-/** U18 §1: the gap to what was put in leads Details (the card's gap line links here), then the Trove rows and the fee. */
-export function lpDetailsRows(worth: EntryWorth | null, rest: OverviewRow[]): OverviewRow[] {
-  const gap = worth && entryGapRow(worth);
-  return gap ? [gap, ...rest] : rest;
-}
 
 /**
  * Spec §9 screen 2a; U11 §6.2: one action card (amount, receive, stake, overview, Review), then Details.

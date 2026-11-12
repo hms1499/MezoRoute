@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { entryGapLine, entryWorth } from "@/lib/flow/entry-worth";
-import { lpExposureRow, lpReceive, priceImpactRow } from "./entry-rows";
+import { lpDetailsRows, lpExposureRow, lpReceive, priceImpactRow } from "./entry-rows";
 import { formatToken } from "@/lib/format";
 import { btc, btcFine, lpShort, musdShort } from "./units";
 
@@ -65,5 +65,19 @@ describe("lpReceive", () => {
   it("has no note within 1% of what was put in", () => {
     const close = entryWorth(quote, 900n * E, 191n * E);
     expect(lpReceive({ worth: close, liquidity: 10n * E, minLpOut: 9n * E }).note).toBeNull();
+  });
+});
+
+describe("lpDetailsRows (U18 §1)", () => {
+  const rest = [{ label: "Network fee", value: "0.00001 BTC" }];
+
+  it("puts Below what you put in before Network fee", () => {
+    const rows = lpDetailsRows(entryWorth(quote, 900n * E, 200n * E), rest);
+    expect(rows.map((r) => r.label)).toEqual(["Below what you put in", "Network fee"]);
+  });
+
+  it("adds nothing without a gap or a worth", () => {
+    expect(lpDetailsRows(entryWorth(quote, 900n * E, 180n * E), rest)).toEqual(rest);
+    expect(lpDetailsRows(null, rest)).toEqual(rest);
   });
 });

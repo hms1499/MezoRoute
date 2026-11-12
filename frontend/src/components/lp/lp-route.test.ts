@@ -3,7 +3,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { LpEntryCard } from "./LpEntryCard";
 import { entryWorth } from "@/lib/flow/entry-worth";
-import { lpDetailsRows } from "./LpRoutePage";
 import { troveChangeRows } from "./troveChange";
 import { EntryPreviewCard } from "./EntryPreviewCard";
 
@@ -141,22 +140,6 @@ describe("LpEntryCard", () => {
   it("renders no empty overview box in Details", () => {
     const out = renderToStaticMarkup(createElement(LpEntryCard, { ...props, context: [] }));
     expect(out.match(/<dl/g)).toHaveLength(1);
-  });
-});
-
-describe("lpDetailsRows (U18 §1)", () => {
-  const E = 10n ** 18n;
-  const quote = { liquidity: 10n * E, after: { reserveMusd: 1000n * E, reserveBtc: 1n * E, totalSupply: 100n * E } } as never;
-  const rest = [{ label: "Network fee", value: "0.00001 BTC" }];
-
-  it("puts Below what you put in before Network fee", () => {
-    const rows = lpDetailsRows(entryWorth(quote, 900n * E, 200n * E), rest);
-    expect(rows.map((r) => r.label)).toEqual(["Below what you put in", "Network fee"]);
-  });
-
-  it("adds nothing without a gap or a worth", () => {
-    expect(lpDetailsRows(entryWorth(quote, 900n * E, 180n * E), rest)).toEqual(rest);
-    expect(lpDetailsRows(null, rest)).toEqual(rest);
   });
 });
 

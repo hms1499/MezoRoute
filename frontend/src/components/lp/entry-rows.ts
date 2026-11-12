@@ -1,7 +1,8 @@
 // U17 §1: the LP card's risk rows and its "You receive" block, from the entry's worth. Pure, so the page stays a
 // composition and the copy rules (the loss is against what was put in; a gap is never a gain) are tested here.
 
-import { entryGapLine, priceImpactCost, type EntryWorth } from "@/lib/flow/entry-worth";
+import type { OverviewRow } from "@/components/flow/Overview";
+import { entryGapLine, entryGapRow, priceImpactCost, type EntryWorth } from "@/lib/flow/entry-worth";
 import { formatPercent, formatToken } from "@/lib/format";
 import type { BtcEntryQuote, EntryQuote } from "@/lib/quote/entry";
 import { PRICE_IMPACT_WARN } from "@/lib/routes/musd-btc-lp/gate";
@@ -45,4 +46,10 @@ export function lpReceive(input: { worth: EntryWorth; liquidity: bigint; minLpOu
     minimum: `≈ ${lpShort(input.liquidity)} · at least ${lpShort(input.minLpOut)}`,
     note: entryGapLine(input.worth),
   };
+}
+
+/** U18 §1: the gap to what was put in leads Details (the card's gap line links here), then the Trove rows and the fee. */
+export function lpDetailsRows(worth: EntryWorth | null, rest: OverviewRow[]): OverviewRow[] {
+  const gap = worth && entryGapRow(worth);
+  return gap ? [gap, ...rest] : rest;
 }
