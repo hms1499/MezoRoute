@@ -10,6 +10,7 @@ import {
   gaugeRateLine,
   STAKE_TITLE,
   stakeLines,
+  stakeRowCopy,
 } from "./copy";
 
 describe("a failed gauge read", () => {
@@ -86,5 +87,14 @@ describe("feesStakedNote", () => {
     expect(feesStakedNote({ walletLp: 1n, stakedLp: 5n, fees: none })).toBeNull();
     expect(feesStakedNote({ walletLp: 0n, stakedLp: 0n, fees: none })).toBeNull();
     expect(feesStakedNote({ walletLp: 0n, stakedLp: 5n, fees: { musd: 1n, btc: 0n } })).toBeNull();
+  });
+});
+
+describe("MEZO a week at 2 decimals", () => {
+  it("rounds the open-week line to 2 decimals", () => {
+    expect(stakeLines("open", 144_033_100_000_000_000_000n)[0]).toMatch(/^≈ 144\.03 MEZO a week/);
+  });
+  it("uses 2 decimals in the off line", () => {
+    expect(stakeRowCopy({ availability: "open", on: false, mezoPerWeek: 144_033_100_000_000_000_000n, aprLabel: null, readFailed: false })?.sub).toContain("≈ 144.03 MEZO a week");
   });
 });

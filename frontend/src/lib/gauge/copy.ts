@@ -22,7 +22,7 @@ export const GAUGE_NOT_FUNDED = "This gauge gets no new MEZO, so any rewards end
 export function gaugeRateLine(availability: StakeAvailability, mezoPerWeek: bigint | null): string {
   if (availability === "unavailable") return "No new MEZO: not being funded";
   if (availability === "between-weeks") return "Not set for the new week yet";
-  return mezoPerWeek === null ? "—" : `≈ ${formatToken(mezoPerWeek, 18, 4)} MEZO a week`;
+  return mezoPerWeek === null ? "—" : `≈ ${formatToken(mezoPerWeek, 18, 2)} MEZO a week`;
 }
 
 /** The lines under the stake switch. Rates are always "this week's"; swap fees to veBTC voters is always said. */
@@ -30,7 +30,7 @@ export function stakeLines(availability: StakeAvailability, mezoPerWeek: bigint 
   if (availability === "unavailable") return [];
   if (availability === "between-weeks") return [BETWEEN_WEEKS, FEES_NOTE];
   if (mezoPerWeek === null) return [`${NO_AMOUNT} ${FEES_NOTE}`];
-  return [`≈ ${formatToken(mezoPerWeek, 18, 4)} MEZO a week at this week's rate. ${FEES_NOTE}`];
+  return [`≈ ${formatToken(mezoPerWeek, 18, 2)} MEZO a week at this week's rate. ${FEES_NOTE}`];
 }
 
 /** Under the pool-fees card when every LP token is staked: fees are not missing, they go to veBTC voters. */
@@ -64,5 +64,5 @@ function stakeOffLine(availability: StakeAvailability, mezoPerWeek: bigint | nul
   const fees = "its swap fees would go to veBTC voters.";
   if (availability === "between-weeks") return `${kept} The new week's MEZO rate is not set yet; if staked, ${fees}`;
   if (mezoPerWeek === null) return `${kept} If staked, it would earn MEZO and ${fees}`;
-  return `${kept} Staking would earn ≈ ${formatToken(mezoPerWeek, 18, 4)} MEZO a week at this week's rate, and ${fees}`;
+  return `${kept} Staking would earn ≈ ${formatToken(mezoPerWeek, 18, 2)} MEZO a week at this week's rate, and ${fees}`;
 }
