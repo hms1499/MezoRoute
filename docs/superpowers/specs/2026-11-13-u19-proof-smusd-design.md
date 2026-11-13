@@ -65,7 +65,7 @@ The page uses only existing components (`Column`, `PageHeader`, `Segmented`, `Ca
   Units follow U18's planner precision (`musdShort`/`lpShort`: MUSD 2 dp, LP 4, BTC 6). Deploys are not rows; the Contracts table carries them.
 - **Wallet** is the event's `caller` (executors) or `borrower` (Leverage). A Bitcoin-wallet user therefore shows as their Safe address, which is correct. Label: **team** if the address is in a fixed per-network list in `networks.ts` (`teamWallets`), else **outside**. Team today: mainnet `0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8` (user's MetaMask), `0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49` (deployer); testnet the same two plus the user's Unisat Safe `0x4543ba6E0D1cC63B9eDA1D1E61853A59Cf2ae22D`. Mainnet `0xd204…190c` and `0x138f…a53d` are outside (confirmed by the user, 13 Nov).
 - **When:** the block's timestamp.
-- **Source of logs:** the explorer's Blockscout API (`network.explorerApiUrl`, `module=logs&action=getLogs`, per contract, from `deployBlock` to `latest`), as F5 already calls that API from the browser. Page through results if the API caps a response. If the API fails or answers short, fall back to `eth_getLogs` from `deployBlock` in 10,000-block chunks clamped to the head (F7's rule: Mezo returns an empty list, not an error, past the head). Builder's call which comes first, as long as both are tested and a failure never shows a silently shorter list.
+- **Source of logs:** the explorer's Blockscout API (`network.explorerApiUrl`, `module=logs&action=getLogs`, by contract address only, from `deployBlock` to `latest`), as F5 already calls that API from the browser. Its rows carry `timeStamp`, so no block reads are needed. Page through results the way `fetchAllLogs` does (1,000 per page). A failed or malformed response fails the Transactions card with an error and Retry; it never shows a silently shorter list. (Decided while planning: no `eth_getLogs` fallback; F5 relies on the same API.)
 - **Freshness:** read once on load and on Refresh; no polling. A failed read blanks only its own card with an error and a Retry; the other card stays.
 
 ### 3.4 Expected content today (for QA, read 13 Nov)
@@ -78,7 +78,7 @@ The page uses only existing components (`Column`, `PageHeader`, `Segmented`, `Ca
 - Mainnet vault `0xb4D498029af77680cD1eF828b967f010d06C51CC` ("MUSD Savings Rate", sMUSD), a transparent proxy; implementation `MUSDSavingsRate` `0xb33c…9e87`, owner `0x98D8…7C7a`. Deposit and withdraw are 1:1 MUSD (`deposit(amount)`, `withdraw(amount)`).
 - Yield: MUSD from the protocol (PCV) and the vault's strategy, spread by `yieldIndex` (cumulative MUSD per sMUSD, 1e18). A holder earns `balance × (yieldIndex − supplyYieldIndex[holder]) / 1e18`. **sMUSD staked in the vault's gauge belongs to the gauge, so the yield goes to the gauge, not the staker** (the source even caps the gauge's claim with `gaugeYieldClaimCap`). Staked sMUSD earns MEZO only, like staked LP gives up swap fees.
 - Vault gauge (mainnet) `0x677817bF3e44b90E8F95222F75e2950b7904a401`: a Tigris `Gauge` (MEZO reward, `rewardRate`, `totalSupply`, `periodFinish`). On 13 Nov: 0.8056 MEZO/s over 151,024 sMUSD staked, week ends Thu 19 Nov 00:00 UTC.
-- Testnet: no vault gauge. Two vaults use our testnet MUSD: `0x6f461c68B2c5492C0F5CCEc5a264d692aA7A8e16` (906k sMUSD) and `0x40d5b453EB25DD8B1Dfd484C0B80f7eDe0DC7Def` (5.9k). **Builder: use the one the Mezo testnet app deposits into; check before coding.** Testnet yields are whatever the test protocol pays; show them as computed.
+- Testnet: no vault gauge. Two vaults use our testnet MUSD: `0x6f461c68B2c5492C0F5CCEc5a264d692aA7A8e16` (906k sMUSD) and `0x40d5b453EB25DD8B1Dfd484C0B80f7eDe0DC7Def` (5.9k). Use `0x6f46…8e16`: it has 596 deposits from 190 depositors up to 13 Nov, the other 5 (checked while planning). Testnet yields are whatever the test protocol pays; show them as computed.
 
 ### 4.2 Where it shows
 1. **`/compare/` (`RouteComparison`)**: a third route column, "Savings Vault (sMUSD)", sub "Mezo's MUSD savings rate". On mobile the route tabs become three. Rows:
@@ -103,7 +103,7 @@ The page uses only existing components (`Column`, `PageHeader`, `Segmented`, `Ca
 
 ### 4.3 Reads
 - Add `savingsVault: { address, gauge: Address | null } | null` to `NetworkConfig` (mainnet with gauge, testnet without).
-- Head reads go into the snapshots that already feed each place (dashboard/compare snapshot, LP and SP planner snapshots, reference snapshot) in the same multicall: vault `totalSupply`, `yieldIndex`; gauge `rewardRate`, `totalSupply`, `periodFinish`. They may fail alone, like the gauge reads (`useSnapshotReads` tolerance): a failed vault read hides the sMUSD column/block with one line ("The Savings Vault could not be read right now"), never the LP or SP.
+- Head reads are their own small multicall (`useSavingsVault`), pinned to the block of the snapshot it sits beside (`blockNumber`, as `useMezoPrice` does), so the figures still come from one block without touching the snapshots' positional parsers. Reads: vault `totalSupply`, `yieldIndex`; gauge `rewardRate`, `totalSupply`, `periodFinish`; voter `isAlive(gauge)` (the vault gauge is registered in the same voter as the LP gauge, checked 13 Nov). A failed read hides the sMUSD column/block with one line ("The Savings Vault could not be read right now"), never the LP or SP. (Decided while planning; replaces "in the same multicall".)
 - The 30-day read joins F6's archive `eth_call` at the past block (`src/lib/compare/history.ts`); a failure blanks only the sMUSD 30-day rows, like today's history rule.
 - Availability: reuse `stakeAvailability` for the vault gauge (open / between-weeks / unavailable) and its copy, so a dead or unfunded vault gauge reads "Not applicable" rather than a stale rate.
 
@@ -114,7 +114,6 @@ The page uses only existing components (`Column`, `PageHeader`, `Segmented`, `Ca
 - `npm test && npm run build` pass; QA per `AGENTS.md` (served `out/`, Playwright, no wallet and mock wallet, 375 and 1440 px, light and dark).
 
 ## 6. Left to the builder
-- Which log source is primary (3.3), the exact paging size, and the deploy dates' source (constants vs a block read).
+- Deploy dates are constants in the config (immutable contracts).
 - Component structure inside `components/proof/`.
 - Exact sub-line wording where this spec gives none, within the copy rules (no promises, no annualising MEZO).
-- The testnet vault choice (4.1), after checking the Mezo testnet app.
