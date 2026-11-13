@@ -41,3 +41,14 @@ describe("onMobile with Proof (U19)", () => {
     expect(onMobile("/positions/", "/")).toBe(true);
   });
 });
+
+describe("navHideClass (U19 review: the header at 640–686 px)", () => {
+  it("hides Proof below 768 px and the other links below 640 px when they are not the one mobile link", async () => {
+    const { navHideClass } = await import("./nav");
+    expect(navHideClass("/proof/", "/")).toBe("max-md:hidden");
+    expect(navHideClass("/proof/", "/proof/")).toBe("max-md:hidden");
+    expect(navHideClass("/", "/")).toBe("max-sm:hidden");
+    expect(navHideClass("/positions/", "/")).toBeNull();
+    expect(navHideClass("/", "/proof/")).toBeNull();
+  });
+});

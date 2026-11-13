@@ -5,6 +5,7 @@ import { usePublicClient, useReadContracts } from "wagmi";
 import { HISTORY_TIMEOUT_MS, withTimeout, type HistoryClient, type RouteHistory } from "@/lib/compare/history";
 import type { NetworkConfig } from "@/lib/config/networks";
 import { fetchSavingsIndexes } from "./history";
+import { savingsVaultQuery } from "./query";
 import { parseSavingsState, savingsContracts, type SavingsState } from "./state";
 
 /**
@@ -18,7 +19,7 @@ export function useSavingsVault(network: NetworkConfig, blockNumber: bigint | un
     contracts: savingsContracts(network),
     allowFailure: false,
     blockNumber,
-    query: { enabled: network.savingsVault !== null, retry: false },
+    query: savingsVaultQuery(network, blockNumber),
   } as never) as { data?: readonly unknown[]; error: Error | null };
   if (!network.savingsVault || read.error) return null;
   if (!read.data) return undefined;

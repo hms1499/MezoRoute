@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/Button";
 import { segmentedItemClass, segmentedTrackClass } from "@/components/ui/Segmented";
 import { Logo } from "@/components/ui/Logo";
 import { cx } from "@/lib/ui/cx";
-import { isCurrentPath, onMobile } from "@/lib/ui/nav";
+import { isCurrentPath, navHideClass } from "@/lib/ui/nav";
 import { NetworkMenu } from "./NetworkMenu";
 import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
   { href: "/", label: "Dashboard" },
   { href: "/positions/", label: "Positions" },
-  // U19: the Proof page needs no wallet; below 640 px it is in the footer instead (`onMobile`).
+  // U19: the Proof page needs no wallet; below 768 px it is in the footer instead (`navHideClass`).
   { href: "/proof/", label: "Proof" },
 ];
 
@@ -37,7 +37,7 @@ export function Header() {
               key={item.href}
               href={item.href}
               aria-current={current ? "page" : undefined}
-              className={cx(segmentedItemClass(current, "md"), !onMobile(item.href, pathname) && "max-sm:hidden")}
+              className={cx(segmentedItemClass(current, "md"), navHideClass(item.href, pathname))}
             >
               {item.label}
             </Link>

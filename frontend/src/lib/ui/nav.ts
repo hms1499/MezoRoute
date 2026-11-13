@@ -19,3 +19,12 @@ export function onMobile(href: string, pathname: string | null): boolean {
   const dashboardHere = isCurrentPath(pathname, "/positions/") || isCurrentPath(pathname, "/proof/");
   return href === "/" ? dashboardHere : !dashboardHere;
 }
+
+/**
+ * The class that hides a header link at narrow widths, or null when it always shows. Proof (U19) waits for 768 px:
+ * from 640 px a third link pushed Connect past the page up to 686 px (U19 review); the footer carries it below.
+ */
+export function navHideClass(href: string, pathname: string | null): string | null {
+  if (href === "/proof/") return "max-md:hidden";
+  return onMobile(href, pathname) ? null : "max-sm:hidden";
+}

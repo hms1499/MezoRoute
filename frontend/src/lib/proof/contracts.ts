@@ -24,7 +24,8 @@ export function proofContracts(network: NetworkConfig): ProofContract[] {
       ...leverage,
       name: "Leverage",
       role: "Leverage, Unwind, Close",
-      terms: `${leverage.feeBps} bps · ${amount(leverage.maxMusdFlash)} MUSD or ${amount(leverage.maxBtcFlash)} BTC`,
+      // Unwind and Close pay no fee (L1); only Leverage and Open do.
+      terms: `${leverage.feeBps} bps on Leverage and Open · ${amount(leverage.maxMusdFlash)} MUSD or ${amount(leverage.maxBtcFlash)} BTC`,
     });
   }
   for (const legacy of network.legacyExecutors) {
