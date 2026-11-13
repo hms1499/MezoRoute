@@ -31,9 +31,10 @@ import { cx } from "@/lib/ui/cx";
 import { lpAmountRows, lpFee, lpGaugeRows, routeTabLabel, savingsAmountRows, savingsGaugeRows, spAmountRows, spSourceNote, subToneClass, type Row } from "./compare-rows";
 import { signedTone } from "@/lib/ui/signed";
 import { Settle } from "@/components/ui/Settle";
+import { Disclosure } from "@/components/ui/Disclosure";
 
 const FOOTNOTE =
-  "Past results, not a forecast. LP values use the pool's own price (before your trade), not the oracle; Stability Pool BTC gains use the oracle price. The 30-day LP rows are swap fees only: MEZO rewards are not backtested, and the MEZO figure is this week's rate. The −30% row uses the constant-product approximation and does not model new liquidations.";
+  "LP values use the pool's own price (before your trade), not the oracle; Stability Pool BTC gains use the oracle price. The 30-day LP rows are swap fees only: MEZO rewards are not backtested, and the MEZO figure is this week's rate. The −30% row uses the constant-product approximation and does not model new liquidations.";
 const SAVINGS_NOTE = " The sMUSD rows read the vault's own yield index and its gauge; MezoRoute takes no fee there.";
 const GRID = "grid grid-cols-[minmax(7rem,0.7fr)_1fr_1fr] gap-x-6";
 // U19: a third column for the Savings Vault when it could be read.
@@ -309,10 +310,11 @@ export function RouteComparison({
           </div>
         ))}
       </div>
-      <p className="mt-4 text-sm leading-relaxed text-muted">
+      <p className="mt-4 text-sm text-muted">Past results, not a forecast.</p>
+      <Disclosure summary="How these figures are made">
         {FOOTNOTE}
         {savings ? SAVINGS_NOTE : ""}
-      </p>
+      </Disclosure>
     </Card>
   );
 }

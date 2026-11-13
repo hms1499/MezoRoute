@@ -332,6 +332,12 @@ The MUSD, BTC, and MEZO icons (`public/tokens/`), cropped to a circle, at 16 px 
 ### Term
 A one-sentence definition of a Mezo or MezoRoute term on hover, click, tap, or Enter, on the first label or heading that names the term on a page, never inside a link, button, tab, or form label.
 
+### IconAction, RefreshAction, CopyAction
+An icon stands alone only for a verb everyone knows (refresh, copy). The button carries the name (`aria-label`), the glyph is hidden, and the same word shows as a tooltip on hover (hover-capable devices only) and keyboard focus; Escape hides it, and it is `display: none` otherwise, so it never widens the page. Glyphs follow the text beside them (`text="xs"` 14 px, `"sm"` 16 px); keep 16 px (`gap-4`) between it and a link, so its 44 px touch area never covers the link. `RefreshAction` spins under `motion-safe` while its promise runs; `CopyAction` shows a check and says "Copied" (or "Copy failed") in a polite live region. Navigation, product concepts, figure labels, and risks keep their words; an icon-led row keeps its name beside the icon.
+
+### Disclosure
+Background reading (how a figure is made, how a mechanism works) behind a short `Info` summary with a chevron. Never a risk shown before signing: the Trove flows' aside keeps the redemption explainer open, and Compare keeps "Past results, not a forecast." outside it.
+
 ### StepList, PageHeader, Skeleton, Settle
 Flow steps with 24 px status circles; the Amount → Confirm → Done header (the page's one numbered sequence); breathing skeletons; content that settles in on mount only.
 

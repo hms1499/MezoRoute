@@ -1,5 +1,6 @@
 "use client";
 
+import { RefreshAction } from "@/components/ui/IconAction";
 import type { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
@@ -29,7 +30,7 @@ export function TroveSummaryCard({
   summary: TroveSummary;
   view: TroveView;
   onView: (view: TroveView) => void;
-  onRefresh: () => void;
+  onRefresh: () => Promise<unknown>;
 }) {
   const t = snapshot.trove!;
   const { price, mcr } = snapshot.market;
@@ -125,10 +126,8 @@ export function TroveSummaryCard({
       </dl>
       <div className="mt-4 flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-line pt-4 text-xs text-muted">
         <p>
-          BTC {formatToken(price, 18, 2)} MUSD from Mezo&apos;s oracle · block {snapshot.block.number.toLocaleString("en-US")} ·{" "}
-          <button type="button" onClick={onRefresh} className="hit rounded-tip font-medium text-accent underline underline-offset-2 hover:text-accent-hover">
-            Refresh
-          </button>
+          BTC {formatToken(price, 18, 2)} MUSD from Mezo&apos;s oracle · block {snapshot.block.number.toLocaleString("en-US")}{" "}
+          <RefreshAction onRefresh={onRefresh} />
         </p>
         <p>Liquidation risk: {riskLinesText(mcr)}</p>
       </div>

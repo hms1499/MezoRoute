@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/Card";
+import { CopyAction } from "@/components/ui/IconAction";
 import type { SignFact } from "@/lib/flow/sign-facts";
 
 // U13 §Before you sign, generic since U14: what a person gives up the moment they sign, on every flow page's aside.
@@ -16,7 +17,7 @@ export function FactList({ facts }: { facts: SignFact[] }) {
       {facts.map((fact) => (
         <div key={fact.label} className="flex items-start justify-between gap-3">
           <dt className="text-muted">{fact.label}</dt>
-          <dd className="text-right">
+          <dd className="inline-flex items-center justify-end gap-4 text-right">
             {fact.href ? (
               <a href={fact.href} target="_blank" rel="noreferrer" className={LINK}>
                 {fact.value}
@@ -24,6 +25,7 @@ export function FactList({ facts }: { facts: SignFact[] }) {
             ) : (
               fact.value
             )}
+            {fact.copy && <CopyAction value={fact.copy} what={fact.label.toLowerCase() + " address"} text="sm" />}
           </dd>
         </div>
       ))}

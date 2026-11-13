@@ -7,7 +7,8 @@ import type { WalletKind } from "@/lib/wallet/capabilities";
 // already read (the fee is the chain's, the block is the one every figure came from). Each list ends with Audit
 // and Reads. These take no account: a wallet-less planner shows the same facts (U13).
 
-export type SignFact = { label: string; value: string; href?: string };
+/** `copy`: the full value a copy button puts on the clipboard (U21), when `value` is shortened. */
+export type SignFact = { label: string; value: string; href?: string; copy?: string };
 
 /** The two labels the amount cards' trust line reads (U17); written once, so a rename cannot silently drop the line. */
 export const AUDIT_LABEL = "Audit";
@@ -27,7 +28,7 @@ export function lpSignFacts(
     ? { label: "Approval", value: input.exit.walletKind === "smart-account" ? "Exact LP approval" : "LP permit (a signature)" }
     : { label: ENTRY_CAP_LABEL, value: `${formatToken(input.capMusd ?? 0n, 18, 0)} MUSD` };
   return [
-    { label: "Executor", value: shortAddress(executor.address), href: explorerAddressUrl(network, executor.address) },
+    { label: "Executor", value: shortAddress(executor.address), href: explorerAddressUrl(network, executor.address), copy: executor.address },
     { label: "MezoRoute fee", value: input.exit ? "None" : formatBps(input.feeBps) },
     third,
     unaudited,

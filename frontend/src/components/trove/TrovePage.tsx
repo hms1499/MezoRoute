@@ -22,7 +22,7 @@ import { TroveSummaryCard } from "./TroveSummaryCard";
 // U20 (spec 2026-11-13-u20-trove-tab-design.md): the Trove's own page, after Liquity V2's loan screen. Read on the
 // selected network, with the zero address before a wallet connects (nothing then reads as the visitor's).
 
-const WITH_TROVE = "Your MUSD loan on Mezo, backed by BTC. Unwind, Close, and Leverage each run in one transaction through MezoRoute; anything else opens the Mezo app.";
+const WITH_TROVE = "Your MUSD loan on Mezo, backed by BTC.";
 const WITHOUT_TROVE =
   "A Trove is a MUSD loan on Mezo, backed by BTC you lock in it. MezoRoute can open one with leverage, and later unwind, leverage, or close it, each in one transaction.";
 
@@ -65,7 +65,7 @@ export default function TrovePage() {
   }
 
   const snapshot = data.snapshot;
-  const onRefresh = () => void refresh().catch(() => undefined);
+  const onRefresh = () => refresh();
   if (state.kind === "none") {
     return (
       <div className="space-y-6">

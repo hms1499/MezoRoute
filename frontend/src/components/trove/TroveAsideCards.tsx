@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/Card";
+import { Disclosure } from "@/components/ui/Disclosure";
 import { Stat } from "@/components/ui/Stat";
 import { Term } from "@/components/ui/Term";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
@@ -35,7 +36,9 @@ export function QueueCard({ redemption }: { redemption: TroveSummary["redemption
               : "Redemptions skip a Trove below the 110% minimum."}
         </p>
       )}
-      <p className="mt-3 text-xs leading-relaxed text-muted">{REDEMPTION_EXPLAINER}</p>
+      <Disclosure summary="How redemptions work" className="mt-3">
+        {REDEMPTION_EXPLAINER}
+      </Disclosure>
     </Card>
   );
 }

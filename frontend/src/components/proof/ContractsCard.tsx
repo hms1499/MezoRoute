@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { CopyAction } from "@/components/ui/IconAction";
 import { DataTable, type DataColumn } from "@/components/ui/DataTable";
 import { Notice } from "@/components/ui/Notice";
 import { explorerAddressUrl, explorerTxUrl, type NetworkConfig } from "@/lib/config/networks";
@@ -31,9 +32,13 @@ export function ContractsCard({ network, contracts }: { network: NetworkConfig; 
       header: "Address",
       align: "left",
       cell: (c) => (
-        <a href={explorerAddressUrl(network, c.address)} target="_blank" rel="noreferrer" className={PROOF_LINK}>
-          {shortAddress(c.address)}
-        </a>
+        // gap-4: the copy button's 44 px touch area must not cover the link's end below 768 px.
+        <span className="inline-flex items-center gap-4">
+          <a href={explorerAddressUrl(network, c.address)} target="_blank" rel="noreferrer" className={PROOF_LINK}>
+            {shortAddress(c.address)}
+          </a>
+          <CopyAction value={c.address} what="address" text="sm" />
+        </span>
       ),
     },
     {

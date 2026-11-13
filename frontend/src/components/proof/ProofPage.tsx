@@ -1,5 +1,6 @@
 "use client";
 
+import { RefreshAction } from "@/components/ui/IconAction";
 import { useEffect, useState } from "react";
 import { Segmented } from "@/components/ui/Segmented";
 import { networks, type NetworkId } from "@/lib/config/networks";
@@ -38,10 +39,7 @@ export default function ProofPage() {
           <HeadLine
             number={head.block.number}
             readAt={head.block.readAt}
-            onRefresh={() => {
-              head.refresh();
-              retry();
-            }}
+            onRefresh={() => Promise.all([retry(), head.refresh()])}
           />
         )}
       </div>
@@ -51,7 +49,7 @@ export default function ProofPage() {
   );
 }
 
-function HeadLine({ number, readAt, onRefresh }: { number: bigint; readAt: number; onRefresh: () => void }) {
+function HeadLine({ number, readAt, onRefresh }: { number: bigint; readAt: number; onRefresh: () => Promise<unknown> }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 5_000);
@@ -61,10 +59,8 @@ function HeadLine({ number, readAt, onRefresh }: { number: bigint; readAt: numbe
   return (
     <p className="flex items-center gap-2 text-xs text-muted">
       <span aria-hidden className="h-2 w-2 rounded-full bg-positive" />
-      Block {number.toLocaleString("en-US")} · read {seconds < 60 ? `${seconds}s` : `${Math.round(seconds / 60)} min`} ago ·
-      <button type="button" onClick={onRefresh} className="hit rounded-tip font-medium text-accent underline underline-offset-2 hover:text-accent-hover">
-        Refresh
-      </button>
+      Block {number.toLocaleString("en-US")} · read {seconds < 60 ? `${seconds}s` : `${Math.round(seconds / 60)} min`} ago
+      <RefreshAction onRefresh={onRefresh} />
     </p>
   );
 }

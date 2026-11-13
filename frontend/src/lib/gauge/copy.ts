@@ -55,8 +55,11 @@ export function stakeRowCopy(input: {
   if (input.availability === "unavailable") return null;
   // Off, the row says what this deposit keeps and what staking would do, so it never reads as this deposit's terms.
   if (!input.on) return { switchable: true, sub: stakeOffLine(input.availability, input.mezoPerWeek) };
-  const apr = input.availability === "open" && input.aprLabel !== null ? [`Emissions APR ≈ ${input.aprLabel} at this week's rate.`] : [];
-  return { switchable: true, sub: [...stakeLines(input.availability, input.mezoPerWeek), ...apr].join(" ") };
+  // U21: one sentence; the amount and the APR share one "this week's rate".
+  if (input.availability === "open" && input.mezoPerWeek !== null && input.aprLabel !== null) {
+    return { switchable: true, sub: `≈ ${formatToken(input.mezoPerWeek, 18, 2)} MEZO a week (≈ ${input.aprLabel} APR) at this week's rate. ${FEES_NOTE}` };
+  }
+  return { switchable: true, sub: stakeLines(input.availability, input.mezoPerWeek).join(" ") };
 }
 
 function stakeOffLine(availability: StakeAvailability, mezoPerWeek: bigint | null): string {
