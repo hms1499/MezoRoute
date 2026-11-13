@@ -3,6 +3,7 @@ import { WAD } from "@/lib/math";
 import { parseMusdAmount } from "@/lib/quote/amount";
 import type { LpBacktest } from "./lp-backtest";
 import type { SpBacktest } from "./sp-backtest";
+import { annualise } from "./window";
 
 /** The backtest's amount while the field is empty. */
 export const REFERENCE_AMOUNT = 1_000n * WAD;
@@ -44,4 +45,10 @@ export function windowDate(unixSeconds: bigint): string {
 
 export function windowDays(seconds: bigint): number {
   return Math.round(Number(seconds) / 86_400);
+}
+
+/** U19: the Savings Vault's MUSD yield over the window (an unstaked holder's), with its yearly pace like the LP's fees. */
+export function savingsHistoryLine(ret: bigint, seconds: bigint): string {
+  const rate = formatPercent(annualise(ret, seconds), 1);
+  return `MUSD yield ${formatPercent(ret, 2)} (${rate.startsWith("<") ? "" : "≈"}${rate} a year)`;
 }

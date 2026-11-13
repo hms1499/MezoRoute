@@ -23,3 +23,12 @@ export const SP_RISKS = [
   "Withdrawals pause while any Trove is under-collateralised. Claiming your BTC gain is never paused.",
   "BTC gains arrive only when liquidations happen, and their value moves with the BTC price.",
 ];
+
+// U19: Mezo's MUSD Savings Vault (sMUSD), compared read-only; MezoRoute does not route into it.
+export const SAVINGS_RETURN_SOURCE = "MUSD paid by the protocol, or MEZO from the vault's gauge if you stake";
+
+export const SAVINGS_RISKS = [
+  "The yield is paid by Mezo's protocol and can stop or change.",
+  "The vault is upgradeable by its owner, unlike MezoRoute's contracts.",
+  "MEZO's rate and price change weekly.",
+];

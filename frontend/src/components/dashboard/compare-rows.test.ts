@@ -106,3 +106,30 @@ describe("amount rows without a wallet", () => {
     expect(exposure(spAmountRows(compared, true))).toBe("0 BTC → 0 BTC");
   });
 });
+
+describe("savings rows (U19)", () => {
+  it("shows this week's MEZO for staked sMUSD and says the MUSD yield goes to the gauge", async () => {
+    const { savingsGaugeRows } = await import("./compare-rows");
+    const rows = savingsGaugeRows({ availability: "open", mezoPerWeek: 3_205n * ONE, apr: null });
+    expect(rows.map((row) => row.label)).toEqual(["MEZO, staked, this week's rate"]);
+    expect(rows[0].value).toBe("≈ 3,205 MEZO a week");
+    expect(rows[0].sub).toContain("Staking sends the MUSD yield to the gauge instead.");
+    expect(text(rows)).not.toMatch(/total|combined|plus/i);
+  });
+
+  it("shows no rate between weeks and no row without a gauge", async () => {
+    const { savingsGaugeRows } = await import("./compare-rows");
+    expect(savingsGaugeRows({ availability: "between-weeks", mezoPerWeek: null, apr: null })[0].value).toBe("New week's rate not set yet");
+    expect(savingsGaugeRows({ availability: "unavailable", mezoPerWeek: null, apr: null })).toEqual([]);
+    expect(savingsGaugeRows(null)).toEqual([]);
+  });
+
+  it("keeps the amount in MUSD: no BTC, and the same after a 30% BTC fall", async () => {
+    const { savingsAmountRows } = await import("./compare-rows");
+    const rows = savingsAmountRows(1_000n * ONE);
+    expect(rows.map((row) => row.label)).toEqual(lpAmountRows(compared).map((row) => row.label));
+    expect(rows[1].value).toBe("None");
+    expect(rows[2].value).toBe("1,000 MUSD");
+    expect(savingsAmountRows(null)).toEqual([]);
+  });
+});

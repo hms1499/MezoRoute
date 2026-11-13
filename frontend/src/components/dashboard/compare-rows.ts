@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { btc, musd } from "@/components/lp/units";
 import { STRESS_DROP, type ComparedRoutes } from "@/lib/compare/comparison";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
+import type { SavingsWeek } from "@/lib/savings/maths";
 
 export type Row = { label: string; title?: string; value: ReactNode; sub?: string; subTone?: "positive" | "negative" | null };
 
@@ -74,4 +75,26 @@ export function lpGaugeRows(compared: ComparedRoutes | null): Row[] {
 export function spSourceNote(troveDebt: bigint | null): string | undefined {
   if (troveDebt === null) return undefined;
   return `Returns come only from liquidations. Open Trove debt today: ${formatToken(troveDebt, 18, 0)} MUSD.`;
+}
+
+/**
+ * U19: staked sMUSD's MEZO, this week's rate only. Staked sMUSD belongs to the gauge, so the vault's MUSD yield goes to
+ * the gauge instead of the staker: the two are alternatives, never summed. No row without a working gauge (testnet).
+ */
+export function savingsGaugeRows(week: SavingsWeek | null): Row[] {
+  if (week === null || week.availability === "unavailable") return [];
+  const label = "MEZO, staked, this week's rate";
+  if (week.availability === "between-weeks" || week.mezoPerWeek === null) return [{ label, value: "New week's rate not set yet" }];
+  const apr = week.apr === null ? "No APR shown: MEZO has no price here." : `≈ ${formatPercent(week.apr, 1)} APR at this week's rate.`;
+  return [{ label, value: `≈ ${formatToken(week.mezoPerWeek, 18, 4)} MEZO a week`, sub: `${apr} Staking sends the MUSD yield to the gauge instead.` }];
+}
+
+/** U19: sMUSD stays MUSD 1:1, so it adds no BTC and a BTC fall leaves it whole. */
+export function savingsAmountRows(amount: bigint | null): Row[] {
+  if (amount === null) return [];
+  return [
+    { label: "Position after", value: `${musd(amount)} as sMUSD`, sub: "Withdraw 1:1" },
+    { label: "BTC exposure", value: "None" },
+    { label: `If BTC drops ${STRESS_DROP}%`, value: musd(amount) },
+  ];
 }

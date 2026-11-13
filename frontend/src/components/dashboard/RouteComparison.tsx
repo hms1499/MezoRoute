@@ -14,27 +14,33 @@ import { compareRoutes } from "@/lib/compare/comparison";
 import { compareStart, showsOverBalance } from "@/lib/compare/default-amount";
 import { backtestRoutes, type RouteBacktests } from "@/lib/compare/history";
 import { useRouteHistory } from "@/lib/compare/useRouteHistory";
-import { amountState, lpHistoryLine, REFERENCE_AMOUNT, signedChange, spHistoryLine, windowDate, windowDays } from "@/lib/compare/view";
+import { amountState, lpHistoryLine, REFERENCE_AMOUNT, savingsHistoryLine, signedChange, spHistoryLine, windowDate, windowDays } from "@/lib/compare/view";
 import { useNetwork } from "@/lib/config/network-context";
 import type { DashboardSnapshot } from "@/lib/dashboard/snapshot";
 import { formatToken } from "@/lib/format";
 import { useMezoPrice } from "@/lib/gauge/useMezoPrice";
 import type { TermId } from "@/lib/glossary";
 import { DEFAULT_SLIPPAGE } from "@/lib/quote/entry";
-import { LP_RETURN_SOURCE, LP_RISKS, SP_RETURN_SOURCE, SP_RISKS } from "@/lib/routes/copy";
+import { LP_RETURN_SOURCE, LP_RISKS, SAVINGS_RETURN_SOURCE, SAVINGS_RISKS, SP_RETURN_SOURCE, SP_RISKS } from "@/lib/routes/copy";
+import { savingsReturn, savingsWeek } from "@/lib/savings/maths";
+import { useSavingsHistory, useSavingsVault } from "@/lib/savings/useSavingsVault";
+import { WAD } from "@/lib/math";
 import { entryQuery } from "@/lib/routes/musd-btc-lp/intent";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
 import { cx } from "@/lib/ui/cx";
-import { lpAmountRows, lpFee, lpGaugeRows, spAmountRows, spSourceNote, subToneClass, type Row } from "./compare-rows";
+import { lpAmountRows, lpFee, lpGaugeRows, savingsAmountRows, savingsGaugeRows, spAmountRows, spSourceNote, subToneClass, type Row } from "./compare-rows";
 import { signedTone } from "@/lib/ui/signed";
 import { Settle } from "@/components/ui/Settle";
 
 const FOOTNOTE =
   "Past results, not a forecast. LP values use the pool's own price (before your trade), not the oracle; Stability Pool BTC gains use the oracle price. The 30-day LP rows are swap fees only: MEZO rewards are not backtested, and the MEZO figure is this week's rate. The −30% row uses the constant-product approximation and does not model new liquidations.";
+const SAVINGS_NOTE = " The sMUSD rows read the vault's own yield index and its gauge; MezoRoute takes no fee there.";
 const GRID = "grid grid-cols-[minmax(7rem,0.7fr)_1fr_1fr] gap-x-6";
+// U19: a third column for the Savings Vault when it could be read.
+const GRID3 = "grid grid-cols-[minmax(7rem,0.7fr)_1fr_1fr_1fr] gap-x-6";
 
-type RouteId = "lp" | "sp";
-type Route = { id: RouteId; title: string; term?: TermId; tagline: string; rows: Row[]; risks: string[]; href: string; cta: string };
+type RouteId = "lp" | "sp" | "savings";
+type Route = { id: RouteId; title: string; term?: TermId; tagline: string; rows: Row[]; risks: string[]; href: string; cta: string; external?: boolean };
 
 /** Flow B / FR-19: both routes for the typed amount, aligned row by row, with what each paid over the last 30 days. */
 /** `heading={false}` (U15): on /compare/ the page's h1 and subtitle name the comparison, so the card has no title. */
@@ -81,6 +87,11 @@ export function RouteComparison({
   const backtestAmount = amount ?? REFERENCE_AMOUNT;
   const backtests = history ? backtestRoutes(history, backtestAmount, executorFeeBps ?? 0n) : null;
   const typed = amount === null ? "" : text.trim();
+  // U19: the Savings Vault at the snapshot's block, and its index at the history's two blocks.
+  const savings = useSavingsVault(network, snapshot.block?.number);
+  const savingsIndexes = useSavingsHistory(network, history);
+  const savingsWeekRate =
+    savings && amount !== null && snapshot.block ? savingsWeek({ state: savings, amount, now: snapshot.block.timestamp, mezoPrice }) : null;
 
   const pending = (value: (b: RouteBacktests) => ReactNode): ReactNode =>
     backtests ? <Settle as="span">{value(backtests)}</Settle> : historyFailed ? "Unavailable" : <Skeleton className="h-4 w-28" />;
@@ -134,7 +145,48 @@ export function RouteComparison({
       cta: "Choose Stability Pool",
     },
   ];
-  const [lp, sp] = routes;
+  if (savings) {
+    const ret = savingsIndexes ? savingsReturn(savingsIndexes.past, savingsIndexes.now) : null;
+    const savingsPending = (value: (b: RouteBacktests, r: bigint) => ReactNode): ReactNode =>
+      backtests && ret !== null ? (
+        <Settle as="span">{value(backtests, ret)}</Settle>
+      ) : historyFailed || savingsIndexes === null ? (
+        "Unavailable"
+      ) : (
+        <Skeleton className="h-4 w-28" />
+      );
+    const savingsNow = ret === null ? null : backtestAmount + (backtestAmount * ret) / WAD;
+    routes.push({
+      id: "savings",
+      title: "Savings Vault (sMUSD)",
+      tagline: "Mezo's MUSD savings rate",
+      rows: [
+        { label: "Return source", value: SAVINGS_RETURN_SOURCE },
+        ...savingsGaugeRows(savingsWeekRate),
+        {
+          label: backtests ? `Last ${windowDays(backtests.seconds)} days` : "Last 30 days",
+          value: savingsPending((b, r) => savingsHistoryLine(r, b.seconds)),
+          sub: "Unstaked; MEZO is not backtested",
+        },
+        {
+          label: `${formatToken(backtestAmount, 18, 2)} MUSD ${backtests ? `on ${windowDate(backtests.pastTime)}` : "30 days ago"}`,
+          value: savingsPending(() => `${musd(savingsNow ?? 0n)} today`),
+          sub: savingsNow === null || !backtests ? undefined : signedChange(savingsNow, backtestAmount),
+          subTone: savingsNow === null || !backtests ? null : signedTone(savingsNow - backtestAmount),
+        },
+        { label: "MezoRoute fee", value: "None · MezoRoute doesn't route here" },
+        ...savingsAmountRows(amount),
+      ],
+      risks: SAVINGS_RISKS,
+      href: network.mezoAppUrl,
+      cta: "Open in the Mezo app",
+      external: true,
+    });
+  }
+  const [lp] = routes;
+  // Every row label in column order: the LP's first, then any only another route has (e.g. MEZO when the LP has no gauge).
+  const labels = [...new Set(routes.flatMap((route) => route.rows.map((row) => row.label)))];
+  const grid = routes.length === 3 ? GRID3 : GRID;
 
   return (
     <Card id="compare" title={heading ? "Compare routes" : undefined} subtitle={heading ? "Where to put MUSD: both routes for the same amount." : undefined}>
@@ -146,6 +198,7 @@ export function RouteComparison({
           </p>
         )}
         {showsExample && <p className="mt-1 text-sm text-muted">Example amount.</p>}
+        {savings === null && network.savingsVault && <p className="mt-1 text-sm text-muted">The Savings Vault could not be read right now.</p>}
         {showsOverBalance({ connected, overBalance: compared?.overBalance ?? false, example: showsExample }) && (
           <p className="mt-2 text-sm text-muted">More than your wallet holds; the route page will ask for a smaller amount.</p>
         )}
@@ -168,7 +221,7 @@ export function RouteComparison({
 
       {/* From 640 px: one table, so like values line up. */}
       <div role="table" aria-label="Route comparison" className="mt-4 hidden sm:block">
-        <div role="row" className={cx(GRID, "border-b border-line pb-3")}>
+        <div role="row" className={cx(grid, "border-b border-line pb-3")}>
           {/* The cell keeps its grid column; only the text is visually hidden. */}
           <span role="columnheader">
             <span className="sr-only">Detail</span>
@@ -180,16 +233,17 @@ export function RouteComparison({
             </div>
           ))}
         </div>
-        {lp.rows.map((row) => (
-          <div key={row.label} role="row" className={cx(GRID, "border-b border-line/60 py-3 text-sm")}>
-            <span role="rowheader" title={row.title} className="text-muted">
-              {row.label}
+        {labels.map((label) => (
+          <div key={label} role="row" className={cx(grid, "border-b border-line/60 py-3 text-sm")}>
+            <span role="rowheader" title={lp.rows.find((row) => row.label === label)?.title} className="text-muted">
+              {label}
             </span>
-            <Cell row={row} />
-            <Cell row={sp.rows.find((candidate) => candidate.label === row.label)} />
+            {routes.map((route) => (
+              <Cell key={route.id} row={route.rows.find((candidate) => candidate.label === label)} />
+            ))}
           </div>
         ))}
-        <div role="row" className={cx(GRID, "py-3")}>
+        <div role="row" className={cx(grid, "py-3")}>
           <span role="rowheader" className="text-sm text-muted">
             Risks
           </span>
@@ -199,11 +253,11 @@ export function RouteComparison({
             </div>
           ))}
         </div>
-        <div role="row" className={cx(GRID, "pt-2")}>
+        <div role="row" className={cx(grid, "pt-2")}>
           <span aria-hidden />
           {routes.map((route) => (
             <div key={route.id} role="cell">
-              <ButtonLink href={route.href} variant="secondary">
+              <ButtonLink href={route.href} variant="secondary" external={route.external}>
                 {route.cta}
               </ButtonLink>
             </div>
@@ -249,13 +303,16 @@ export function RouteComparison({
             <div className="mt-4">
               <RiskList risks={route.risks} />
             </div>
-            <ButtonLink href={route.href} variant="secondary" className="mt-4 w-full">
+            <ButtonLink href={route.href} variant="secondary" external={route.external} className="mt-4 w-full">
               {route.cta}
             </ButtonLink>
           </div>
         ))}
       </div>
-      <p className="mt-4 text-sm leading-relaxed text-muted">{FOOTNOTE}</p>
+      <p className="mt-4 text-sm leading-relaxed text-muted">
+        {FOOTNOTE}
+        {savings ? SAVINGS_NOTE : ""}
+      </p>
     </Card>
   );
 }

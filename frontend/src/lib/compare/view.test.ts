@@ -59,3 +59,11 @@ describe("window labels", () => {
     expect(REFERENCE_AMOUNT).toBe(1_000n * ONE);
   });
 });
+
+describe("savingsHistoryLine (U19)", () => {
+  it("states the vault's MUSD yield over the window and its yearly pace", async () => {
+    const { savingsHistoryLine } = await import("./view");
+    // 13 Nov: the index grew 0.004351 MUSD per sMUSD over 30 days.
+    expect(savingsHistoryLine(4_351_391_224_742_538n, 30n * 86_400n)).toBe("MUSD yield 0.43% (≈5.2% a year)");
+  });
+});
