@@ -28,7 +28,7 @@ import { WAD } from "@/lib/math";
 import { entryQuery } from "@/lib/routes/musd-btc-lp/intent";
 import { spDepositQuery } from "@/lib/stability-pool/intent";
 import { cx } from "@/lib/ui/cx";
-import { lpAmountRows, lpFee, lpGaugeRows, savingsAmountRows, savingsGaugeRows, spAmountRows, spSourceNote, subToneClass, type Row } from "./compare-rows";
+import { lpAmountRows, lpFee, lpGaugeRows, routeTabLabel, savingsAmountRows, savingsGaugeRows, spAmountRows, spSourceNote, subToneClass, type Row } from "./compare-rows";
 import { signedTone } from "@/lib/ui/signed";
 import { Settle } from "@/components/ui/Settle";
 
@@ -272,7 +272,7 @@ export function RouteComparison({
           semantics="tabs"
           size="sm"
           fill
-          options={routes.map((route) => ({ value: route.id, label: route.title, id: `tab-${route.id}`, controls: `panel-${route.id}` }))}
+          options={routes.map((route) => ({ value: route.id, label: routeTabLabel(route.id, routes.length), id: `tab-${route.id}`, controls: `panel-${route.id}` }))}
           value={tab}
           onChange={setTab}
         />

@@ -133,3 +133,12 @@ describe("savings rows (U19)", () => {
     expect(savingsAmountRows(null)).toEqual([]);
   });
 });
+
+describe("routeTabLabel (U19 review: 375 px)", () => {
+  it("keeps today's tab names for two routes and shortens them for three", async () => {
+    const { routeTabLabel } = await import("./compare-rows");
+    expect(routeTabLabel("lp", 2)).toBe("MUSD/BTC LP");
+    expect(routeTabLabel("sp", 2)).toBe("Stability Pool");
+    expect(["lp", "sp", "savings"].map((id) => routeTabLabel(id as "lp" | "sp" | "savings", 3))).toEqual(["LP", "Stability Pool", "sMUSD"]);
+  });
+});

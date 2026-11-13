@@ -98,3 +98,11 @@ export function savingsAmountRows(amount: bigint | null): Row[] {
     { label: `If BTC drops ${STRESS_DROP}%`, value: musd(amount) },
   ];
 }
+
+const TAB_TITLES = { lp: "MUSD/BTC LP", sp: "Stability Pool", savings: "Savings Vault (sMUSD)" } as const;
+const SHORT_TABS = { lp: "LP", sp: "Stability Pool", savings: "sMUSD" } as const;
+
+/** The mobile route tabs' labels: the full names fit two tabs at 360 px; three need the short ones (U19). */
+export function routeTabLabel(id: keyof typeof TAB_TITLES, count: number): string {
+  return count >= 3 ? SHORT_TABS[id] : TAB_TITLES[id];
+}
