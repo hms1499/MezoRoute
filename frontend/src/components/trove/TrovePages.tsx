@@ -108,7 +108,7 @@ export function TroveAmountPage({ action }: { action: TroveAction }) {
   return (
     // U17 §7: opened without a wallet, the page keeps its own heading and step and says what the action does.
     <RequireWallet flow
-      fallback={<ConnectPage back={{ href: "/", label: "Dashboard" }} step={1} title={TITLES[action].amount} cardTitle={TITLES[action].card} cardNote={TROVE_CONNECT[action]} />}
+      fallback={<ConnectPage back={{ href: "/trove/", label: "Trove" }} step={1} title={TITLES[action].amount} cardTitle={TITLES[action].card} cardNote={TROVE_CONNECT[action]} />}
     >
       {(account) => <AmountFlow action={action} account={account} />}
     </RequireWallet>
@@ -217,7 +217,7 @@ function AmountCard(props: {
       ? leverageQuoteAt(snapshot.trove, snapshot.pool, snapshot.market, max.btc, intent.slippageBps, network.leverage.feeBps).crAfter
       : null;
   // U14 B1: with no room, the page says which limit binds (the oracle cost at the smallest size when that is it),
-  // disables the target, and shows no Review: there is nothing to do here, and the header's Dashboard link is the way out.
+  // disables the target, and shows no Review: there is nothing to do here, and the header's Trove link is the way out.
   const noRoom = max !== null && max.btc === 0n;
   // U14 B3: a block the typed BTC or target causes is said at that field, not under the overview.
   const fieldError = troveFieldError(view.block, { btc: action === "open", cr: action !== "close" });
@@ -240,7 +240,7 @@ function AmountCard(props: {
       aside={<TroveAside rows={troveNowRows(snapshot)} queue={{ before: view.queueBefore, after: view.queueAfter }} facts={facts} />}
       header={
         <>
-          <PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title={TITLES[action].amount} />
+          <PageHeader back={{ href: "/trove/", label: "Trove" }} step={1} title={TITLES[action].amount} />
           {chainId !== network.chainId && <WrongNetworkAlert />}
           <TroveNotice notice={view.notice} onRepay={repay} />
         </>

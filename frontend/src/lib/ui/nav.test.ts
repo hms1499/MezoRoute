@@ -52,3 +52,17 @@ describe("navHideClass (U19 review: the header at 640–686 px)", () => {
     expect(navHideClass("/", "/proof/")).toBeNull();
   });
 });
+
+describe("the Trove tab (U20)", () => {
+  it("shows Dashboard on /trove/ only, and never Trove itself below 640 px", async () => {
+    const { navHideClass } = await import("./nav");
+    expect(onMobile("/trove/", "/")).toBe(false);
+    expect(onMobile("/trove/", "/trove/")).toBe(false);
+    expect(onMobile("/", "/trove/")).toBe(true);
+    expect(onMobile("/positions/", "/trove/")).toBe(false);
+    expect(onMobile("/positions/", "/trove/unwind/")).toBe(true); // flow pages unchanged
+    expect(navHideClass("/trove/", "/")).toBe("max-md:hidden");
+    expect(navHideClass("/trove/", "/trove/")).toBe("max-md:hidden");
+    expect(navHideClass("/", "/trove/")).toBeNull();
+  });
+});

@@ -175,7 +175,7 @@ function DashboardBody({ data, walletKind, account }: { data: DashboardData; wal
             />
           }
           exposure={<ExposurePanel snapshot={snapshot} variant="dashboard" />}
-          trove={<TroveCard snapshot={snapshot} borrowable={current.borrowable} health={current.health} account={account} />}
+          trove={<TroveCard snapshot={snapshot} account={account} />}
         />
       </Settle>
     </>

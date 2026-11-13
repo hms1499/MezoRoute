@@ -30,6 +30,10 @@ export function Footer() {
             <Link href="/proof/" className={link}>
               Proof
             </Link>
+            {/* U20: the Trove page, at every width (the header drops it below 768 px). */}
+            <Link href="/trove/" className={link}>
+              Trove
+            </Link>
             {contractLinks(network).map((contract) => (
               <a key={contract.address} href={explorerAddressUrl(network, contract.address)} target="_blank" rel="noreferrer" className={link}>
                 {contract.label}
