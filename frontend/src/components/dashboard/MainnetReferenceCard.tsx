@@ -1,6 +1,6 @@
 "use client";
 
-import { lpHistoryLine, spHistoryLine } from "@/lib/compare/view";
+import { lpHistoryLine, savingsHistoryLine, spHistoryLine } from "@/lib/compare/view";
 import { useNetwork } from "@/lib/config/network-context";
 import { networks } from "@/lib/config/networks";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
@@ -39,13 +39,13 @@ export function MainnetReferenceCard() {
   }
   if (!data) return <LoadingCard label="Loading mainnet reference" lines={5} />;
 
-  const { reference: r, backtests } = data;
+  const { reference: r, backtests, savings } = data;
   const view = referenceView(r);
   const owned = protocolOwnedLine(r);
   return (
     <Settle>
       <Card id="mainnet-reference" variant="reference" title="Mainnet today" aside={<Badge>Mainnet · reference only</Badge>}>
-        <div className="mt-3 grid gap-5 sm:grid-cols-2">
+        <div className={savings ? "mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" : "mt-3 grid gap-5 sm:grid-cols-2"}>
           <div>
             <h3 className="text-sm font-semibold">MUSD/BTC pool</h3>
             <dl className="stat-list mt-2 grid-cols-[minmax(8rem,1fr)_minmax(0,auto)]">
@@ -70,6 +70,17 @@ export function MainnetReferenceCard() {
               <Stat label="Last 30 days">{backtests ? spHistoryLine(backtests.sp) : "Unavailable"}</Stat>
             </dl>
           </div>
+          {savings && (
+            // U19: Mezo's MUSD Savings Vault, read-only beside the two routes.
+            <div>
+              <h3 className="text-sm font-semibold">Savings Vault (sMUSD)</h3>
+              <dl className="stat-list mt-2 grid-cols-[minmax(8rem,1fr)_minmax(0,auto)]">
+                <Stat label="Deposits">{formatToken(savings.supply, 18, 0)} sMUSD</Stat>
+                {savings.staked !== null && <Stat label="Staked for MEZO">{formatToken(savings.staked, 18, 0)} sMUSD</Stat>}
+                <Stat label="Last 30 days">{savings.ret !== null && savings.seconds !== null ? savingsHistoryLine(savings.ret, savings.seconds) : "Unavailable"}</Stat>
+              </dl>
+            </div>
+          )}
         </div>
         <p className="mt-3 text-sm leading-relaxed text-muted">{referenceFooter(networks.mainnet.executor)}</p>
       </Card>
