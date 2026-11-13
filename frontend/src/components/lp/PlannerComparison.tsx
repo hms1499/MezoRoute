@@ -32,6 +32,8 @@ export function PlannerComparison({
 }) {
   const lp = state.kind === "rows" && <Route name="MUSD/BTC LP" tone="accent" rows={state.rows.lp} />;
   const sp = state.kind === "rows" && <Route name="Stability Pool" tone="sp" rows={state.rows.sp} />;
+  // U19: Mezo's Savings Vault, read-only, after both routes.
+  const savings = state.kind === "rows" && state.rows.savings && <Route name="Savings Vault (sMUSD)" tone="neutral" rows={state.rows.savings} />;
   return (
     <Card
       title={
@@ -59,6 +61,7 @@ export function PlannerComparison({
         <div className="mt-4 space-y-5">
           {other === "sp" ? lp : sp}
           {other === "sp" ? sp : lp}
+          {savings}
         </div>
       )}
       <p className="mt-4 text-xs text-muted">
@@ -78,11 +81,11 @@ export function PlannerComparison({
 }
 
 /** One route: a coloured dot, then label/value rows. */
-function Route({ name, tone, rows }: { name: string; tone: "accent" | "sp"; rows: PlannerCompareRow[] }) {
+function Route({ name, tone, rows }: { name: string; tone: "accent" | "sp" | "neutral"; rows: PlannerCompareRow[] }) {
   return (
     <section>
       <h3 className="flex items-center gap-2 text-sm font-semibold">
-        <span aria-hidden className={cx("h-2 w-2 rounded-full", tone === "accent" ? "bg-accent" : "bg-sp")} />
+        <span aria-hidden className={cx("h-2 w-2 rounded-full", tone === "accent" ? "bg-accent" : tone === "sp" ? "bg-sp" : "bg-muted")} />
         {name}
       </h3>
       <dl className="mt-2 space-y-2 text-sm">

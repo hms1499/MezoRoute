@@ -74,3 +74,12 @@ describe("PlannerComparison", () => {
     expect(render().indexOf("swap fees go to veBTC voters")).toBeLessThan(render().indexOf("BTC from liquidations"));
   });
 });
+
+describe("PlannerComparison with the Savings Vault (U19)", () => {
+  it("adds the vault as a third route only when its rows are given", async () => {
+    const { plannerSavingsRows } = await import("@/lib/flow/planner-comparison");
+    const savings = plannerSavingsRows({ amountMusd: 1_000n * 10n ** 18n, week: null });
+    expect(render({ state: { kind: "rows", rows: { ...rows, savings } } })).toContain("Savings Vault (sMUSD)");
+    expect(render()).not.toContain("Savings Vault");
+  });
+});

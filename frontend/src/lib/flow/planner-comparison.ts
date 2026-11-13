@@ -8,10 +8,12 @@ import { emissionsApr, mezoPerWeek } from "@/lib/gauge/maths";
 import type { GaugeState } from "@/lib/gauge/state";
 import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import { quoteEntry, type PoolState } from "@/lib/quote/entry";
+import type { SavingsWeek } from "@/lib/savings/maths";
 import { entryWorth } from "./entry-worth";
 
 export type PlannerCompareRow = { label: string; value: string; sub?: string };
-export type PlannerCompare = { lp: PlannerCompareRow[]; sp: PlannerCompareRow[] };
+/** `savings` (U19): the Savings Vault, present only when its state could be read and the deposit is MUSD. */
+export type PlannerCompare = { lp: PlannerCompareRow[]; sp: PlannerCompareRow[]; savings?: PlannerCompareRow[] };
 
 /** The comparison's footer. The exit pause is its own row now (U17). */
 export const PLANNER_COMPARE_NOTE = "No annualised rate for the Stability Pool.";
@@ -141,4 +143,25 @@ export function plannerAmount(input: { text: string; musdIn: bigint | null; cap:
     return { kind: "rows", amountMusd: BigInt(example.text) * 10n ** 18n, amountText: example.text, example: true };
   }
   return { kind: "message", message: INVALID_AMOUNT };
+}
+
+/**
+ * U19: Mezo's Savings Vault for the same amount. Staked sMUSD earns this week's MEZO and gives its MUSD yield to the
+ * gauge, so the week's line says "staked"; without a paying week it is the variable MUSD yield, never projected.
+ */
+export function plannerSavingsRows(input: { amountMusd: bigint; week: SavingsWeek | null }): PlannerCompareRow[] {
+  const { week } = input;
+  const thisWeek =
+    week?.availability === "open" && week.apr !== null
+      ? `≈ ${formatPercent(week.apr, 1)} APR staked`
+      : week?.availability === "open" && week.mezoPerWeek !== null && week.mezoPerWeek > 0n
+        ? `≈ ${formatToken(week.mezoPerWeek, 18, 2)} MEZO a week staked`
+        : "MUSD yield · variable";
+  return [
+    { label: "You get", value: "MUSD yield", sub: "or MEZO if staked" },
+    { label: "This week", value: thisWeek },
+    { label: "BTC exposure", value: "None" },
+    { label: "If BTC −30%", value: `${formatToken(input.amountMusd, 18, 2)} MUSD` },
+    { label: "Exit", value: "Any time, 1:1, in the Mezo app" },
+  ];
 }

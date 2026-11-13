@@ -12,7 +12,9 @@ import { BeforeYouSign } from "@/components/flow/BeforeYouSign";
 import { FlowColumn, FlowState } from "@/components/flow/FlowColumn";
 import { amountFieldError, urlAmount } from "@/lib/flow/amount";
 import { isFieldBlock, spFieldError } from "@/lib/flow/field-error";
-import { plannerAmount, plannerComparisonRows, plannerLpSide } from "@/lib/flow/planner-comparison";
+import { plannerAmount, plannerComparisonRows, plannerLpSide, plannerSavingsRows } from "@/lib/flow/planner-comparison";
+import { savingsWeek } from "@/lib/savings/maths";
+import { useSavingsVault } from "@/lib/savings/useSavingsVault";
 import { spSignFacts, trustLine } from "@/lib/flow/sign-facts";
 import type { OverviewRow } from "@/components/flow/Overview";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -57,6 +59,8 @@ function SpRoute({ account }: { account: Address | undefined }) {
   const connected = account !== undefined;
   const { data, error, refresh } = useSpSnapshot(account);
   const mezoPrice = useMezoPrice(network, data?.snapshot.blockNumber);
+  // U19: the Savings Vault at the same block, for the comparison's third route.
+  const savingsState = useSavingsVault(network, data?.snapshot.blockNumber);
   // U17 review: the LP side's quote is made with the executor's own fee, as on the LP planner (which reads it in its
   // snapshot), so both pages quote from the chain; the pinned value only fills the gap while the read is in flight.
   const { data: chainExecutorFee } = useReadContract({
@@ -137,15 +141,25 @@ function SpRoute({ account }: { account: Address | undefined }) {
               comparison.kind === "rows"
                 ? {
                     kind: "rows",
-                    rows: plannerComparisonRows({
-                      amountMusd: comparison.amountMusd,
-                      // The LP planner stakes by default; the comparison shows what "Choose MUSD/BTC LP" leads to.
-                      stake: { availability, on: effectiveStake(true, availability) },
-                      apr: lpSide?.apr ?? null,
-                      weekly: lpSide?.weekly ?? null,
-                      poolFeeBps: dashboard.poolFeeBps,
-                      lp: lpSide?.lp ?? null,
-                    }),
+                    rows: {
+                      ...plannerComparisonRows({
+                        amountMusd: comparison.amountMusd,
+                        // The LP planner stakes by default; the comparison shows what "Choose MUSD/BTC LP" leads to.
+                        stake: { availability, on: effectiveStake(true, availability) },
+                        apr: lpSide?.apr ?? null,
+                        weekly: lpSide?.weekly ?? null,
+                        poolFeeBps: dashboard.poolFeeBps,
+                        lp: lpSide?.lp ?? null,
+                      }),
+                      ...(savingsState
+                        ? {
+                            savings: plannerSavingsRows({
+                              amountMusd: comparison.amountMusd,
+                              week: savingsWeek({ state: savingsState, amount: comparison.amountMusd, now: snapshot.blockTimestamp, mezoPrice }),
+                            }),
+                          }
+                        : {}),
+                    },
                   }
                 : comparison
             }

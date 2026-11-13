@@ -28,7 +28,7 @@ import { splitPrimary } from "@/lib/flow/notice-action";
 import { plannerAmountBlock, plannerView } from "@/lib/flow/planner";
 import { isFieldBlock, lpFieldError } from "@/lib/flow/field-error";
 import { lpSignFacts, trustLine } from "@/lib/flow/sign-facts";
-import { BTC_COMPARE_MESSAGE, lpWeekRate, plannerAmount, plannerComparisonRows, plannerLpSide } from "@/lib/flow/planner-comparison";
+import { BTC_COMPARE_MESSAGE, lpWeekRate, plannerAmount, plannerComparisonRows, plannerLpSide, plannerSavingsRows } from "@/lib/flow/planner-comparison";
 import { compareHref } from "@/lib/compare/default-amount";
 import { btcRecoveries } from "@/lib/routes/musd-btc-lp/asset";
 import { entryQuery, parseEntryIntent, type EntryIntent } from "@/lib/routes/musd-btc-lp/intent";
@@ -46,6 +46,8 @@ import { LpEntryCard } from "./LpEntryCard";
 import { ModeToggle } from "./ModeToggle";
 import { NoExecutorCard } from "./NoExecutorCard";
 import { PlannerComparison } from "./PlannerComparison";
+import { savingsWeek } from "@/lib/savings/maths";
+import { useSavingsVault } from "@/lib/savings/useSavingsVault";
 import { RisksCard } from "./RisksCard";
 import { StakeSwitch } from "./StakeToggle";
 import { troveChangeRows } from "./troveChange";
@@ -77,6 +79,8 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
   const connected = account !== undefined;
   const { data, error, refresh } = useLpRouteSnapshot(account, executor);
   const mezoPrice = useMezoPrice(network, data?.snapshot.blockNumber);
+  // U19: the Savings Vault at the same block, for the comparison's third route.
+  const savingsState = useSavingsVault(network, data?.snapshot.blockNumber);
 
   function update(next: Pick<EntryIntent, "amount" | "slippageBps" | "mode" | "stake" | "asset">) {
     setIntent(parseEntryIntent(new URLSearchParams(entryQuery(next))));
@@ -256,12 +260,22 @@ function LpRouteForm({ account, executor }: { account: Address | undefined; exec
                 comparison.kind === "rows"
                   ? {
                       kind: "rows",
-                      rows: plannerComparisonRows({
-                        amountMusd: comparison.amountMusd,
-                        stake: preview.stake,
-                        ...comparedLp,
-                        poolFeeBps: dashboard.poolFeeBps,
-                      }),
+                      rows: {
+                        ...plannerComparisonRows({
+                          amountMusd: comparison.amountMusd,
+                          stake: preview.stake,
+                          ...comparedLp,
+                          poolFeeBps: dashboard.poolFeeBps,
+                        }),
+                        ...(savingsState
+                          ? {
+                              savings: plannerSavingsRows({
+                                amountMusd: comparison.amountMusd,
+                                week: savingsWeek({ state: savingsState, amount: comparison.amountMusd, now: data.snapshot.blockTimestamp, mezoPrice }),
+                              }),
+                            }
+                          : {}),
+                      },
                     }
                   : comparison
               }

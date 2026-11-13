@@ -156,3 +156,27 @@ describe("plannerLpSide", () => {
     expect(side.lp?.liquidity).toBe(quote.liquidity);
   });
 });
+
+describe("plannerSavingsRows (U19)", () => {
+  const amountMusd = 1_000n * 10n ** 18n;
+  const value = (rows: { label: string; value: string }[], label: string) => rows.find((row) => row.label === label)?.value;
+
+  it("rates staked sMUSD by this week's APR when MEZO has a price", async () => {
+    const { plannerSavingsRows } = await import("./planner-comparison");
+    const rows = plannerSavingsRows({ amountMusd, week: { availability: "open", mezoPerWeek: 3_205n * 10n ** 18n, apr: 10n ** 18n } });
+    expect(value(rows, "This week")).toBe("≈ 100% APR staked");
+    expect(value(rows, "You get")).toBe("MUSD yield");
+    expect(value(rows, "BTC exposure")).toBe("None");
+    expect(value(rows, "If BTC −30%")).toBe("1,000 MUSD");
+  });
+
+  it("falls back to MEZO a week, then to the MUSD yield, never a bare projection", async () => {
+    const { plannerSavingsRows } = await import("./planner-comparison");
+    expect(value(plannerSavingsRows({ amountMusd, week: { availability: "open", mezoPerWeek: 3_205n * 10n ** 18n, apr: null } }), "This week")).toBe("≈ 3,205 MEZO a week staked");
+    for (const week of [{ availability: "between-weeks" as const, mezoPerWeek: null, apr: null }, null]) {
+      const rows = plannerSavingsRows({ amountMusd, week });
+      expect(value(rows, "This week")).toBe("MUSD yield · variable");
+      expect(JSON.stringify(rows)).not.toMatch(/a year/);
+    }
+  });
+});
