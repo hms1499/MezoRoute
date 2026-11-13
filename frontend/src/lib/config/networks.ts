@@ -1,4 +1,4 @@
-import type { Address } from "viem";
+import type { Address, Hex } from "viem";
 
 export type NetworkId = "testnet" | "mainnet";
 
@@ -25,6 +25,9 @@ export type NetworkAddresses = {
   collSurplusPool: Address;
 };
 
+/** A MezoRoute contract deployment (U19 Proof): immutable, so its creation transaction and UTC date are constants. */
+export type Deployment = { address: Address; deployBlock: bigint; deployTx: Hex; deployedAt: string };
+
 export type NetworkConfig = {
   id: NetworkId;
   chainId: 31611 | 31612;
@@ -40,9 +43,9 @@ export type NetworkConfig = {
    * Pinned executor, its fee (F3 compares the fee with the chain before writing), and its deployment
    * block (F7 scans its events from there); null until deployed.
    */
-  executor: { address: Address; feeBps: bigint; deployBlock: bigint } | null;
+  executor: (Deployment & { feeBps: bigint }) | null;
   /** Earlier executor deployments, scanned for history only (F7 cost basis); never called. */
-  legacyExecutors: { address: Address; deployBlock: bigint }[];
+  legacyExecutors: Deployment[];
   /** The executor's per-transaction MUSD cap (`contracts/script/Deploy.s.sol` `maxMusdInFor`); the route pages read it from chain. */
   entryCap: bigint;
   /** The executor's per-transaction BTC cap (`maxBtcInFor`). */
@@ -51,13 +54,23 @@ export type NetworkConfig = {
    * MezoRouteLeverage (L1): Unwind, Close, Leverage and Open with leverage; its fee (Leverage and Open
    * only) and per-transaction caps (`contracts/script/DeployLeverage.s.sol`); null until deployed.
    */
-  leverage: { address: Address; deployBlock: bigint; feeBps: bigint; maxBtcFlash: bigint; maxMusdFlash: bigint } | null;
+  leverage: (Deployment & { feeBps: bigint; maxBtcFlash: bigint; maxMusdFlash: bigint }) | null;
   /** The pool's Tigris gauge and the voter that says whether it is alive; null when the network has none. */
   gauge: { address: Address; voter: Address } | null;
   /** CL pool that prices MEZO in MUSD (display only); null when none exists (testnet). */
   mezoPricePool: { address: Address; mezoIsToken0: boolean } | null;
+  /** U19 Proof: wallets the team runs; every other caller of our contracts is shown as "outside". */
+  teamWallets: readonly Address[];
+  /**
+   * U19: Mezo's MUSD Savings Vault (sMUSD, `MUSDSavingsRate`) and its MEZO gauge, compared read-only. Staked sMUSD
+   * belongs to the gauge, so its MUSD yield goes to the gauge, not the staker. Null gauge: the network has none.
+   */
+  savingsVault: { address: Address; gauge: Address | null } | null;
   addresses: NetworkAddresses;
 };
+
+// The team's own wallets (U19): the user's MetaMask and the deployer on both networks, plus the user's Unisat Safe on testnet.
+const TEAM = ["0x375aaA9e9E70e36F42d5414eC10b46B847f6d6e8", "0xd74f60bb70d2A8B412fF12d8ef0ffdaAe81B2B49"] as const satisfies readonly Address[];
 
 /** Mezo networks (PRODUCT_SPEC.md §11.1, §20). Pure modules take one of these instead of importing a network. */
 export const networks: Record<NetworkId, NetworkConfig> = {
@@ -71,19 +84,37 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     faucetUrl: "https://faucet.test.mezo.org",
     mezoAppUrl: "https://testnet.mezo.org",
     // G1: V2 (stake flag, enterFromBtc), deployed at block 16,569,977.
-    executor: { address: "0x1281cC769c136F9F4f291B390c8992a3Cd556288", feeBps: 10n, deployBlock: 16_569_977n },
-    legacyExecutors: [{ address: "0xB36B2E012003840951CFf00fA6b1E3237A110920", deployBlock: 15_903_010n }],
+    executor: {
+      address: "0x1281cC769c136F9F4f291B390c8992a3Cd556288",
+      feeBps: 10n,
+      deployBlock: 16_569_977n,
+      deployTx: "0x5346cb0a04fcc4d86e63a1a133ec53f1d7a7f1064fea9c5c397cbbfd695f9fb9",
+      deployedAt: "2026-11-04",
+    },
+    legacyExecutors: [
+      {
+        address: "0xB36B2E012003840951CFf00fA6b1E3237A110920",
+        deployBlock: 15_903_010n,
+        deployTx: "0x060ae9ed9c8e30db6327457b710f3263e0e4ad89394fed734a17a5f8c4d51fb3",
+        deployedAt: "2026-10-02",
+      },
+    ],
     entryCap: 1_000_000n * 10n ** 18n,
     entryCapBtc: 12n * 10n ** 18n,
     leverage: {
       address: "0x14bEdE8de5Cc60342492934B207Ce99eAf986d88",
       deployBlock: 16_622_070n,
+      deployTx: "0x22c07ba40588a0fca71b29b8cd5d507843db83fd562fae75f431d12744ae31db",
+      deployedAt: "2026-11-07",
       feeBps: 10n,
       maxBtcFlash: 12n * 10n ** 18n,
       maxMusdFlash: 1_000_000n * 10n ** 18n,
     },
     gauge: { address: "0x72D88B0795373437E86792DEd8362D66dC43Cd2c", voter: "0x263F1Fd5fB7F866881e1B6cD7d5d6c40Fd985F0D" },
     mezoPricePool: null,
+    teamWallets: [...TEAM, "0x4543ba6E0D1cC63B9eDA1D1E61853A59Cf2ae22D"],
+    // The testnet vault the Mezo app deposits into: 596 deposits from 190 depositors by 13 Nov (the other vault on our MUSD has 5). No gauge.
+    savingsVault: { address: "0x6f461c68B2c5492C0F5CCEc5a264d692aA7A8e16", gauge: null },
     addresses: {
       musd: "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503",
       btc: "0x7b7C000000000000000000000000000000000000",
@@ -114,21 +145,39 @@ export const networks: Record<NetworkId, NetworkConfig> = {
     faucetUrl: null,
     mezoAppUrl: "https://mezo.org",
     // G1, 6 Nov 2026: V2 (stake flag, enterFromBtc), 1,000 MUSD and 0.0125 BTC caps per entry, source-verified on the explorer.
-    executor: { address: "0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915", feeBps: 10n, deployBlock: 13_031_359n },
+    executor: {
+      address: "0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915",
+      feeBps: 10n,
+      deployBlock: 13_031_359n,
+      deployTx: "0x4338b6c8024f0516d66bbe5a96ec8e30b012c30be8e5e397673f279cb167bbe8",
+      deployedAt: "2026-11-06",
+    },
     // M1 V1 (15 Oct 2026): scanned for history only; its LP can still exit.
-    legacyExecutors: [{ address: "0x046449b1229C863e278f369869BA10e12bd80d9E", deployBlock: 12_524_142n }],
+    legacyExecutors: [
+      {
+        address: "0x046449b1229C863e278f369869BA10e12bd80d9E",
+        deployBlock: 12_524_142n,
+        deployTx: "0x8aa55418f1da98ea1700c9e950f01d8cadf94fc34633650f5e60f9e68aafb71d",
+        deployedAt: "2026-10-15",
+      },
+    ],
     entryCap: 1_000n * 10n ** 18n,
     entryCapBtc: 125n * 10n ** 14n,
     // L1, 7 Nov 2026: deployed from the keystore, every immutable read back; caps 0.0125 BTC / 2,500 MUSD per call.
     leverage: {
       address: "0xA82059CEaAa50678e0295610106c46D0bd26F6C6",
       deployBlock: 13_064_669n,
+      deployTx: "0xd38ed08ce7f778122cc44173151e16eb6c8aa6a6e6873f2aa943323214076048",
+      deployedAt: "2026-11-07",
       feeBps: 10n,
       maxBtcFlash: 125n * 10n ** 14n,
       maxMusdFlash: 2_500n * 10n ** 18n,
     },
     gauge: { address: "0x8Be20a5fF57E381025aE5E3A121B697269569AaF", voter: "0x48233cCC97B87Ba93bCA212cbEe48e3210211f03" },
     mezoPricePool: { address: "0x1D6e8D24c133535F2d00676F66a0e824f84765ff", mezoIsToken0: true },
+    teamWallets: TEAM,
+    // "MUSD Savings Rate" (proxy, implementation MUSDSavingsRate, verified) and its MEZO gauge in the pools' voter (checked 13 Nov).
+    savingsVault: { address: "0xb4D498029af77680cD1eF828b967f010d06C51CC", gauge: "0x677817bF3e44b90E8F95222F75e2950b7904a401" },
     addresses: {
       musd: "0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186",
       btc: "0x7b7C000000000000000000000000000000000000",

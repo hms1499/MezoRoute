@@ -76,7 +76,7 @@ describe("referenceFooter", () => {
   });
 
   it("stops claiming mainnet is not live once the executor ships (M1)", () => {
-    const text = referenceFooter({ address: "0x0000000000000000000000000000000000000001", feeBps: 10n, deployBlock: 1n });
+    const text = referenceFooter({ address: "0x0000000000000000000000000000000000000001", feeBps: 10n, deployBlock: 1n, deployTx: "0x01", deployedAt: "2026-10-15" });
     expect(text).toBe("Read from Mezo mainnet for reference. Switch to Mainnet to use MezoRoute there. Past results, not a forecast.");
     expect(text).not.toContain("until launch");
   });
