@@ -154,7 +154,7 @@ export function parseHistory(text: string | null): HistoryCache | null {
 /** The executors whose events make up the cost basis: the current one, then the older ones, each scanned from its own deploy block. */
 export function historyExecutors(network: NetworkConfig): { address: Address; deployBlock: bigint }[] {
   const { executor, legacyExecutors } = network;
-  return [...(executor ? [{ address: executor.address, deployBlock: executor.deployBlock }] : []), ...legacyExecutors];
+  return [...(executor ? [{ address: executor.address, deployBlock: executor.deployBlock }] : []), ...legacyExecutors.map(({ address, deployBlock }) => ({ address, deployBlock }))];
 }
 
 /**
