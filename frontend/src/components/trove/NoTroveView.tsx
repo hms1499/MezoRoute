@@ -6,12 +6,11 @@ import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import type { NetworkConfig } from "@/lib/config/networks";
 import { troveSignFacts } from "@/lib/flow/sign-facts";
-import { formatPercent, formatToken } from "@/lib/format";
+import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import { MAINNET_NOT_RUN } from "@/lib/leverage/copy";
 import type { TroveSnapshot } from "@/lib/leverage/snapshot";
 import { GAS_COMPENSATION, LEVERAGE_CR_FLOOR, MIN_NET_DEBT } from "@/lib/trove/constants";
 import type { OpenFacts } from "@/lib/trove/page";
-import { cx } from "@/lib/ui/cx";
 import { MezoNowCard } from "./TroveAsideCards";
 
 const STEPS = [
@@ -42,7 +41,7 @@ export function NoTroveView({ snapshot, open, connected, network }: { snapshot: 
             <Fact label="Collateral ratio" value={`${formatPercent(snapshot.market.mcr, 0)} min`}>
               Mezo suggests 150% or more; MezoRoute&apos;s Open and Leverage keep {floor} or more
             </Fact>
-            <Fact label="Cost" value={`${formatPercent(open.rateBps * 10n ** 14n, 0)} a year`}>
+            <Fact label="Cost" value={`${formatBps(open.rateBps)} a year`}>
               interest, plus a {formatPercent(open.borrowingRate)} borrowing fee
             </Fact>
           </dl>
@@ -86,11 +85,11 @@ export function NoTroveView({ snapshot, open, connected, network }: { snapshot: 
         </Card>
         <Card title="Two risks to know">
           <dl className="mt-2 divide-y divide-line">
-            <Risk label="Liquidation" level="high">
+            <Risk label="Liquidation">
               Below {formatPercent(snapshot.market.mcr, 0)} anyone can liquidate the Trove: the debt is cancelled and you lose the BTC. Interest raises that line
               slowly even if BTC stands still.
             </Risk>
-            <Risk label="Redemption" level="medium">
+            <Risk label="Redemption">
               Anyone can swap MUSD for BTC from the lowest-ratio Troves. Your debt and BTC both shrink at the oracle price; it is not a loss like a
               liquidation.
             </Risk>
@@ -121,13 +120,11 @@ function Fact({ label, value, children }: { label: string; value: string; childr
   );
 }
 
-function Risk({ label, level, children }: { label: string; level: "high" | "medium"; children: ReactNode }) {
+// General explanations, not the visitor's levels: no coloured dots (review, 13 Nov).
+function Risk({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1 py-3 sm:flex-row sm:gap-6">
-      <dt className="inline-flex shrink-0 items-center gap-2 self-start font-semibold sm:w-32">
-        <span aria-hidden className={cx("h-2 w-2 shrink-0 rounded-full", level === "high" ? "bg-danger" : "bg-warning-ink")} />
-        {label}
-      </dt>
+      <dt className="shrink-0 self-start font-semibold sm:w-32">{label}</dt>
       <dd className="text-sm leading-relaxed text-muted">{children}</dd>
     </div>
   );

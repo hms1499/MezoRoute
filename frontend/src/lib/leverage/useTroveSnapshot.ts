@@ -20,6 +20,8 @@ export function useTroveSnapshot(account: Address | undefined): {
   data: TroveData | undefined;
   error: Error | null;
   queue: QueueEntry[] | null;
+  /** True while the queue has no data yet and has not failed (U20: the page says "loading", not "not readable"). */
+  queueLoading: boolean;
   refresh: () => Promise<TroveData>;
 } {
   const { network } = useNetwork();
@@ -55,6 +57,7 @@ export function useTroveSnapshot(account: Address | undefined): {
     data: reads.data ? toData(reads.data, reads.dataUpdatedAt) : undefined,
     error: reads.error ?? null,
     queue: queue.data ?? null,
+    queueLoading: queue.data === undefined && !queue.isError,
     refresh: async () => {
       const fresh = await reads.refetch({ throwOnError: true });
       if (!fresh.data) throw new Error("Trove snapshot: no data");

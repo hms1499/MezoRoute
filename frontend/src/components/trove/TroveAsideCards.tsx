@@ -1,13 +1,11 @@
 import { Card } from "@/components/ui/Card";
 import { Stat } from "@/components/ui/Stat";
 import { Term } from "@/components/ui/Term";
-import { formatPercent, formatToken } from "@/lib/format";
+import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import { REDEMPTION_EXPLAINER } from "@/lib/leverage/copy";
 import type { TroveSnapshot } from "@/lib/leverage/snapshot";
 import { GAS_COMPENSATION } from "@/lib/trove/constants";
 import type { TroveSummary } from "@/lib/trove/page";
-
-const bpsPercent = (bps: bigint) => formatPercent(bps * 10n ** 14n, 0);
 
 /** U20 §4: where redemptions would reach this Trove. */
 export function QueueCard({ redemption }: { redemption: TroveSummary["redemption"] }) {
@@ -30,7 +28,11 @@ export function QueueCard({ redemption }: { redemption: TroveSummary["redemption
         </dl>
       ) : (
         <p className="mt-3 text-sm text-muted">
-          {redemption === "unreadable" ? "The queue could not be read just now." : "Redemptions skip a Trove below the 110% minimum."}
+          {redemption === "loading"
+            ? "Reading the queue…"
+            : redemption === "unreadable"
+              ? "The queue could not be read just now."
+              : "Redemptions skip a Trove below the 110% minimum."}
         </p>
       )}
       <p className="mt-3 text-xs leading-relaxed text-muted">{REDEMPTION_EXPLAINER}</p>
@@ -45,7 +47,7 @@ export function BorrowingCard({ snapshot }: { snapshot: TroveSnapshot }) {
     <Card title="Borrowing">
       <dl className="stat-list mt-3">
         <Stat label="Interest" sub="fixed for this Trove">
-          {bpsPercent(t.interestRateBps)} a year
+          {formatBps(t.interestRateBps)} a year
         </Stat>
         <Stat label="Borrowing fee" sub="on new debt">
           {formatPercent(snapshot.market.borrowingRate)}

@@ -44,7 +44,7 @@ export function TroveCard({ snapshot, account }: { snapshot: DashboardSnapshot; 
 
   const cr = collateralRatio(t, price);
   const liq = liquidationPrice(t, protocol.mcr);
-  const state = own ? trovePageState({ snapshot: own, queue: trove.queue, account, network }) : null;
+  const state = own ? trovePageState({ snapshot: own, queue: trove.queueLoading ? "loading" : trove.queue, account, network }) : null;
   const redemption = state?.kind === "trove" ? state.summary.redemption : null;
   return (
     <Card title={title}>
@@ -67,7 +67,7 @@ export function TroveCard({ snapshot, account }: { snapshot: DashboardSnapshot; 
         <Stat label="Debt" sub={`includes ${formatToken(t.interest, 18, 2, "up")} MUSD interest`}>
           {formatToken(t.debt, 18, 2, "up")} MUSD
         </Stat>
-        <Stat label={<Term id="liquidationPrice">Liquidation price</Term>} sub={liq === null ? undefined : `BTC −${liquidationDrop(liq, price)}%`}>
+        <Stat label={<Term id="liquidationPrice">Liquidation price</Term>} sub={liq === null || liq >= price ? undefined : `BTC −${liquidationDrop(liq, price)}%`}>
           {liq === null ? "—" : `${formatToken(liq, 18, 0, "up")} MUSD / BTC`}
         </Stat>
       </dl>

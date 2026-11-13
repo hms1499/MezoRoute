@@ -40,10 +40,12 @@ const snapshot = (over: Partial<TroveSnapshot> = {}): TroveSnapshot => ({
   ...over,
 });
 
-// One Trove ahead holding 99.7% of all debt (lower NICR), then ours.
+// One Trove ahead (lower NICR) holding 10,000 MUSD, then ours. Our entry is stale on purpose (a cached queue
+// read before the last action): the page places the Trove by its snapshot, never by the cache.
+const AHEAD = 10_000n * ONE;
 const QUEUE: QueueEntry[] = [
-  { owner: OTHER, nicr: 1n, icr: 2n * ONE, debt: 997n * ONE },
-  { owner: ME, nicr: 2n, icr: 2_829_924_057_233_575_620n, debt: 3n * ONE },
+  { owner: OTHER, nicr: 1n, icr: 2n * ONE, debt: AHEAD },
+  { owner: ME, nicr: 0n, icr: 2_829_924_057_233_575_620n, debt: 3n * ONE },
 ];
 const network = networks.testnet;
 
@@ -60,8 +62,8 @@ describe("trovePageState", () => {
     const s = state.summary;
     expect(s.liquidationRisk).toBe("low");
     expect(s.drop).toBe(61);
-    expect(s.redemption).toMatchObject({ risk: "low", debtAhead: 997n * ONE, rank: 2, total: 2 });
-    if (typeof s.redemption === "object") expect(s.redemption.share).toBe((997n * ONE * ONE) / (1_000n * ONE));
+    expect(s.redemption).toMatchObject({ risk: "low", debtAhead: AHEAD, rank: 2, total: 2 });
+    if (typeof s.redemption === "object") expect(s.redemption.share).toBe((AHEAD * ONE) / (AHEAD + LIVE.debt));
     expect(s.drift).toBe(267_428_529_730_415_205_969n);
     expect(s.multiply.netValue).toBe(4_444_571_810_353_771_885_636n);
     expect(s.borrowable > 0n).toBe(true);
@@ -74,12 +76,25 @@ describe("trovePageState", () => {
     expect(state.summary.liquidationRisk).toBe("low");
   });
 
+  it("places a Trove missing from a cached queue by its own snapshot, not first in line", () => {
+    const state = trovePageState({ snapshot: snapshot(), queue: [QUEUE[0]], account: ME, network });
+    if (state.kind !== "trove") throw new Error("expected a Trove");
+    expect(state.summary.redemption).toMatchObject({ risk: "low", debtAhead: AHEAD, rank: 2, total: 2 });
+  });
+
+  it("says the queue is loading, not unreadable, while it is read", () => {
+    const state = trovePageState({ snapshot: snapshot(), queue: "loading", account: ME, network });
+    if (state.kind !== "trove") throw new Error("expected a Trove");
+    expect(state.summary.redemption).toBe("loading");
+  });
+
   it("says redemptions skip a Trove under the MCR, and calls it liquidatable", () => {
     const under = { ...LIVE, debt: LIVE.debt * 3n, principal: LIVE.principal * 3n };
     const state = trovePageState({ snapshot: snapshot({ trove: under }), queue: QUEUE, account: ME, network });
     if (state.kind !== "trove") throw new Error("expected a Trove");
     expect(state.summary.liquidationRisk).toBe("liquidatable");
     expect(state.summary.redemption).toBe("not-applicable");
+    expect(state.summary.drop).toBeNull();
   });
 
   it("offers the surplus to a wallet whose Trove was closed, with the open facts", () => {

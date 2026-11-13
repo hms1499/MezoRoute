@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { Segmented } from "@/components/ui/Segmented";
 import { Term } from "@/components/ui/Term";
-import { formatPercent, formatToken } from "@/lib/format";
+import { formatBps, formatPercent, formatToken } from "@/lib/format";
 import type { TroveSnapshot } from "@/lib/leverage/snapshot";
 import type { TroveSummary } from "@/lib/trove/page";
 import { riskLinesText } from "@/lib/trove/risk";
@@ -33,7 +33,7 @@ export function TroveSummaryCard({
 }) {
   const t = snapshot.trove!;
   const { price, mcr } = snapshot.market;
-  const rate = formatPercent(t.interestRateBps * 10n ** 14n, 0);
+  const rate = formatBps(t.interestRateBps);
   const crCell: Cell = {
     label: <Term id="collateralRatio">Collateral ratio</Term>,
     value: summary.cr === null ? "—" : formatPercent(summary.cr),

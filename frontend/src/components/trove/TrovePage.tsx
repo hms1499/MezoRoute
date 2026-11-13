@@ -29,9 +29,9 @@ const WITHOUT_TROVE =
 export default function TrovePage() {
   const { network } = useNetwork();
   const { address, status } = useAccount();
-  const { data, error, queue, refresh } = useTroveSnapshot(address);
+  const { data, error, queue, queueLoading, refresh } = useTroveSnapshot(address);
   const [view, setView] = useState<TroveView>(readTroveView);
-  const state = useMemo(() => (data ? trovePageState({ snapshot: data.snapshot, queue, account: address, network }) : null), [data, queue, address, network]);
+  const state = useMemo(() => (data ? trovePageState({ snapshot: data.snapshot, queue: queueLoading ? "loading" : queue, account: address, network }) : null), [data, queue, queueLoading, address, network]);
 
   const header = (subtitle: string) => (
     <div className="space-y-3">
@@ -40,10 +40,11 @@ export default function TrovePage() {
     </div>
   );
   if (status === "reconnecting" || status === "connecting") return <LoadingCard label="Loading your Trove" />;
+  const loadingLabel = address ? "Loading your Trove" : "Loading Mezo's Trove rules";
   if (!data || !state) {
     return (
       <div className="space-y-6">
-        {header(WITH_TROVE)}
+        {header(address ? WITH_TROVE : WITHOUT_TROVE)}
         {error ? (
           <Notice
             tone="danger"
@@ -57,7 +58,7 @@ export default function TrovePage() {
             Could not read the Trove from Mezo just now.
           </Notice>
         ) : (
-          <LoadingCard label="Loading your Trove" />
+          <LoadingCard label={loadingLabel} />
         )}
       </div>
     );

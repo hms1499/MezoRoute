@@ -7,6 +7,7 @@ import { asDashboardSnapshot } from "@/lib/leverage/dashboard-view";
 import { redemptionQueue, type QueueEntry } from "@/lib/leverage/queue";
 import { minOpenBtc } from "@/lib/leverage/quote-open";
 import type { TroveSnapshot } from "@/lib/leverage/snapshot";
+import { nominalCr, type TroveState } from "@/lib/leverage/trove-math";
 import { WAD } from "@/lib/math";
 import { DEFAULT_SLIPPAGE } from "@/lib/quote/entry";
 import { GAS_COMPENSATION, LEVERAGE_CR_FLOOR, MIN_NET_DEBT } from "./constants";
@@ -17,9 +18,9 @@ import { interestDrift, liquidationDrop, liquidationRisk, multiplyView, redempti
 export type TroveSummary = {
   cr: bigint | null;
   liquidationRisk: LiquidationRisk | null;
-  redemption: { risk: RedemptionRisk; debtAhead: bigint; share: bigint; rank: number; total: number } | "unreadable" | "not-applicable";
+  redemption: { risk: RedemptionRisk; debtAhead: bigint; share: bigint; rank: number; total: number } | "loading" | "unreadable" | "not-applicable";
   liquidationPrice: bigint | null;
-  drop: number | null;
+  drop: number | null; // null when there is no liquidation price, or the Trove is already at or below it
   drift: bigint | null;
   borrowable: bigint;
   multiply: ReturnType<typeof multiplyView>;
@@ -30,7 +31,8 @@ export type OpenFacts = { minDebt: bigint; rateBps: bigint; borrowingRate: bigin
 
 export type TrovePageState = { kind: "trove"; summary: TroveSummary } | { kind: "none"; open: OpenFacts; surplusBtc: bigint };
 
-export function trovePageState(input: { snapshot: TroveSnapshot; queue: QueueEntry[] | null; account: Address | undefined; network: NetworkConfig }): TrovePageState {
+/** `queue`: the redemption queue, "loading" while it is first read, null when the read failed. */
+export function trovePageState(input: { snapshot: TroveSnapshot; queue: QueueEntry[] | "loading" | null; account: Address | undefined; network: NetworkConfig }): TrovePageState {
   const { snapshot, queue, account, network } = input;
   const t = snapshot.trove;
   if (!account || !t) {
@@ -46,9 +48,9 @@ export function trovePageState(input: { snapshot: TroveSnapshot; queue: QueueEnt
     summary: {
       cr,
       liquidationRisk: liquidationRisk(cr, mcr),
-      redemption: redemption(queue, account, cr, mcr),
+      redemption: redemption(queue, account, t, cr, mcr),
       liquidationPrice: liqPrice,
-      drop: liqPrice === null ? null : liquidationDrop(liqPrice, price),
+      drop: liqPrice === null || liqPrice >= price ? null : liquidationDrop(liqPrice, price),
       drift: interestDrift(t, mcr),
       borrowable: borrowHeadroom(trove, price, dashboard.protocol),
       multiply: multiplyView(t, price),
@@ -57,12 +59,18 @@ export function trovePageState(input: { snapshot: TroveSnapshot; queue: QueueEnt
   };
 }
 
-/** Redemptions skip a Trove under the MCR; a failed queue read blanks only this. Total: every Trove's debt in the queue read. */
-function redemption(queue: QueueEntry[] | null, account: Address, cr: bigint | null, mcr: bigint): TroveSummary["redemption"] {
+/**
+ * Redemptions skip a Trove under the MCR; a failed queue read blanks only this. The queue is cached for a minute
+ * and may predate the last action (or miss a Trove just opened), so the Trove is placed by its snapshot (NICR and
+ * debt), never by its queue entry. Total: every other Trove's debt in the queue read, plus this Trove's.
+ */
+function redemption(queue: QueueEntry[] | "loading" | null, account: Address, t: TroveState, cr: bigint | null, mcr: bigint): TroveSummary["redemption"] {
   if (cr === null || cr < mcr) return "not-applicable";
+  if (queue === "loading") return "loading";
   if (!queue) return "unreadable";
-  const total = queue.reduce((sum, e) => sum + e.debt, 0n);
-  const position = redemptionQueue(queue, account, null, mcr);
+  const isOwn = (e: QueueEntry) => e.owner.toLowerCase() === account.toLowerCase();
+  const total = queue.reduce((sum, e) => (isOwn(e) ? sum : sum + e.debt), t.debt);
+  const position = redemptionQueue(queue, account, nominalCr(t), mcr);
   const risk = redemptionRisk(position.debtAhead, total);
   if (!risk) return "not-applicable";
   return { risk, debtAhead: position.debtAhead, share: (position.debtAhead * WAD) / total, rank: position.rank, total: position.total };
