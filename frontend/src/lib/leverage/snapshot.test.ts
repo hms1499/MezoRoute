@@ -30,6 +30,7 @@ const results = (overrides: Partial<Record<number, unknown>> = {}): TroveSnapsho
     0n, // surplus BTC
     16_622_200n, // block
     1_794_019_000n, // timestamp
+    100, // new-Trove interest rate bps (InterestRateManager.interestRate)
   ];
   for (const [i, v] of Object.entries(overrides)) base[Number(i)] = v;
   return base as unknown as TroveSnapshotResults;
@@ -38,8 +39,17 @@ const results = (overrides: Partial<Record<number, unknown>> = {}): TroveSnapsho
 describe("troveSnapshotContracts", () => {
   it("reads everything on the selected chain in one multicall", () => {
     const calls = troveSnapshotContracts(testnet, me);
-    expect(calls).toHaveLength(21);
+    expect(calls).toHaveLength(22);
     expect(calls.every((c) => c.chainId === testnet.chainId)).toBe(true);
+  });
+
+  it("ends with the rate a new Trove gets, on both networks (U20)", () => {
+    for (const network of [networks.testnet, networks.mainnet]) {
+      const last = troveSnapshotContracts(network, me).at(-1)!;
+      expect(last).toMatchObject({ address: network.addresses.interestRateManager, functionName: "interestRate" });
+    }
+    expect(networks.testnet.addresses.interestRateManager).toBe("0xD4D6c36A592A2c5e86035A6bca1d57747a567f37");
+    expect(networks.mainnet.addresses.interestRateManager).toBe("0x4a453700d157717Fe02fB62E7700ED7845048285");
   });
 });
 
@@ -59,6 +69,7 @@ describe("parseTroveSnapshot", () => {
     expect(s.btcPermitNonce).toBe(1n);
     expect(s.recoveryMode).toBe(false);
     expect(s.block).toEqual({ number: 16_622_200n, timestamp: 1_794_019_000n });
+    expect(s.newTroveRateBps).toBe(100n);
   });
 
   it("never adds pending redistribution twice (getEntireDebtAndColl already folds it in)", () => {

@@ -26,9 +26,13 @@ export function Footer() {
             </p>
           </div>
           <nav aria-label="Project links" className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
-            {/* U19: the Proof page, at every width (the header drops it below 640 px). */}
+            {/* U19: the Proof page, at every width (the header drops it below 1024 px). */}
             <Link href="/proof/" className={link}>
               Proof
+            </Link>
+            {/* U20: the Trove page, at every width (the header drops it below 1024 px). */}
+            <Link href="/trove/" className={link}>
+              Trove
             </Link>
             {contractLinks(network).map((contract) => (
               <a key={contract.address} href={explorerAddressUrl(network, contract.address)} target="_blank" rel="noreferrer" className={link}>

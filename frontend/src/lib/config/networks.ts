@@ -23,6 +23,8 @@ export type NetworkAddresses = {
   pcv: Address;
   /** Holds BTC left after a redemption or liquidation closed a Trove (`BorrowerOperationsSignatures.collSurplusPoolAddress()`). */
   collSurplusPool: Address;
+  /** The rate a new Trove gets (`TroveManager.interestRateManager()`; read in U20's Trove page). */
+  interestRateManager: Address;
 };
 
 /** A MezoRoute contract deployment (U19 Proof): immutable, so its creation transaction and UTC date are constants. */
@@ -133,6 +135,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
       mezo: "0x7B7c000000000000000000000000000000000001",
       pcv: "0x4dDD70f4C603b6089c07875Be02fEdFD626b80Af",
       collSurplusPool: "0xB4C35747c26E4aB5F1a7CdC7E875B5946eFa6fa9",
+      interestRateManager: "0xD4D6c36A592A2c5e86035A6bca1d57747a567f37",
     },
   },
   mainnet: {
@@ -196,6 +199,7 @@ export const networks: Record<NetworkId, NetworkConfig> = {
       mezo: "0x7B7c000000000000000000000000000000000001",
       pcv: "0x391EcC7ffEFc48cff41D0F2Bb36e38b82180B993",
       collSurplusPool: "0xBF51807ACb3394B8550f0554FB9098856Ef5F491",
+      interestRateManager: "0x4a453700d157717Fe02fB62E7700ED7845048285",
     },
   },
 };

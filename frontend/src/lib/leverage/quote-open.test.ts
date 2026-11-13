@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MIN_NET_DEBT } from "@/lib/trove/constants";
-import { openMaxCr, quoteOpen } from "./quote-open";
+import { minOpenBtc, openMaxCr, quoteOpen } from "./quote-open";
+import { LEVERAGE_CR_FLOOR } from "@/lib/trove/constants";
 import { HARNESS_MARKET, HARNESS_POOL, MAINNET_MARKET, MAINNET_POOL, ONE } from "./test-fixtures";
 
 describe("quoteOpen", () => {
@@ -35,5 +36,26 @@ describe("openMaxCr", () => {
     const small = openMaxCr(ONE / 100n, HARNESS_POOL, HARNESS_MARKET, 100n, 10n, 12n * ONE);
     expect(small < 2n * ONE).toBe(true); // why quoteOpen returns null above
     expect(openMaxCr(ONE / 10n, HARNESS_POOL, HARNESS_MARKET, 100n, 10n, 12n * ONE) > small).toBe(true);
+  });
+});
+
+describe("minOpenBtc", () => {
+  const STEP = 10_000_000_000n; // 8 decimals
+  it("is the smallest BTC of the user's own that opens at the floor", () => {
+    for (const [pool, market, flash] of [
+      [HARNESS_POOL, HARNESS_MARKET, 12n * ONE],
+      [MAINNET_POOL, MAINNET_MARKET, 125n * 10n ** 14n],
+    ] as const) {
+      const min = minOpenBtc(pool, market, LEVERAGE_CR_FLOOR, 100n, 10n, flash);
+      expect(min).not.toBeNull();
+      expect(min! % STEP).toBe(0n);
+      expect(quoteOpen(min!, pool, market, LEVERAGE_CR_FLOOR, 100n, 10n, flash)).not.toBeNull();
+      expect(quoteOpen(min! - STEP, pool, market, LEVERAGE_CR_FLOOR, 100n, 10n, flash)).toBeNull();
+    }
+  });
+
+  // The debt never goes below the 2,000 MUSD minimum, so 100 BTC at 100,000 MUSD tops out near 500,000%.
+  it("is null when no amount up to 100 BTC reaches the target", () => {
+    expect(minOpenBtc(HARNESS_POOL, HARNESS_MARKET, 100_000n * ONE, 100n, 10n, 12n * ONE)).toBeNull();
   });
 });

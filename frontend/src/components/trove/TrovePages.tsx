@@ -36,6 +36,7 @@ import { cr, nominalCr, type TroveState } from "@/lib/leverage/trove-math";
 import { useDirectTroveCall } from "@/lib/leverage/useDirectTroveCall";
 import { useTroveSnapshot, type TroveData } from "@/lib/leverage/useTroveSnapshot";
 import { confirmQueue, crPresets, leverageMaxNote, leverageNoRoomNote, maxTarget, troveNowRows, maxTargetText, openBtcMax, openMaxNote, openReachNote, pageNotice, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "@/lib/leverage/view";
+import { asDashboardSnapshot } from "@/lib/leverage/dashboard-view";
 import { openMaxCr } from "@/lib/leverage/quote-open";
 import { unwindMaxCr } from "@/lib/leverage/quote-unwind";
 import { leverageMax, leverageQuoteAt } from "@/lib/leverage/quote-leverage";
@@ -107,7 +108,7 @@ export function TroveAmountPage({ action }: { action: TroveAction }) {
   return (
     // U17 §7: opened without a wallet, the page keeps its own heading and step and says what the action does.
     <RequireWallet flow
-      fallback={<ConnectPage back={{ href: "/", label: "Dashboard" }} step={1} title={TITLES[action].amount} cardTitle={TITLES[action].card} cardNote={TROVE_CONNECT[action]} />}
+      fallback={<ConnectPage back={{ href: "/trove/", label: "Trove" }} step={1} title={TITLES[action].amount} cardTitle={TITLES[action].card} cardNote={TROVE_CONNECT[action]} />}
     >
       {(account) => <AmountFlow action={action} account={account} />}
     </RequireWallet>
@@ -216,7 +217,7 @@ function AmountCard(props: {
       ? leverageQuoteAt(snapshot.trove, snapshot.pool, snapshot.market, max.btc, intent.slippageBps, network.leverage.feeBps).crAfter
       : null;
   // U14 B1: with no room, the page says which limit binds (the oracle cost at the smallest size when that is it),
-  // disables the target, and shows no Review: there is nothing to do here, and the header's Dashboard link is the way out.
+  // disables the target, and shows no Review: there is nothing to do here, and the header's Trove link is the way out.
   const noRoom = max !== null && max.btc === 0n;
   // U14 B3: a block the typed BTC or target causes is said at that field, not under the overview.
   const fieldError = troveFieldError(view.block, { btc: action === "open", cr: action !== "close" });
@@ -239,7 +240,7 @@ function AmountCard(props: {
       aside={<TroveAside rows={troveNowRows(snapshot)} queue={{ before: view.queueBefore, after: view.queueAfter }} facts={facts} />}
       header={
         <>
-          <PageHeader back={{ href: "/", label: "Dashboard" }} step={1} title={TITLES[action].amount} />
+          <PageHeader back={{ href: "/trove/", label: "Trove" }} step={1} title={TITLES[action].amount} />
           {chainId !== network.chainId && <WrongNetworkAlert />}
           <TroveNotice notice={view.notice} onRepay={repay} />
         </>
@@ -333,8 +334,8 @@ function AmountCard(props: {
         <Details summary="If BTC moves">
           <ExposurePanel
             title="Trove BTC exposure"
-            snapshot={troveOnlySnapshot(snapshot, view.after)}
-            before={snapshot.trove ? troveOnlySnapshot(snapshot, snapshot.trove) : undefined}
+            snapshot={asDashboardSnapshot(snapshot, view.after)}
+            before={snapshot.trove ? asDashboardSnapshot(snapshot, snapshot.trove) : undefined}
           />
         </Details>
       )}
@@ -353,23 +354,6 @@ function roundUpPercent(ratio: bigint): string {
   return `${tenths / 10n}.${tenths % 10n}`;
 }
 
-/** The exposure panel's input for the Trove alone (LP and Stability Pool left out): before and after the action. */
-function troveOnlySnapshot(s: TroveSnapshot, t: TroveState): DashboardSnapshot {
-  return {
-    price: s.market.price,
-    protocol: { mcr: s.market.mcr, borrowingRate: s.market.borrowingRate },
-    trove: { collateral: t.coll, principal: t.principal, interest: t.interest, debt: t.debt, maxBorrowingCapacity: t.maxBorrowingCapacity },
-    musd: s.walletMusd,
-    lp: { balance: 0n, totalSupply: 0n, reserveMusd: s.pool.reserveMusd, reserveBtc: s.pool.reserveBtc },
-    sp: { deposit: 0n, btcGain: 0n },
-    poolFeeBps: s.pool.feeBps,
-    gauge: null,
-    gaugeReadFailed: false,
-    block: null,
-    troveDebt: null,
-    protocolOwnedSp: null,
-  } as DashboardSnapshot;
-}
 
 // ---------------------------------------------------------------------------------- confirm page
 

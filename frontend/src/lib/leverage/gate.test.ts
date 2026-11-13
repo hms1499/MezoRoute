@@ -22,6 +22,7 @@ const snapshot: TroveSnapshot = {
   walletBtc: ONE,
   surplusBtc: 0n,
   block: { number: 1n, timestamp: 1_000n },
+  newTroveRateBps: 100n,
 };
 const unwind = quoteUnwind(t, HARNESS_POOL, HARNESS_MARKET, 3n * ONE, 50n)!;
 const base: TroveGateInput = {

@@ -18,6 +18,7 @@ export const PAGES = {
   "/route/lp/confirm/": { title: "Review your deposit", description: "Review a MUSD/BTC pool deposit before you sign.", noindex: true },
   "/route/stability-pool/": { title: "Deposit to the Stability Pool", description: "Back Mezo's system with MUSD in the Stability Pool and receive BTC from liquidations." },
   "/route/stability-pool/confirm/": { title: "Review your Stability Pool deposit", description: "Review a Stability Pool deposit before you sign.", noindex: true },
+  "/trove/": { title: "Trove", description: "Your Trove on Mezo: both risks, the redemption queue, and MezoRoute's one-transaction Unwind, Close, and Leverage." },
   "/trove/open/": { title: "Open a Trove with leverage", description: trove },
   "/trove/open/confirm/": { title: "Review your new Trove", description: trove, noindex: true },
   "/trove/leverage/": { title: "Leverage your Trove", description: trove },
