@@ -7,13 +7,12 @@ import { Term } from "@/components/ui/Term";
 import { formatPercent, formatToken } from "@/lib/format";
 import type { TroveSnapshot } from "@/lib/leverage/snapshot";
 import type { TroveSummary } from "@/lib/trove/page";
-import { riskLines } from "@/lib/trove/risk";
+import { riskLinesText } from "@/lib/trove/risk";
 import type { TroveView } from "@/lib/trove/view-pref";
 import { RiskDot } from "./RiskDot";
 
 const musd = (v: bigint) => formatToken(v, 18, 2);
 const btc = (v: bigint) => formatToken(v, 18, 6);
-const wholeUp = (ratio: bigint) => `${formatToken(ratio * 100n, 18, 0, "up")}%`;
 
 /**
  * U20 §4: the Trove at a glance, after Liquity V2's loan card. Loan leads with the debt, Multiply with the net value
@@ -34,7 +33,6 @@ export function TroveSummaryCard({
 }) {
   const t = snapshot.trove!;
   const { price, mcr } = snapshot.market;
-  const lines = riskLines(mcr);
   const rate = formatPercent(t.interestRateBps * 10n ** 14n, 0);
   const crCell: Cell = {
     label: <Term id="collateralRatio">Collateral ratio</Term>,
@@ -132,9 +130,7 @@ export function TroveSummaryCard({
             Refresh
           </button>
         </p>
-        <p>
-          Liquidation risk: Low from {wholeUp(lines.medium)} · Medium from {wholeUp(lines.high)} · High below
-        </p>
+        <p>Liquidation risk: {riskLinesText(mcr)}</p>
       </div>
     </Card>
   );

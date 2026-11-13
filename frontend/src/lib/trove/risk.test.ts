@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { TroveState } from "@/lib/leverage/trove-math";
 import { troveHealth } from "./health";
-import { interestDrift, liquidationDrop, liquidationRisk, multiplyView, redemptionRisk, riskLines } from "./risk";
+import { interestDrift, liquidationDrop, liquidationRisk, multiplyView, redemptionRisk, riskLines, riskLinesText } from "./risk";
 
 const MCR = 1_100_000_000_000_000_000n;
 /** A percent with up to three decimals as a 1e18 ratio (157.1 → 1.571e18), exact. */
@@ -43,6 +43,12 @@ describe("riskLines", () => {
     const { high, medium } = riskLines(MCR);
     expect(high).toBe(1_571_428_571_428_571_429n);
     expect(medium).toBe(2_037_037_037_037_037_038n);
+  });
+});
+
+describe("riskLinesText", () => {
+  it("names each band with its whole-percent edges (QA: the bare 'High below' read as unfinished)", () => {
+    expect(riskLinesText(MCR)).toBe("Low from 204% · Medium 158–204% · High below 158%");
   });
 });
 

@@ -23,10 +23,12 @@ export function onMobile(href: string, pathname: string | null): boolean {
 
 /**
  * The class that hides a header link at narrow widths, or null when it always shows. Proof (U19) waits for 768 px:
- * from 640 px a third link pushed Connect past the page up to 686 px (U19 review); the footer carries it below. Trove
- * (U20) does the same.
+ * from 640 px a third link pushed Connect past the page up to 686 px (U19 review); the footer carries it below. U20
+ * moved Proof and Trove to 1024 px (see below).
  */
 export function navHideClass(href: string, pathname: string | null): string | null {
-  if (href === "/proof/" || href === "/trove/") return "max-md:hidden";
+  // U20 QA: with Trove, the connected header ran past the page at 768 px (102 px with four links, 24 px with three),
+  // so Proof and Trove both wait for 1024 px; below it the footer and the Dashboard's Trove card carry them.
+  if (href === "/proof/" || href === "/trove/") return "max-lg:hidden";
   return onMobile(href, pathname) ? null : "max-sm:hidden";
 }

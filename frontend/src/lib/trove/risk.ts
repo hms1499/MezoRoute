@@ -1,4 +1,5 @@
 import type { TroveState } from "@/lib/leverage/trove-math";
+import { formatToken } from "@/lib/format";
 import { ceilDiv, WAD } from "@/lib/math";
 import { AT_RISK_DROP_PERCENT } from "./constants";
 
@@ -33,6 +34,13 @@ export function riskLines(mcr: bigint): { high: bigint; medium: bigint } {
   const liquity = ceilDiv(mcr * 100n, HIGH_LTV_SHARE);
   const atRisk = ceilDiv(mcr * 100n, BigInt(100 - AT_RISK_DROP_PERCENT));
   return { high: liquity > atRisk ? liquity : atRisk, medium: ceilDiv(mcr * 100n, MEDIUM_LTV_SHARE) };
+}
+
+/** The bands in words, whole percent rounded up: "Low from 204% · Medium 158–204% · High below 158%". */
+export function riskLinesText(mcr: bigint): string {
+  const { high, medium } = riskLines(mcr);
+  const whole = (ratio: bigint) => formatToken(ratio * 100n, 18, 0, "up");
+  return `Low from ${whole(medium)}% · Medium ${whole(high)}–${whole(medium)}% · High below ${whole(high)}%`;
 }
 
 /** By the share of all debt redemptions would reach before this Trove; null without any debt. */

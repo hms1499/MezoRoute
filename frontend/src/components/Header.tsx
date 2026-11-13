@@ -15,9 +15,9 @@ import { ThemeToggle } from "./ThemeToggle";
 const NAV = [
   { href: "/", label: "Dashboard" },
   { href: "/positions/", label: "Positions" },
-  // U20: the Trove page reads without a wallet too; below 768 px it is in the footer, like Proof.
+  // U20: the Trove page reads without a wallet too; below 1024 px it is in the footer, like Proof.
   { href: "/trove/", label: "Trove" },
-  // U19: the Proof page needs no wallet; below 768 px it is in the footer instead (`navHideClass`).
+  // U19: the Proof page needs no wallet; below 1024 px (U20) it is in the footer instead (`navHideClass`).
   { href: "/proof/", label: "Proof" },
 ];
 
