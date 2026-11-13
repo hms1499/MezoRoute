@@ -26,12 +26,12 @@ export function useProof(network: NetworkConfig): { rows: ProofRow[] | undefined
 }
 
 /** The head block when the page read it, for "Block N · read Xs ago"; undefined while unknown or failed. */
-export function useHeadBlock(network: NetworkConfig): { block: { number: bigint; readAt: number } | undefined; refresh: () => void } {
+export function useHeadBlock(network: NetworkConfig): { block: { number: bigint; readAt: number } | undefined; refresh: () => Promise<unknown> } {
   const query = useQuery({
     queryKey: ["proof-head", network.id],
     retry: false,
     staleTime: Infinity,
     queryFn: async () => ({ number: await clientFor(network).getBlockNumber(), readAt: Date.now() }),
   });
-  return { block: query.data, refresh: () => void query.refetch() };
+  return { block: query.data, refresh: () => query.refetch() };
 }

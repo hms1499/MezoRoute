@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CopyAction } from "@/components/ui/IconAction";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -41,7 +42,10 @@ export function TransactionsCard({
       align: "left",
       cell: (r) => (
         <span className="inline-flex flex-wrap items-center gap-2">
-          <span title={r.wallet}>{shortAddress(r.wallet)}</span>
+          <span className="inline-flex items-center gap-2">
+            {shortAddress(r.wallet)}
+            <CopyAction value={r.wallet} what="wallet address" text="sm" />
+          </span>
           <Badge tone={r.walletKind === "outside" ? "accent" : "neutral"}>{r.walletKind}</Badge>
         </span>
       ),

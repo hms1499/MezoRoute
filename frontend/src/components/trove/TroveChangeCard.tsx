@@ -1,50 +1,64 @@
-import { ButtonLink } from "@/components/ui/Button";
+import { ChevronRight, ExternalLink, LogOut, SlidersHorizontal, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
+import Link from "next/link";
+import type { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import type { NetworkConfig } from "@/lib/config/networks";
 import { MAINNET_NOT_RUN } from "@/lib/leverage/copy";
 import { LEVERAGE_CR_FLOOR } from "@/lib/trove/constants";
 import { formatPercent } from "@/lib/format";
 
-const ROWS = [
-  { title: "Unwind", href: "/trove/unwind/", text: "Sell some of the Trove's BTC to repay debt. Lower debt, higher ratio, less BTC exposure." },
-  {
-    title: "Leverage",
-    href: "/trove/leverage/",
-    text: `Borrow more MUSD and buy BTC into the Trove, down to the ratio you choose (never below ${formatPercent(LEVERAGE_CR_FLOOR, 0)}).`,
-  },
-  { title: "Close", href: "/trove/close/", text: "Repay all debt with the Trove's own BTC and get the rest back. No MUSD needed in the wallet." },
-] as const;
+// U21: each action is one row (icon, name, one short line), the whole row the link. The name is never left to the icon
+// alone (NN/g: icons for abstract actions need their label); the icon only helps the eye find the row again.
+const ROWS: { title: string; href: string; text: string; icon: LucideIcon }[] = [
+  { title: "Unwind", href: "/trove/unwind/", text: "Sell BTC to repay debt · higher ratio", icon: TrendingDown },
+  { title: "Leverage", href: "/trove/leverage/", text: `Borrow MUSD to buy BTC · never below ${formatPercent(LEVERAGE_CR_FLOOR, 0)}`, icon: TrendingUp },
+  { title: "Close", href: "/trove/close/", text: "Repay all with the Trove's BTC · no MUSD needed", icon: LogOut },
+];
+
+const ROW = "group -mx-2 flex items-center gap-3 rounded-inset px-2 py-3 transition-colors duration-fast hover:bg-well";
+
+function RowBody({ icon: Icon, title, text, trailing }: { icon: LucideIcon; title: string; text: string; trailing: ReactNode }) {
+  return (
+    <>
+      <span aria-hidden className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">{title}</span>
+        <span className="block text-sm text-muted">{text}</span>
+      </span>
+      {trailing}
+    </>
+  );
+}
 
 /** U20 §4: MezoRoute's one-transaction actions on an open Trove; plain changes stay in the Mezo app. */
 export function TroveChangeCard({ network }: { network: NetworkConfig }) {
   return (
     <Card title="Change your Trove">
       <p className="mt-1 text-sm leading-relaxed text-muted">
-        Each runs in one transaction: a flash swap of the MUSD/BTC pool, then Mezo&apos;s own Trove call. The next page shows your ratio, liquidation
-        price, and risk before and after, then the signatures.
+        One transaction each. The next page shows your ratio and risk before and after.
         {network.id === "mainnet" && <> {MAINNET_NOT_RUN}</>}
       </p>
       <ul className="mt-2 divide-y divide-line">
         {network.leverage &&
           ROWS.map((row) => (
-            <li key={row.href} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="font-semibold">{row.title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-muted">{row.text}</p>
-              </div>
-              <ButtonLink href={row.href} variant="secondary" size="md" className="shrink-0">
-                {row.title}
-              </ButtonLink>
+            <li key={row.href}>
+              <Link href={row.href} className={ROW}>
+                <RowBody {...row} trailing={<ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-muted group-hover:text-accent" />} />
+              </Link>
             </li>
           ))}
-        <li className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="font-semibold">Add collateral, borrow, or repay</p>
-            <p className="mt-1 text-sm leading-relaxed text-muted">Plain Trove changes stay in the Mezo app (Manage loan).</p>
-          </div>
-          <ButtonLink href={network.mezoAppUrl} external variant="secondary" size="md" className="shrink-0">
-            Open Mezo app
-          </ButtonLink>
+        <li>
+          <a href={network.mezoAppUrl} target="_blank" rel="noreferrer" className={ROW}>
+            <RowBody
+              icon={SlidersHorizontal}
+              title="Mezo app"
+              text="Add collateral, borrow, or repay"
+              trailing={<ExternalLink aria-hidden className="h-4 w-4 shrink-0 text-muted group-hover:text-accent" />}
+            />
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
         </li>
       </ul>
     </Card>

@@ -13,9 +13,8 @@ describe("stakeRowCopy", () => {
   it("says this week's MEZO, that fees go to veBTC voters, and the APR when staking is on", () => {
     const row = stakeRowCopy(input);
     expect(row?.switchable).toBe(true);
-    expect(row?.sub).toContain("≈ 12 MEZO a week at this week's rate.");
-    expect(row?.sub).toContain("swap fees go to veBTC voters");
-    expect(row?.sub).toContain("Emissions APR ≈ 12.3% at this week's rate.");
+    // U21: one sentence instead of three; the rate and the APR share one "this week's rate".
+    expect(row?.sub).toBe("≈ 12 MEZO a week (≈ 12.3% APR) at this week's rate. Swap fees go to veBTC voters.");
   });
 
   it("leaves the APR out while staking is off", () => {

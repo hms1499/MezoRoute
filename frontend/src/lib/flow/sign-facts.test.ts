@@ -13,7 +13,7 @@ describe("lpSignFacts", () => {
 
   it("names the executor, the fee, the cap, the audit, and the block", () => {
     expect(labels(facts)).toEqual(["Executor", "MezoRoute fee", "Entry cap", "Audit", "Reads"]);
-    expect(facts?.[0]).toEqual({ label: "Executor", value: "0x1281…6288", href: explorerAddressUrl(testnet, testnet.executor!.address) });
+    expect(facts?.[0]).toEqual({ label: "Executor", value: "0x1281…6288", href: explorerAddressUrl(testnet, testnet.executor!.address), copy: testnet.executor!.address });
     expect(facts?.[1].value).toBe("0.1%");
     expect(facts?.[2].value).toBe("1,000,000 MUSD");
     expect(facts?.[3]).toEqual({ label: "Audit", value: "Unaudited software", href: REPOSITORY });

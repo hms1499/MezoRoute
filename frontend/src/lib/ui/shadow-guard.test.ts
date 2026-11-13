@@ -4,8 +4,8 @@ import { scanSource } from "./source-scan";
 
 // U11 §5.6: cards have no shadow (U3); one shadow token marks floating layers, and only overlay components use it.
 
-/** The overlays: popovers, menus, toasts. Phase 2 adds the token-chip menu (Task 12) and the slippage popover (Task 13). */
-const OVERLAYS = ["components/ui/Term.tsx", "components/ErrorToast.tsx", "components/NetworkMenu.tsx", "components/flow/TokenAmountInput.tsx", "components/flow/SlippagePopover.tsx"];
+/** The overlays: popovers, menus, toasts. Phase 2 adds the token-chip menu (Task 12) and the slippage popover (Task 13); U21 the icon-action tooltip. */
+const OVERLAYS = ["components/ui/Term.tsx", "components/ui/IconAction.tsx", "components/ErrorToast.tsx", "components/NetworkMenu.tsx", "components/flow/TokenAmountInput.tsx", "components/flow/SlippagePopover.tsx"];
 
 describe("shadows", () => {
   it("has one shadow token", () => {
