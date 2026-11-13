@@ -15,6 +15,8 @@ import { ThemeToggle } from "./ThemeToggle";
 const NAV = [
   { href: "/", label: "Dashboard" },
   { href: "/positions/", label: "Positions" },
+  // U19: the Proof page needs no wallet; below 640 px it is in the footer instead (`onMobile`).
+  { href: "/proof/", label: "Proof" },
 ];
 
 /** Shared header (spec §9): logo, nav with the current page marked, the network chip (U11), theme toggle (from 768 px), wallet button. */

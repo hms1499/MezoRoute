@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { LogoMark } from "@/components/ui/Logo";
 import { MEZO_SITE, REPOSITORY } from "@/lib/config/links";
 import { useNetwork } from "@/lib/config/network-context";
@@ -25,6 +26,10 @@ export function Footer() {
             </p>
           </div>
           <nav aria-label="Project links" className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
+            {/* U19: the Proof page, at every width (the header drops it below 640 px). */}
+            <Link href="/proof/" className={link}>
+              Proof
+            </Link>
             {contractLinks(network).map((contract) => (
               <a key={contract.address} href={explorerAddressUrl(network, contract.address)} target="_blank" rel="noreferrer" className={link}>
                 {contract.label}

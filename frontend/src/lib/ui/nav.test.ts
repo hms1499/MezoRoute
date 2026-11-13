@@ -31,3 +31,13 @@ describe("onMobile", () => {
     expect(onMobile("/", null)).toBe(false);
   });
 });
+
+describe("onMobile with Proof (U19)", () => {
+  it("shows Dashboard on Proof, and never Proof itself below 640 px", () => {
+    expect(onMobile("/", "/proof/")).toBe(true);
+    expect(onMobile("/positions/", "/proof/")).toBe(false);
+    expect(onMobile("/proof/", "/")).toBe(false);
+    expect(onMobile("/proof/", "/proof/")).toBe(false);
+    expect(onMobile("/positions/", "/")).toBe(true);
+  });
+});

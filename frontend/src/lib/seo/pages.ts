@@ -10,6 +10,7 @@ const trove = "Your Trove on Mezo, in one transaction through a flash swap of th
 
 export const PAGES = {
   "/compare/": { title: "Compare routes", description: "The MUSD/BTC pool and the Stability Pool side by side for the same amount of MUSD, with the last 30 days." },
+  "/proof/": { title: "Proof", description: "Every MezoRoute contract and every transaction it has run on Mezo, read from chain." },
   "/positions/": { title: "Your positions", description: "Your MUSD/BTC liquidity, Stability Pool deposit, and rewards on Mezo." },
   "/positions/lp/exit/": { title: "Exit the MUSD/BTC pool", description: "Exit your MUSD/BTC liquidity to MUSD in one transaction.", noindex: true },
   "/positions/stability-pool/withdraw/": { title: "Withdraw from the Stability Pool", description: "Withdraw MUSD and its BTC gain from Mezo's Stability Pool.", noindex: true },
