@@ -20,6 +20,9 @@ const TERMS: TermId[] = [
   "redemption",
   "refinance",
   "staking",
+  "liquidationRisk", // U20
+  "redemptionRisk", // U20
+  "recoveryMode", // U20
 ];
 
 const G1_TERMS: TermId[] = ["gauge", "emissions", "staking"];

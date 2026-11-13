@@ -16,7 +16,10 @@ export type TermId =
   | "emissions"
   | "redemption"
   | "refinance"
-  | "staking";
+  | "staking"
+  | "liquidationRisk"
+  | "redemptionRisk"
+  | "recoveryMode";
 
 /**
  * One sentence per Mezo term, shown by `Term` (U8). Readers know basic DeFi (LP, slippage, approvals),
@@ -38,4 +41,7 @@ export const GLOSSARY: Record<TermId, string> = {
   redemption: "Swapping MUSD for BTC at $1 per MUSD, taken from the lowest-ratio Troves first to repay their debt.",
   refinance: "Resets your Trove's borrowing limit from today's collateral and moves it to the current interest rate.",
   staking: "Putting your LP in the pool's gauge to earn MEZO. While staked, its swap fees go to veBTC voters.",
+  liquidationRisk: "How near your ratio is to 110%: High below about 158%, Medium below about 204%.",
+  redemptionRisk: "High when under 5% of all Trove debt would be redeemed before yours.",
+  recoveryMode: "Below a 150% system ratio, Mezo blocks withdrawing collateral and closing Troves.",
 };
