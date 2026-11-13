@@ -76,3 +76,30 @@ describe("fetchAllLogs", () => {
     await expect(fetchAllLogs(fetchJson, "https://x", QUERY)).rejects.toThrow(ExplorerError);
   });
 });
+
+describe("logs by address (U19 Proof)", () => {
+  const V2 = "0xb3461B35577cD2aC5ccb6d71e7f89a16bE257915";
+
+  it("asks for one address's logs without topics", () => {
+    const url = new URL(explorerLogsUrl("https://api.explorer.mezo.org", { address: V2, fromBlock: 13_031_359n }));
+    expect(url.searchParams.get("address")).toBe(V2);
+    expect(url.searchParams.get("fromBlock")).toBe("13031359");
+    expect(url.searchParams.has("topic0")).toBe(false);
+    expect(url.searchParams.has("topic1")).toBe(false);
+    expect(url.searchParams.has("topic0_1_opr")).toBe(false);
+  });
+
+  it("pages an address-only query from the given block", async () => {
+    const start = 13_031_359;
+    const first = Array.from({ length: EXPLORER_PAGE }, (_, i) => log(start + i, 0));
+    const second = [first[first.length - 1], log(start + EXPLORER_PAGE, 0), log(start + EXPLORER_PAGE, 1)];
+    const urls: string[] = [];
+    const fetchJson = vi.fn(async (url: string) => {
+      urls.push(url);
+      return { message: "OK", result: urls.length === 1 ? first : second };
+    });
+    const logs = await fetchAllLogs(fetchJson, "https://api.explorer.mezo.org", { address: V2 }, BigInt(start));
+    expect(new URL(urls[0]).searchParams.get("fromBlock")).toBe(String(start));
+    expect(logs).toHaveLength(EXPLORER_PAGE + 2);
+  });
+});

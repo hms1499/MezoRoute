@@ -4,7 +4,15 @@ import type { Address, Hex } from "viem";
  * One log as Blockscout's etherscan-style `getLogs` returns it: hex strings, and `null` for unused
  * topic slots. The explorer frontend serves no API; `NetworkConfig.explorerApiUrl` is its backend.
  */
-export type ExplorerLog = { blockNumber: string; logIndex: string; transactionHash: Hex; topics: (Hex | null)[]; data: Hex };
+export type ExplorerLog = {
+  blockNumber: string;
+  logIndex: string;
+  transactionHash: Hex;
+  topics: (Hex | null)[];
+  data: Hex;
+  /** The block's unix time, hex (U19 Proof reads it; F5 does not). */
+  timeStamp?: Hex;
+};
 
 /** Blockscout returns at most this many logs per request. */
 export const EXPLORER_PAGE = 1_000;
@@ -14,7 +22,8 @@ export class ExplorerError extends Error {
   override name = "ExplorerError";
 }
 
-export type LogQuery = { address: Address; topic0: Hex; topic1: Hex };
+/** One contract's logs, optionally narrowed to an event (`topic0`) and an indexed first argument (`topic1`). */
+export type LogQuery = { address: Address; topic0?: Hex; topic1?: Hex };
 export type FetchJson = (url: string) => Promise<unknown>;
 
 /** The logs of an OK response; "No logs found" is an empty history; anything else is an error. */
@@ -33,21 +42,21 @@ export function explorerLogsUrl(apiUrl: string, query: LogQuery & { fromBlock: b
     fromBlock: query.fromBlock.toString(),
     toBlock: "latest",
     address: query.address,
-    topic0: query.topic0,
-    topic1: query.topic1,
-    topic0_1_opr: "and",
   });
+  if (query.topic0) params.set("topic0", query.topic0);
+  if (query.topic1) params.set("topic1", query.topic1);
+  if (query.topic0 && query.topic1) params.set("topic0_1_opr", "and");
   return `${apiUrl}/api?${params.toString()}`;
 }
 
 /**
- * Every log of one event for one indexed topic1. A full page continues from its last block (that
+ * Every log matching the query from block `from` (default 0). A full page continues from its last block (that
  * block is asked for again, so logs are de-duplicated by transaction and index); a full page inside
  * one block cannot advance and throws rather than loop.
  */
-export async function fetchAllLogs(fetchJson: FetchJson, apiUrl: string, query: LogQuery): Promise<ExplorerLog[]> {
+export async function fetchAllLogs(fetchJson: FetchJson, apiUrl: string, query: LogQuery, from = 0n): Promise<ExplorerLog[]> {
   const logs = new Map<string, ExplorerLog>();
-  let fromBlock = 0n;
+  let fromBlock = from;
   for (;;) {
     const page = parseExplorerResponse(await fetchJson(explorerLogsUrl(apiUrl, { ...query, fromBlock })));
     for (const log of page) logs.set(`${log.transactionHash}:${log.logIndex}`, log);
