@@ -14,7 +14,8 @@ describe("stakeRowCopy", () => {
     const row = stakeRowCopy(input);
     expect(row?.switchable).toBe(true);
     // U21: one sentence instead of three; the rate and the APR share one "this week's rate".
-    expect(row?.sub).toBe("≈ 12 MEZO a week (≈ 12.3% APR) at this week's rate. Swap fees go to veBTC voters.");
+    // The cost stays the person's: "while staked … instead of you", the same note as every other branch.
+    expect(row?.sub).toBe("≈ 12 MEZO a week (≈ 12.3% APR) at this week's rate. While staked, swap fees go to veBTC voters instead of you.");
   });
 
   it("leaves the APR out while staking is off", () => {

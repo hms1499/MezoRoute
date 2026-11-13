@@ -57,7 +57,7 @@ export function stakeRowCopy(input: {
   if (!input.on) return { switchable: true, sub: stakeOffLine(input.availability, input.mezoPerWeek) };
   // U21: one sentence; the amount and the APR share one "this week's rate".
   if (input.availability === "open" && input.mezoPerWeek !== null && input.aprLabel !== null) {
-    return { switchable: true, sub: `≈ ${formatToken(input.mezoPerWeek, 18, 2)} MEZO a week (≈ ${input.aprLabel} APR) at this week's rate. Swap fees go to veBTC voters.` };
+    return { switchable: true, sub: `≈ ${formatToken(input.mezoPerWeek, 18, 2)} MEZO a week (≈ ${input.aprLabel} APR) at this week's rate. ${FEES_NOTE}` };
   }
   return { switchable: true, sub: stakeLines(input.availability, input.mezoPerWeek).join(" ") };
 }

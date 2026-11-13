@@ -15,14 +15,14 @@ function clientFor(network: NetworkConfig): PublicClient {
   return clients[network.id]!;
 }
 
-export function useProof(network: NetworkConfig): { rows: ProofRow[] | undefined; error: Error | null; retry: () => void } {
+export function useProof(network: NetworkConfig): { rows: ProofRow[] | undefined; error: Error | null; retry: () => Promise<unknown> } {
   const query = useQuery({
     queryKey: ["proof-rows", network.id],
     retry: false,
     staleTime: Infinity,
     queryFn: () => loadProofRows(network, browserFetchJson),
   });
-  return { rows: query.data, error: query.error, retry: () => void query.refetch() };
+  return { rows: query.data, error: query.error, retry: () => query.refetch() };
 }
 
 /** The head block when the page read it, for "Block N · read Xs ago"; undefined while unknown or failed. */

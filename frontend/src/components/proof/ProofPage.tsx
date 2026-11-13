@@ -39,10 +39,7 @@ export default function ProofPage() {
           <HeadLine
             number={head.block.number}
             readAt={head.block.readAt}
-            onRefresh={() => {
-              retry();
-              return head.refresh();
-            }}
+            onRefresh={() => Promise.all([retry(), head.refresh()])}
           />
         )}
       </div>

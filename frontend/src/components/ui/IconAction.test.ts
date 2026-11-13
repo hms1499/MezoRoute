@@ -13,8 +13,10 @@ describe("IconAction", () => {
     expect(html).toMatch(/<button[^>]*type="button"[^>]*aria-label="Refresh"/);
     expect(html).toMatch(/<svg[^>]*aria-hidden="true"/);
     expect(html).toMatch(/<span[^>]*aria-hidden="true"[^>]*>Refresh<\/span>/);
-    expect(html).toMatch(/group-hover:block/);
-    expect(html).toMatch(/group-focus-visible:block/);
+    // Hover only where the device can hover (a tap never leaves it stuck); a named group, so an ancestor's `.group` never opens it.
+    expect(html).toMatch(/\[@media\(hover:hover\)\]:group-hover\/icon:block/);
+    expect(html).toMatch(/group-focus-visible\/icon:block/);
+    expect(html).not.toMatch(/(?<![\w/-])group-hover:block/);
     // A hit area, so the 14 px glyph still meets the 24 px (44 px on touch) target.
     expect(html).toMatch(/class="[^"]*\bhit\b/);
   });

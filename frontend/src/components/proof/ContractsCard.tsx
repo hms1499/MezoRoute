@@ -32,7 +32,8 @@ export function ContractsCard({ network, contracts }: { network: NetworkConfig; 
       header: "Address",
       align: "left",
       cell: (c) => (
-        <span className="inline-flex items-center gap-2">
+        // gap-4: the copy button's 44 px touch area must not cover the link's end below 768 px.
+        <span className="inline-flex items-center gap-4">
           <a href={explorerAddressUrl(network, c.address)} target="_blank" rel="noreferrer" className={PROOF_LINK}>
             {shortAddress(c.address)}
           </a>

@@ -17,7 +17,7 @@ export function FactList({ facts }: { facts: SignFact[] }) {
       {facts.map((fact) => (
         <div key={fact.label} className="flex items-start justify-between gap-3">
           <dt className="text-muted">{fact.label}</dt>
-          <dd className="inline-flex items-center justify-end gap-2 text-right">
+          <dd className="inline-flex items-center justify-end gap-4 text-right">
             {fact.href ? (
               <a href={fact.href} target="_blank" rel="noreferrer" className={LINK}>
                 {fact.value}
