@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import type { Address } from "viem";
+import { zeroAddress, type Address } from "viem";
 import { useConfig, useReadContracts } from "wagmi";
 import { readContracts } from "wagmi/actions";
 import { useNetwork } from "@/lib/config/network-context";
@@ -16,7 +16,7 @@ export type TroveData = { snapshot: TroveSnapshot; fetchedAt: number };
  * queue beside it (every Trove, paged). A failed queue read gives `queue: null` and blanks only the
  * queue line; `refresh` refetches the snapshot and resolves with it (the send step re-quotes from it).
  */
-export function useTroveSnapshot(account: Address): {
+export function useTroveSnapshot(account: Address | undefined): {
   data: TroveData | undefined;
   error: Error | null;
   queue: QueueEntry[] | null;
@@ -25,7 +25,8 @@ export function useTroveSnapshot(account: Address): {
   const { network } = useNetwork();
   const config = useConfig();
   const reads = useReadContracts({
-    contracts: troveSnapshotContracts(network, account),
+    // U20: without a wallet the page reads with the zero address (every read answers for it on both networks, 13 Nov).
+    contracts: troveSnapshotContracts(network, account ?? zeroAddress),
     allowFailure: false,
     query: { refetchInterval: QUOTE_REFRESH_MS },
   });

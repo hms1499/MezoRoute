@@ -23,6 +23,7 @@ const snapshot: TroveSnapshot = {
   walletBtc: ONE,
   surplusBtc: 0n,
   block: { number: 1n, timestamp: 1n },
+  newTroveRateBps: 100n,
 };
 
 describe("costText", () => {

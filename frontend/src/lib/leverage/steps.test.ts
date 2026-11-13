@@ -19,6 +19,7 @@ const snapshot: TroveSnapshot = {
   walletBtc: ONE,
   surplusBtc: 0n,
   block: { number: 1n, timestamp: 1_000n },
+  newTroveRateBps: 100n,
 };
 const auth = { nonce: 4n, deadline: 1_600n };
 const permit = { permit: { value: 1n, deadline: 1_600n, v: 27, r: zeroHash, s: zeroHash }, nonce: 3n };

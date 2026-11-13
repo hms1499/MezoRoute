@@ -29,6 +29,9 @@ export const borrowerOperationsAbi = parseAbi([
 /** CollSurplusPool: BTC left for a borrower after a redemption (or a Recovery Mode liquidation) closed the Trove. */
 export const collSurplusPoolAbi = parseAbi(["function getCollateral(address account) view returns (uint256)"]);
 
+/** InterestRateManager: the rate (bps a year) a Trove opened now would get. */
+export const interestRateManagerAbi = parseAbi(["function interestRate() view returns (uint16)"]);
+
 /** StabilityPool (mezo-org/musd `StabilityPool.sol`); deposits and withdrawals act only for msg.sender. */
 export const stabilityPoolAbi = parseAbi([
   "function getCompoundedMUSDDeposit(address depositor) view returns (uint256)",

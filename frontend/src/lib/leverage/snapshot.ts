@@ -3,6 +3,7 @@ import {
   borrowerOperationsAbi,
   borrowerOperationsSignaturesAbi,
   collSurplusPoolAbi,
+  interestRateManagerAbi,
   musdPermitAbi,
   priceFeedAbi,
   troveManagerAbi,
@@ -29,6 +30,7 @@ export type TroveSnapshot = {
   walletBtc: bigint;
   surplusBtc: bigint; // CollSurplusPool: BTC to claim after a redemption closed the Trove
   block: { number: bigint; timestamp: bigint };
+  newTroveRateBps: bigint; // InterestRateManager.interestRate: what a Trove opened now would pay (U20)
 };
 
 export type TroveSnapshotResults = readonly [
@@ -53,6 +55,7 @@ export type TroveSnapshotResults = readonly [
   surplusBtc: bigint,
   blockNumber: bigint,
   timestamp: bigint,
+  newTroveRateBps: number,
 ];
 
 const TROVE_ACTIVE = 1;
@@ -83,6 +86,8 @@ export function troveSnapshotContracts(network: NetworkConfig, account: Address)
     { chainId, address: a.collSurplusPool, abi: collSurplusPoolAbi, functionName: "getCollateral", args: [account] },
     { chainId, address: a.multicall3, abi: multicall3BlockAbi, functionName: "getBlockNumber" },
     { chainId, address: a.multicall3, abi: multicall3BlockAbi, functionName: "getCurrentBlockTimestamp" },
+    // Last, so the indexes above never move.
+    { chainId, address: a.interestRateManager, abi: interestRateManagerAbi, functionName: "interestRate" },
   ] as const;
 }
 
@@ -114,5 +119,6 @@ export function parseTroveSnapshot(network: NetworkConfig, r: TroveSnapshotResul
     walletBtc: r[17],
     surplusBtc: r[18],
     block: { number: r[19], timestamp: r[20] },
+    newTroveRateBps: BigInt(r[21]),
   };
 }

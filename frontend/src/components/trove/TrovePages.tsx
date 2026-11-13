@@ -36,6 +36,7 @@ import { cr, nominalCr, type TroveState } from "@/lib/leverage/trove-math";
 import { useDirectTroveCall } from "@/lib/leverage/useDirectTroveCall";
 import { useTroveSnapshot, type TroveData } from "@/lib/leverage/useTroveSnapshot";
 import { confirmQueue, crPresets, leverageMaxNote, leverageNoRoomNote, maxTarget, troveNowRows, maxTargetText, openBtcMax, openMaxNote, openReachNote, pageNotice, presetsWithin, refinanceNote, troveOverviewRows, unwindMaxNote, unwindReachNote } from "@/lib/leverage/view";
+import { asDashboardSnapshot } from "@/lib/leverage/dashboard-view";
 import { openMaxCr } from "@/lib/leverage/quote-open";
 import { unwindMaxCr } from "@/lib/leverage/quote-unwind";
 import { leverageMax, leverageQuoteAt } from "@/lib/leverage/quote-leverage";
@@ -333,8 +334,8 @@ function AmountCard(props: {
         <Details summary="If BTC moves">
           <ExposurePanel
             title="Trove BTC exposure"
-            snapshot={troveOnlySnapshot(snapshot, view.after)}
-            before={snapshot.trove ? troveOnlySnapshot(snapshot, snapshot.trove) : undefined}
+            snapshot={asDashboardSnapshot(snapshot, view.after)}
+            before={snapshot.trove ? asDashboardSnapshot(snapshot, snapshot.trove) : undefined}
           />
         </Details>
       )}
@@ -353,23 +354,6 @@ function roundUpPercent(ratio: bigint): string {
   return `${tenths / 10n}.${tenths % 10n}`;
 }
 
-/** The exposure panel's input for the Trove alone (LP and Stability Pool left out): before and after the action. */
-function troveOnlySnapshot(s: TroveSnapshot, t: TroveState): DashboardSnapshot {
-  return {
-    price: s.market.price,
-    protocol: { mcr: s.market.mcr, borrowingRate: s.market.borrowingRate },
-    trove: { collateral: t.coll, principal: t.principal, interest: t.interest, debt: t.debt, maxBorrowingCapacity: t.maxBorrowingCapacity },
-    musd: s.walletMusd,
-    lp: { balance: 0n, totalSupply: 0n, reserveMusd: s.pool.reserveMusd, reserveBtc: s.pool.reserveBtc },
-    sp: { deposit: 0n, btcGain: 0n },
-    poolFeeBps: s.pool.feeBps,
-    gauge: null,
-    gaugeReadFailed: false,
-    block: null,
-    troveDebt: null,
-    protocolOwnedSp: null,
-  } as DashboardSnapshot;
-}
 
 // ---------------------------------------------------------------------------------- confirm page
 

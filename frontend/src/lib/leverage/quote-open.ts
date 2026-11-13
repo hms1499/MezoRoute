@@ -98,3 +98,24 @@ export function openMaxCr(btcFromUser: bigint, pool: PoolState, market: Market, 
   const top = at(hi).crAfter;
   return top > peak ? top : peak;
 }
+
+const BTC_STEP = 10_000_000_000n; // 8 decimals, the precision the Open page takes
+const MIN_OPEN_SEARCH_MAX = 100n * 10n ** 18n;
+
+/**
+ * U20: the smallest BTC of the user's own (in 8-decimal steps) that an Open with leverage turns into a Trove at
+ * `targetCr` or above (the debt is at least the 1,800 MUSD minimum); null when 100 BTC does not reach it.
+ * Binary search over `quoteOpen`, whose reach grows with the user's BTC.
+ */
+export function minOpenBtc(pool: PoolState, market: Market, targetCr: bigint, slippageBps: bigint, feeBps: bigint, maxBtcFlash: bigint): bigint | null {
+  const opens = (steps: bigint) => quoteOpen(steps * BTC_STEP, pool, market, targetCr, slippageBps, feeBps, maxBtcFlash) !== null;
+  let hi = MIN_OPEN_SEARCH_MAX / BTC_STEP;
+  if (!opens(hi)) return null;
+  let lo = 0n; // never opens: no BTC
+  while (hi - lo > 1n) {
+    const mid = (lo + hi) / 2n;
+    if (opens(mid)) hi = mid;
+    else lo = mid;
+  }
+  return hi * BTC_STEP;
+}
