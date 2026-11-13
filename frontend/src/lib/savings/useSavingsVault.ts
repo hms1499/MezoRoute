@@ -13,16 +13,16 @@ import { parseSavingsState, savingsContracts, type SavingsState } from "./state"
  * any failure.
  */
 export function useSavingsVault(network: NetworkConfig, blockNumber: bigint | undefined): SavingsState | null | undefined {
+  // Two tuple shapes (with or without a gauge) defeat wagmi's inference; the parser reads the values by position.
   const read = useReadContracts({
-    // Two tuple shapes (with or without a gauge) defeat wagmi's inference; the parser reads them by position.
-    contracts: savingsContracts(network) as never,
+    contracts: savingsContracts(network),
     allowFailure: false,
     blockNumber,
     query: { enabled: network.savingsVault !== null, retry: false },
-  });
+  } as never) as { data?: readonly unknown[]; error: Error | null };
   if (!network.savingsVault || read.error) return null;
   if (!read.data) return undefined;
-  return parseSavingsState(network, read.data as readonly unknown[]);
+  return parseSavingsState(network, read.data);
 }
 
 /** The vault's index at F6's two blocks, once the route history has them; null on failure (only sMUSD's 30-day rows blank). */
